@@ -317,6 +317,24 @@ def _split(root: Path, seed: str, frozen: bool) -> int:
     return 0
 
 
+def _page(root: Path) -> int:
+    """Writes review/human-check.html for the event ids in review/human-check.txt (private, 0600)."""
+    from .review import ReviewError, _private_write, render_check_page
+
+    try:
+        ids = [
+            line.strip()
+            for line in (root / "review" / "human-check.txt").read_text().splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
+        _private_write(root / "review" / "human-check.html", render_check_page(root, ids))
+    except (ReviewError, OSError) as exc:
+        print(f"review-page: FAILED {exc}", file=sys.stderr)
+        return 1
+    print(f"review-page: {len(ids)} events -> {root / 'review' / 'human-check.html'}")
+    return 0
+
+
 def _import(root: Path, labels: Path | None) -> int:
     from .review import ReviewError, import_labels
 
@@ -375,6 +393,7 @@ COMMANDS = (
     "review-next",
     "review-label",
     "review-import",
+    "review-page",
     "split",
     "variants",
     "evaluate",
@@ -458,6 +477,7 @@ def main(argv: list[str] | None = None) -> int:
         "review-next": lambda: _label(root, args),
         "review-label": lambda: _label(root, args),
         "review-import": lambda: _import(root, args.labels),
+        "review-page": lambda: _page(root),
         "split": lambda: _split(root, args.seed, args.freeze),
         "variants": lambda: _variants(root, args.manifest, args.es_url, args.seed),
         "evaluate": lambda: _evaluate(root, args.system, args.es_url, locked=args.locked, label=args.report_name),

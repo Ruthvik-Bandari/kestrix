@@ -336,3 +336,105 @@ def import_labels(root: Path, rows: list[dict[str, Any]]) -> dict[str, int]:
     """Bulk-record labels atomically; never overwrites a human label (see ``_import_labels``)."""
     with _labels_lock(root):
         return _import_labels(root, rows)
+
+
+_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Aegis-Sec label check</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--mute:#6b6b70;--line:#e3e3e0;--mal:#b42318;--ben:#067647;--unk:#8a6d00;--acc:#2f5bd3}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--card:#1d1d20;--ink:#f2f2f2;--mute:#a1a1a6;--line:#333338;--acc:#7da2ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,system-ui,sans-serif}
+header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:1}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card.done{border-color:var(--acc)}
+h2{font-size:15px;margin:0 0 4px;word-break:break-all}.mute{color:var(--mute);font-size:13px}
+.ai{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.malicious{color:var(--mal)}.benign{color:var(--ben)}.unknown{color:var(--unk)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:10px 0;font-size:13px}
+dt{color:var(--mute)}dd{margin:0;font-family:ui-monospace,Menlo,monospace;word-break:break-all;white-space:pre-wrap}
+.choose{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.choose label{border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+input[type=text]{width:100%;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+</style></head><body>
+<header><strong>Aegis-Sec label check</strong><span id="count" class="mute"></span>
+<label class="mute">Your initials <input id="who" type="text" style="width:90px;margin:0" maxlength="12"></label>
+<button id="export" disabled>Export my labels</button></header>
+<main><p class="mute">For each event: is this process part of the simulated attack described in the scenario
+(<b>malicious</b>), clearly normal activity (<b>benign</b>), or can't you tell (<b>unknown</b>)? A rationale is
+required for malicious and benign. Your label replaces the AI label. Event text below is shown as plain text only.</p>
+<div id="list"></div></main>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const items = JSON.parse(document.getElementById('data').textContent);
+const state = JSON.parse(localStorage.getItem('aegis-check') || '{}');
+const list = document.getElementById('list');
+function el(tag, cls, text){const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=String(text); return e;}
+function save(){localStorage.setItem('aegis-check', JSON.stringify(state)); refresh();}
+function valid(s){return s && s.label && (s.label==='unknown' || (s.rationale||'').trim());}
+function refresh(){
+  const done = items.filter(i => valid(state[i.event_id])).length;
+  document.getElementById('count').textContent = done + ' / ' + items.length + ' labeled';
+  document.getElementById('export').disabled = !(done===items.length && document.getElementById('who').value.trim());
+  items.forEach(i => document.getElementById('c-'+i.n).classList.toggle('done', !!valid(state[i.event_id])));
+}
+items.forEach((it, n) => {
+  it.n = n; const c = el('div','card'); c.id = 'c-'+n;
+  c.append(el('h2', null, (n+1)+'. '+it.event_id));
+  c.append(el('div','mute', (it.dataset_title||'(no dataset title)') + (it.techniques&&it.techniques.length ? ' — '+it.techniques.join(', ') : '')));
+  if (it.scenario) c.append(el('p','mute', 'Scenario: '+it.scenario));
+  c.append(el('div','mute', 'Rules that fired: '+(it.rules||[]).join(' · ')));
+  const dl = el('dl'); Object.keys(it.fields||{}).sort().forEach(k => {dl.append(el('dt',null,k)); dl.append(el('dd',null,it.fields[k]));}); c.append(dl);
+  const ai = el('div', null); ai.append(el('span','ai '+it.ai_label, 'AI: '+it.ai_label+' ('+it.ai_reviewer+')')); ai.append(el('div','mute', it.ai_rationale)); c.append(ai);
+  const ch = el('div','choose'); const s = state[it.event_id] || {};
+  ['malicious','benign','unknown'].forEach(l => {const lab=el('label'); const r=el('input'); r.type='radio'; r.name='l'+n; r.value=l; r.checked=s.label===l;
+    r.onchange=()=>{state[it.event_id]=Object.assign(state[it.event_id]||{}, {label:l}); save();}; lab.append(r, ' '+l); ch.append(lab);});
+  c.append(ch);
+  const t = el('input'); t.type='text'; t.placeholder='Your rationale (one line)'; t.maxLength=1000; t.value=s.rationale||'';
+  t.oninput=()=>{state[it.event_id]=Object.assign(state[it.event_id]||{}, {rationale:t.value.replace(/[\\r\\n]+/g,' ')}); save();};
+  c.append(t); list.append(c);
+});
+document.getElementById('who').value = localStorage.getItem('aegis-who') || '';
+document.getElementById('who').oninput = e => {localStorage.setItem('aegis-who', e.target.value); refresh();};
+document.getElementById('export').onclick = () => {
+  const who = document.getElementById('who').value.trim();
+  const rows = items.map(i => ({event_id:i.event_id, label:state[i.event_id].label, rationale:(state[i.event_id].rationale||'').trim(), reviewer:who}));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(rows,null,1)],{type:'application/json'}));
+  a.download = 'human-labels.json'; a.click();
+};
+refresh();
+</script></body></html>
+"""
+
+
+def render_check_page(root: Path, event_ids: list[str]) -> str:
+    """A self-contained HTML page for the human label check. Event data is embedded as JSON with
+    ``<``, ``>`` and ``&`` escaped and rendered with ``textContent`` only, so nothing in an event can
+    run as markup or script; a CSP blocks all network access."""
+    sheet, rows = _load_sheet(root)
+    by_event = {c["event_id"]: c for c in sheet}
+    labels = {r["event_id"]: r for r in rows}
+    info = dataset_info(root / "otrf")
+    items = []
+    for event_id in event_ids:
+        if event_id not in by_event:
+            raise ReviewError(f"{event_id} is not a review candidate")
+        c, row, meta = by_event[event_id], labels.get(event_id, {}), info.get(by_event[event_id]["dataset"], {})
+        items.append(
+            {
+                "event_id": event_id,
+                "dataset_title": meta.get("title"),
+                "techniques": meta.get("techniques"),
+                "scenario": " ".join(str(meta.get("description") or "").split()),
+                "rules": [r["title"] for r in c["rules"]],
+                "fields": c["fields"],
+                "ai_label": row.get("label") or "unlabeled",
+                "ai_reviewer": row.get("reviewer") or "",
+                "ai_rationale": row.get("rationale") or "",
+            }
+        )
+    data = json.dumps(items).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    return _PAGE.replace("__DATA__", data)

@@ -163,3 +163,23 @@ def test_import_tolerates_missing_or_null_fields(root):
     assert counts["imported"] == 1
     with pytest.raises(ReviewError, match="reviewer is required"):
         import_labels(root, [{"event_id": E0, "label": "unknown"}])
+
+
+def test_check_page_embeds_hostile_event_text_inertly(root):
+    import json as _json
+    import re
+
+    from aegisbench.review import render_check_page
+
+    write_sheet(root, _report())
+    sheet = root / "review/candidates.jsonl"
+    rows = [_json.loads(x) for x in sheet.read_text().splitlines()]
+    rows[0]["fields"]["CommandLine"] = "</script><img src=x onerror=alert(1)>&amp;"
+    sheet.write_text("".join(_json.dumps(r) + "\n" for r in rows))
+    page = render_check_page(root, [E0])
+    data = re.search(r'<script id="data" type="application/json">(.*?)</script>', page, re.S).group(1)
+    assert "<" not in data and ">" not in data and "&" not in data  # nothing can close the tag or form markup
+    assert _json.loads(data)[0]["fields"]["CommandLine"].startswith("</script><img")  # content preserved
+    assert "default-src 'none'" in page  # no network access from the page
+    with pytest.raises(ReviewError, match="not a review candidate"):
+        render_check_page(root, ["otrf:nope:1"])
