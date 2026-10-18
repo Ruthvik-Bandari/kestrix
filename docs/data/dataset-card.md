@@ -1,6 +1,6 @@
 # Dataset card: Aegis-Sec detection-repair benchmark (v1, preview)
 
-**Status: preview, not frozen.** The split is frozen only after the owner's human label check (see "Open items" below). The numbers on this card describe the preview built on 2026-10-16 and will be regenerated after the freeze.
+**Status: frozen 2026-10-17.** The frozen split is in [`split-manifest.json`](split-manifest.json), SHA-256 `0353bc1e84787150eab2c13a0ca9fa4d2967227bc55a4df726a12cde5fc48bd4`. It holds ids and source hashes only, and is never overwritten. The owner waived the human label check. A sensitivity analysis that excludes every AI-assisted label replaces it (see "Labels").
 
 ## Purpose
 
@@ -74,6 +74,5 @@ By split, the synthetic cases are train 124, development 40 and test 52, and the
 
 ## Open items before v1 is final
 
-1. Human check of the 27 listed events (`review/human-check.txt`).
-2. Freeze the split (`split --freeze`) and regenerate the cases.
-3. Run the locked test evaluation once.
+1. Record the AI-label sensitivity analysis: the benchmark rebuilt on SigmaHQ's maintainer-verified recordings only.
+2. Record the one-time locked test evaluation.
