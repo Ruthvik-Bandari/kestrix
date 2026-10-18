@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from .. import ATTRIBUTION
 from .profile import SiteProfile
 
 Severity = Literal["info", "low", "medium", "high"]
@@ -59,6 +60,7 @@ class Timings(BaseModel):
 
 
 class Report(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     notice: str = NOTICE
     requested_url: str
     final_url: str

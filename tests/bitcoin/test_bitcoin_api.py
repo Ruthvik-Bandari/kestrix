@@ -137,7 +137,7 @@ def test_scan_request_validation(client: TestClient, payload: dict[str, object])
 def test_migration_plan(client: TestClient) -> None:
     response = client.get("/api/bitcoin/migration/p2tr")
     assert response.status_code == 200
-    assert set(response.json()) == {"address_type", "urgency", "summary", "steps", "cautions"}
+    assert set(response.json()) == {"generated_by", "address_type", "urgency", "summary", "steps", "cautions"}
     assert response.json()["address_type"] == "P2TR"
 
 
@@ -157,6 +157,7 @@ def test_guardian(app: FastAPI, client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert set(body) == {
+        "generated_by",
         "intent",
         "addresses",
         "ignored_addresses",

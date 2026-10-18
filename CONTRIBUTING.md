@@ -12,7 +12,7 @@ You need:
 - Docker for the detection-repair engine tests.
 
 ```bash
-git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git kestrix
+git clone https://github.com/Ruthvik-Bandari/kestrix.git kestrix
 cd kestrix
 uv sync --all-extras                 # runtime, [ai], [exif] and dev dependencies from uv.lock
 uv run kestrix detect engine-up    # pinned Elasticsearch 8.19.3 on 127.0.0.1:9200

@@ -12,7 +12,7 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .. import __version__
+from .. import ATTRIBUTION, __version__
 
 
 def canonical_json(obj: object) -> bytes:
@@ -54,6 +54,7 @@ def now() -> str:
 
 def run_manifest(started: str, **extra: object) -> dict[str, object]:
     return {
+        "generated_by": ATTRIBUTION,
         "kestrix_version": __version__,
         "git_sha": _git_sha(),
         "python": sys.version.split()[0],

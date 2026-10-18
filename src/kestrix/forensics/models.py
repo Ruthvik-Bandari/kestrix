@@ -11,6 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from .. import ATTRIBUTION
+
 Severity = Literal["info", "low", "medium", "high"]
 ExifStatus = Literal["ok", "no_exif", "not_image", "pillow_not_installed", "unreadable", "too_many_pixels"]
 UrlLevel = Literal["none", "low", "medium", "high"]
@@ -97,6 +99,7 @@ class ExifData(BaseModel):
 
 
 class FileReport(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     filename: str = Field(description="File name as supplied, without directories or control characters.")
     size: int = Field(description="Size in bytes.")
     hashes: Hashes
@@ -122,6 +125,7 @@ class UrlRequest(BaseModel):
 
 
 class UrlReport(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     url: str = Field(description="The URL as analysed, with surrounding whitespace removed.")
     scheme: str | None = Field(description="'http' or 'https', or null when the URL was given without one.")
     host: str = Field(description="Host name in its ASCII form; international names appear as punycode (xn--).")

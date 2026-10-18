@@ -6,7 +6,7 @@ import getpass
 
 import typer
 
-from . import __version__
+from . import ATTRIBUTION, __version__
 from .bitcoin.cli import app as bitcoin_app
 from .core import config
 from .detect.cli import app as detect_app
@@ -26,8 +26,8 @@ app.add_typer(config_app, name="config")
 
 @app.command()
 def version() -> None:
-    """Print the installed version."""
-    typer.echo(__version__)
+    """Print the installed version and author."""
+    typer.echo(f"{__version__} ({ATTRIBUTION})")
 
 
 @app.command()
@@ -43,7 +43,7 @@ def dashboard(
 
     extra = frozenset() if host in {"127.0.0.1", "localhost", "::1"} else frozenset({host})
     url = f"http://{'localhost' if host in {'127.0.0.1', '::1'} else host}:{port}"
-    typer.echo(f"Kestrix {__version__} dashboard at {url}  (API schema: {url}/api/openapi.json)")
+    typer.echo(f"{ATTRIBUTION}, version {__version__}. Dashboard at {url}  (API schema: {url}/api/openapi.json)")
     if open_browser:
         import threading
         import webbrowser

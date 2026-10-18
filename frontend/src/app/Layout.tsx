@@ -51,7 +51,11 @@ function SystemStatus() {
           {settings.isPending ? "Checking AI key…" : keyOn ? "AI guardian ready" : "AI guardian not set up"}
         </li>
       </ul>
-      {health.data ? <p className="text-ink-3">Version {health.data.version} · runs on this computer</p> : null}
+      {health.data ? <p className="text-ink-3">
+          Version {health.data.version} · runs on this computer
+          <br />
+          Kestrix by Ruthvik Bandari
+        </p> : null}
     </div>
   );
 }

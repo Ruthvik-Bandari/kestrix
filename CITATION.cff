@@ -3,10 +3,10 @@ message: "If you use Kestrix in your work, please cite it as below."
 type: software
 title: "Kestrix: a local-first security workbench"
 abstract: >-
-  Kestrix is a local-first security workbench with four modules: Sigma
+  Kestrix is a local-first security workbench with five modules: Sigma
   detection repair validated by replay on a pinned Elasticsearch, file and
   URL forensics, passive website exposure checks, and Bitcoin quantum
-  key-exposure scanning. It ships as one Python package with a CLI and a
+  key-exposure scanning, plus explainable email analysis. It ships as one Python package with a CLI and a
   local dashboard.
 authors:
   - family-names: Bandari
@@ -14,7 +14,7 @@ authors:
 version: 0.1.0
 date-released: "2026-10-14"
 license: Apache-2.0
-repository-code: "https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer"
+repository-code: "https://github.com/Ruthvik-Bandari/kestrix"
 keywords:
   - security
   - sigma

@@ -18,6 +18,7 @@ from typing import Any
 
 import yaml
 
+from .. import ATTRIBUTION
 from ..core.errors import Reason, Rejected
 from ..core.evidence import now, run_manifest
 from .candidate import MAX_CANDIDATES, Candidate, apply
@@ -119,7 +120,12 @@ class _Run:
         self.t0 = time.perf_counter()
         self.inputs = inputs
         self.engine = engine
-        self.report: dict[str, Any] = {"schema_version": SCHEMA_VERSION, "outcome": None, "reason": None}
+        self.report: dict[str, Any] = {
+            "schema_version": SCHEMA_VERSION,
+            "generated_by": ATTRIBUTION,
+            "outcome": None,
+            "reason": None,
+        }
 
     def finish(self, outcome: Outcome, reason: str | None = None, **fields: object) -> dict[str, Any]:
         self.report.update(fields, outcome=outcome.value, reason=reason)

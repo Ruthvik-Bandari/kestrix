@@ -9,6 +9,7 @@ from kestrix.mail import api
 from kestrix.server.app import body_limit
 
 REPORT_KEYS = {
+    "generated_by",
     "schema_version",
     "notice",
     "sha256",

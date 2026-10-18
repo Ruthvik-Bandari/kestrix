@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from .. import ATTRIBUTION
 from ..core.errors import Rejected
 from . import cases
 from .engine import PINNED_IMAGE, PINNED_VERSION, Elasticsearch
@@ -94,6 +95,7 @@ def run_case(case_id: str) -> dict[str, Any]:
 def parse(body: RuleBody) -> dict[str, Any]:
     rule = parse_rule(body.rule)
     return {
+        "generated_by": ATTRIBUTION,
         "title": rule.title,
         "id": rule.rule_id,
         "sha256": rule.sha256,

@@ -11,6 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from .. import ATTRIBUTION
+
 MAX_EVIDENCE_CHARS = 300
 MAX_SUBJECT_CHARS = 200
 
@@ -55,6 +57,7 @@ class Counts(BaseModel):
 
 
 class MailReport(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     schema_version: Literal[1] = 1
     notice: str = NOTICE
     sha256: str = Field(description="SHA-256 of the raw message bytes.")

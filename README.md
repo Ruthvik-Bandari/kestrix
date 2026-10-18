@@ -1,6 +1,6 @@
 # Kestrix
 
-[![CI](https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/actions/workflows/ci.yml)
+[![CI](https://github.com/Ruthvik-Bandari/kestrix/actions/workflows/ci.yml/badge.svg)](https://github.com/Ruthvik-Bandari/kestrix/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
@@ -267,7 +267,7 @@ The design decisions are recorded in [docs/adr](docs/adr). The research plan beh
 ## Development
 
 ```bash
-git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git kestrix
+git clone https://github.com/Ruthvik-Bandari/kestrix.git kestrix
 cd kestrix
 uv sync --all-extras
 uv run kestrix detect engine-up       # for the engine-backed tests

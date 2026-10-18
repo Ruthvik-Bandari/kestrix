@@ -22,7 +22,7 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from .. import __version__
+from .. import ATTRIBUTION, __version__
 from ..bitcoin.api import router as bitcoin_router
 from ..core import config
 from ..core.errors import Reason, Rejected
@@ -155,7 +155,7 @@ def create_app(extra_hosts: frozenset[str] = frozenset()) -> FastAPI:
 
     @app.get("/api/health", tags=["platform"])
     def health() -> dict[str, object]:
-        return {"status": "ok", "version": __version__, "modules": list(MODULES)}
+        return {"status": "ok", "version": __version__, "generated_by": ATTRIBUTION, "modules": list(MODULES)}
 
     @app.get("/api/settings", tags=["platform"])
     def settings() -> dict[str, bool]:

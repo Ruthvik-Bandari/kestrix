@@ -5,7 +5,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .. import ATTRIBUTION
 
 
 class AddressType(StrEnum):
@@ -77,11 +79,13 @@ class ScanSummary(BaseModel):
 
 
 class ScanResult(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     results: list[AddressAssessment]
     summary: ScanSummary
 
 
 class MigrationPlan(BaseModel):
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
     address_type: AddressType
     urgency: Literal["now", "if_spent"]
     summary: str
@@ -100,6 +104,8 @@ class GuardianIntent(StrEnum):
 class GuardianResult(BaseModel):
     """Intent classification. ``model_summary`` is model-written text and is untrusted;
     every other field is either validated or produced by Kestrix itself."""
+
+    generated_by: str = Field(default=ATTRIBUTION, description="Tool and author that produced this report.")
 
     intent: GuardianIntent
     addresses: list[str]

@@ -6,7 +6,7 @@ If you find a vulnerability in Kestrix, report it privately so it can be fixed b
 
 Use GitHub private vulnerability reporting:
 
-1. Open the [new security advisory form](https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/security/advisories/new) for this repository.
+1. Open the [new security advisory form](https://github.com/Ruthvik-Bandari/kestrix/security/advisories/new) for this repository.
 2. Describe the issue, the affected version or commit, and the steps to reproduce it. A minimal proof of concept helps.
 3. Say whether you want to be credited, and under what name.
 

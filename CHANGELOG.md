@@ -6,6 +6,8 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- Every report, export, API response from the analysis routes, run manifest and the `/api/health` body now carries `generated_by: "Kestrix by Ruthvik Bandari"`. `kestrix version` and the dashboard show the author.
+- The repository moved to https://github.com/Ruthvik-Bandari/kestrix.
 - **Breaking:** the project is renamed to Kestrix. The package is `kestrix` (was `aegis-sec-ai`), the command is `kestrix` (was `aegis-sec`), the import packages are `kestrix` and `kestrixbench`, environment variables start with `KESTRIX_`, and the config directory is `kestrix`. The benchmark split seed stays `aegis-bench-v1` so the frozen split is unchanged. The pre-rename state is tagged `pre-kestrix-rename`.
 - The detection-repair Sigma subset now covers the four idioms that excluded most SigmaHQ rules ([ADR 0002](docs/adr/0002-sigma-subset-common-idioms.md)): selections written as lists of field maps, the `|all` modifier suffix, and `1 of` / `all of` quantifiers over name patterns or `them`. Each has a test on the pinned engine.
 - **Breaking:** in `POST /api/detect/parse`, `selections` is now `{name: [[predicate, ...], ...]}`, a list of alternative maps, and each predicate includes `match_all`. Candidate predicate specs accept an optional `match_all`.
@@ -91,5 +93,5 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
 
 - The CTPPO attack-path prototype that previously lived in this repository. It remains in git history.
 
-[Unreleased]: https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Ruthvik-Bandari/kestrix/releases/tag/v0.1.0

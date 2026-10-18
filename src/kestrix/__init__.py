@@ -1,3 +1,6 @@
 """Kestrix: local-first security workbench."""
 
 __version__ = "0.1.0"
+__author__ = "Ruthvik Bandari"
+# Stamped on every report, export and run manifest Kestrix produces.
+ATTRIBUTION = f"Kestrix by {__author__}"

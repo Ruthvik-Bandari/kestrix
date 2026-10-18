@@ -8,6 +8,7 @@ from forensics_samples import pe_bytes
 from kestrix.forensics import api
 
 FILE_KEYS = {
+    "generated_by",
     "filename",
     "size",
     "hashes",
@@ -19,7 +20,18 @@ FILE_KEYS = {
     "exif_status",
     "findings",
 }
-URL_KEYS = {"url", "scheme", "host", "unicode_host", "registrable_domain", "score", "level", "score_note", "findings"}
+URL_KEYS = {
+    "generated_by",
+    "url",
+    "scheme",
+    "host",
+    "unicode_host",
+    "registrable_domain",
+    "score",
+    "level",
+    "score_note",
+    "findings",
+}
 
 
 def test_file_upload(client: TestClient) -> None:
