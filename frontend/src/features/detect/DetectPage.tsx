@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";

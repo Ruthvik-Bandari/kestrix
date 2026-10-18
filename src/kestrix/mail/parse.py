@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Bounded parsing of one RFC 5322 message into the facts the analyzers need.
 
 The stdlib ``email`` package with ``policy.default`` does the MIME work. Every structure an

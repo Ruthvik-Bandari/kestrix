@@ -1,4 +1,6 @@
 #!/bin/bash -l
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Run on the transfer node: ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/fetch_history.sh'
 # Full-history bare clone of SigmaHQ for natural-fault mining (about 50 MB). Mining reads history
 # only up to the pinned commit, so later upstream commits never enter the benchmark.

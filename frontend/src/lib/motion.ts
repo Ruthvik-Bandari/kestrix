@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
+
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

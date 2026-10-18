@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """``kestrix detect`` commands.
 
 Exit codes: 0 repaired or unchanged; 2 invalid input; 3 engine unavailable;

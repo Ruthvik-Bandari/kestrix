@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Human review of OTRF candidate positives (plan section 11, "Label and license record").
 
 ``write_sheet`` resolves the OTRF events that supported rules matched during replay and writes,

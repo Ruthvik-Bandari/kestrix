@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { compact } from "../../lib/format";
 import { ChartFrame, MARGIN, useWidth } from "./ChartFrame";
 

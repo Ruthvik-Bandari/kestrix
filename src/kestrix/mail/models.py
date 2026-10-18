@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Response models for saved-message analysis.
 
 A report carries reason codes, hosts, header values needed to explain a finding, and hashes.

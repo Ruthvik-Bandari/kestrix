@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Outbound URL validation shared by modules that make network requests.
 
 Only http(s) URLs are allowed. Resolved addresses in private, loopback, link-local

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Quality checks over the acquired sources (plan section 11).
 
 Reports are aggregate: counts, reason codes, rule ids and repository paths. No event

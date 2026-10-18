@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Optional spend-history lookup on the public mempool.space API.
 
 Only used when the user asks for it: the queried addresses are sent to mempool.space.

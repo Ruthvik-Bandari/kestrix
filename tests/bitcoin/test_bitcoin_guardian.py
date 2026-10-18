@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Guardian intent classification with a fake Anthropic client; no API calls."""
 
 from __future__ import annotations

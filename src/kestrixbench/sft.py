@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Supervised fine-tuning examples for M1 (plan section 12, "Training examples").
 
 Each example pairs the exact B2 prompt for an impaired case with its reference repair:

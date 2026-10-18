@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { Verdict } from "../../components/ui";
 import type { DetectReport } from "../../lib/types";
 import { EngineHint } from "./EngineHint";

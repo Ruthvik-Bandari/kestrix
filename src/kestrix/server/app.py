@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """FastAPI application serving the JSON API and the bundled dashboard.
 
 The server is meant for the user's own machine. Every request passes ``_LocalOnly``:

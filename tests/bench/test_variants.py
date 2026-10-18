@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Impairment variants: ECS conversion, verification on the pinned engine, and case output."""
 
 import json

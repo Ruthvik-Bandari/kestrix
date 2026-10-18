@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 /// <reference types="vitest/config" />
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";

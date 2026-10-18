@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Generate the bundled detection-repair demo cases (synthetic, labeled fixtures).
 
 Run from the repo root: ``uv run python scripts/build_detect_cases.py``. Output goes to

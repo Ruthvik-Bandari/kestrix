@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Autouse safety nets: no test resolves DNS, reaches a host, or sees the user's real Anthropic key."""
 
 from __future__ import annotations

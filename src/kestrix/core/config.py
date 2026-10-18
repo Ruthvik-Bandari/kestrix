@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Per-user settings stored on the user's own machine.
 
 API keys are read from the environment first, then from a config file created with

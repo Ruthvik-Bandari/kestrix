@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Quantum-exposure risk for Bitcoin addresses, with plain-language explanations.
 
 The threat model: a sufficiently large quantum computer running Shor's algorithm could

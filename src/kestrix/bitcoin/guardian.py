@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Optional natural-language front door, using the user's own Anthropic API key.
 
 The model only classifies a message into a fixed intent schema. It never runs anything:

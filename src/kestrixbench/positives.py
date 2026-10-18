@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Find positive events for supported SigmaHQ rules by replay on the pinned Elasticsearch.
 
 Every supported rule (one that parses and converts) is replayed against one disposable index

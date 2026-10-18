@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """``kestrix bitcoin`` commands.
 
 Exit codes: 0 success, 2 rejected input, 3 upstream service or AI key unavailable.

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """B2: an unmodified open model that proposes structured candidates (plan section 12).
 
 The model receives the same evidence as B0 and B1:

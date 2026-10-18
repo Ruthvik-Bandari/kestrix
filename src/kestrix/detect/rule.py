@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Parser for the bounded single-event Sigma subset (plan section 5, "Version one semantics").
 
 Supported: one process_creation/windows rule; named selections written as a field map or a

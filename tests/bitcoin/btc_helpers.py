@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Test helpers for the Bitcoin tests: known addresses, mempool.space bodies, a fake Anthropic client."""
 
 from __future__ import annotations

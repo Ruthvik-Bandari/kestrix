@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
+
 /** Save text as a file without leaving the page (no server round-trip). */
 export function downloadText(filename: string, text: string, type = "application/json"): void {
   const url = URL.createObjectURL(new Blob([text], { type }));

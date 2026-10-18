@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Offline lexical phishing heuristics for a single URL.
 
 The URL is parsed as text only: it is never fetched, resolved or followed. Each check is a

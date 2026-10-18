@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 
 /** Last-resort screen when a page fails to load or render. */

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """ADR 0002 idioms verified on the pinned Elasticsearch: conversion success is not proof."""
 
 import os

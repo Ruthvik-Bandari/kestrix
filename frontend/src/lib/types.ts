@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
+
 /** Response shapes mirrored from the FastAPI source (src/kestrix/**). */
 
 export type Severity = "info" | "low" | "medium" | "high";

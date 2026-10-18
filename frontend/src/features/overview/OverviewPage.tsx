@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Icon, type IconName } from "../../components/Icon";

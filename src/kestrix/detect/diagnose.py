@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Deterministic diagnosis: field coverage and failure-family hypotheses (FR02, FR03).
 
 Hypotheses come from schema evidence and labeled replay differences. Several may hold

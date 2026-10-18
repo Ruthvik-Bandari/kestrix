@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Streamed, bounded static analysis of one file: hashes, entropy, format and findings.
 
 Nothing here executes, decompresses or renders the file. Memory stays bounded by one

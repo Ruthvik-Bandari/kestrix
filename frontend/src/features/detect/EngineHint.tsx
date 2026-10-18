@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { CopyButton } from "../../components/ui";
 
 const COMMAND = "kestrix detect engine-up";

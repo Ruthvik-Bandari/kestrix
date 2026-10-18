@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Pinned public data sources for the detection-repair benchmark (plan section 11).
 
 Every source is fixed to an exact commit and carries its license record. Changing a pin is a

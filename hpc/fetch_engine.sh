@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Run on the transfer node: ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/fetch_engine.sh'
 # Downloads the pinned Elasticsearch 8.19.3 Linux tarball, verifies it against the SHA-512 pinned
 # here (not fetched alongside it), and unpacks it under scratch. The cluster has no Docker, so the

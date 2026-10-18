@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Replay a rule through the engine and score matches against labels (FR05, section 10)."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Read-only EXIF extraction through the optional Pillow extra (``kestrix[exif]``).
 
 Only the metadata Pillow parses while opening the file is read; pixel data is never

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Structured repair candidate envelope and bounded patch application (section 9).
 
 A candidate may change only selection values or modifiers, the condition, an added

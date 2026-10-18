@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Result types shared by the Bitcoin scanner, migration planner, API and CLI."""
 
 from __future__ import annotations

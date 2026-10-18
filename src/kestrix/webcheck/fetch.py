@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Network side of the web check: one GET (plus up to five redirects) and one TLS handshake.
 
 Every hop is validated with :func:`kestrix.core.netguard.check_url` and the request is

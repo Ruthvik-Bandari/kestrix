@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { useId } from "react";
 import { setTheme, useTheme, type ThemeChoice } from "../lib/theme";
 import { Icon, type IconName } from "./Icon";

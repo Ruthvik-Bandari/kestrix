@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { cx } from "../../components/ui";
 import type { Counts, ReplayResult } from "../../lib/types";
 

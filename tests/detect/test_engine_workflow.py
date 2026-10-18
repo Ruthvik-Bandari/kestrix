@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """End-to-end tests against the pinned Elasticsearch (skipped when it is not running)."""
 
 import json

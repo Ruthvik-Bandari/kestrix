@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Every report and run manifest names the tool and its author."""
 
 from typer.testing import CliRunner

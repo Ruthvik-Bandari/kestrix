@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Pure evaluators for response headers, cookies and TLS results (no network access)."""
 
 from __future__ import annotations

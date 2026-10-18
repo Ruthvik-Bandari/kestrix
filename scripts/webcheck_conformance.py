@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Live conformance run of `kestrix webcheck` against badssl.com's known-broken endpoints.
 
 Run from the repo root: ``uv run python scripts/webcheck_conformance.py``. It makes real network

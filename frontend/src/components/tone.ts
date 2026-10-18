@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import type { IconName } from "./Icon";
 import type { Severity } from "../lib/types";
 

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Content-addressed evidence store and run provenance (plan section 7)."""
 
 from __future__ import annotations

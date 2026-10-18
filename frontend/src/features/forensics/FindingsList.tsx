@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { Badge } from "../../components/ui";
 import { severityLabel, severityTone } from "../../components/tone";
 import type { ForensicFinding } from "../../lib/types";

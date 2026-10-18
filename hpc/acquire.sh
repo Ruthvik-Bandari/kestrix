@@ -1,4 +1,6 @@
 #!/bin/bash -l
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Run on the transfer node (compute nodes have no internet; the transfer node is CentOS 7, so it
 # uses a uv-managed Python and the standard-library-only acquire step, not the project venv):
 #   ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/acquire.sh'

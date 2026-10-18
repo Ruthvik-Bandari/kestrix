@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Local Hugging Face inference for B2 (cluster GPU job only; needs the ``gpu`` dependency group).
 
 The model loads from a local snapshot fetched on the transfer node at a pinned revision, with

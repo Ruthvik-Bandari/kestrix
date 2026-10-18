@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import type { Tone } from "../../components/tone";
 import type { CandidateEntry, Counts, DetectReport, Family, Outcome, Patch, ReplayResult } from "../../lib/types";
 

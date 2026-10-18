@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Pinned Elasticsearch replay engine (plan section 10, "Engine fidelity").
 
 The loader writes only to disposable ``cg-replay-*`` indexes. Queries run through

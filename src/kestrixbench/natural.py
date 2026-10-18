@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Natural maintenance faults mined from SigmaHQ's own history (plan section 11, provenance ``natural``).
 
 Each commit that modified a Windows process_creation rule is a maintenance event. The version

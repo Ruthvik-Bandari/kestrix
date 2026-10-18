@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
+
 const units = ["bytes", "KB", "MB", "GB"];
 
 export function formatBytes(n: number): string {

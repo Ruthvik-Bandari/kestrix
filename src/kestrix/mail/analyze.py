@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Analyze one saved message: parse, run every analyzer, and derive a verdict.
 
 Verdict rules, applied in order:

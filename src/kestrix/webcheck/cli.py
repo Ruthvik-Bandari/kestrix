@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """``kestrix webcheck`` command. Exit codes: 0 ok, 2 rejected input or target, 3 unreachable."""
 
 from __future__ import annotations

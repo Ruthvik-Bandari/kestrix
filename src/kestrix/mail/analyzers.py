@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Explainable checks over a parsed message: authentication, sender, links and attachments.
 
 Each analyzer is a pure function ``ParsedMessage -> list[Finding]``. Every finding is a weak

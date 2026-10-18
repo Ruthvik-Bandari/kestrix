@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Run on the login node (Rocky 9, same as the compute nodes) after cloning or pulling:
 #   ssh explorer 'cd ~/kestrix && bash hpc/setup_env.sh'       # CPU jobs
 #   ssh explorer 'cd ~/kestrix && bash hpc/setup_env.sh gpu'   # adds torch/transformers for B2/M1

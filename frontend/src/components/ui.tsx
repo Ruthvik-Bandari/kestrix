@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ApiError } from "../lib/api";
 import { downloadText } from "../lib/download";

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Creates an isolated data root for the AI-label sensitivity check: sources are symlinked
 # read-only, the replay report and review files are copied, so nothing in the main root changes.
 #   bash hpc/sensitivity_setup.sh

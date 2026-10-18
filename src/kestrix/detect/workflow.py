@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """End-to-end diagnose → repair → validate workflow shared by the CLI and API.
 
 Outcomes (plan section 8): ``repaired``, ``unchanged``, ``abstained``, ``unsupported``,

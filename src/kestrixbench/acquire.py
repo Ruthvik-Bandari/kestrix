@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Fetch each pinned source at its exact commit and record a license and content manifest.
 
 Uses a shallow fetch of the pinned commit plus a sparse checkout, so only the directories the

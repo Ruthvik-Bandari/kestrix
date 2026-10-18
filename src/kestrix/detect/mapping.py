@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Environment field mappings (the processing pipeline) and Lucene conversion."""
 
 from __future__ import annotations

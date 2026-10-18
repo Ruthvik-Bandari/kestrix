@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse

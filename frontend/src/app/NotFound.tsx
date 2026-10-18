@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { Link } from "react-router";
 import { PageHeader } from "../components/ui";
 import { useTitle } from "../lib/useTitle";

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Deterministic repair candidates (baseline B0, plan sections 9 and 12).
 
 Generators propose small, bounded edits from schema and replay evidence. They make no

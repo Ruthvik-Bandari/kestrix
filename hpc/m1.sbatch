@@ -1,4 +1,6 @@
 #!/bin/bash -l
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 #SBATCH --job-name=kestrix-m1
 #SBATCH --account=aai6610.202610
 #SBATCH --partition=gpu

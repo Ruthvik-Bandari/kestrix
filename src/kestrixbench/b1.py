@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """B1: lexical retrieval of reviewed training repairs (plan section 12).
 
 Memory: every *train*-split case whose fault is repairable. Its repair is recovered by diffing the

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Site profile: what kind of site the scanned page is, from evidence on the page itself.
 
 A missing CSP or framing protection matters most where there is something to steal or click:

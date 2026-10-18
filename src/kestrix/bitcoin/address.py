@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Bitcoin address and raw public key parsing, standard library only.
 
 Base58Check addresses are verified with their double-SHA-256 checksum. Segwit

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "./ui";
 

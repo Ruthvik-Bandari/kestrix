@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Root-grouped train / development / locked-test split (plan section 11, "Version one benchmark").
 
 A root is a supported SigmaHQ rule with at least one verified positive event: its own SigmaHQ

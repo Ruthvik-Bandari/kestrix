@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Orchestrates fetch, TLS probe, evaluation and grading into one report."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Replay of supported rules against regression and OTRF pools, on the pinned engine (synthetic data)."""
 
 import json

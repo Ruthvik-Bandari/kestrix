@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari and the BitShield (Team ACE) contributors
+# SPDX-License-Identifier: Apache-2.0
 """Step-by-step migration plans per address type.
 
 Plans only describe what the user does in their own wallet. Kestrix never builds,

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Synthetic messages and attachments for the mail tests. Nothing here is real mail."""
 
 import io

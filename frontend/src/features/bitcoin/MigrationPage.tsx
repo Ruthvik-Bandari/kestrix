@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+// SPDX-License-Identifier: Apache-2.0
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { Icon } from "../../components/Icon";

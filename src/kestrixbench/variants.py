@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Impairment variants for each benchmark root (plan section 11, "Version one benchmark").
 
 For every root rule in the split manifest, a healthy control (expected: unchanged) is written and

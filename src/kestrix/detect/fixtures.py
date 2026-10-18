@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Labeled event fixtures and schema profiling (FR01, FR02)."""
 
 from __future__ import annotations

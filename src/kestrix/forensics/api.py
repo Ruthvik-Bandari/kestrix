@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """HTTP endpoints for file and URL forensics.
 
 Uploads are parsed straight from the request stream with a running byte count, so an

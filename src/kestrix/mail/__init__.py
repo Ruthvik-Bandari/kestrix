@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Explainable, offline analysis of saved email messages (.eml).
 
 Nothing in this package renders HTML, follows a link, opens an attachment or sends anything

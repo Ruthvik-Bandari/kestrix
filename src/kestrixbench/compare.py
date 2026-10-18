@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Paired comparison of repair systems on identical cases (plan section 13, "Comparison design").
 
 Every system must have been evaluated on exactly the same case ids; anything else is refused. For

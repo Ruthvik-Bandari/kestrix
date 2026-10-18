@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """M1: LoRA supervised fine-tuning of the B2 base model (plan sections 12 and 14).
 
 Trains on the ``train`` SFT examples only, and reports evaluation loss on ``development``. The loss

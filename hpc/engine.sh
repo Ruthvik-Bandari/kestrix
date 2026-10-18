@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Sourced by Slurm jobs that need the pinned Elasticsearch. Starts Elasticsearch 8.19.3 (from
 # hpc/fetch_engine.sh) for this job only, on 127.0.0.1 with a job-scoped data directory, and stops
 # it and deletes its data when the job exits. Sets ES_URL.

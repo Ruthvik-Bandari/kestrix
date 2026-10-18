@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """mempool.space client, exercised only through httpx.MockTransport."""
 
 from __future__ import annotations

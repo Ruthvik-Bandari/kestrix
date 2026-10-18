@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 from mail_samples import BODY_SENTINEL, message, nested_multipart, zip_bytes
 

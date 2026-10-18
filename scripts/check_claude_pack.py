@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Structural validator for the CyberGuard Claude Code starter pack.
 
 Checks structure and template invariants only: the 16 cg-* skill directories and

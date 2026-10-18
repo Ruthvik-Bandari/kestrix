@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Response models for file and URL forensics.
 
 Every field carries a plain-language description; it appears in the API docs and is the

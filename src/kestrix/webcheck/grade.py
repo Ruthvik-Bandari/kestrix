@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Deterministic grading rubric.
 
 Start at 100 and subtract 25 per high, 10 per medium and 4 per low finding (info costs

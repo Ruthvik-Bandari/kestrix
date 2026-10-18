@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Benchmark evaluation of a repair system over the generated cases (plan section 13).
 
 Each case runs through the system on the pinned engine. Results are scored against the case's

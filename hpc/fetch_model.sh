@@ -1,4 +1,6 @@
 #!/bin/bash -l
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 # Run on the transfer node: ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/fetch_model.sh'
 # Downloads the B2 base model at the revision pinned in src/kestrixbench/b2.py (weights, config and
 # tokenizer only; no repository code) and writes a SHA-256 manifest next to it.
