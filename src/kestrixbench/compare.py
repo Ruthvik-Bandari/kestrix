@@ -75,10 +75,18 @@ def compare(
         "note": "Exploratory: a small benchmark of synthetic faults on public telemetry; intervals resample roots.",
         "systems": {},
     }
+    provable = {case_id for case_id, r in rows[baseline].items() if _provable(r)}
+    out["provable_cases"] = len(provable)
+    # The highest validated success any system can reach: a repair on a case without a validation
+    # suite is provisional by design, so those cases can never count as validated successes.
+    out["best_possible_success"] = round(len(provable) / len(ids), 4)
     kinds = sorted({r["kind"] for r in rows[baseline].values()})
     for name, by_case in sorted(rows.items()):
         entry: dict[str, Any] = {
             "success_rate": round(sum(r["success"] for r in by_case.values()) / len(by_case), 4),
+            "success_of_provable": round(sum(r["success"] for r in by_case.values()) / len(provable), 4)
+            if provable
+            else None,
             "outcome_match_rate": round(sum(r.get("outcome_match", False) for r in by_case.values()) / len(by_case), 4),
             "wrong_change_rate": round(sum(r["wrong_change"] for r in by_case.values()) / len(by_case), 4),
             "abstention_rate": round(sum(r["abstained"] for r in by_case.values()) / len(by_case), 4),
@@ -104,14 +112,23 @@ def compare(
     return out
 
 
+def _provable(row: dict[str, Any]) -> bool:
+    """A case whose expected outcome can be reached as a validated success."""
+    return row.get("expected", "repaired") != "repaired" or bool(row.get("has_validation", True))
+
+
 def markdown(result: dict[str, Any]) -> str:
     lines = [
         f"Paired on {result['cases']} cases from {result['roots']} roots"
         + f" ({' + '.join(result['splits'])} split)"
         + f"; baseline {result['baseline']}. {result['note']}",
         "",
-        "| System | Validated success | Outcome match (incl. provisional) | Wrong change | Abstained | Δ success vs baseline (95% CI) | Won / lost |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        f"Best possible validated success: {result['best_possible_success']:.3f}"
+        + f" ({result['provable_cases']} of {result['cases']} cases can be proven; a repair on a case with only one"
+        + " recorded attack has nothing left to validate it on, so it is provisional by design).",
+        "",
+        "| System | Validated success | Of provable cases | Outcome match (incl. provisional) | Wrong change | Abstained | Δ success vs baseline (95% CI) | Won / lost |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for name, s in result["systems"].items():
         vs = s.get("vs_baseline")
@@ -121,7 +138,9 @@ def markdown(result: dict[str, Any]) -> str:
             else "—"
         )
         won = f"{vs['cases_won']} / {vs['cases_lost']}" if vs else "—"
+        share = s.get("success_of_provable")
+        provable = f"{share:.3f}" if share is not None else "—"
         lines.append(
-            f"| {name} | {s['success_rate']:.3f} | {s['outcome_match_rate']:.3f} | {s['wrong_change_rate']:.3f} | {s['abstention_rate']:.3f} | {delta} | {won} |"
+            f"| {name} | {s['success_rate']:.3f} | {provable} | {s['outcome_match_rate']:.3f} | {s['wrong_change_rate']:.3f} | {s['abstention_rate']:.3f} | {delta} | {won} |"
         )
     return "\n".join(lines) + "\n"
