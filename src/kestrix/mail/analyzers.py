@@ -41,6 +41,9 @@ _SHORTENERS = _words(
 )
 _SCRIPT_SCHEMES = ("javascript:", "data:", "vbscript:")
 _INSECURE_LOGIN_PATH = re.compile(r"log-?[io]n|sign-?in|verify|password|passwd")
+# Click-tracking redirectors: a tracking word in a host label or path segment, or an opaque query token.
+_TRACKING_HOST_LABEL = re.compile(r"^(?:click|clicks|track|tracking|trk|links?|email|e|t|ct|u\d+|url\d*|mail)$")
+_TRACKING_PATH = re.compile(r"/(?:ls/click|wf/click|click|clicks|track|trk|c|r|e|l|redirect)(?:/|$)")
 _NUMERIC_HOST = re.compile(r"(?:0x[0-9a-f]+|\d+)(?:\.(?:0x[0-9a-f]+|\d+)){0,3}")
 _HOSTLIKE = re.compile(r"(?:[^\W_](?:[\w-]*[^\W_])?\.)+([a-z]{2,63}|xn--[a-z0-9-]+)", re.IGNORECASE)
 _URLISH_TEXT = re.compile(r"(?:[a-z][a-z0-9+.-]*://)?([^\s/?#@:]+)(?::\d+)?(?:[/?#]\S*)?", re.IGNORECASE)
@@ -416,14 +419,24 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
         hits.append((finding_id, host, _finding(finding_id, severity, title, explanation, evidence)))
 
     shown = _shown_host(link)
-    if shown is not None and not aligned(shown, host) and from_domain and aligned(shown, from_domain):
+    own_domain_text = shown is not None and not aligned(shown, host) and from_domain and aligned(shown, from_domain)
+    if own_domain_text and _looks_like_tracking(host, parts.path):
         hit(
             "mail.links.sender_domain_redirect",
             "low",
-            "Link text shows the sender's own site but routes through another host",
+            "Link text shows the sender's own site but routes through a click tracker",
             "Newsletters route links through a click-tracking service this way. It matters only if the sender "
             "itself is in doubt, which the authentication findings cover.",
             f"text shows {shown}; link goes to {host}",
+        )
+    elif own_domain_text:
+        hit(
+            "mail.links.sender_domain_mismatch",
+            "medium",
+            "Link text shows the sender's own site but goes to another site",
+            "The link does not look like click tracking. A compromised or forged sender can disguise a link "
+            "this way; check the real destination before clicking.",
+            f"text shows {shown}; link goes to {host}{parts.path[:80]}",
         )
     elif shown is not None and not aligned(shown, host):
         hit(
@@ -488,6 +501,12 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
 
 
 # Anchor text like ``www.dunholtquill.example`` counts as a shown host; plain words do not.
+def _looks_like_tracking(host: str, path: str) -> bool:
+    return any(_TRACKING_HOST_LABEL.match(label) for label in host.split(".")[:-2]) or bool(
+        _TRACKING_PATH.search(path.lower())
+    )
+
+
 def _shown_host(link: Link) -> str | None:
     """The host an HTML anchor's visible text shows, when the text reads as a web address."""
     if link.source != "html" or not link.text or any(char.isspace() for char in link.text.strip()):

@@ -223,6 +223,12 @@ def test_tracking_redirect_behind_the_senders_own_domain_is_low() -> None:
     assert report.verdict == "clean"
 
 
+def test_senders_own_domain_text_on_a_non_tracking_link_is_medium() -> None:
+    report = link_report('<a href="https://evil.example/login">www.example.com</a>')
+    assert ids(report) == ["mail.links.sender_domain_mismatch"]
+    assert report.verdict == "suspicious"
+
+
 def test_link_text_showing_another_host() -> None:
     report = link_report('<a href="https://evil.example/login">www.paypal.com</a>')
     assert ids(report) == ["mail.links.text_href_mismatch"]

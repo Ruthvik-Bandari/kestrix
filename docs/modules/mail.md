@@ -107,7 +107,8 @@ Links come from HTML `<a href>` anchors (with their visible text) and from `http
 | `id` | Severity | Raised when |
 | --- | --- | --- |
 | `mail.links.text_href_mismatch` | high | An anchor's visible text reads as a web address in another organization than both the link's real host and the From domain. |
-| `mail.links.sender_domain_redirect` | low | The visible text shows the sender's own domain, but the link goes through another host. Newsletter click tracking does this; a forged sender is caught by the authentication findings instead. |
+| `mail.links.sender_domain_redirect` | low | The visible text shows the sender's own domain and the link goes through a host or path that looks like click tracking (for example `click.`, `/ls/click`). Newsletters do this; a forged sender is caught by the authentication findings instead. |
+| `mail.links.sender_domain_mismatch` | medium | The visible text shows the sender's own domain, but the link goes to another site that does not look like click tracking. |
 | `mail.links.userinfo` | high | The URL has text before `@`, as in `https://bank.com@evil.example`, which opens `evil.example`. |
 | `mail.links.script_scheme` | high | The href uses `javascript:`, `data:` or `vbscript:`, also when split by spaces, tabs or control characters. |
 | `mail.links.ip_host` | medium | The host is an IP address, including numeric forms such as `3232235777`. |
