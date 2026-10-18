@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { BackgroundWords } from "../components/BackgroundWords";
 import { Icon, type IconName } from "../components/Icon";
 import { ThemeSwitch } from "../components/ThemeSwitch";
 import { cx, Skeleton } from "../components/ui";
@@ -130,7 +131,8 @@ export function Layout() {
   }, [menuOpen]);
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+    <div className="relative isolate min-h-dvh lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+      <BackgroundWords />
       <a
         href="#main"
         className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"
@@ -139,7 +141,7 @@ export function Layout() {
       </a>
 
       {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-rail px-4 py-5 lg:flex">
+      <aside className="sticky top-0 z-10 hidden h-dvh flex-col border-r border-line bg-rail px-4 py-5 lg:flex">
         <NavLink to="/" className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
           <Brand />
         </NavLink>
@@ -189,7 +191,7 @@ export function Layout() {
         </nav>
       </header>
 
-      <main id="main" ref={mainRef} tabIndex={-1} className="min-w-0 px-4 pt-7 pb-16 outline-none sm:px-6 lg:px-10 lg:pt-10">
+      <main id="main" ref={mainRef} tabIndex={-1} className="relative z-10 min-w-0 px-4 pt-7 pb-16 outline-none sm:px-6 lg:px-10 lg:pt-10">
         <div className="mx-auto max-w-[72rem]">
           <Suspense fallback={<PageFallback />}>
             <Outlet />

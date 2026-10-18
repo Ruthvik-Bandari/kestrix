@@ -24,22 +24,23 @@
 }
 
 /*
- * Tokens. Neutrals carry a faint tint toward the brand hue (352, signal magenta).
+ * Tokens. Neutrals are warm (ivory and parchment in light mode, warm charcoal in dark).
+ * The brand hue stays 352, signal magenta.
  * The accent is reserved for primary actions, the current location and focus.
  * Status hues (critical 25, high 50, medium 85, low 245, ok 150) always ship with
  * an icon and a label; they never carry meaning by color alone.
  */
 :root {
   color-scheme: light;
-  --bg: oklch(0.985 0.003 352);
-  --rail: oklch(0.962 0.005 352);
-  --surface: oklch(1 0 0);
-  --inset: oklch(0.968 0.004 352);
-  --line: oklch(0.9 0.006 352);
-  --line-strong: oklch(0.64 0.012 352);
-  --ink: oklch(0.22 0.012 352);
-  --ink-2: oklch(0.4 0.012 352);
-  --ink-3: oklch(0.5 0.01 352);
+  --bg: oklch(0.982 0.006 85);
+  --rail: oklch(0.958 0.009 85);
+  --surface: oklch(0.996 0.003 85);
+  --inset: oklch(0.962 0.008 85);
+  --line: oklch(0.9 0.011 85);
+  --line-strong: oklch(0.64 0.014 75);
+  --ink: oklch(0.24 0.008 70);
+  --ink-2: oklch(0.42 0.01 70);
+  --ink-3: oklch(0.51 0.01 70);
   --accent: oklch(0.54 0.2 352);
   --accent-hover: oklch(0.49 0.19 352);
   --on-accent: oklch(1 0 0);
@@ -65,21 +66,21 @@
 
   --diff-add-bg: oklch(0.955 0.04 150);
   --diff-del-bg: oklch(0.955 0.03 25);
-  --shadow: 0 1px 2px oklch(0.22 0.012 352 / 0.06), 0 4px 16px oklch(0.22 0.012 352 / 0.05);
+  --shadow: 0 1px 2px oklch(0.24 0.008 70 / 0.06), 0 4px 16px oklch(0.24 0.008 70 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: oklch(0.175 0.008 352);
-    --rail: oklch(0.152 0.008 352);
-    --surface: oklch(0.207 0.009 352);
-    --inset: oklch(0.235 0.01 352);
-    --line: oklch(0.3 0.01 352);
-    --line-strong: oklch(0.52 0.014 352);
-    --ink: oklch(0.95 0.005 352);
-    --ink-2: oklch(0.8 0.008 352);
-    --ink-3: oklch(0.7 0.01 352);
+    --bg: oklch(0.262 0.003 100);
+    --rail: oklch(0.226 0.003 70);
+    --surface: oklch(0.302 0.004 90);
+    --inset: oklch(0.33 0.005 90);
+    --line: oklch(0.37 0.006 90);
+    --line-strong: oklch(0.56 0.01 85);
+    --ink: oklch(0.95 0.006 85);
+    --ink-2: oklch(0.82 0.008 85);
+    --ink-3: oklch(0.72 0.01 85);
     --accent: oklch(0.74 0.17 352);
     --accent-hover: oklch(0.79 0.14 352);
     --on-accent: oklch(0.18 0.02 352);
@@ -111,15 +112,15 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: oklch(0.175 0.008 352);
-  --rail: oklch(0.152 0.008 352);
-  --surface: oklch(0.207 0.009 352);
-  --inset: oklch(0.235 0.01 352);
-  --line: oklch(0.3 0.01 352);
-  --line-strong: oklch(0.52 0.014 352);
-  --ink: oklch(0.95 0.005 352);
-  --ink-2: oklch(0.8 0.008 352);
-  --ink-3: oklch(0.7 0.01 352);
+  --bg: oklch(0.262 0.003 100);
+  --rail: oklch(0.226 0.003 70);
+  --surface: oklch(0.302 0.004 90);
+  --inset: oklch(0.33 0.005 90);
+  --line: oklch(0.37 0.006 90);
+  --line-strong: oklch(0.56 0.01 85);
+  --ink: oklch(0.95 0.006 85);
+  --ink-2: oklch(0.82 0.008 85);
+  --ink-3: oklch(0.72 0.01 85);
   --accent: oklch(0.74 0.17 352);
   --accent-hover: oklch(0.79 0.14 352);
   --on-accent: oklch(0.18 0.02 352);
@@ -422,5 +423,57 @@
   .field,
   .panel {
     border: 1px solid CanvasText;
+  }
+}
+
+/*
+ * Background words: faint security terms drift behind the content. Decorative only
+ * (aria-hidden, no pointer events). Reduced-motion users get a still, fainter field.
+ */
+.bg-words {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --word-peak: 0.035;
+}
+:root[data-theme="dark"] .bg-words {
+  --word-peak: 0.04;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bg-words {
+    --word-peak: 0.04;
+  }
+}
+.bg-word {
+  position: absolute;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: clamp(0.95rem, 1.6vw, 1.6rem);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: var(--ink);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: bg-word-drift var(--word-duration) ease-in-out var(--word-delay) infinite;
+}
+@keyframes bg-word-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  25%,
+  75% {
+    opacity: var(--word-peak);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--word-dx), -30px, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-word {
+    animation: none;
+    opacity: calc(var(--word-peak) * 0.6);
   }
 }

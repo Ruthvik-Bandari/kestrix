@@ -8,6 +8,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 - Every report, export, API response from the analysis routes, run manifest and the `/api/health` body now carries `generated_by: "Kestrix by Ruthvik Bandari"`. `kestrix version` and the dashboard show the author.
 - The repository moved to https://github.com/Ruthvik-Bandari/kestrix.
+- The dashboard uses warm neutrals (ivory in light mode, warm charcoal in dark) and shows faint security terms drifting behind the content. They are decorative, hidden from screen readers, and still when the system asks for reduced motion.
 - Every source file carries an SPDX copyright and Apache-2.0 header, and a test keeps it that way. Bitcoin module files also credit the BitShield (Team ACE) contributors.
 - **Breaking:** the project is renamed to Kestrix. The package is `kestrix` (was `aegis-sec-ai`), the command is `kestrix` (was `aegis-sec`), the import packages are `kestrix` and `kestrixbench`, environment variables start with `KESTRIX_`, and the config directory is `kestrix`. The benchmark split seed stays `aegis-bench-v1` so the frozen split is unchanged. The pre-rename state is tagged `pre-kestrix-rename`.
 - The detection-repair Sigma subset now covers the four idioms that excluded most SigmaHQ rules ([ADR 0002](docs/adr/0002-sigma-subset-common-idioms.md)): selections written as lists of field maps, the `|all` modifier suffix, and `1 of` / `all of` quantifiers over name patterns or `them`. Each has a test on the pinned engine.
