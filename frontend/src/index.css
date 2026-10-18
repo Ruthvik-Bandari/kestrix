@@ -572,32 +572,6 @@
       conic-gradient(from 200deg, var(--h1), var(--h2), var(--h3), var(--h4), var(--h1)) border-box;
     border: 2px solid transparent;
   }
-
-  /* Tilt card: pointer-driven 3D tilt and a moving sheen (components/TiltCard.tsx). The
-     component only writes the custom properties for fine pointers without reduced motion. */
-  .tilt {
-    --rx: 0deg;
-    --ry: 0deg;
-    --mx: 50%;
-    --my: 50%;
-    transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-    transition: transform 420ms var(--ease-out-expo);
-  }
-  .tilt[data-active="true"] {
-    transition-duration: 90ms;
-  }
-  .tilt-sheen {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    opacity: 0;
-    background: radial-gradient(22rem circle at var(--mx) var(--my), var(--sheen), transparent 45%);
-    transition: opacity 260ms var(--ease-out-quart);
-  }
-  .tilt[data-active="true"] .tilt-sheen {
-    opacity: 1;
-  }
 }
 
 /* Scroll storytelling: sections rise in once they enter the viewport (lib/useReveal.ts).
@@ -691,9 +665,6 @@
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
-  .tilt {
-    transform: none !important;
-  }
 }
 
 @media (forced-colors: active) {
@@ -710,8 +681,7 @@
   }
   .panel::before,
   .glass::before,
-  .holo-rim::before,
-  .tilt-sheen {
+  .holo-rim::before {
     display: none;
   }
 }
@@ -766,4 +736,470 @@
   mask-image: linear-gradient(to top, #000 10%, transparent 85%);
   opacity: 0.6;
   animation: grid-drift 3.2s linear infinite;
+}
+
+/*
+ * Landing story: "without vs with Kestrix" scenes (features/landing). The Kestrix state wipes
+ * in from the left; --scan (0-100%) is how far. Scene animations run only in the interactive
+ * comparison, only in a revealed chapter and only in the state that is on screen, so the
+ * static reduced-motion layout never animates.
+ */
+.scroll-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--h1), var(--h2), var(--h3), var(--h4));
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    animation: scroll-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress {
+    display: none;
+  }
+}
+@keyframes scroll-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.scroll-cue-mouse {
+  display: block;
+  width: 1.375rem;
+  height: 2.125rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 999px;
+  position: relative;
+}
+.scroll-cue-mouse > span {
+  position: absolute;
+  left: 50%;
+  top: 0.4rem;
+  width: 4px;
+  height: 7px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: cue 1.8s var(--ease-out-quart) infinite;
+}
+@keyframes cue {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.chapter-number {
+  font-size: clamp(4.5rem, 13vw, 10rem);
+  line-height: 0.8;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in oklch, var(--h2) 55%, transparent);
+  background: linear-gradient(160deg, color-mix(in oklch, var(--h1) 30%, transparent), transparent 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.chapter h2 {
+  scroll-margin-top: 6rem;
+}
+
+.stage-glow::before {
+  content: "";
+  position: absolute;
+  inset: 6% 4% -4%;
+  z-index: -1;
+  border-radius: 3rem;
+  background: conic-gradient(
+    from 120deg,
+    color-mix(in oklch, var(--h1) 26%, transparent),
+    color-mix(in oklch, var(--h2) 26%, transparent),
+    color-mix(in oklch, var(--h3) 22%, transparent),
+    color-mix(in oklch, var(--h4) 18%, transparent),
+    color-mix(in oklch, var(--h1) 26%, transparent)
+  );
+  filter: blur(60px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.compare-stage {
+  border: 1px solid var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    var(--shadow),
+    0 40px 90px -40px var(--glow);
+  background: var(--surface-solid);
+}
+.compare-with {
+  clip-path: inset(0 calc(100% - var(--scan)) 0 0);
+  transition: clip-path 900ms var(--ease-out-expo);
+}
+.compare-stage.is-dragging .compare-with,
+.compare-stage.is-dragging .compare-beam {
+  transition: none;
+}
+.compare-beam {
+  left: var(--scan);
+  width: 0;
+  transition: left 900ms var(--ease-out-expo);
+}
+.compare-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -1.5px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--h1), var(--h2), var(--h3), var(--h4));
+  box-shadow:
+    0 0 14px 2px color-mix(in oklch, var(--h1) 55%, transparent),
+    0 0 40px 6px color-mix(in oklch, var(--h2) 30%, transparent);
+}
+.compare-knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0.55rem 0.6rem;
+  border-radius: 999px;
+  color: white;
+  background: linear-gradient(120deg, var(--btn-a), var(--btn-b));
+  border: 1px solid oklch(1 0 0 / 0.35);
+  box-shadow: 0 8px 26px -6px var(--glow);
+  /* Centered on the line mid-way; tucked fully inside the stage at either end. */
+  transform: translate(calc(-50% + (50 - var(--scan-n, 0)) * 1%), -50%);
+}
+.compare-stage:has(.compare-range:focus-visible) .compare-knob {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.compare-range {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: ew-resize;
+}
+.compare-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1px;
+  height: 1px;
+}
+.compare-range::-moz-range-thumb {
+  width: 1px;
+  height: 1px;
+  border: 0;
+}
+
+.scene-pane {
+  background:
+    radial-gradient(40rem 22rem at 100% 0%, color-mix(in oklch, var(--h2) 7%, transparent), transparent 70%),
+    var(--surface-solid);
+}
+.scene-pane-with {
+  background:
+    linear-gradient(color-mix(in oklch, var(--h1) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--h1) 9%, transparent) 1px, transparent 1px),
+    radial-gradient(44rem 26rem at 0% 0%, color-mix(in oklch, var(--h1) 14%, transparent), transparent 70%),
+    radial-gradient(36rem 22rem at 100% 100%, color-mix(in oklch, var(--h3) 10%, transparent), transparent 70%),
+    var(--surface-solid);
+  background-size:
+    28px 28px,
+    28px 28px,
+    auto,
+    auto,
+    auto;
+}
+.device {
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    0 24px 50px -28px oklch(0.2 0.08 290 / 0.45);
+}
+.scene-pane-with .device {
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    0 0 0 1px color-mix(in oklch, var(--h1) 35%, transparent),
+    0 24px 60px -24px color-mix(in oklch, var(--h1) 45%, transparent);
+}
+
+.xray-mark {
+  --mark: var(--crit-mark);
+  border-radius: 6px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  background: color-mix(in oklch, var(--mark) 14%, transparent);
+  box-shadow:
+    0 0 0 2px var(--mark),
+    0 0 18px -2px var(--mark);
+}
+.xray-crit {
+  --mark: var(--crit-mark);
+}
+.xray-high {
+  --mark: var(--high-mark);
+}
+.xray-med {
+  --mark: var(--med-mark);
+}
+.xray-low {
+  --mark: var(--low-mark);
+}
+.xray-neutral {
+  --mark: var(--line-strong);
+}
+.pin {
+  box-shadow:
+    0 0 0 2px var(--surface-solid),
+    0 4px 12px -2px oklch(0 0 0 / 0.35);
+}
+
+.stamp {
+  transform: rotate(-5deg);
+  color: var(--crit);
+  border-color: var(--crit-mark);
+  background: color-mix(in oklch, var(--crit-bg) 80%, transparent);
+  box-shadow: 0 10px 30px -14px var(--crit-mark);
+}
+.stamp-ok {
+  color: var(--ok);
+  border-color: var(--ok-mark);
+  background: color-mix(in oklch, var(--ok-bg) 80%, transparent);
+  box-shadow: 0 10px 30px -14px var(--ok-mark);
+}
+.stamp-high {
+  color: var(--high);
+  border-color: var(--high-mark);
+  background: color-mix(in oklch, var(--high-bg) 80%, transparent);
+}
+
+.fake-cursor-ring {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid var(--h1);
+  opacity: 0;
+}
+
+.terminal {
+  background: linear-gradient(160deg, oklch(0.2 0.05 285), oklch(0.15 0.04 290));
+  border: 1px solid oklch(1 0 0 / 0.12);
+  box-shadow: 0 30px 70px -30px oklch(0.15 0.1 290 / 0.7);
+}
+.terminal code {
+  font-size: inherit;
+}
+
+.rail-dot {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface-solid);
+  transition:
+    height 300ms var(--ease-out-expo),
+    background 300ms;
+}
+.rail-dot.is-active {
+  height: 28px;
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--h1), var(--h2), var(--h3));
+}
+
+.doc-icon .doc-page,
+.doc-icon .doc-fold {
+  transition: transform 900ms var(--ease-out-expo);
+  transform-origin: 0% 100%;
+}
+.doc-icon.is-peeled .doc-page {
+  transform: rotate(-8deg) translate(-6px, -4px);
+  box-shadow: 0 0 0 2px var(--crit-mark), 0 18px 40px -16px var(--crit-mark);
+}
+.doc-icon.is-peeled .doc-fold {
+  transform: translate(4px, -6px) rotate(14deg);
+}
+.grade-ring {
+  background:
+    radial-gradient(closest-side, var(--surface-solid) 78%, transparent 80%),
+    conic-gradient(var(--crit-mark) calc(var(--grade, 35) * 1%), var(--inset) 0);
+  box-shadow: 0 0 40px -10px var(--crit-mark);
+}
+.url-host {
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--crit-mark) 14%, transparent);
+  box-shadow: 0 0 0 2px var(--crit-mark);
+}
+.eye-read {
+  color: var(--ink);
+  border-radius: 6px;
+  background: linear-gradient(90deg, color-mix(in oklch, var(--h4) 40%, transparent), color-mix(in oklch, var(--h4) 40%, transparent)) no-repeat
+    0 100% / 100% 40%;
+}
+.demo-site.is-scanned {
+  background: color-mix(in oklch, var(--h1) 5%, transparent);
+}
+.scan-sweep {
+  background: linear-gradient(180deg, transparent, color-mix(in oklch, var(--h1) 22%, transparent) 50%, transparent);
+  background-size: 100% 40%;
+  background-repeat: no-repeat;
+  background-position: 0 -60%;
+}
+.event-hit {
+  background: color-mix(in oklch, var(--crit-mark) 10%, transparent);
+}
+
+/* Motion: only in the interactive comparison, in a revealed chapter, in the visible state. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="shown"] .compare-stage .compare-layer[data-visible="true"] {
+    & .story-step,
+    & .outcome-card,
+    & .finding-row,
+    & .event-row {
+      animation: scene-rise 700ms var(--ease-out-expo) both;
+    }
+    & .stamp {
+      animation: stamp-in 650ms var(--ease-out-expo) 250ms both;
+    }
+    & .event-hit {
+      animation:
+        scene-rise 700ms var(--ease-out-expo) both,
+        alert-flash 1.6s ease-in-out 1.4s 2;
+    }
+    & .missed {
+      animation: missed 2.4s ease-in-out infinite;
+    }
+    & .fake-cursor {
+      animation: cursor-drift 5.5s var(--ease-out-quart) 600ms infinite both;
+    }
+    & .fake-cursor-ring {
+      animation: cursor-click 5.5s linear 600ms infinite;
+    }
+    & .entropy-bar {
+      transform-origin: 50% 100%;
+      animation: bar-grow 900ms var(--ease-out-expo) both;
+    }
+    & .meter-fill {
+      transform-origin: 0 50%;
+      animation: bar-grow-x 1.2s var(--ease-out-expo) both;
+    }
+    & .scan-sweep {
+      animation: sweep 2.8s linear infinite;
+    }
+    & .eye-read {
+      animation: eye 3s ease-in-out infinite;
+    }
+    & .opened-window {
+      animation: scene-rise 600ms var(--ease-out-expo) 3.2s both;
+    }
+  }
+  .live-dot {
+    animation: live 1.6s ease-in-out infinite;
+  }
+}
+@keyframes scene-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-12deg) scale(1.7);
+  }
+}
+@keyframes alert-flash {
+  50% {
+    box-shadow: inset 4px 0 0 var(--crit-mark);
+    background: color-mix(in oklch, var(--crit-mark) 24%, transparent);
+  }
+}
+@keyframes missed {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes cursor-drift {
+  0% {
+    transform: translate(-170px, -120px);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  40%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+}
+@keyframes cursor-click {
+  0%,
+  44% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  52% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  54% {
+    opacity: 1;
+    transform: scale(0.6);
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes bar-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes sweep {
+  to {
+    background-position: 0 160%;
+  }
+}
+@keyframes eye {
+  50% {
+    background-size: 100% 70%;
+  }
+}
+@keyframes live {
+  50% {
+    opacity: 0.35;
+  }
 }

@@ -1,0 +1,84 @@
+{
+  "provenance": "Real Kestrix output: a scan of a throwaway demo site served on 127.0.0.1 by scripts/build_landing_samples.py, with deliberately weak headers.",
+  "site_title": "Northbank Demo Shop",
+  "status_code": 200,
+  "response_headers": {
+    "Content-Type": "text/html; charset=utf-8",
+    "Server": "DemoServer/1.0",
+    "Set-Cookie": "session=demo123; Path=/"
+  },
+  "grade": "F",
+  "score": 35,
+  "findings": [
+    {
+      "id": "https.not_used",
+      "severity": "high",
+      "title": "Site is served over plain HTTP",
+      "recommendation": "Serve the site over HTTPS (free certificates are available from Let's Encrypt) and redirect HTTP to HTTPS.",
+      "evidence": null
+    },
+    {
+      "id": "csp.missing",
+      "severity": "medium",
+      "title": "Content-Security-Policy missing",
+      "recommendation": "Start with \"default-src 'self'; object-src 'none'; base-uri 'none'\" and tighten from there.",
+      "evidence": null
+    },
+    {
+      "id": "framing.unprotected",
+      "severity": "medium",
+      "title": "Page can be embedded by other sites",
+      "recommendation": "Send \"Content-Security-Policy: frame-ancestors 'self'\" (or X-Frame-Options: DENY).",
+      "evidence": null
+    },
+    {
+      "id": "cookie.no_httponly",
+      "severity": "low",
+      "title": "Cookie session lacks HttpOnly",
+      "recommendation": "Add HttpOnly to session and authentication cookies.",
+      "evidence": "cookie 'session'"
+    },
+    {
+      "id": "cookie.no_samesite",
+      "severity": "low",
+      "title": "Cookie session has no SameSite",
+      "recommendation": "Add SameSite=Lax (or Strict).",
+      "evidence": "cookie 'session'"
+    },
+    {
+      "id": "xcto.missing",
+      "severity": "low",
+      "title": "X-Content-Type-Options missing",
+      "recommendation": "Send 'X-Content-Type-Options: nosniff'.",
+      "evidence": null
+    },
+    {
+      "id": "referrer.weak",
+      "severity": "low",
+      "title": "Referrer-Policy missing or permissive",
+      "recommendation": "Send 'Referrer-Policy: strict-origin-when-cross-origin' (or no-referrer).",
+      "evidence": null
+    },
+    {
+      "id": "disclosure.server_version",
+      "severity": "low",
+      "title": "Server header reveals software version",
+      "recommendation": "Remove the version from the Server header (e.g. nginx 'server_tokens off').",
+      "evidence": "DemoServer/1.0"
+    },
+    {
+      "id": "permissions_policy.missing",
+      "severity": "info",
+      "title": "Permissions-Policy missing",
+      "recommendation": "Disable features you do not use, e.g. 'Permissions-Policy: camera=(), microphone=(), geolocation=()'.",
+      "evidence": null
+    },
+    {
+      "id": "coop.missing",
+      "severity": "info",
+      "title": "Cross-Origin-Opener-Policy missing",
+      "recommendation": "Send 'Cross-Origin-Opener-Policy: same-origin' if the site does not rely on cross-origin popups.",
+      "evidence": null
+    }
+  ]
+}

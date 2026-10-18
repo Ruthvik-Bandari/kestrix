@@ -6,6 +6,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Landing page as "without vs with Kestrix" stories:** six interactive chapters (a fake invoice email, a detection rule silenced by a field rename, a program disguised as a PDF, a deceptive link, a weak website, exposed Bitcoin keys) with a draggable comparison beam and a keyboard toggle. Every verdict, finding, count and grade shown comes from real Kestrix output on synthetic inputs (`scripts/build_landing_samples.py`); a test fails if the email, file, URL or Bitcoin samples drift from what the code produces. Tilt cards were removed.
 - **Redesign:** the dashboard has a holographic look: iridescent gradients, glass panels, gradient headings and buttons, high-visibility focus rings, and tilt cards on pointer devices. A landing page at `/welcome` shows every tool, how each one works step by step, and the privacy and security principles, around an interactive 3D network globe. Each module page opens with a "How it works" panel (what it is for, the steps, when it helps, what it does not do). Animations stop under reduced motion; no dependencies were added.
 - Every report, export, API response from the analysis routes, run manifest and the `/api/health` body now carries `generated_by: "Kestrix by Ruthvik Bandari"`. `kestrix version` and the dashboard show the author.
 - The repository moved to https://github.com/Ruthvik-Bandari/kestrix.

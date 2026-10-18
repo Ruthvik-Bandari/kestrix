@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { LANDING_PATH } from "../../app/paths";
 import { Link } from "react-router";
 import { Icon, type IconName } from "../../components/Icon";
-import { TiltCard } from "../../components/TiltCard";
 import { cx, PageHeader, StatusPill } from "../../components/ui";
 import type { Tone } from "../../components/tone";
 import { useEngine, useSettings } from "../../lib/queries";
@@ -21,7 +20,7 @@ interface Module {
 function ModuleRow({ module, wide }: { module: Module; wide: boolean }) {
   return (
     <li className={cx("flex", wide && "lg:col-span-2")}>
-      <TiltCard className="flex w-full flex-col gap-5 rounded-2xl p-5 sm:p-6">
+      <div className="glass flex w-full flex-col gap-5 rounded-2xl p-5 sm:p-6">
         <div className="relative flex gap-4">
           <span className="flex size-11 flex-none items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--btn-a),var(--btn-b))] text-white shadow-[0_8px_22px_-8px_var(--glow)]">
             <Icon name={module.icon} size={21} />
@@ -42,7 +41,7 @@ function ModuleRow({ module, wide }: { module: Module; wide: boolean }) {
           </Link>
         ))}
         </div>
-      </TiltCard>
+      </div>
     </li>
   );
 }
