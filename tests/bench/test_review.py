@@ -183,3 +183,16 @@ def test_check_page_embeds_hostile_event_text_inertly(root):
     assert "default-src 'none'" in page  # no network access from the page
     with pytest.raises(ReviewError, match="not a review candidate"):
         render_check_page(root, ["otrf:nope:1"])
+
+
+def test_ignore_ai_labels_switch_keeps_only_human_labels(root, monkeypatch):
+    from aegisbench import __main__ as cli
+    from aegisbench.review import import_labels, set_label
+
+    write_sheet(root, _report())
+    import_labels(root, [{"event_id": E0, "label": "malicious", "rationale": "ai", "reviewer": "ai-consensus"}])
+    set_label(root, E1, "benign", "updater", "rb")
+    monkeypatch.delenv("AEGIS_IGNORE_AI_LABELS", raising=False)
+    assert cli._reviewed(root, _report()) == {E0: "malicious", E1: "benign"}
+    monkeypatch.setenv("AEGIS_IGNORE_AI_LABELS", "1")
+    assert cli._reviewed(root, _report()) == {E1: "benign"}

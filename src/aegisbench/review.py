@@ -438,3 +438,9 @@ def render_check_page(root: Path, event_ids: list[str]) -> str:
         )
     data = json.dumps(items).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     return _PAGE.replace("__DATA__", data)
+
+
+def ai_labeled_events(path: Path) -> set[str]:
+    """Event ids whose current label came from an AI reviewer."""
+    with path.open(encoding="utf-8", newline="") as fh:
+        return {r["event_id"] for r in csv.DictReader(fh) if (r.get("reviewer") or "").startswith(AI_REVIEWER_PREFIX)}

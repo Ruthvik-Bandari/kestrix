@@ -7,7 +7,7 @@ export PATH="$HOME/.local/bin:$PATH" UV_OFFLINE=1
 export NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost
 # Gives the bundled S3 repository plugin a region so it does not probe cloud metadata at startup.
 export AWS_REGION=us-east-1
-DATA="/scratch/$USER/aegis-sec/data"
+DATA="${AEGIS_DATA:-/scratch/$USER/aegis-sec/data}"  # override for a separate run, e.g. the sensitivity check
 ES_HOME="/scratch/$USER/aegis-sec/engine/elasticsearch-8.19.3"
 PORT=$((19200 + SLURM_JOB_ID % 700))
 ES_URL="http://127.0.0.1:$PORT"

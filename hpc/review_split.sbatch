@@ -11,7 +11,7 @@
 # deliberate step: `python -m aegisbench split --freeze --root ...`.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH" UV_OFFLINE=1
-DATA="/scratch/$USER/aegis-sec/data"
+DATA="${AEGIS_DATA:-/scratch/$USER/aegis-sec/data}"  # override for a separate run, e.g. the sensitivity check
 uv run --no-sync python -m aegisbench review-sheet --root "$DATA"
 uv run --no-sync python -m aegisbench review-status --root "$DATA" || true  # unreviewed rows are expected at first
 uv run --no-sync python -m aegisbench split --root "$DATA"

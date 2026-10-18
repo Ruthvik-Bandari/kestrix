@@ -63,7 +63,7 @@ SPLIT_SEED = "aegis-bench-v1"
 
 def _reviewed(root: Path, report: dict[str, object]) -> dict[str, str]:
     """Validated labels, or {} before review; invalid rows stop the run."""
-    from .review import ReviewError, candidates, read_labels
+    from .review import ReviewError, ai_labeled_events, candidates, read_labels
 
     path = root / "review" / "labels.csv"
     if not path.exists():
@@ -71,6 +71,10 @@ def _reviewed(root: Path, report: dict[str, object]) -> dict[str, str]:
     labels, problems = read_labels(path, set(candidates(root, report)))
     if problems:
         raise ReviewError(f"{len(problems)} invalid label rows; run review-status")
+    if os.environ.get("AEGIS_IGNORE_AI_LABELS") == "1":
+        # Sensitivity check: keep only human labels, so the benchmark rests on SigmaHQ's
+        # maintainer-verified recordings plus any human-reviewed events.
+        return {e: label for e, label in labels.items() if e not in ai_labeled_events(path)}
     return labels
 
 

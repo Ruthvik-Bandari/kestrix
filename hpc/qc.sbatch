@@ -9,6 +9,6 @@
 # Offline: verifies manifests and writes aggregate QC reports. Run hpc/acquire.sh first.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH" UV_OFFLINE=1
-DATA="/scratch/$USER/aegis-sec/data"
+DATA="${AEGIS_DATA:-/scratch/$USER/aegis-sec/data}"  # override for a separate run, e.g. the sensitivity check
 uv run --no-sync python -m aegisbench qc --root "$DATA"
 ls -l "$DATA/reports"
