@@ -20,7 +20,7 @@ def client():
 def test_health_and_security_headers(client):
     resp = client.get("/api/health")
     assert resp.status_code == 200
-    assert resp.json()["modules"] == ["detect", "forensics", "webcheck", "bitcoin"]
+    assert resp.json()["modules"] == ["detect", "forensics", "webcheck", "bitcoin", "mail"]
     assert "frame-ancestors 'none'" in resp.headers["content-security-policy"]
     assert resp.headers["x-content-type-options"] == "nosniff"
 

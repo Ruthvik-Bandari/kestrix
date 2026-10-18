@@ -33,6 +33,12 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- `kestrix mail`, offline analysis of one saved email message (`.eml`), as the first slice of [ADR 0003](docs/adr/0003-mail-module.md):
+  - bounded parsing with the stdlib `email` package (25 MiB, 500 headers per part, 16 KiB per header, MIME depth 10, 200 parts, 5 MiB of decoded text, 500 links); HTML is tokenized for links and visible text, never rendered;
+  - `auth`, `sender`, `links` and `attachments` analyzers with stable reason codes such as `mail.sender.reply_to_mismatch`;
+  - a verdict (`clean`, `suspicious`, `malicious`, `insufficient_evidence`) and a capped heuristic score that is not a probability;
+  - `kestrix mail analyze PATH` and `POST /api/mail/analyze` (multipart upload, streamed with a byte cap). `/api/health` now lists `mail`.
+  - Reports never contain the message body, link text or attachment bytes. No detection rates are claimed yet.
 - `kestrixbench`, a research package that is not shipped in the wheel:
   - fetches SigmaHQ, OTRF Security-Datasets and Atomic Red Team at their pinned commits;
   - records license and per-file SHA-256 manifests;

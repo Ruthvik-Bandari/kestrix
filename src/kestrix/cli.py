@@ -11,6 +11,7 @@ from .bitcoin.cli import app as bitcoin_app
 from .core import config
 from .detect.cli import app as detect_app
 from .forensics.cli import app as forensics_app
+from .mail.cli import app as mail_app
 from .webcheck.cli import app as webcheck_app
 
 app = typer.Typer(help="Kestrix: local-first security workbench.", no_args_is_help=True, add_completion=False)
@@ -18,6 +19,7 @@ app.add_typer(detect_app, name="detect", help="Diagnose, repair and replay Sigma
 app.add_typer(forensics_app, name="forensics", help="Hash, entropy and metadata analysis of files and URLs.")
 app.add_typer(webcheck_app, name="webcheck", help="Passive security checks of a website you own.")
 app.add_typer(bitcoin_app, name="bitcoin", help="Bitcoin address quantum-exposure scanning.")
+app.add_typer(mail_app, name="mail", help="Explainable analysis of saved email messages (.eml).")
 config_app = typer.Typer(help="Manage local settings and API keys.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 

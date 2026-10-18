@@ -14,12 +14,13 @@ The machine-readable schema is served at `GET /api/openapi.json`. To browse it, 
 - [Forensics](#forensics)
 - [Website check](#website-check)
 - [Bitcoin](#bitcoin)
+- [Mail](#mail)
 
 ## Quick example
 
 ```bash
 curl -s http://127.0.0.1:8765/api/health
-# {"status":"ok","version":"0.1.0","modules":["detect","forensics","webcheck","bitcoin"]}
+# {"status":"ok","version":"0.1.0","modules":["detect","forensics","webcheck","bitcoin","mail"]}
 
 curl -s -X POST http://127.0.0.1:8765/api/forensics/url \
   -H 'content-type: application/json' \
@@ -55,6 +56,7 @@ This blocks cross-site "simple" requests, such as an HTML form posting a multipa
 | --- | --- |
 | `POST /api/detect/run` | 60 MiB (62,914,560 bytes) |
 | `POST /api/forensics/file` | 51 MiB (53,477,376 bytes); the file itself is limited to 50 MiB while it streams |
+| `POST /api/mail/analyze` | 26 MiB (27,262,976 bytes); the message itself is limited to 25 MiB while it streams |
 | Every other route | 1 MiB (1,048,576 bytes) |
 
 ```json
@@ -105,7 +107,7 @@ Kestrix errors use one envelope:
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `GET /api/health` | none | `{"status": "ok", "version": "0.1.0", "modules": ["detect", "forensics", "webcheck", "bitcoin"]}` |
+| `GET /api/health` | none | `{"status": "ok", "version": "0.1.0", "modules": ["detect", "forensics", "webcheck", "bitcoin", "mail"]}` |
 | `GET /api/settings` | none | `{"anthropic_key_configured": bool}`. The key itself is never returned. |
 | `PUT /api/settings/anthropic-key` | `{"key": string \| null}`; a string must be 20 to 512 characters | `204 No Content`. `null` removes the stored key. |
 | `GET /api/openapi.json` | none | The OpenAPI schema. |
@@ -181,3 +183,20 @@ Routes are in [`bitcoin/api.py`](../src/kestrix/bitcoin/api.py); behavior is in 
 - An invalid address returns 400 `invalid_input` naming its position, for example `address #2`.
 - With `lookup_chain: true`, the hash-based addresses are sent to mempool.space. A lookup failure returns 502 `upstream_error`.
 - The guardian returns 503 `ai_key_missing` when no key is configured or the `[ai]` extra is not installed, and 502 `upstream_error` for Anthropic API failures. The key is checked after the body is validated. `model_summary` is unverified model text.
+
+## Mail
+
+The route is in [`mail/api.py`](../src/kestrix/mail/api.py); checks, verdict rules and limits are in [`docs/modules/mail.md`](modules/mail.md). Analysis is offline: links are not visited and attachments are not opened.
+
+| Route | Request | Response |
+| --- | --- | --- |
+| `POST /api/mail/analyze` | `multipart/form-data` with one file field named `file` (the raw `.eml` bytes); no other fields. Optional query parameters: `protected_domain` (repeatable, at most 20, each a host name) and `trusted_authserv_id` (repeatable, at most 5). | `MailReport`: `schema_version`, `notice`, `sha256`, `subject`, `from_address`, `verdict`, `heuristic_score`, `findings` (each with `id`, `analyzer`, `severity`, `title`, `explanation`, `evidence`), `counts` |
+
+```bash
+curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_domain=example-bank.com'
+```
+
+- A body that is not `multipart/form-data`, has no `file` field, or has extra fields returns 400 `invalid_input`.
+- The body is counted while it streams, and the request is refused with 413 `input_too_large` once it passes 25 MiB plus 64 KiB of multipart overhead.
+- Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels returns 400 `nesting_too_deep`; too many parts or headers, or an oversized header, return 413 `input_too_large`.
+- The report never contains the message body, link text or attachment bytes.

@@ -74,7 +74,7 @@ Data crosses a boundary at each of these points:
 | `Host` must be `127.0.0.1`, `localhost` or `[::1]` (HTTP 421 otherwise), which blocks DNS rebinding | `_LocalOnly` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Non-`GET`/`HEAD`/`OPTIONS` requests refused when `Sec-Fetch-Site` is cross-site or `Origin` is not an allowed host (HTTP 403) | `_LocalOnly._cross_site` in [`server/app.py`](../src/kestrix/server/app.py) |
 | No CORS headers, so other origins cannot read responses | [`server/app.py`](../src/kestrix/server/app.py) (no CORS middleware) |
-| Declared body size capped per route (1 MiB default, 60 MiB detect run, 51 MiB file upload) | `MAX_BODY_BYTES`, `LARGE_BODY_ROUTES` in [`server/app.py`](../src/kestrix/server/app.py) |
+| Declared body size capped per route (1 MiB default, 60 MiB detect run, 51 MiB file upload, 26 MiB mail upload) | `MAX_BODY_BYTES`, `LARGE_BODY_ROUTES` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Upload size counted while streaming; file held in an anonymous spooled temp file and never executed | [`forensics/api.py`](../src/kestrix/forensics/api.py) |
 | Strict CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, COOP `same-origin` on every response | `_SECURITY_HEADERS` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Static file paths resolved and confined to the bundle directory | `spa` route in [`server/app.py`](../src/kestrix/server/app.py) |
@@ -94,6 +94,7 @@ Data crosses a boundary at each of these points:
 | Uploaded file names reduced to a printable base name | `display_name` in [`forensics/analysis.py`](../src/kestrix/forensics/analysis.py) |
 | Image metadata read with Pillow restricted to four formats, pixel data never decoded, a pixel-count ceiling | [`forensics/exif.py`](../src/kestrix/forensics/exif.py) |
 | URL forensics never fetches or resolves the URL | [`forensics/url.py`](../src/kestrix/forensics/url.py) |
+| Email messages parsed with caps on size (25 MiB), headers, MIME depth and parts, decoded text and links; HTML tokenized for links and text only, never rendered; links never visited; archives listed from the central directory, never extracted; reports carry no body or attachment bytes | [`mail/parse.py`](../src/kestrix/mail/parse.py), [`mail/analyzers.py`](../src/kestrix/mail/analyzers.py) |
 
 ### Outbound requests
 

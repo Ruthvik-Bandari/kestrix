@@ -28,14 +28,19 @@ from ..core import config
 from ..core.errors import Reason, Rejected
 from ..detect.api import router as detect_router
 from ..forensics.api import router as forensics_router
+from ..mail.api import router as mail_router
 from ..webcheck.api import router as webcheck_router
 
 STATIC_DIR = Path(str(files("kestrix.server") / "static"))
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 MAX_BODY_BYTES = 1024 * 1024
-LARGE_BODY_ROUTES = {"/api/detect/run": 60 * 1024 * 1024, "/api/forensics/file": 51 * 1024 * 1024}
-MODULES = ("detect", "forensics", "webcheck", "bitcoin")
+LARGE_BODY_ROUTES = {
+    "/api/detect/run": 60 * 1024 * 1024,
+    "/api/forensics/file": 51 * 1024 * 1024,
+    "/api/mail/analyze": 26 * 1024 * 1024,
+}
+MODULES = ("detect", "forensics", "webcheck", "bitcoin", "mail")
 
 _STATUS = {
     Reason.INPUT_TOO_LARGE: 413,
@@ -161,7 +166,7 @@ def create_app(extra_hosts: frozenset[str] = frozenset()) -> FastAPI:
         config.set_secret("anthropic_api_key", body.key)
         return Response(status_code=204)
 
-    for router in (detect_router, forensics_router, webcheck_router, bitcoin_router):
+    for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
         app.include_router(router)
 
     @app.get("/{path:path}", include_in_schema=False)

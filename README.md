@@ -18,6 +18,7 @@ kestrix dashboard            # opens http://localhost:8765
 | **Detection repair** | SOC analysts, detection engineers, researchers | Diagnoses why a Sigma rule misses attacks or fires on benign activity, proposes the smallest safe fix, and proves it by replaying labeled events on a pinned Elasticsearch. |
 | **File and URL forensics** | Students, everyday users, incident responders | Hashes a file, measures entropy to spot packed or encrypted content, detects disguised file types, flags GPS data in photos, and scores links for phishing signs without opening them. |
 | **Website check** | Small site owners, developers | Grades the HTTPS, TLS, security headers and cookie settings of a site you own, and gives a concrete fix for each problem. |
+| **Mail analysis** | Everyday users, help desks, incident responders | Checks a saved email (`.eml`) offline: sender authentication results, mismatched sender addresses, deceptive links and risky attachments, with a reason for every finding. |
 | **Bitcoin quantum risk** | Bitcoin holders | Explains which address types reveal public keys that a future quantum computer could attack, and how to move funds to a safer address. |
 
 > Use Kestrix only on systems, files and websites you own or are authorized to assess.
@@ -31,6 +32,7 @@ kestrix dashboard            # opens http://localhost:8765
 - [Detection repair](#detection-repair)
 - [Forensics](#forensics)
 - [Website check](#website-check)
+- [Mail analysis](#mail-analysis)
 - [Bitcoin quantum risk](#bitcoin-quantum-risk)
 - [Security and privacy model](#security-and-privacy-model)
 - [Architecture](#architecture)
@@ -43,7 +45,7 @@ kestrix dashboard            # opens http://localhost:8765
 Requires Python 3.12 or newer.
 
 ```bash
-pip install kestrix                 # core: all four modules and the dashboard
+pip install kestrix                 # core: all five modules and the dashboard
 pip install "kestrix[exif]"         # + photo metadata (Pillow)
 pip install "kestrix[ai]"           # + the optional AI guardian (bring your own Anthropic key)
 ```
@@ -62,6 +64,7 @@ kestrix dashboard                                   # everything in the browser
 kestrix forensics file ~/Downloads/invoice.pdf      # hashes, entropy, type check
 kestrix forensics url "http://paypa1-login.example.top/verify"
 kestrix webcheck scan https://your-site.example
+kestrix mail analyze ~/Downloads/message.eml     # offline email checks
 kestrix bitcoin scan bc1q... 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 kestrix detect cases                                # 11 bundled demonstrations
 kestrix detect demo c03-noise-updater-temp
@@ -170,6 +173,28 @@ The result is an A–F grade from a documented rubric ([grade.py](src/kestrix/we
 Private, loopback and cloud-metadata addresses are refused unless you pass `--allow-private` for a lab
 host you own.
 
+## Mail analysis
+
+```bash
+kestrix mail analyze message.eml --protected-domain example-bank.com
+```
+
+Save a message as `.eml` from your mail client and Kestrix checks it without sending anything anywhere:
+
+- **Authentication:** SPF, DKIM and DMARC from the `Authentication-Results` header your provider added
+  (only the topmost one, or one from an `authserv-id` you trust).
+- **Sender:** Reply-To or Return-Path on another domain, and display names that show a different address
+  or the name of a domain you protect.
+- **Links:** link text that shows one site while the link opens another, credentials before `@`,
+  `javascript:` and `data:` links, IP and punycode hosts, shorteners and redirect parameters.
+- **Attachments:** executable and script types, double extensions such as `invoice.pdf.exe`, content
+  that does not match its name, macro-enabled Office files, and encrypted or program-carrying ZIPs
+  (listed, never extracted).
+
+The verdict is `clean`, `suspicious`, `malicious` or `insufficient_evidence`, with every finding explained.
+HTML is never rendered, links are never visited and attachments are never opened. The score is a heuristic,
+not a probability, and no detection rates are claimed yet. Details: [docs/modules/mail.md](docs/modules/mail.md).
+
 ## Bitcoin quantum risk
 
 ```bash
@@ -227,6 +252,7 @@ flowchart LR
     D["detect: parse, profile, replay, diagnose, repair, validate"]
     F["forensics: hashes, entropy, magic, EXIF, URL heuristics"]
     W["webcheck: guarded fetch, TLS probe, header/cookie checks"]
+    M["mail: bounded MIME parse, auth/sender/link/attachment checks"]
     B["bitcoin: address decoding, risk, migration, guardian"]
   end
   D --> ES[("Elasticsearch 8.19.3 (Docker, pinned digest)")]
