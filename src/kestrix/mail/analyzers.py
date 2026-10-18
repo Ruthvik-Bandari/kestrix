@@ -69,7 +69,14 @@ def aligned(a: str, b: str) -> bool:
     return org_domain(a) == org_domain(b)
 
 
-_ANALYZERS: dict[str, Analyzer] = {"auth": "auth", "sender": "sender", "links": "links", "attachments": "attachments"}
+_ANALYZERS: dict[str, Analyzer] = {
+    "auth": "auth",
+    "sender": "sender",
+    "lookalike": "lookalike",
+    "links": "links",
+    "attachments": "attachments",
+    "intent": "intent",
+}
 
 
 def _clip(text: str) -> str:
@@ -179,6 +186,20 @@ def _split_outside_quotes(value: str, separator: str | None) -> list[str]:
     return [piece.strip() for piece in pieces if piece.strip()]
 
 
+def trusted_results(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> AuthResults | None:
+    """The one Authentication-Results header to trust: the first from a trusted authserv-id, else the topmost."""
+    parsed = [parse_authentication_results(value) for value in msg.authentication_results]
+    if trusted_authserv_ids:
+        return next((item for item in parsed if item.authserv_id in trusted_authserv_ids), None)
+    return parsed[0] if parsed else None
+
+
+def dmarc_passed(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> bool:
+    """True when the trusted header records ``dmarc=pass``: the From domain itself sent the message."""
+    chosen = trusted_results(msg, trusted_authserv_ids)
+    return chosen is not None and any(r.method == "dmarc" and r.result == "pass" for r in chosen.results)
+
+
 def analyze_auth(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> list[Finding]:
     """Judge SPF, DKIM and DMARC from one trusted Authentication-Results header.
 
@@ -186,12 +207,10 @@ def analyze_auth(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = froz
     ``trusted_authserv_ids`` is given, the first header whose authserv-id is in it. Headers
     lower down can be written by anyone, including the sender.
     """
-    parsed = [parse_authentication_results(value) for value in msg.authentication_results]
+    chosen = trusted_results(msg, trusted_authserv_ids)
     if trusted_authserv_ids:
-        chosen = next((item for item in parsed if item.authserv_id in trusted_authserv_ids), None)
         missing = "None of the Authentication-Results headers came from a trusted authserv-id"
     else:
-        chosen = parsed[0] if parsed else None
         missing = "The message has no Authentication-Results header"
     if chosen is None:
         return [

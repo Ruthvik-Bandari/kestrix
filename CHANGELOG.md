@@ -43,6 +43,11 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   - a verdict (`clean`, `suspicious`, `malicious`, `insufficient_evidence`) and a capped heuristic score that is not a probability;
   - `kestrix mail analyze PATH` and `POST /api/mail/analyze` (multipart upload, streamed with a byte cap). `/api/health` now lists `mail`.
   - Reports never contain the message body, link text or attachment bytes. No detection rates are claimed yet.
+- The second mail slice of [ADR 0003](docs/adr/0003-mail-module.md):
+  - a `lookalike` analyzer that compares the From domain and link hosts with the protected domains: IDN homographs (`mail.lookalike.homograph`), ASCII look-alikes after homoglyph folding or within a small Damerau-Levenshtein distance (`mail.lookalike.domain`), a protected name inside another organization's host (`mail.lookalike.brand_in_host`), and labels that mix Latin with Cyrillic or Greek (`mail.lookalike.mixed_script`, also without protected domains);
+  - an `intent` analyzer with labeled, English-only heuristic cues for payment or bank-detail changes, gift-card requests, urgency, secrecy and credential requests, plus `mail.intent.bec_pattern` (high) when a payment or gift-card cue meets urgency or secrecy. Its evidence is the matched cue phrase, at most 60 characters;
+  - high findings from `lookalike` and `intent` now make a message `malicious`. The `analyzer` field gains the values `lookalike` and `intent`;
+  - an **Email check** dashboard page (`/mail`) for uploading an `.eml` with optional protected domains and trusted `authserv-id`, showing the verdict in words and icons, the heuristic score, findings grouped by severity and the raw JSON. The Overview lists it as a fifth tool.
 - `kestrixbench`, a research package that is not shipped in the wheel:
   - fetches SigmaHQ, OTRF Security-Datasets and Atomic Red Team at their pinned commits;
   - records license and per-file SHA-256 manifests;

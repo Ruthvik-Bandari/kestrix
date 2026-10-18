@@ -10,6 +10,7 @@ const Overview = lazy(() => import("../features/overview/OverviewPage"));
 const Detect = lazy(() => import("../features/detect/DetectPage"));
 const Webcheck = lazy(() => import("../features/webcheck/WebcheckPage"));
 const Forensics = lazy(() => import("../features/forensics/ForensicsPage"));
+const Mail = lazy(() => import("../features/mail/MailPage"));
 const Bitcoin = lazy(() => import("../features/bitcoin/BitcoinPage"));
 const Migration = lazy(() => import("../features/bitcoin/MigrationPage"));
 const Settings = lazy(() => import("../features/settings/SettingsPage"));
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "detect", Component: Detect },
       { path: "webcheck", Component: Webcheck },
       { path: "forensics", Component: Forensics },
+      { path: "mail", Component: Mail },
       { path: "bitcoin", Component: Bitcoin },
       { path: "bitcoin/migration/:addressType", Component: Migration },
       { path: "settings", Component: Settings },

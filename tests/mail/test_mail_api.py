@@ -106,3 +106,14 @@ def test_upload_must_be_multipart(client: TestClient) -> None:
     response = client.post("/api/mail/analyze", content=message(), headers={"content-type": "message/rfc822"})
     assert response.status_code == 400
     assert response.json()["reason"] == "invalid_input"
+
+
+def test_protected_domain_feeds_the_lookalike_analyzer(client: TestClient) -> None:
+    raw = message(sender="Billing <billing@paypa1.com>", auth=("mx.example.net; dmarc=pass",))
+    response = client.post(
+        "/api/mail/analyze", params=[("protected_domain", "paypal.com")], files={"file": ("msg.eml", raw)}
+    )
+    assert response.status_code == 200
+    finding = response.json()["findings"][0]
+    assert (finding["id"], finding["analyzer"], finding["severity"]) == ("mail.lookalike.domain", "lookalike", "high")
+    assert response.json()["verdict"] == "malicious"

@@ -1,12 +1,12 @@
 # Mail analysis
 
-The mail module checks one saved email message (an `.eml` file) for common phishing and malware-delivery signs and explains each one. It reads the sender authentication results your mail provider stamped on the message, compares the sender's addresses, and checks links and attachments. Use it on a message you are unsure about before you click, reply or open anything.
+The mail module checks one saved email message (an `.eml` file) for common phishing and malware-delivery signs and explains each one. It reads the sender authentication results your mail provider stamped on the message, compares the sender's addresses, looks for domains that imitate ones you protect, checks links and attachments, and looks for the wording of payment and credential scams. Use it on a message you are unsure about before you click, reply or open anything. It is available from the CLI, the API and the dashboard's **Email check** page.
 
-It is a set of heuristics, not a classifier. A `clean` verdict means none of the checks fired, not that the message is safe. Kestrix has not yet measured detection or false-positive rates for this module, so none are claimed. The design is recorded in [ADR 0003](../adr/0003-mail-module.md); this page describes the first delivery slice (parser plus the `auth`, `sender`, `links` and `attachments` analyzers). Source files are under [`src/kestrix/mail/`](../../src/kestrix/mail/).
+It is a set of heuristics, not a classifier. A `clean` verdict means none of the checks fired, not that the message is safe. Kestrix has not yet measured detection or false-positive rates for this module, so none are claimed. The design is recorded in [ADR 0003](../adr/0003-mail-module.md); this page describes the first two delivery slices: the parser, the `auth`, `sender`, `lookalike`, `links`, `attachments` and `intent` analyzers, and the dashboard page. Source files are under [`src/kestrix/mail/`](../../src/kestrix/mail/).
 
 ## Privacy
 
-Analysis runs entirely on your machine. Nothing is sent anywhere: links are never visited or resolved, HTML is never rendered and scripts in it are skipped, and attachments are never opened, executed or extracted. The report holds reason codes, hosts, the header values needed to explain a finding, file names and hashes. It never holds the message body, link text or attachment bytes.
+Analysis runs entirely on your machine. Nothing is sent anywhere: links are never visited or resolved, HTML is never rendered and scripts in it are skipped, and attachments are never opened, executed or extracted. The report holds reason codes, hosts, the header values needed to explain a finding, file names and hashes. It never holds the message body, link text or attachment bytes, with one exception: an `intent` finding's evidence is the short cue phrase that matched (at most 60 characters), such as `wire transfer`.
 
 ## Commands
 
@@ -43,14 +43,14 @@ The sample is a synthetic message built by the test helpers. Each finding is als
 
 **Options.**
 
-- `--protected-domain` names a domain you care about, such as your bank or your employer. A display name that contains its name (for example `PayPal` for `paypal.com`) on a message from another domain is flagged.
+- `--protected-domain` names a domain you care about, such as your bank or your employer. A display name that contains its name (for example `PayPal` for `paypal.com`) on a message from another domain is flagged, and so are look-alikes of it in the From domain and link hosts (see [Look-alike domains](#look-alike-domains)).
 - `--trusted-authserv-id` names your mail provider's `authserv-id`, the first word of the `Authentication-Results` header it adds (for example `mx.google.com`). See [Authentication](#authentication).
 
 ## Verdict and score
 
 The rules are applied in this order ([`analyze.py`](../../src/kestrix/mail/analyze.py)):
 
-1. `malicious`: any high finding from the `sender`, `links` or `attachments` analyzers, or `mail.auth.dmarc_fail` together with any other medium or high finding.
+1. `malicious`: any high finding from the `sender`, `lookalike`, `links`, `attachments` or `intent` analyzers, or `mail.auth.dmarc_fail` together with any other medium or high finding.
 2. `suspicious`: any other medium or high finding. A DMARC failure on its own lands here.
 3. `insufficient_evidence`: no trusted authentication results (`mail.auth.missing`) and no other finding above info.
 4. `clean`: none of the above.
@@ -67,7 +67,7 @@ The rules are applied in this order ([`analyze.py`](../../src/kestrix/mail/analy
 | `subject` | Subject header, cut to 200 characters. |
 | `from_address` | The address in `From`, if one could be parsed. |
 | `verdict`, `heuristic_score` | See above. |
-| `findings` | Most severe first. Each has `id` (a stable reason code), `analyzer`, `severity`, `title`, `explanation` and `evidence` (at most 300 characters; never body text). |
+| `findings` | Most severe first. Each has `id` (a stable reason code), `analyzer` (`auth`, `sender`, `lookalike`, `links`, `attachments` or `intent`), `severity`, `title`, `explanation` and `evidence` (at most 300 characters; never body text other than an `intent` cue phrase of at most 60 characters). |
 | `counts` | `parts`, `links`, `attachments`, and `text_truncated` / `links_truncated` when a limit below was reached. |
 
 ## Authentication
@@ -100,6 +100,25 @@ Comments in parentheses and quoted strings are handled. `ARC` results are not ju
 
 **Organization.** Two domains are in the same organization when their last two labels match, or their last three under a short list of two-label suffixes such as `co.uk`. This approximates DMARC relaxed alignment without the full Public Suffix List, so some domains are grouped incorrectly. Domains are compared lower-cased in their ASCII (punycode) form and shown decoded.
 
+## Look-alike domains
+
+The `lookalike` analyzer ([`lookalike.py`](../../src/kestrix/mail/lookalike.py)) compares the From domain and every `http(s)` link host (IP addresses excluded) with the protected domains. Hosts in the same organization as a protected domain, such as `mail.paypal.com` for `paypal.com`, are genuine and never flagged.
+
+A host is compared by its registrable label, the first label of its organization (`paypa1` in `secure.paypa1.com`). Both sides are folded to a skeleton first:
+
+1. NFKC normalization, so fullwidth letters become ASCII, then lower case;
+2. a fixed table of letters that look Latin: Cyrillic `а е о р с у х і ј ԁ ѕ ԝ`, Greek `ν ο α ι κ τ`, Armenian `ո` and Latin script `ɡ`;
+3. ASCII look-alikes: `0`→`o`, `1`→`l`, `3`→`e`, `5`→`s`, then `rn`→`m`, `vv`→`w`, `cl`→`d`.
+
+The table is a curated subset of the Unicode confusables list, not all of it, so some look-alikes are missed. A host whose registrable label is exactly the protected label under another suffix (`paypal.de` for `paypal.com`) is not flagged: brands own many such domains and Kestrix has no registry data to tell them apart. Each reason is reported once per host, and at most 50 look-alike findings are reported.
+
+| `id` | Severity | Raised when |
+| --- | --- | --- |
+| `mail.lookalike.homograph` | high | The host has non-ASCII (internationalized) letters and its skeleton equals a protected domain's, as with a Cyrillic `а` in `pаypal.com`. |
+| `mail.lookalike.domain` | high for the From domain; medium for a link host | The skeleton equals the protected label, or is within Damerau-Levenshtein distance 1 of it (protected labels of 5 to 8 characters) or 2 (9 characters or more), as with `paypa1.com` or `rnicrosoft.com`. Shorter protected labels must match exactly after folding. |
+| `mail.lookalike.brand_in_host` | medium | A dot- or hyphen-separated part of another organization's host folds to the protected label (3 characters or more), as in `paypal.com.account-verify.example` or `paypal-secure.example`. |
+| `mail.lookalike.mixed_script` | medium | One label mixes Latin letters with Cyrillic or Greek ones. Raised with or without protected domains. |
+
 ## Links
 
 Links come from HTML `<a href>` anchors (with their visible text) and from `http://` and `https://` URLs written in plain-text parts. They are checked as text only. Each reason is reported once per host, and at most 50 link findings are reported.
@@ -129,6 +148,33 @@ A part is an attachment when it has a file name, is marked as an attachment, or 
 | `mail.attachments.macro_office` | medium | A macro-enabled Office extension (`docm`, `xlsm`, `pptm` and similar), legacy OLE Office content (except `.msg`), or a ZIP-based file that contains `vbaProject.bin`. |
 | `mail.attachments.encrypted_archive` | medium | A ZIP member is encrypted. Mail filters cannot scan it. |
 | `mail.attachments.archive_dangerous_member` | high | A ZIP member has a high-risk extension from the list above. |
+
+## Intent
+
+The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks for the wording of business email compromise (BEC) and credential phishing in the subject and the decoded text (HTML visible text, scripts skipped, within the 5 MiB scan budget). It is a heuristic: small, curated, case-insensitive English phrase lists. It misses paraphrases and other languages, and ordinary mail can use the same words. The subject and each text part are searched separately, so a phrase never spans two of them. Each family is reported at most once, with the first matched phrase as evidence.
+
+| `id` | Severity | Raised for phrases such as |
+| --- | --- | --- |
+| `mail.intent.payment_change` | medium | "bank details have changed", "new account number", "wire transfer", "update your payment"; also "invoice attached" when an urgency cue is present (evidence `invoice attached + <urgency cue>`). |
+| `mail.intent.gift_cards` | medium | A request: "buy some gift cards", "gift card codes", "iTunes cards", "scratch off the back". A mention such as "our gift cards never expire" does not fire. |
+| `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
+| `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
+| `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
+| `mail.intent.bec_pattern` | high | `payment_change` or `gift_cards` together with `urgency` or `secrecy`. The evidence names the families, for example `gift_cards with secrecy`. |
+
+## Dashboard
+
+The **Email check** page (`/mail`, after Forensics in the navigation) is the same analysis in the browser. Choose or drop an `.eml` file, optionally list protected domains (comma-separated, up to 20) and your provider's `authserv-id`, and select **Check message**. The page explains how to save a message: in Gmail, ⋮ (More) → **Download message**; in Outlook, **File → Save as**.
+
+The file goes only to the Kestrix server on this computer (`POST /api/mail/analyze`). The result shows:
+
+- the verdict with an icon and a word (`Clean`, `Suspicious`, `Malicious`, `Insufficient evidence`), never color alone;
+- the heuristic score, labeled as a heuristic and not a probability;
+- the From address, part, link, attachment and finding counts, and the message SHA-256;
+- the findings grouped by severity, each with its title, explanation, evidence, analyzer and reason code;
+- the raw JSON report, which can be copied or downloaded.
+
+Files over 25 MiB and more than 20 protected domains are refused in the browser before anything is sent. Server errors show their `reason` and `detail`. All message-derived values are rendered as plain text.
 
 ## Limits
 

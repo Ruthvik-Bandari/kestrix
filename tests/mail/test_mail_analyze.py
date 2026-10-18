@@ -268,11 +268,12 @@ def test_script_scheme_links(href: str) -> None:
 
 
 def test_punycode_link() -> None:
+    # The Cyrillic letter in a Latin label also raises the lookalike analyzer's mixed-script finding.
     report = link_report('<a href="https://xn--pypal-4ve.com/">PayPal</a>')
-    assert ids(report) == ["mail.links.punycode_host"]
-    assert report.findings[0].evidence == f"host xn--pypal-4ve.com (displayed as {SPOOFED})"
+    assert ids(report) == ["mail.lookalike.mixed_script", "mail.links.punycode_host"]
+    assert report.findings[1].evidence == f"host xn--pypal-4ve.com (displayed as {SPOOFED})"
     unicode_host = link_report(f'<a href="https://{SPOOFED}/">PayPal</a>')
-    assert ids(unicode_host) == ["mail.links.punycode_host"]
+    assert ids(unicode_host) == ["mail.lookalike.mixed_script", "mail.links.punycode_host"]
 
 
 @pytest.mark.parametrize(

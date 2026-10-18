@@ -97,6 +97,14 @@ export default function OverviewPage() {
       ],
     },
     {
+      name: "Email check",
+      icon: "mail",
+      protects:
+        "Protects you from phishing, impersonation and fake-invoice emails by explaining exactly what is wrong with a saved message.",
+      status: { tone: "ok", text: "Ready · works offline" },
+      actions: [{ to: "/mail", label: "Check an email", primary: true }],
+    },
+    {
       name: "Bitcoin quantum risk",
       icon: "bitcoin",
       protects:
@@ -112,7 +120,7 @@ export default function OverviewPage() {
     <>
       <PageHeader
         title="Your security workbench"
-        lede="Four tools that run on this computer. Each result starts with a plain answer, and the technical evidence is always one click away."
+        lede="Five tools that run on this computer. Each result starts with a plain answer, and the technical evidence is always one click away."
         aside={
           <>
             <StatusPill tone={engine.isPending ? "neutral" : engineUp ? "ok" : "high"}>

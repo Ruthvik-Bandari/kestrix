@@ -3,7 +3,8 @@
 """Response models for saved-message analysis.
 
 A report carries reason codes, hosts, header values needed to explain a finding, and hashes.
-It never carries the message body, anchor text or attachment bytes.
+It never carries the message body, anchor text or attachment bytes; an intent finding carries
+only the short cue phrase that matched (at most 60 characters).
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ MAX_EVIDENCE_CHARS = 300
 MAX_SUBJECT_CHARS = 200
 
 Severity = Literal["info", "low", "medium", "high"]
-Analyzer = Literal["auth", "sender", "links", "attachments"]
+Analyzer = Literal["auth", "sender", "lookalike", "links", "attachments", "intent"]
 Verdict = Literal["clean", "suspicious", "malicious", "insufficient_evidence"]
 
 NOTICE = (
@@ -38,7 +39,7 @@ class Finding(BaseModel):
     evidence: str | None = Field(
         default=None,
         max_length=MAX_EVIDENCE_CHARS,
-        description="Header value, host or file name behind the finding. Never message body text.",
+        description="Header value, host, file name or matched intent cue (at most 60 characters) behind the finding. Never other message body text.",
     )
 
 

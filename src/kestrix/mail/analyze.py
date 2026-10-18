@@ -4,8 +4,8 @@
 
 Verdict rules, applied in order:
 
-1. ``malicious``: any high finding from the sender, links or attachments analyzers, or a
-   DMARC failure together with any other medium or high finding.
+1. ``malicious``: any high finding from the sender, lookalike, links, attachments or intent
+   analyzers, or a DMARC failure together with any other medium or high finding.
 2. ``suspicious``: any other medium or high finding (a DMARC failure on its own lands here).
 3. ``insufficient_evidence``: no trusted authentication results and no other finding above info.
 4. ``clean``: none of the above. It means no check fired, not that the message is safe.
@@ -20,7 +20,9 @@ import re
 from typing import BinaryIO
 
 from ..core.errors import Reason, Rejected
-from .analyzers import analyze_attachments, analyze_auth, analyze_links, analyze_sender
+from .analyzers import analyze_attachments, analyze_auth, analyze_links, analyze_sender, dmarc_passed
+from .intent import analyze_intent
+from .lookalike import analyze_lookalike
 from .models import MAX_SUBJECT_CHARS, Counts, Finding, MailReport, Verdict, by_severity
 from .parse import MAX_MESSAGE_BYTES, normalize_domain, parse_message
 
@@ -29,7 +31,7 @@ MAX_TRUSTED_AUTHSERV_IDS = 5
 _WEIGHTS = {"high": 35, "medium": 15, "low": 5, "info": 0}
 _HOSTNAME = re.compile(r"(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}")
 _AUTHSERV_ID = re.compile(r"[a-z0-9](?:[a-z0-9._-]{0,251}[a-z0-9])?")
-_CONTENT_ANALYZERS = frozenset({"sender", "links", "attachments"})
+_CONTENT_ANALYZERS = frozenset({"sender", "lookalike", "links", "attachments", "intent"})
 
 
 def analyze(
@@ -40,7 +42,8 @@ def analyze(
 ) -> MailReport:
     """Analyze RFC 5322 bytes. Raises ``Rejected`` for invalid options, oversized or non-message input.
 
-    ``protected_domains``: domains whose name in a display name from another domain is flagged.
+    ``protected_domains``: domains whose name in a display name, or whose look-alike in the From
+    domain or a link host, is flagged.
     ``trusted_authserv_ids``: authserv-ids of your own provider; when set, the first
     Authentication-Results header stamped by one of them is trusted instead of the topmost one.
     """
@@ -51,8 +54,10 @@ def analyze(
         [
             *analyze_auth(msg, trusted),
             *analyze_sender(msg, protected),
+            *analyze_lookalike(msg, protected),
             *analyze_links(msg),
             *analyze_attachments(msg),
+            *_authenticated_alerts(analyze_intent(msg), dmarc_passed(msg, trusted)),
         ]
     )
     return MailReport(
@@ -70,6 +75,26 @@ def analyze(
             links_truncated=msg.links_truncated,
         ),
     )
+
+
+def _authenticated_alerts(findings: list[Finding], authenticated: bool) -> list[Finding]:
+    """Genuine account alerts ("unusual sign-in", "verify your account") come from the provider's
+    own domain. When DMARC proves the From domain sent the message, a credential request alone is
+    low: the risk that remains is the link, which the links and lookalike analyzers judge."""
+    if not authenticated:
+        return findings
+    return [
+        finding.model_copy(
+            update={
+                "severity": "low",
+                "explanation": finding.explanation
+                + " DMARC passed, so the sender's domain is genuine; check where the links go before signing in.",
+            }
+        )
+        if finding.id == "mail.intent.credential_request" and finding.severity == "medium"
+        else finding
+        for finding in findings
+    ]
 
 
 def analyze_stream(

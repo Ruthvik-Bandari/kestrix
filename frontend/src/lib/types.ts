@@ -285,6 +285,45 @@ export interface UrlReport {
   findings: ForensicFinding[];
 }
 
+// Mail -----------------------------------------------------------------------
+
+export type MailAnalyzer = "auth" | "sender" | "lookalike" | "links" | "attachments" | "intent";
+export type MailVerdict = "clean" | "suspicious" | "malicious" | "insufficient_evidence";
+
+export interface MailFinding {
+  id: string;
+  analyzer: MailAnalyzer;
+  severity: Severity;
+  title: string;
+  explanation: string;
+  evidence: string | null;
+}
+
+export interface MailReport {
+  generated_by: string;
+  schema_version: 1;
+  notice: string;
+  sha256: string;
+  subject: string | null;
+  from_address: string | null;
+  verdict: MailVerdict;
+  /** A capped sum of per-severity weights; a heuristic, not a probability. */
+  heuristic_score: number;
+  findings: MailFinding[];
+  counts: {
+    parts: number;
+    links: number;
+    attachments: number;
+    text_truncated: boolean;
+    links_truncated: boolean;
+  };
+}
+
+export interface MailOptions {
+  protectedDomains: string[];
+  trustedAuthservId: string | null;
+}
+
 // Bitcoin --------------------------------------------------------------------
 
 export type AddressType = "P2PK" | "P2PKH" | "P2SH" | "P2WPKH" | "P2WSH" | "P2TR";

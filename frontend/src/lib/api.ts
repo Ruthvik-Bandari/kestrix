@@ -7,6 +7,8 @@ import type {
   FileReport,
   GuardianResult,
   Health,
+  MailOptions,
+  MailReport,
   MigrationPlan,
   ParsedRule,
   PublicTestnet,
@@ -113,6 +115,16 @@ export const api = {
     return request<FileReport>("/api/forensics/file", { method: "POST", body: form });
   },
   analyzeUrl: (url: string) => post<UrlReport>("/api/forensics/url", { url }),
+
+  analyzeMail: (file: File, options: MailOptions) => {
+    const form = new FormData();
+    form.append("file", file);
+    const params = new URLSearchParams();
+    for (const domain of options.protectedDomains) params.append("protected_domain", domain);
+    if (options.trustedAuthservId) params.append("trusted_authserv_id", options.trustedAuthservId);
+    const query = params.toString();
+    return request<MailReport>(`/api/mail/analyze${query ? `?${query}` : ""}`, { method: "POST", body: form });
+  },
 
   bitcoinScan: (addresses: string[], lookupChain: boolean, testnet: PublicTestnet) =>
     post<ScanResult>("/api/bitcoin/scan", { addresses, lookup_chain: lookupChain, testnet }),

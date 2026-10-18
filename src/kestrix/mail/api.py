@@ -46,7 +46,8 @@ _UPLOAD_BODY = {
 async def analyze_upload(
     request: Request,
     protected_domain: Annotated[
-        list[str] | None, Query(description="Domain to protect from display-name impersonation; repeat up to 20 times.")
+        list[str] | None,
+        Query(description="Domain to protect from display-name and look-alike impersonation; repeat up to 20 times."),
     ] = None,
     trusted_authserv_id: Annotated[
         list[str] | None, Query(description="authserv-id of your mail provider; repeat up to 5 times.")

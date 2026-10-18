@@ -30,7 +30,9 @@ def analyze_command(
     path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Saved message (.eml); never rendered.")],
     protected_domain: Annotated[
         list[str] | None,
-        typer.Option("--protected-domain", help="Domain to protect from display-name impersonation; repeatable."),
+        typer.Option(
+            "--protected-domain", help="Domain to protect from display-name and look-alike impersonation; repeatable."
+        ),
     ] = None,
     trusted_authserv_id: Annotated[
         list[str] | None,
@@ -38,7 +40,7 @@ def analyze_command(
     ] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Print the full result as JSON.")] = False,
 ) -> None:
-    """Check a saved message's authentication, sender, links and attachments offline."""
+    """Check a saved message's authentication, sender, look-alike domains, links, attachments and wording offline."""
     try:
         if path.stat().st_size > MAX_MESSAGE_BYTES:
             raise Rejected(Reason.INPUT_TOO_LARGE, f"message is larger than the {MAX_MESSAGE_BYTES:,} byte limit")

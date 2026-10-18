@@ -94,7 +94,7 @@ Data crosses a boundary at each of these points:
 | Uploaded file names reduced to a printable base name | `display_name` in [`forensics/analysis.py`](../src/kestrix/forensics/analysis.py) |
 | Image metadata read with Pillow restricted to four formats, pixel data never decoded, a pixel-count ceiling | [`forensics/exif.py`](../src/kestrix/forensics/exif.py) |
 | URL forensics never fetches or resolves the URL | [`forensics/url.py`](../src/kestrix/forensics/url.py) |
-| Email messages parsed with caps on size (25 MiB), headers, MIME depth and parts, decoded text and links; HTML tokenized for links and text only, never rendered; links never visited; archives listed from the central directory, never extracted; reports carry no body or attachment bytes | [`mail/parse.py`](../src/kestrix/mail/parse.py), [`mail/analyzers.py`](../src/kestrix/mail/analyzers.py) |
+| Email messages parsed with caps on size (25 MiB), headers, MIME depth and parts, decoded text and links; HTML tokenized for links and text only, never rendered; links never visited; archives listed from the central directory, never extracted; reports carry no body or attachment bytes beyond an intent cue phrase of at most 60 characters | [`mail/parse.py`](../src/kestrix/mail/parse.py), [`mail/analyzers.py`](../src/kestrix/mail/analyzers.py), [`mail/intent.py`](../src/kestrix/mail/intent.py) |
 
 ### Outbound requests
 

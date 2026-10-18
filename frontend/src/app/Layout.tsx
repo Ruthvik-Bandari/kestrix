@@ -13,6 +13,7 @@ const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/detect", label: "Detection repair", icon: "wrench" },
   { to: "/webcheck", label: "Web check", icon: "globe" },
   { to: "/forensics", label: "Forensics", icon: "search" },
+  { to: "/mail", label: "Email check", icon: "mail" },
   { to: "/bitcoin", label: "Bitcoin quantum risk", icon: "bitcoin" },
   { to: "/settings", label: "Settings", icon: "sliders" },
 ];

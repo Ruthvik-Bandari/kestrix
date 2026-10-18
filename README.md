@@ -18,7 +18,7 @@ kestrix dashboard            # opens http://localhost:8765
 | **Detection repair** | SOC analysts, detection engineers, researchers | Diagnoses why a Sigma rule misses attacks or fires on benign activity, proposes the smallest safe fix, and proves it by replaying labeled events on a pinned Elasticsearch. |
 | **File and URL forensics** | Students, everyday users, incident responders | Hashes a file, measures entropy to spot packed or encrypted content, detects disguised file types, flags GPS data in photos, and scores links for phishing signs without opening them. |
 | **Website check** | Small site owners, developers | Grades the HTTPS, TLS, security headers and cookie settings of a site you own, and gives a concrete fix for each problem. |
-| **Mail analysis** | Everyday users, help desks, incident responders | Checks a saved email (`.eml`) offline: sender authentication results, mismatched sender addresses, deceptive links and risky attachments, with a reason for every finding. |
+| **Mail analysis** | Everyday users, help desks, incident responders | Checks a saved email (`.eml`) offline: sender authentication results, mismatched sender addresses, look-alike domains, deceptive links, risky attachments and scam wording, with a reason for every finding. |
 | **Bitcoin quantum risk** | Bitcoin holders | Explains which address types reveal public keys that a future quantum computer could attack, and how to move funds to a safer address. |
 
 > Use Kestrix only on systems, files and websites you own or are authorized to assess.
@@ -190,6 +190,14 @@ Save a message as `.eml` from your mail client and Kestrix checks it without sen
 - **Attachments:** executable and script types, double extensions such as `invoice.pdf.exe`, content
   that does not match its name, macro-enabled Office files, and encrypted or program-carrying ZIPs
   (listed, never extracted).
+- **Look-alike domains:** From and link domains that imitate a protected domain, such as `paypa1.com`,
+  `rnicrosoft.com`, a Cyrillic `pаypal.com` or `paypal.com.account-verify.example`, and names that mix
+  alphabets.
+- **Wording (heuristic):** English cues of payment or bank-detail changes, gift-card requests, urgency,
+  secrecy and sign-in requests, and the payment-plus-pressure pattern of business email compromise.
+
+In the dashboard, the **Email check** page does the same: drop an `.eml` file, optionally list protected
+domains, and read the verdict and findings. The file goes only to the local Kestrix server.
 
 The verdict is `clean`, `suspicious`, `malicious` or `insufficient_evidence`, with every finding explained.
 HTML is never rendered, links are never visited and attachments are never opened. The score is a heuristic,
@@ -252,7 +260,7 @@ flowchart LR
     D["detect: parse, profile, replay, diagnose, repair, validate"]
     F["forensics: hashes, entropy, magic, EXIF, URL heuristics"]
     W["webcheck: guarded fetch, TLS probe, header/cookie checks"]
-    M["mail: bounded MIME parse, auth/sender/link/attachment checks"]
+    M["mail: bounded MIME parse, auth/sender/lookalike/link/attachment/intent checks"]
     B["bitcoin: address decoding, risk, migration, guardian"]
   end
   D --> ES[("Elasticsearch 8.19.3 (Docker, pinned digest)")]
