@@ -34,6 +34,7 @@ kestrix dashboard            # opens http://localhost:8765
 - [Website check](#website-check)
 - [Mail analysis](#mail-analysis)
 - [Bitcoin quantum risk](#bitcoin-quantum-risk)
+- [Use Kestrix from Claude](#use-kestrix-from-claude)
 - [Security and privacy model](#security-and-privacy-model)
 - [Architecture](#architecture)
 - [Development](#development)
@@ -229,6 +230,21 @@ It cannot move funds or run commands, and every address it returns is re-validat
 pip install "kestrix[ai]"
 kestrix config set-anthropic-key       # stored in ~/.config/kestrix/secrets.json (mode 0600)
 ```
+
+## Use Kestrix from Claude
+
+Kestrix includes a Claude skill, `kestrix-security`, so you can ask Claude Code "Is this email a phish?
+~/Downloads/invoice.eml" or "Why didn't my Sigma rule fire?" and Claude runs the right `kestrix` command
+locally, reads the JSON and explains the verdict, the main reasons and what to do next.
+
+```bash
+kestrix integrations install-claude-skill                           # into ~/.claude/skills/kestrix-security
+kestrix integrations package-claude-skill --out kestrix-security.zip   # to upload in Claude.ai or Claude Desktop
+```
+
+The skill keeps everything on your machine, never opens links or runs files, treats email and file content
+as untrusted data, and checks only websites you own. Details and example prompts:
+[docs/claude-skill.md](docs/claude-skill.md).
 
 ## Security and privacy model
 

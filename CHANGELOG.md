@@ -38,6 +38,8 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- The `kestrix-security` Claude skill ([docs/claude-skill.md](docs/claude-skill.md)), shipped in the wheel under `kestrix/integrations/claude_skill/`. It teaches Claude to run Kestrix locally for email triage, link and file checks, website checks of sites the user owns, Sigma detection repair and Bitcoin quantum exposure, to read the `--json` output, and to explain results without calling a `clean` verdict "safe". Reference files list every finding id; tests keep them and every command the skill names in sync with the source and the CLI.
+- `kestrix integrations install-claude-skill [--dest PATH] [--force]`, `uninstall-claude-skill [--dest PATH]` and `package-claude-skill --out FILE.zip [--force]`. The installer refuses symbolic-link destinations and never replaces a directory that does not already hold this skill; the zip is byte-for-byte reproducible.
 - Hosted mode (preview), the H2 slice of [ADR 0004](docs/adr/0004-hosted-mode.md). Local mode is unchanged and stays the default. See [docs/hosted.md](docs/hosted.md).
   - `KESTRIX_MODE=hosted` and the new `kestrix serve-hosted` command run a public service. It refuses to start without an `https` `KESTRIX_PUBLIC_ORIGIN`, a `KESTRIX_SESSION_PEPPER` of at least 32 bytes and at least one sign-in provider.
   - Sign-in with Google (OpenID Connect) or GitHub (OAuth 2.0): authorization code with PKCE, single-use `state` bound to the browser, and a Google `nonce`. Routes: `GET /api/auth/providers`, `/login/{provider}`, `/callback/{provider}`, `/me`, `POST /api/auth/logout` and `DELETE /api/auth/account`.
