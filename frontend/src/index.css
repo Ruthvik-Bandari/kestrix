@@ -24,7 +24,8 @@
 }
 
 /*
- * Tokens. Neutrals are warm (ivory and parchment in light mode, warm charcoal in dark).
+ * Tokens. Light neutrals are warm ivory; dark neutrals are deep navy, the night sky the
+ * threat-field background is drawn on.
  * The brand hue stays 352, signal magenta.
  * The accent is reserved for primary actions, the current location and focus.
  * Status hues (critical 25, high 50, medium 85, low 245, ok 150) always ship with
@@ -72,15 +73,15 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: oklch(0.262 0.003 100);
-    --rail: oklch(0.226 0.003 70);
-    --surface: oklch(0.302 0.004 90);
-    --inset: oklch(0.33 0.005 90);
-    --line: oklch(0.37 0.006 90);
-    --line-strong: oklch(0.56 0.01 85);
-    --ink: oklch(0.95 0.006 85);
-    --ink-2: oklch(0.82 0.008 85);
-    --ink-3: oklch(0.72 0.01 85);
+    --bg: oklch(0.17 0.045 264);
+    --rail: oklch(0.145 0.04 264);
+    --surface: oklch(0.215 0.045 264);
+    --inset: oklch(0.25 0.045 264);
+    --line: oklch(0.32 0.045 264);
+    --line-strong: oklch(0.54 0.04 264);
+    --ink: oklch(0.96 0.008 264);
+    --ink-2: oklch(0.83 0.018 264);
+    --ink-3: oklch(0.73 0.022 264);
     --accent: oklch(0.74 0.17 352);
     --accent-hover: oklch(0.79 0.14 352);
     --on-accent: oklch(0.18 0.02 352);
@@ -112,15 +113,15 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: oklch(0.262 0.003 100);
-  --rail: oklch(0.226 0.003 70);
-  --surface: oklch(0.302 0.004 90);
-  --inset: oklch(0.33 0.005 90);
-  --line: oklch(0.37 0.006 90);
-  --line-strong: oklch(0.56 0.01 85);
-  --ink: oklch(0.95 0.006 85);
-  --ink-2: oklch(0.82 0.008 85);
-  --ink-3: oklch(0.72 0.01 85);
+  --bg: oklch(0.17 0.045 264);
+  --rail: oklch(0.145 0.04 264);
+  --surface: oklch(0.215 0.045 264);
+  --inset: oklch(0.25 0.045 264);
+  --line: oklch(0.32 0.045 264);
+  --line-strong: oklch(0.54 0.04 264);
+  --ink: oklch(0.96 0.008 264);
+  --ink-2: oklch(0.83 0.018 264);
+  --ink-3: oklch(0.73 0.022 264);
   --accent: oklch(0.74 0.17 352);
   --accent-hover: oklch(0.79 0.14 352);
   --on-accent: oklch(0.18 0.02 352);
@@ -427,53 +428,33 @@
 }
 
 /*
- * Background words: faint security terms drift behind the content. Decorative only
- * (aria-hidden, no pointer events). Reduced-motion users get a still, fainter field.
+ * Threat field: a canvas behind everything (components/ThreatField.tsx). Content sits on
+ * translucent, blurred veils so text keeps its contrast while the scene shows through.
  */
-.bg-words {
+.threat-field {
   position: fixed;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
-  --word-peak: 0.035;
 }
-:root[data-theme="dark"] .bg-words {
-  --word-peak: 0.04;
+.veil-content {
+  --veil: 88%;
+  background: color-mix(in oklch, var(--bg) var(--veil), transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.veil-rail {
+  background: color-mix(in oklch, var(--rail) 88%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+:root[data-theme="dark"] .veil-content {
+  --veil: 76%;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bg-words {
-    --word-peak: 0.04;
-  }
-}
-.bg-word {
-  position: absolute;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: clamp(0.95rem, 1.6vw, 1.6rem);
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-  color: var(--ink);
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: bg-word-drift var(--word-duration) ease-in-out var(--word-delay) infinite;
-}
-@keyframes bg-word-drift {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-  25%,
-  75% {
-    opacity: var(--word-peak);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--word-dx), -30px, 0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bg-word {
-    animation: none;
-    opacity: calc(var(--word-peak) * 0.6);
+  :root:not([data-theme="light"]) .veil-content {
+    --veil: 76%;
   }
 }

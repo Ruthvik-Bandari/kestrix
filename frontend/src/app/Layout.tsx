@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
-import { BackgroundWords } from "../components/BackgroundWords";
 import { Icon, type IconName } from "../components/Icon";
 import { ThemeSwitch } from "../components/ThemeSwitch";
+import { ThreatField } from "../components/ThreatField";
 import { cx, Skeleton } from "../components/ui";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
 
@@ -132,7 +132,7 @@ export function Layout() {
 
   return (
     <div className="relative isolate min-h-dvh lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
-      <BackgroundWords />
+      <ThreatField />
       <a
         href="#main"
         className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"
@@ -141,7 +141,7 @@ export function Layout() {
       </a>
 
       {/* Desktop rail */}
-      <aside className="sticky top-0 z-10 hidden h-dvh flex-col border-r border-line bg-rail px-4 py-5 lg:flex">
+      <aside className="veil-rail sticky top-0 z-10 hidden h-dvh flex-col border-r border-line px-4 py-5 lg:flex">
         <NavLink to="/" className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
           <Brand />
         </NavLink>
@@ -155,7 +155,7 @@ export function Layout() {
       </aside>
 
       {/* Mobile header */}
-      <header className="sticky top-0 z-30 border-b border-line bg-rail lg:hidden">
+      <header className="veil-rail sticky top-0 z-30 border-b border-line lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <NavLink to="/" className="rounded-md" aria-label="Kestrix overview">
             <Brand />
@@ -191,8 +191,8 @@ export function Layout() {
         </nav>
       </header>
 
-      <main id="main" ref={mainRef} tabIndex={-1} className="relative z-10 min-w-0 px-4 pt-7 pb-16 outline-none sm:px-6 lg:px-10 lg:pt-10">
-        <div className="mx-auto max-w-[72rem]">
+      <main id="main" ref={mainRef} tabIndex={-1} className="relative z-10 min-w-0 px-3 pt-5 pb-16 outline-none sm:px-5 lg:px-8 lg:pt-8">
+        <div className="veil-content mx-auto max-w-[72rem] rounded-2xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <Suspense fallback={<PageFallback />}>
             <Outlet />
           </Suspense>
