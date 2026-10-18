@@ -6,14 +6,14 @@ import os
 import pytest
 from typer.testing import CliRunner
 
-from aegissec.detect import cases, workflow
-from aegissec.detect.cli import app
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.fixtures import Event
-from aegissec.detect.mapping import FieldMapping
-from aegissec.detect.rule import parse_rule
+from kestrix.detect import cases, workflow
+from kestrix.detect.cli import app
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.fixtures import Event
+from kestrix.detect.mapping import FieldMapping
+from kestrix.detect.rule import parse_rule
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 
 pytestmark = pytest.mark.engine
 
@@ -61,7 +61,7 @@ def test_golden_engine_semantics(es):
         {"process": {"executable": "C:\\certutil.exe.bak"}},  # suffix must be at the end
     ]
     mapping = FieldMapping("m", {"Image": "process.executable"})
-    from aegissec.detect.mapping import to_lucene
+    from kestrix.detect.mapping import to_lucene
 
     with es.replay_index(_events(rows)) as index:
         hits = es.search_ids(index, to_lucene(SEMANTICS, mapping)).matched_ids

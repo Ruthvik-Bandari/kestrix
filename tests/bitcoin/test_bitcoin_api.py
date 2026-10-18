@@ -10,12 +10,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from aegissec.bitcoin import api, guardian
-from aegissec.bitcoin.chain import MempoolClient
-from aegissec.bitcoin.guardian import _ModelIntent
-from aegissec.bitcoin.models import GuardianIntent, PublicTestnet
-from aegissec.core import config
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin import api, guardian
+from kestrix.bitcoin.chain import MempoolClient
+from kestrix.bitcoin.guardian import _ModelIntent
+from kestrix.bitcoin.models import GuardianIntent, PublicTestnet
+from kestrix.core import config
+from kestrix.core.errors import Reason, Rejected
 from tests.bitcoin.btc_helpers import (
     G_COMPRESSED,
     P2TR_MAIN,
@@ -41,7 +41,7 @@ def _bare_app() -> FastAPI:
 
 def _make_app() -> FastAPI:
     try:
-        from aegissec.server.app import create_app
+        from kestrix.server.app import create_app
     except ImportError:  # sibling modules not built yet
         return _bare_app()
     return create_app(extra_hosts=frozenset({"testserver"}))

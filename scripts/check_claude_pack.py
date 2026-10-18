@@ -43,7 +43,7 @@ EXPLICIT_ONLY = {"cg-model-training", "cg-evaluate", "cg-release-review"}
 SKILL_SECTIONS = ["Expected inputs", "Steps", "Output evidence", "Failure conditions"]
 AGENTS = ["architecture-reviewer", "detection-semantics-reviewer", "ml-evaluation-reviewer", "appsec-reviewer"]
 ALLOWED_AGENT_TOOLS = {"Read", "Glob", "Grep"}
-RULES = {"python": "src/aegissec/**/*.py", "ui": "frontend/**", "backend": "src/aegissec/server/**"}
+RULES = {"python": "src/kestrix/**/*.py", "ui": "frontend/**", "backend": "src/kestrix/server/**"}
 REQUIRED_DENY = ["**/.env", "**/.env.*", "**/*.pem", "data/raw/**", "data/locked/**", "**/secrets/**"]
 DOCS = [
     "CLAUDE.md",

@@ -108,7 +108,7 @@ function Results({ result }: { result: ScanResult }) {
         ))}
       </ul>
       <div className="mt-6">
-        <RawJson data={result} filename="aegis-bitcoin-scan.json" />
+        <RawJson data={result} filename="kestrix-bitcoin-scan.json" />
       </div>
     </section>
   );
@@ -151,7 +151,7 @@ export default function BitcoinPage() {
       <div className="mb-6 flex gap-3 rounded-xl border border-line bg-surface px-4 py-3">
         <Icon name="key" size={20} className="mt-0.5 flex-none text-accent-text" />
         <p className="text-ink-2">
-          <span className="font-medium text-ink">Only paste public addresses.</span> Aegis-Sec never needs your private
+          <span className="font-medium text-ink">Only paste public addresses.</span> Kestrix never needs your private
           keys or seed phrase and will never ask for them. Anyone who asks for your seed phrase is trying to steal your
           coins.
         </p>

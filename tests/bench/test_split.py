@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from aegisbench.qc import SIGMA_RULES
-from aegisbench.split import SplitError, assign, build, family, freeze, groups, roots
+from kestrixbench.qc import SIGMA_RULES
+from kestrixbench.split import SplitError, assign, build, family, freeze, groups, roots
 
 
 def test_family_is_the_tool_named_after_the_prefix():
@@ -88,7 +88,7 @@ def test_natural_roots_join_the_split(tmp_path):
 
 
 def test_no_positive_event_is_shared_across_splits():
-    from aegisbench.split import exclusive_events
+    from kestrixbench.split import exclusive_events
 
     positives = {"t1": ["e1", "e2"], "d1": ["e1"], "tr1": ["e2", "e3"], "tr2": ["e1"]}
     splits = {"test": [["t1"]], "development": [["d1"]], "train": [["tr1"], ["tr2"]], "reserve": []}

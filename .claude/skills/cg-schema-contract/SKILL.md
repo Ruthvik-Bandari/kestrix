@@ -10,7 +10,7 @@ Plan refs: sections 7, 8, 16. Platform decision: `docs/adr/0001-platform-directi
 ## Expected inputs
 
 - The record or route being changed and the ticket ID.
-- Current Pydantic models and dataclasses in `src/aegissec/`, the OpenAPI schema (`GET /api/openapi.json`, or `create_app().openapi()`), and `frontend/src/lib/types.ts`.
+- Current Pydantic models and dataclasses in `src/kestrix/`, the OpenAPI schema (`GET /api/openapi.json`, or `create_app().openapi()`), and `frontend/src/lib/types.ts`.
 
 ## Steps
 

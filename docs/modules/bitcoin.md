@@ -1,25 +1,25 @@
 # Bitcoin quantum risk
 
-The Bitcoin module tells you which of your addresses have a public key visible on the blockchain, and how to move coins to an address that hides it. Use it if you hold Bitcoin and want to know which coins a future quantum computer could target first, or to get migration steps for an address type. You paste public addresses or public keys. Aegis-Sec never asks for private keys or seed phrases, and it cannot sign, send or move coins.
+The Bitcoin module tells you which of your addresses have a public key visible on the blockchain, and how to move coins to an address that hides it. Use it if you hold Bitcoin and want to know which coins a future quantum computer could target first, or to get migration steps for an address type. You paste public addresses or public keys. Kestrix never asks for private keys or seed phrases, and it cannot sign, send or move coins.
 
-The threat it reports on: a large enough quantum computer running Shor's algorithm could derive a private key from its public key. No such computer is publicly known to exist, and estimates of when one might are uncertain, so the module reports exposure, not attack timelines. It is adapted from [BitShield](https://github.com/Ruthvik-Bandari/MIT-BTC-Hackathon-Team_ACE), built by Team ACE at the MIT Bitcoin Expo 2026 hackathon. Source files are under [`src/aegissec/bitcoin/`](../../src/aegissec/bitcoin/).
+The threat it reports on: a large enough quantum computer running Shor's algorithm could derive a private key from its public key. No such computer is publicly known to exist, and estimates of when one might are uncertain, so the module reports exposure, not attack timelines. It is adapted from [BitShield](https://github.com/Ruthvik-Bandari/MIT-BTC-Hackathon-Team_ACE), built by Team ACE at the MIT Bitcoin Expo 2026 hackathon. Source files are under [`src/kestrix/bitcoin/`](../../src/kestrix/bitcoin/).
 
 ## Commands
 
 | Command | Options | What it does |
 | --- | --- | --- |
-| `aegis-sec bitcoin scan ADDRESS...` | `--lookup-chain`, `--testnet testnet4\|signet` (default `testnet4`), `--json` | Assesses up to 100 addresses or hex public keys. |
-| `aegis-sec bitcoin migration TYPE` | `--json` | Prints migration steps for `P2PK`, `P2PKH`, `P2SH`, `P2WPKH`, `P2WSH` or `P2TR` (any case). |
-| `aegis-sec bitcoin ask MESSAGE` | `--json` | Classifies a plain-language request with your own Anthropic key. Nothing is executed. |
+| `kestrix bitcoin scan ADDRESS...` | `--lookup-chain`, `--testnet testnet4\|signet` (default `testnet4`), `--json` | Assesses up to 100 addresses or hex public keys. |
+| `kestrix bitcoin migration TYPE` | `--json` | Prints migration steps for `P2PK`, `P2PKH`, `P2SH`, `P2WPKH`, `P2WSH` or `P2TR` (any case). |
+| `kestrix bitcoin ask MESSAGE` | `--json` | Classifies a plain-language request with your own Anthropic key. Nothing is executed. |
 
-| Exit code | Meaning ([`cli.py`](../../src/aegissec/bitcoin/cli.py)) |
+| Exit code | Meaning ([`cli.py`](../../src/kestrix/bitcoin/cli.py)) |
 | --- | --- |
 | 0 | Success. |
 | 2 | Rejected input, for example an invalid address or an unknown address type. |
 | 3 | An upstream service or the AI key is unavailable: `upstream_error`, `ai_key_missing`, `target_unreachable` or `target_not_allowed`. |
 
 ```text
-$ aegis-sec bitcoin scan bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq \
+$ kestrix bitcoin scan bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq \
     bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0 \
     0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
 [UNKNOWN] bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq  (P2WPKH, mainnet)
@@ -36,7 +36,7 @@ Each result is followed by a plain-language explanation and a "What to do" line,
 
 ## Accepted inputs
 
-Aegis-Sec decodes addresses itself, using only the standard library ([`address.py`](../../src/aegissec/bitcoin/address.py)). The tests check the decoders against the BIP-173 and BIP-350 test vectors.
+Kestrix decodes addresses itself, using only the standard library ([`address.py`](../../src/kestrix/bitcoin/address.py)). The tests check the decoders against the BIP-173 and BIP-350 test vectors.
 
 | Input | Detected as | Network |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ Aegis-Sec decodes addresses itself, using only the standard library ([`address.p
 
 ## Risk logic
 
-The rules are in [`risk.py`](../../src/aegissec/bitcoin/risk.py).
+The rules are in [`risk.py`](../../src/kestrix/bitcoin/risk.py).
 
 | Type | Risk | `key_exposure` | Why |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ The summary counts results per risk level.
 
 ## Chain lookup and privacy
 
-Without `--lookup-chain`, a scan makes no network requests. With it, Aegis-Sec asks mempool.space for each hash-based address's history ([`chain.py`](../../src/aegissec/bitcoin/chain.py)):
+Without `--lookup-chain`, a scan makes no network requests. With it, Kestrix asks mempool.space for each hash-based address's history ([`chain.py`](../../src/kestrix/bitcoin/chain.py)):
 
 - Only P2PKH, P2WPKH, P2SH and P2WSH addresses on `mainnet` or `test` are looked up. P2PK and P2TR results do not depend on history, so they are never sent.
 - `test` addresses are looked up on testnet4 by default, or on signet with `--testnet signet`. Regtest is a private local chain, so regtest addresses are not looked up and stay `unknown`.
@@ -88,7 +88,7 @@ Without `--lookup-chain`, a scan makes no network requests. With it, Aegis-Sec a
 
 ## Migration plans
 
-`aegis-sec bitcoin migration TYPE` returns `address_type`, `urgency`, `summary`, `steps` and `cautions` ([`migration.py`](../../src/aegissec/bitcoin/migration.py)). Plans describe what you do in your own wallet.
+`kestrix bitcoin migration TYPE` returns `address_type`, `urgency`, `summary`, `steps` and `cautions` ([`migration.py`](../../src/kestrix/bitcoin/migration.py)). Plans describe what you do in your own wallet.
 
 | Type | `urgency` | Notes |
 | --- | --- | --- |
@@ -100,28 +100,28 @@ Every plan cautions that BIP-360 and other post-quantum output types are draft p
 
 ## Guardian (optional, bring your own key)
 
-The guardian turns a plain-language message, such as "is my taproot address safe?", into a suggested Aegis-Sec command. It classifies the message and nothing else ([`guardian.py`](../../src/aegissec/bitcoin/guardian.py)).
+The guardian turns a plain-language message, such as "is my taproot address safe?", into a suggested Kestrix command. It classifies the message and nothing else ([`guardian.py`](../../src/kestrix/bitcoin/guardian.py)).
 
 **Setup.**
 
 ```bash
-pip install "aegis-sec-ai[ai]"
-aegis-sec config set-anthropic-key    # or set ANTHROPIC_API_KEY
-aegis-sec bitcoin ask "check 1BoatSLRHtKNngkdXEeobR76b53LETtpyT for me"
+pip install "kestrix[ai]"
+kestrix config set-anthropic-key    # or set ANTHROPIC_API_KEY
+kestrix bitcoin ask "check 1BoatSLRHtKNngkdXEeobR76b53LETtpyT for me"
 ```
 
 - **Key.** `ANTHROPIC_API_KEY` is used first, then the stored key. See [Secrets](../security-model.md#how-secrets-are-stored).
-- **Model.** The default model is `claude-opus-5-5`. Set `AEGIS_SEC_AI_MODEL` to use another model ID. The server-side refusal fallback beta is requested only for the default model.
+- **Model.** The default model is `claude-opus-5-5`. Set `KESTRIX_AI_MODEL` to use another model ID. The server-side refusal fallback beta is requested only for the default model.
 - **Request.** One structured-output request with a 60 second timeout. The message is sent to the Anthropic API, so do not include anything you would not send there.
 
 **Intents.**
 
-| `intent` | Next step Aegis-Sec suggests |
+| `intent` | Next step Kestrix suggests |
 | --- | --- |
-| `scan_addresses` | The exact `aegis-sec bitcoin scan ...` command for the validated addresses. Nothing is scanned yet. |
+| `scan_addresses` | The exact `kestrix bitcoin scan ...` command for the validated addresses. Nothing is scanned yet. |
 | `explain_risk` | A fixed explanation of which address types show keys. |
-| `migration_help` | `aegis-sec bitcoin migration <TYPE>`, or a prompt to scan first when no type was named. |
-| `set_policy_request` | A statement that Aegis-Sec is read-only and cannot send coins or change wallet policies. |
+| `migration_help` | `kestrix bitcoin migration <TYPE>`, or a prompt to scan first when no type was named. |
+| `set_policy_request` | A statement that Kestrix is read-only and cannot send coins or change wallet policies. |
 | `unknown` | A list of what the guardian can help with. |
 
 **What is trusted and what is not.**
@@ -129,7 +129,7 @@ aegis-sec bitcoin ask "check 1BoatSLRHtKNngkdXEeobR76b53LETtpyT for me"
 - The message must be 1 to 2,000 characters after trimming.
 - An address the model returns is kept only if it appears verbatim in your message and passes the local parser. Anything else goes to `ignored_addresses`. At most 100 are considered.
 - `address_type` is kept only for `migration_help`.
-- `next_step` is written by Aegis-Sec, not by the model.
+- `next_step` is written by Kestrix, not by the model.
 - `model_summary` is model-written text, cut to 500 characters. It is unverified and may be wrong. The CLI labels it "(model-written)".
 - The system prompt tells the model to treat the message as data. That instruction lowers the risk of prompt injection but does not remove it. Because the model cannot trigger any action, an injected instruction can at most produce a misleading summary or intent.
 
@@ -137,13 +137,13 @@ aegis-sec bitcoin ask "check 1BoatSLRHtKNngkdXEeobR76b53LETtpyT for me"
 
 ## What was not carried over from BitShield
 
-BitShield was a hackathon project with a TypeScript stack. Aegis-Sec ports its address scanner, risk explanations, migration planner and intent classifier, and re-implements them in Python with local validation. The following BitShield features are not part of this module:
+BitShield was a hackathon project with a TypeScript stack. Kestrix ports its address scanner, risk explanations, migration planner and intent classifier, and re-implements them in Python with local validation. The following BitShield features are not part of this module:
 
 - the Nunchuk bounded-authority group wallet, spending policies and co-signing;
 - Lightning payments through Alby NWC;
 - Cogcoin on-chain audit anchoring with `OP_RETURN`;
 - real-time WebSocket wallet updates and the UTXO monitor;
 - the quantum "attack timer" demonstration;
-- BitShield's exposed-supply and attack-time figures, which Aegis-Sec does not repeat.
+- BitShield's exposed-supply and attack-time figures, which Kestrix does not repeat.
 
-One risk level also differs. BitShield's README rated Taproot as medium; Aegis-Sec rates it `high`, because the output key is visible from the moment the address is shared.
+One risk level also differs. BitShield's README rated Taproot as medium; Kestrix rates it `high`, because the output key is visible from the moment the address is shared.

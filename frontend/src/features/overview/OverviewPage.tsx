@@ -135,17 +135,17 @@ export default function OverviewPage() {
       {!engineUp && !engine.isPending ? (
         <p className="mt-8 rounded-lg bg-inset px-4 py-3 text-ink-2">
           To run detection repairs, start the pinned engine with{" "}
-          <code className="rounded bg-surface px-1.5 py-0.5 text-ink">aegis-sec detect engine-up</code> (needs Docker).
+          <code className="rounded bg-surface px-1.5 py-0.5 text-ink">kestrix detect engine-up</code> (needs Docker).
           Everything else works without it.
         </p>
       ) : null}
 
       <section aria-labelledby="about-title" className="mt-14 border-t border-line pt-8">
         <h2 id="about-title" className="text-lg font-semibold">
-          About Aegis-Sec
+          About Kestrix
         </h2>
         <p className="mt-2 max-w-[68ch] text-ink-2">
-          Aegis-Sec is local-first: the dashboard and its API run on your machine and only reach the network when a tool
+          Kestrix is local-first: the dashboard and its API run on your machine and only reach the network when a tool
           says so. Results are deterministic and come with the evidence that produced them.
         </p>
         <dl className="mt-6 grid gap-5 sm:grid-cols-3">

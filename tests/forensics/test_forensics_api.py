@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from forensics_samples import pe_bytes
 
-from aegissec.forensics import api
+from kestrix.forensics import api
 
 FILE_KEYS = {
     "filename",

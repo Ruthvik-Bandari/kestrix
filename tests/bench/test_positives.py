@@ -6,11 +6,11 @@ import zipfile
 
 import pytest
 
-from aegisbench.positives import otrf_events, run, sigma_events, supported_rules
-from aegisbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
-from aegissec.detect.engine import Elasticsearch
+from kestrix.detect.engine import Elasticsearch
+from kestrixbench.positives import otrf_events, run, sigma_events, supported_rules
+from kestrixbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 CERTUTIL = "00000000-0000-4000-8000-000000000001"
 RUNDLL = "00000000-0000-4000-8000-000000000002"
 NEVER = "00000000-0000-4000-8000-000000000003"
@@ -118,7 +118,7 @@ def test_replay_reports_fidelity_and_candidates(root):
 
 def test_fidelity_uses_declared_match_count_not_recorded_events(root):
     """A regression file may hold context events: SigmaHQ declares how many should match."""
-    from aegisbench.positives import expected_matches
+    from kestrixbench.positives import expected_matches
 
     case = root / "sigma" / SIGMA_REGRESSION / "multi"
     _write(case / "info.yml", "rule_metadata:\n  - id: a\n  - id: b\nregression_tests_info:\n  - match_count: 1\n")

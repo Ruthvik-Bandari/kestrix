@@ -1,4 +1,4 @@
-# Aegis-Sec
+# Kestrix
 
 [![CI](https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)
@@ -9,8 +9,8 @@ links, checks your website's defences, and tells you whether your Bitcoin addres
 quantum attacks. Everything runs on your own machine, through one `pip install`, a CLI and a dashboard.
 
 ```bash
-pip install aegis-sec-ai
-aegis-sec dashboard            # opens http://localhost:8765
+pip install kestrix
+kestrix dashboard            # opens http://localhost:8765
 ```
 
 | Module | Who it helps | What it does |
@@ -20,7 +20,7 @@ aegis-sec dashboard            # opens http://localhost:8765
 | **Website check** | Small site owners, developers | Grades the HTTPS, TLS, security headers and cookie settings of a site you own, and gives a concrete fix for each problem. |
 | **Bitcoin quantum risk** | Bitcoin holders | Explains which address types reveal public keys that a future quantum computer could attack, and how to move funds to a safer address. |
 
-> Use Aegis-Sec only on systems, files and websites you own or are authorized to assess.
+> Use Kestrix only on systems, files and websites you own or are authorized to assess.
 
 ---
 
@@ -43,28 +43,28 @@ aegis-sec dashboard            # opens http://localhost:8765
 Requires Python 3.12 or newer.
 
 ```bash
-pip install aegis-sec-ai                 # core: all four modules and the dashboard
-pip install "aegis-sec-ai[exif]"         # + photo metadata (Pillow)
-pip install "aegis-sec-ai[ai]"           # + the optional AI guardian (bring your own Anthropic key)
+pip install kestrix                 # core: all four modules and the dashboard
+pip install "kestrix[exif]"         # + photo metadata (Pillow)
+pip install "kestrix[ai]"           # + the optional AI guardian (bring your own Anthropic key)
 ```
 
 Detection repair replays rules on a real search engine. Start the pinned Elasticsearch once with Docker:
 
 ```bash
-aegis-sec detect engine-up      # docker run of elasticsearch 8.19.3, bound to 127.0.0.1:9200
-aegis-sec detect engine-status
+kestrix detect engine-up      # docker run of elasticsearch 8.19.3, bound to 127.0.0.1:9200
+kestrix detect engine-status
 ```
 
 ## Quick start
 
 ```bash
-aegis-sec dashboard                                   # everything in the browser
-aegis-sec forensics file ~/Downloads/invoice.pdf      # hashes, entropy, type check
-aegis-sec forensics url "http://paypa1-login.example.top/verify"
-aegis-sec webcheck scan https://your-site.example
-aegis-sec bitcoin scan bc1q... 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
-aegis-sec detect cases                                # 11 bundled demonstrations
-aegis-sec detect demo c03-noise-updater-temp
+kestrix dashboard                                   # everything in the browser
+kestrix forensics file ~/Downloads/invoice.pdf      # hashes, entropy, type check
+kestrix forensics url "http://paypa1-login.example.top/verify"
+kestrix webcheck scan https://your-site.example
+kestrix bitcoin scan bc1q... 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+kestrix detect cases                                # 11 bundled demonstrations
+kestrix detect demo c03-noise-updater-temp
 ```
 
 Add `--json` to any command for machine-readable output. Exit codes are stable, so you can use the
@@ -73,7 +73,7 @@ commands in scripts and CI.
 ## Detection repair
 
 Detections break quietly. A log pipeline renames a field, a software updater starts matching, or a
-condition has a typo. Aegis-Sec takes a **Sigma rule**, an **environment field mapping** and **labeled
+condition has a typo. Kestrix takes a **Sigma rule**, an **environment field mapping** and **labeled
 JSONL events**, then:
 
 1. **Parses safely** a bounded, single-event subset of Sigma: `process_creation` on Windows, exact /
@@ -96,7 +96,7 @@ JSONL events**, then:
    tool **abstains**. If the telemetry was never collected, it says so and recommends collecting it.
 
 ```text
-$ aegis-sec detect demo c03-noise-updater-temp
+$ kestrix detect demo c03-noise-updater-temp
 outcome: repaired
 finding: noise [benign_events_matched] c03d-u1, c03d-u2, c03d-u3
 original development: TP=3 FP=4 FN=0 TN=4
@@ -119,7 +119,7 @@ candidate b0-noise-2: screened
 | `unsupported` | The rule uses semantics outside the supported subset | 11 |
 | `engine_unavailable` | Elasticsearch is not reachable; static coverage still reported | 3 |
 
-Run it on your own data with `aegis-sec detect run --rule r.yml --mapping m.yml --dev dev.jsonl
+Run it on your own data with `kestrix detect run --rule r.yml --mapping m.yml --dev dev.jsonl
 --validation val.jsonl`. The fixture format, the mapping format and the semantics are documented in
 [docs/modules/detect.md](docs/modules/detect.md). The 11 bundled cases are synthetic unit-level
 demonstrations: one healthy control, two mapping drifts, two noise cases, two missing-telemetry cases,
@@ -128,8 +128,8 @@ three logic faults and one unsupported rule. They are not a benchmark result.
 ## Forensics
 
 ```bash
-aegis-sec forensics file suspicious.exe --json
-aegis-sec forensics url "https://xn--pple-43d.com/login"
+kestrix forensics file suspicious.exe --json
+kestrix forensics url "https://xn--pple-43d.com/login"
 ```
 
 - **File analysis:**
@@ -153,7 +153,7 @@ aegis-sec forensics url "https://xn--pple-43d.com/login"
 ## Website check
 
 ```bash
-aegis-sec webcheck scan https://your-site.example
+kestrix webcheck scan https://your-site.example
 ```
 
 The check sends one GET request (following up to five redirects, each re-validated) and makes one TLS
@@ -165,7 +165,7 @@ handshake. It does not crawl, fuzz or scan ports. It covers:
 - **Information leaks:** version strings in server headers.
 - **Cookies:** `Secure`, `HttpOnly` and `SameSite` on every cookie.
 
-The result is an A–F grade from a documented rubric ([grade.py](src/aegissec/webcheck/grade.py)).
+The result is an A–F grade from a documented rubric ([grade.py](src/kestrix/webcheck/grade.py)).
 
 Private, loopback and cloud-metadata addresses are refused unless you pass `--allow-private` for a lab
 host you own.
@@ -173,12 +173,12 @@ host you own.
 ## Bitcoin quantum risk
 
 ```bash
-aegis-sec bitcoin scan bc1p... 1BoatSLRHtKNngkdXEeobR76b53LETtpyT --lookup-chain
-aegis-sec bitcoin migration p2tr
-aegis-sec bitcoin ask "is my taproot address safe from quantum computers?"   # needs [ai] + your key
+kestrix bitcoin scan bc1p... 1BoatSLRHtKNngkdXEeobR76b53LETtpyT --lookup-chain
+kestrix bitcoin migration p2tr
+kestrix bitcoin ask "is my taproot address safe from quantum computers?"   # needs [ai] + your key
 ```
 
-Aegis-Sec decodes Base58Check and Bech32/Bech32m addresses itself; both are tested against the BIP-173
+Kestrix decodes Base58Check and Bech32/Bech32m addresses itself; both are tested against the BIP-173
 and BIP-350 test vectors. It then explains each address's exposure:
 
 - **Raw public keys (P2PK):** always exposed.
@@ -186,15 +186,15 @@ and BIP-350 test vectors. It then explains each address's exposure:
 - **Hash-based types (P2PKH, P2WPKH, P2SH, P2WSH):** hide the key until the first spend.
 
 `--lookup-chain` asks mempool.space whether an address has ever spent, which would have revealed its key.
-This sends the address to that service, so it is off by default. **Aegis-Sec never asks for private
+This sends the address to that service, so it is off by default. **Kestrix never asks for private
 keys or seed phrases.**
 
 The optional AI guardian uses your own Anthropic API key. It only classifies what you are asking for.
 It cannot move funds or run commands, and every address it returns is re-validated locally.
 
 ```bash
-pip install "aegis-sec-ai[ai]"
-aegis-sec config set-anthropic-key       # stored in ~/.config/aegis-sec/secrets.json (mode 0600)
+pip install "kestrix[ai]"
+kestrix config set-anthropic-key       # stored in ~/.config/kestrix/secrets.json (mode 0600)
 ```
 
 ## Security and privacy model
@@ -220,10 +220,10 @@ Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ```mermaid
 flowchart LR
-  CLI["aegis-sec CLI (Typer)"] --> Core
+  CLI["kestrix CLI (Typer)"] --> Core
   UI["Dashboard (React SPA, bundled)"] -->|"/api (loopback only)"| API["FastAPI"]
   API --> Core
-  subgraph Core["aegissec core modules"]
+  subgraph Core["kestrix core modules"]
     D["detect: parse, profile, replay, diagnose, repair, validate"]
     F["forensics: hashes, entropy, magic, EXIF, URL heuristics"]
     W["webcheck: guarded fetch, TLS probe, header/cookie checks"]
@@ -241,15 +241,15 @@ The design decisions are recorded in [docs/adr](docs/adr). The research plan beh
 ## Development
 
 ```bash
-git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git aegis-sec
-cd aegis-sec
+git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git kestrix
+cd kestrix
 uv sync --all-extras
-uv run aegis-sec detect engine-up       # for the engine-backed tests
+uv run kestrix detect engine-up       # for the engine-backed tests
 uv run pytest                           # engine tests skip automatically if Elasticsearch is down
 uv run ruff check src tests && uv run ruff format --check src tests && uv run mypy
 
 cd frontend && npm ci && npm run dev    # dashboard with hot reload, proxied to the API on :8765
-npm run build                           # writes the bundle into src/aegissec/server/static
+npm run build                           # writes the bundle into src/kestrix/server/static
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
@@ -266,7 +266,7 @@ Detection repair follows the staged research plan:
 Each stage ships only if it beats the previous one on frozen, root-grouped splits. If adaptation does not
 help, the stronger baseline ships, and the negative result is published.
 
-The benchmark tooling lives in `src/aegisbench/`, a research package that is not shipped in the wheel. It fetches the
+The benchmark tooling lives in `src/kestrixbench/`, a research package that is not shipped in the wheel. It fetches the
 pinned public sources (SigmaHQ, OTRF Security-Datasets, Atomic Red Team), records license and hash
 manifests, and writes aggregate QC reports. Related docs:
 

@@ -1,10 +1,10 @@
 import httpx
 import pytest
 
-from aegissec.webcheck import checks
-from aegissec.webcheck.models import Finding
-from aegissec.webcheck.profile import profile_site
-from aegissec.webcheck.scan import scan
+from kestrix.webcheck import checks
+from kestrix.webcheck.models import Finding
+from kestrix.webcheck.profile import profile_site
+from kestrix.webcheck.scan import scan
 from tests.webcheck.test_webcheck import ok_probe
 
 HTML = {"content-type": ["text/html; charset=utf-8"]}

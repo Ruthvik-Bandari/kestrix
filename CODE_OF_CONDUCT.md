@@ -1,6 +1,6 @@
 # Code of conduct
 
-Aegis-Sec follows the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). This page summarizes it. The linked text is the one that applies.
+Kestrix follows the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). This page summarizes it. The linked text is the one that applies.
 
 ## Our pledge
 

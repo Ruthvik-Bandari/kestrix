@@ -4,12 +4,21 @@ import subprocess
 
 import pytest
 
-from aegisbench.natural import build, classify, extra_roots, is_refactor, mine, summarize_mining, to_record, verify_all
-from aegisbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.rule import parse_rule
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.rule import parse_rule
+from kestrixbench.natural import (
+    build,
+    classify,
+    extra_roots,
+    is_refactor,
+    mine,
+    summarize_mining,
+    to_record,
+    verify_all,
+)
+from kestrixbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 RID = "00000000-0000-4000-8000-0000000000cc"
 
 
@@ -96,7 +105,7 @@ def test_refactor_detection():
 
 @pytest.mark.engine
 def test_verify_against_the_global_pool_then_place_by_split(tmp_path, history):
-    from aegisbench.evaluate import load_case
+    from kestrixbench.evaluate import load_case
 
     bare, pinned = history
     changes = [to_record(c) for c in mine(bare, pinned, {RID})[0]]
@@ -140,7 +149,7 @@ def test_verify_against_the_global_pool_then_place_by_split(tmp_path, history):
 def test_history_script_pins_the_same_commit():
     from pathlib import Path
 
-    from aegisbench.sources import by_name
+    from kestrixbench.sources import by_name
 
     script = (Path(__file__).resolve().parents[2] / "hpc/fetch_history.sh").read_text()
     assert f"PINNED={by_name('sigma').commit}" in script

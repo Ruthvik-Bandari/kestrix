@@ -3,8 +3,8 @@
 ## Access
 
 Add an `explorer` host alias to `~/.ssh/config` pointing at `login.explorer.northeastern.edu`, and
-install a key with `ssh-copy-id`. The repository is cloned at `$HOME/aegis-sec`; data lives under
-`/scratch/$USER/aegis-sec/`. `uv` is installed per user (`python3 -m pip install --user uv` after
+install a key with `ssh-copy-id`. The repository is cloned at `$HOME/kestrix`; data lives under
+`/scratch/$USER/kestrix/`. `uv` is installed per user (`python3 -m pip install --user uv` after
 `module load python/3.13.5`).
 
 ## Jobs
@@ -38,10 +38,10 @@ runs, so it may hold only public benchmark data.
 
 Compute nodes have no internet access. The login node (Rocky 9, like the compute nodes) builds the
 environment. Data, model and dataset downloads run on the transfer node, `xfer.discovery.neu.edu`, which shares `/home` and
-`/scratch` with Explorer: `ssh explorer-xfer 'cd ~/aegis-sec && bash -l hpc/acquire.sh'`. The transfer node runs
+`/scratch` with Explorer: `ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/acquire.sh'`. The transfer node runs
 CentOS 7 (glibc 2.17), so never build the project environment there. Jobs then
 run offline. Submit them from the repository root on the login node with `sbatch hpc/<job>.sbatch`.
-Logs go to `/scratch/$USER/aegis-sec/logs/`.
+Logs go to `/scratch/$USER/kestrix/logs/`.
 
 ## Choosing hardware by task
 

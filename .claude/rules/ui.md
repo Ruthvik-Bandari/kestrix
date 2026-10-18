@@ -5,7 +5,7 @@ paths:
 
 # Dashboard (React + Vite)
 
-- Verify with `npm --prefix frontend run lint && npm --prefix frontend run typecheck && npm --prefix frontend run test && npm --prefix frontend run build`. The build writes into `src/aegissec/server/static/`.
+- Verify with `npm --prefix frontend run lint && npm --prefix frontend run typecheck && npm --prefix frontend run test && npm --prefix frontend run build`. The build writes into `src/kestrix/server/static/`.
 - The dashboard must work offline under the server's CSP (`default-src 'self'`): no CDN scripts, fonts or styles; bundle everything.
 - Display replay metrics, heuristic scores and model text as separately labeled values. Never show a heuristic or ranking score as confidence or probability.
 - Show abstained, unsupported, insufficient_evidence and engine-error states explicitly; do not render them as "no matches" or "safe".

@@ -1,8 +1,8 @@
 # Benchmark data sources and license record
 
 This file is the human-readable license record that plan section 11 requires. The pins themselves
-live in `src/aegisbench/sources.py`. Changing a pin creates a new dataset version: update this
-file, then re-run `python -m aegisbench acquire` and `qc`.
+live in `src/kestrixbench/sources.py`. Changing a pin creates a new dataset version: update this
+file, then re-run `python -m kestrixbench acquire` and `qc`.
 
 | Source | Pinned revision | License | What we use | Allowed use and obligations |
 | --- | --- | --- | --- | --- |

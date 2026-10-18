@@ -1,6 +1,6 @@
 # Contributing
 
-This page covers how to set up Aegis-Sec for development, which checks a change must pass, and the conventions the code follows. It is for anyone sending a fix, a test or a new check. To report a vulnerability, use [SECURITY.md](SECURITY.md) instead of an issue. Participation follows the [code of conduct](CODE_OF_CONDUCT.md).
+This page covers how to set up Kestrix for development, which checks a change must pass, and the conventions the code follows. It is for anyone sending a fix, a test or a new check. To report a vulnerability, use [SECURITY.md](SECURITY.md) instead of an issue. Participation follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Set up
 
@@ -12,11 +12,11 @@ You need:
 - Docker for the detection-repair engine tests.
 
 ```bash
-git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git aegis-sec
-cd aegis-sec
+git clone https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer.git kestrix
+cd kestrix
 uv sync --all-extras                 # runtime, [ai], [exif] and dev dependencies from uv.lock
-uv run aegis-sec detect engine-up    # pinned Elasticsearch 8.19.3 on 127.0.0.1:9200
-uv run aegis-sec detect engine-status
+uv run kestrix detect engine-up    # pinned Elasticsearch 8.19.3 on 127.0.0.1:9200
+uv run kestrix detect engine-status
 npm --prefix frontend ci
 ```
 
@@ -26,13 +26,13 @@ Add dependencies with `uv add` (or `uv add --dev`), so `uv.lock` stays the sourc
 
 | Path | Contents |
 | --- | --- |
-| `src/aegissec/core/` | Shared reason codes, safe loading, outbound URL checks, config and secrets, evidence |
-| `src/aegissec/detect/` | Sigma detection repair; bundled cases in `detect/cases/` |
-| `src/aegissec/forensics/` | File and URL analysis |
-| `src/aegissec/webcheck/` | Passive website check |
-| `src/aegissec/bitcoin/` | Address decoding, risk, migration plans, guardian |
-| `src/aegissec/server/` | FastAPI app; the built dashboard goes into `server/static/` |
-| `src/aegissec/cli.py` | The `aegis-sec` entry point |
+| `src/kestrix/core/` | Shared reason codes, safe loading, outbound URL checks, config and secrets, evidence |
+| `src/kestrix/detect/` | Sigma detection repair; bundled cases in `detect/cases/` |
+| `src/kestrix/forensics/` | File and URL analysis |
+| `src/kestrix/webcheck/` | Passive website check |
+| `src/kestrix/bitcoin/` | Address decoding, risk, migration plans, guardian |
+| `src/kestrix/server/` | FastAPI app; the built dashboard goes into `server/static/` |
+| `src/kestrix/cli.py` | The `kestrix` entry point |
 | `frontend/` | React dashboard source (Vite) |
 | `tests/` | One folder per module, plus `tests/server/` |
 | `scripts/` | Case generator and the Claude pack validator |
@@ -51,14 +51,14 @@ uv run ruff check src tests scripts
 uv run mypy
 
 # Python tests: unit tests, then engine tests against the pinned Elasticsearch
-uv run pytest -m "not engine" --cov=aegissec --cov-report=term-missing
-AEGIS_ES_URL=http://127.0.0.1:9200 uv run pytest -m engine -v
+uv run pytest -m "not engine" --cov=kestrix --cov-report=term-missing
+KESTRIX_ES_URL=http://127.0.0.1:9200 uv run pytest -m engine -v
 
 # Dashboard
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck
 npm --prefix frontend run test
-npm --prefix frontend run build      # writes the bundle into src/aegissec/server/static/
+npm --prefix frontend run build      # writes the bundle into src/kestrix/server/static/
 
 # Package
 uv build
@@ -66,9 +66,9 @@ uv build
 
 - A plain `uv run pytest` runs everything. Engine tests are skipped automatically when Elasticsearch is not reachable, and the skip reason says so.
 - CI runs the unit tests on Python 3.12 and 3.13, and runs the engine tests against the pinned image as a service container.
-- The package job installs the built wheel in a clean environment, then runs `aegis-sec version`, `aegis-sec detect cases` and a Bitcoin scan. It also checks that the dashboard is inside the wheel.
+- The package job installs the built wheel in a clean environment, then runs `kestrix version`, `kestrix detect cases` and a Bitcoin scan. It also checks that the dashboard is inside the wheel.
 
-For live dashboard work, run `uv run aegis-sec dashboard --no-open` and `npm --prefix frontend run dev` side by side. The Vite dev server proxies `/api` to port 8765.
+For live dashboard work, run `uv run kestrix dashboard --no-open` and `npm --prefix frontend run dev` side by side. The Vite dev server proxies `/api` to port 8765.
 
 ## Conventions
 
@@ -83,7 +83,7 @@ For live dashboard work, run `uv run aegis-sec dashboard --no-open` and `npm --p
 
 ## Bundled detection cases
 
-The cases in `src/aegissec/detect/cases/` are generated. Do not edit them by hand. Change [`scripts/build_detect_cases.py`](scripts/build_detect_cases.py), then regenerate and run the engine tests:
+The cases in `src/kestrix/detect/cases/` are generated. Do not edit them by hand. Change [`scripts/build_detect_cases.py`](scripts/build_detect_cases.py), then regenerate and run the engine tests:
 
 ```bash
 uv run python scripts/build_detect_cases.py

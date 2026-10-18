@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.detect.fixtures import load_dataset
+from kestrix.core.errors import Reason, Rejected
+from kestrix.detect.fixtures import load_dataset
 
 
 def write(tmp_path, rows):

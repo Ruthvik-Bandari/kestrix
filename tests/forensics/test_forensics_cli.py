@@ -7,8 +7,8 @@ import pytest
 from forensics_samples import pe_bytes
 from typer.testing import CliRunner
 
-from aegissec.forensics import cli
-from aegissec.forensics.analysis import analyze_file
+from kestrix.forensics import cli
+from kestrix.forensics.analysis import analyze_file
 
 runner = CliRunner()
 

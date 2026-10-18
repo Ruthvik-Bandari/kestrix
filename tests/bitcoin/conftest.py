@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from aegissec.bitcoin import chain
-from aegissec.core import config
+from kestrix.bitcoin import chain
+from kestrix.core import config
 
 
 @pytest.fixture(autouse=True)

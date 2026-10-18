@@ -34,7 +34,7 @@ import { useTitle } from "../../lib/useTitle";
 
 /** Mirrors webcheck.models.NOTICE; the report repeats the server's own copy. */
 export const NOTICE =
-  "Only check websites you own or are authorized to assess. Aegis-Sec sends one GET request (plus redirects) and one TLS handshake.";
+  "Only check websites you own or are authorized to assess. Kestrix sends one GET request (plus redirects) and one TLS handshake.";
 
 const gradeTone: Record<WebReport["grade"], Tone> = {
   A: "ok",
@@ -400,7 +400,7 @@ function Report({ report }: { report: WebReport }) {
         </p>
         <RawJson
           data={report}
-          filename={`aegis-webcheck-${slug(report.final_url)}.json`}
+          filename={`kestrix-webcheck-${slug(report.final_url)}.json`}
         />
       </div>
     </section>

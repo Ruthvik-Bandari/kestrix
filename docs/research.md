@@ -1,6 +1,6 @@
 # Research pipeline: benchmark, baselines and fine-tuning
 
-This runbook covers the detection-repair research track from plan sections 11 to 14, from public data to a locked comparison of B0, B1, B2 and M1. Every step is one `python -m aegisbench <command>` run inside a Slurm job on Explorer (`docs/hpc.md`). Data lives under `/scratch/$USER/aegis-sec/data`. Only aggregate reports, which hold ids, counts and hashes, are copied into `docs/data/qc/`.
+This runbook covers the detection-repair research track from plan sections 11 to 14, from public data to a locked comparison of B0, B1, B2 and M1. Every step is one `python -m kestrixbench <command>` run inside a Slurm job on Explorer (`docs/hpc.md`). Data lives under `/scratch/$USER/kestrix/data`. Only aggregate reports, which hold ids, counts and hashes, are copied into `docs/data/qc/`.
 
 ## Pipeline
 
@@ -22,7 +22,7 @@ This runbook covers the detection-repair research track from plan sections 11 to
 
 ## The systems
 
-All four systems go through the same workflow (`aegissec.detect.workflow.run`). They differ only in the candidate generator. Every candidate meets the same contract:
+All four systems go through the same workflow (`kestrix.detect.workflow.run`). They differ only in the candidate generator. Every candidate meets the same contract:
 
 - at most 3 AST edits and 4 kept candidates;
 - no selection is ever dropped;
@@ -32,10 +32,10 @@ All four systems go through the same workflow (`aegissec.detect.workflow.run`). 
 
 | System | Candidate generator | Learns from |
 | --- | --- | --- |
-| B0 | Deterministic mapping, noise and logic generators (`aegissec.detect.repair`) | Nothing |
-| B1 | TF-IDF retrieval over the rule structure and diagnosis, which proposes edits that solved similar train cases (`aegisbench.b1`) | Train cases only |
-| B2 | An unmodified Qwen2.5-Coder-7B-Instruct (pinned revision, Apache-2.0) that writes JSON patches from the rule, mapping, coverage, diagnosis and replay counts (`aegisbench.b2`) | Nothing |
-| M1 | B2 plus a LoRA adapter fine-tuned on reference repairs from train cases (`aegisbench.sft`, `aegisbench.m1`) | Train cases only; development loss for monitoring |
+| B0 | Deterministic mapping, noise and logic generators (`kestrix.detect.repair`) | Nothing |
+| B1 | TF-IDF retrieval over the rule structure and diagnosis, which proposes edits that solved similar train cases (`kestrixbench.b1`) | Train cases only |
+| B2 | An unmodified Qwen2.5-Coder-7B-Instruct (pinned revision, Apache-2.0) that writes JSON patches from the rule, mapping, coverage, diagnosis and replay counts (`kestrixbench.b2`) | Nothing |
+| M1 | B2 plus a LoRA adapter fine-tuned on reference repairs from train cases (`kestrixbench.sft`, `kestrixbench.m1`) | Train cases only; development loss for monitoring |
 
 ## Metrics
 

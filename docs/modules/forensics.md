@@ -2,21 +2,21 @@
 
 The forensics module tells you what a file really is and whether a link shows common phishing signs, without running the file or opening the link. Use it on a download or attachment you are unsure about, on a photo before you share it, or on a link from an email or message. File analysis gives four hashes you can look up in malware databases, the real format detected from the content, entropy measurements that reveal packed or encrypted data, and photo metadata such as GPS location. URL analysis scores the link text against a set of offline checks.
 
-Neither check is a malware or phishing verdict. A clean result means none of the checks fired, not that the file or site is safe. The module is adapted from [CyberSafeX Detection Suite](https://github.com/Ruthvik-Bandari/CyberSafeX-Detection-Suite) (MIT). Source files are under [`src/aegissec/forensics/`](../../src/aegissec/forensics/).
+Neither check is a malware or phishing verdict. A clean result means none of the checks fired, not that the file or site is safe. The module is adapted from [CyberSafeX Detection Suite](https://github.com/Ruthvik-Bandari/CyberSafeX-Detection-Suite) (MIT). Source files are under [`src/kestrix/forensics/`](../../src/kestrix/forensics/).
 
 ## Commands
 
 | Command | Options | Exit codes |
 | --- | --- | --- |
-| `aegis-sec forensics file PATH` | `--json` | 0 analysed; 2 rejected (for example, larger than 50 MiB) |
-| `aegis-sec forensics url URL` | `--json` | 0 analysed; 2 rejected (for example, not http or https) |
+| `kestrix forensics file PATH` | `--json` | 0 analysed; 2 rejected (for example, larger than 50 MiB) |
+| `kestrix forensics url URL` | `--json` | 0 analysed; 2 rejected (for example, not http or https) |
 
 Rejections print `Rejected (<reason>): <detail>` to stderr. The dashboard and API use the same functions; see [`docs/api.md`](../api.md#forensics).
 
 ## File analysis
 
 ```text
-$ aegis-sec forensics file invoice.pdf.exe
+$ kestrix forensics file invoice.pdf.exe
 File:     invoice.pdf.exe (20,004 bytes)
 Type:     DOS or unrecognised MZ executable
 ...
@@ -35,7 +35,7 @@ The sample above is a synthetic file: an `MZ` header followed by random bytes. E
 
 ### What is measured
 
-The file is read once, in 1 MiB chunks, with memory bounded by one chunk, a 64 KiB header sample and one number per 4 KiB block ([`analysis.py`](../../src/aegissec/forensics/analysis.py)). Nothing is executed, decompressed or rendered.
+The file is read once, in 1 MiB chunks, with memory bounded by one chunk, a 64 KiB header sample and one number per 4 KiB block ([`analysis.py`](../../src/kestrix/forensics/analysis.py)). Nothing is executed, decompressed or rendered.
 
 | Report field | Meaning |
 | --- | --- |
@@ -82,7 +82,7 @@ The format comes from the first bytes of the content, never from the name. Recog
 
 ### Photo metadata
 
-EXIF reading needs the optional Pillow extra: `pip install "aegis-sec-ai[exif]"`. It runs only for JPEG, PNG, TIFF and WebP content, and Pillow is restricted to those four formats ([`exif.py`](../../src/aegissec/forensics/exif.py)).
+EXIF reading needs the optional Pillow extra: `pip install "kestrix[exif]"`. It runs only for JPEG, PNG, TIFF and WebP content, and Pillow is restricted to those four formats ([`exif.py`](../../src/kestrix/forensics/exif.py)).
 
 - Pixel data is never decoded. PNG metadata comes only from the header pass.
 - Images declaring more than 200,000,000 pixels (twice Pillow's limit, which is set to 100,000,000) are not opened.
@@ -95,16 +95,16 @@ EXIF reading needs the optional Pillow extra: `pip install "aegis-sec-ai[exif]"`
 | `ok` | Metadata returned in `exif`. |
 | `no_exif` | An image without EXIF. |
 | `not_image` | Not a format that carries EXIF. |
-| `pillow_not_installed` | Install `aegis-sec-ai[exif]` to read it. |
+| `pillow_not_installed` | Install `kestrix[exif]` to read it. |
 | `unreadable` | Metadata present but malformed. |
 | `too_many_pixels` | The image declares implausibly large dimensions, so it was not opened. |
 
 ## URL analysis
 
-URL analysis reads the link as text. It never fetches, resolves or follows the URL ([`url.py`](../../src/aegissec/forensics/url.py)).
+URL analysis reads the link as text. It never fetches, resolves or follows the URL ([`url.py`](../../src/kestrix/forensics/url.py)).
 
 ```text
-$ aegis-sec forensics url "http://paypa1-login.example.top/verify"
+$ kestrix forensics url "http://paypa1-login.example.top/verify"
 URL:      http://paypa1-login.example.top/verify
 Host:     paypa1-login.example.top
 Score:    55/100 (medium)

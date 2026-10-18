@@ -112,7 +112,7 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 const errorTitles: Record<string, string> = {
-  network_error: "Can't reach the Aegis-Sec server",
+  network_error: "Can't reach the Kestrix server",
   engine_unavailable: "The detection engine isn't running",
   engine_error: "The detection engine reported an error",
   ai_key_missing: "An Anthropic API key is needed",
@@ -147,7 +147,7 @@ function errorDetail(error: unknown): string {
       if (bytes) return `The request is larger than the ${Math.floor(Number(bytes) / MIB)} MB the server accepts. Use a smaller input.`;
     }
     if (error.reason === "cross_site_request")
-      return "Aegis-Sec only accepts actions from its own dashboard. Open the dashboard at the address `aegis-sec dashboard` printed and try again.";
+      return "Kestrix only accepts actions from its own dashboard. Open the dashboard at the address `kestrix dashboard` printed and try again.";
     return error.detail;
   }
   if (error instanceof Error) return error.message;

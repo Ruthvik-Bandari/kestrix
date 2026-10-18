@@ -1,6 +1,6 @@
 # Security policy
 
-If you find a vulnerability in Aegis-Sec, report it privately so it can be fixed before details are public. This page says how to report, which versions get fixes, what counts as in scope, and how good-faith research is treated. The design and its known limitations are in [docs/security-model.md](docs/security-model.md); check there first, because a documented limitation may already cover what you found.
+If you find a vulnerability in Kestrix, report it privately so it can be fixed before details are public. This page says how to report, which versions get fixes, what counts as in scope, and how good-faith research is treated. The design and its known limitations are in [docs/security-model.md](docs/security-model.md); check there first, because a documented limitation may already cover what you found.
 
 ## Report a vulnerability
 
@@ -10,7 +10,7 @@ Use GitHub private vulnerability reporting:
 2. Describe the issue, the affected version or commit, and the steps to reproduce it. A minimal proof of concept helps.
 3. Say whether you want to be credited, and under what name.
 
-Do not open a public issue, pull request or discussion for a vulnerability. Aegis-Sec has a single maintainer, so response times vary. You will get a reply in the advisory thread, and the fix, the advisory and the credit are coordinated with you there.
+Do not open a public issue, pull request or discussion for a vulnerability. Kestrix has a single maintainer, so response times vary. You will get a reply in the advisory thread, and the fix, the advisory and the credit are coordinated with you there.
 
 ## Supported versions
 
@@ -19,14 +19,14 @@ Do not open a public issue, pull request or discussion for a vulnerability. Aegi
 | 0.1.x | Yes |
 | Earlier code in this repository (the retired CTPPO prototype) | No |
 
-Fixes go into the latest 0.1 release. Upgrade with `pip install --upgrade aegis-sec-ai`.
+Fixes go into the latest 0.1 release. Upgrade with `pip install --upgrade kestrix`.
 
 ## Scope
 
 In scope:
 
-- the `aegis-sec-ai` Python package and the `aegis-sec` CLI;
-- the local server started by `aegis-sec dashboard` and its API, including the loopback-only, cross-site and body-size protections;
+- the `kestrix` Python package and the `kestrix` CLI;
+- the local server started by `kestrix dashboard` and its API, including the loopback-only, cross-site and body-size protections;
 - the bundled dashboard;
 - parsing of untrusted rules, mappings, fixtures, files, URLs and addresses;
 - outbound request guards (`core/netguard.py`, the website check, mempool.space lookups);
@@ -35,7 +35,7 @@ In scope:
 
 Out of scope:
 
-- vulnerabilities in third-party services (mempool.space, the Anthropic API) or in dependencies, unless Aegis-Sec uses them unsafely. Report those to their maintainers;
+- vulnerabilities in third-party services (mempool.space, the Anthropic API) or in dependencies, unless Kestrix uses them unsafely. Report those to their maintainers;
 - the Elasticsearch container's own security settings, which `detect engine-up` disables by design for a loopback-only replay engine;
 - findings that need an attacker who already runs code as your user, or has root;
 - limitations already listed in [docs/security-model.md](docs/security-model.md#known-limitations), unless you show a way around a documented mitigation;

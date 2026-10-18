@@ -5,8 +5,8 @@ import math
 import pytest
 from forensics_samples import docx_head, pe_bytes, random_bytes
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.forensics.analysis import (
+from kestrix.core.errors import Reason, Rejected
+from kestrix.forensics.analysis import (
     BLOCK_BYTES,
     CHUNK_BYTES,
     MAX_ENTROPY_POINTS,
@@ -19,7 +19,7 @@ from aegissec.forensics.analysis import (
     high_entropy_regions,
     shannon_entropy,
 )
-from aegissec.forensics.models import FileReport
+from kestrix.forensics.models import FileReport
 
 
 def analyze(data: bytes, name: str = "sample.bin", **kwargs: int) -> FileReport:

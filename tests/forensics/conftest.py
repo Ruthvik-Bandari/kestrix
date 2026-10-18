@@ -3,8 +3,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.forensics.api import router
+from kestrix.core.errors import Reason, Rejected
+from kestrix.forensics.api import router
 
 
 def _router_only_app() -> FastAPI:
@@ -23,7 +23,7 @@ def _router_only_app() -> FastAPI:
 @pytest.fixture
 def client() -> TestClient:
     try:
-        from aegissec.server.app import create_app
+        from kestrix.server.app import create_app
     except ImportError:  # sibling modules may not exist yet; exercise this router on its own
         return TestClient(_router_only_app())
     return TestClient(create_app(extra_hosts=frozenset({"testserver"})))

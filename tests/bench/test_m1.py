@@ -3,13 +3,13 @@ import os
 
 import pytest
 
-from aegisbench.m1 import encode
-from aegisbench.sft import build, reference_repair
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.mapping import FieldMapping
-from aegissec.detect.rule import parse_rule
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.mapping import FieldMapping
+from kestrix.detect.rule import parse_rule
+from kestrixbench.m1 import encode
+from kestrixbench.sft import build, reference_repair
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 HEAD = "title: t\nlogsource: {category: process_creation, product: windows}\ndetection:\n"
 HEALTHY = parse_rule(HEAD + "  a: {Image|endswith: '\\\\x.exe'}\n  b: {User: s}\n  condition: a and not b\n")
 MAP = FieldMapping("m", {"Image": "process.executable", "User": "user.name"})
@@ -67,8 +67,8 @@ def test_encode_masks_the_prompt_and_truncates_from_the_left():
 
 @pytest.mark.engine
 def test_sft_examples_are_valid_and_value_free(tmp_path):
-    from aegisbench.b2 import parse
-    from aegisbench.variants import build as build_variants
+    from kestrixbench.b2 import parse
+    from kestrixbench.variants import build as build_variants
     from tests.bench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path)

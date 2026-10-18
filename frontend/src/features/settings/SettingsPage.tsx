@@ -55,7 +55,7 @@ export default function SettingsPage() {
           )}
         </div>
         <p className="mt-2 max-w-[68ch] text-ink-2">
-          Only the Bitcoin guardian uses it. Everything else in Aegis-Sec works without a key. The key is never shown
+          Only the Bitcoin guardian uses it. Everything else in Kestrix works without a key. The key is never shown
           again, returned by the API, logged, or written to evidence files.
         </p>
         {settings.isError ? (
@@ -117,12 +117,12 @@ export default function SettingsPage() {
           <h3 className="font-medium text-ink">Where it is stored</h3>
           <ul className="mt-2 list-disc space-y-1.5 pl-5">
             <li>
-              In <code>secrets.json</code> inside your Aegis-Sec config folder (<code>~/.config/aegis-sec</code> on
-              macOS and Linux, <code>%APPDATA%\aegis-sec</code> on Windows). The file is readable only by your user
+              In <code>secrets.json</code> inside your Kestrix config folder (<code>~/.config/kestrix</code> on
+              macOS and Linux, <code>%APPDATA%\kestrix</code> on Windows). The file is readable only by your user
               account.
             </li>
             <li>
-              Or set the <code>ANTHROPIC_API_KEY</code> environment variable before running <code>aegis-sec dashboard</code>.
+              Or set the <code>ANTHROPIC_API_KEY</code> environment variable before running <code>kestrix dashboard</code>.
               It takes precedence over the saved file, and removing the saved key here does not unset it.
             </li>
           </ul>

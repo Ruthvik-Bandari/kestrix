@@ -21,7 +21,7 @@ function Brand() {
         <path d="M16 2.5 4.5 7v8.2c0 7 4.8 12.6 11.5 14.3 6.7-1.7 11.5-7.3 11.5-14.3V7L16 2.5Z" fill="var(--ink)" />
         <path d="M16 8.5 10 24h2.9l1.2-3.4h3.8l1.2 3.4H22L16 8.5Zm-1.1 9.6L16 14.7l1.1 3.4h-2.2Z" fill="var(--accent)" />
       </svg>
-      <span className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink">Aegis-Sec</span>
+      <span className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink">Kestrix</span>
     </span>
   );
 }
@@ -133,7 +133,7 @@ export function Layout() {
 
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-rail px-4 py-5 lg:flex">
-        <NavLink to="/" className="mb-7 rounded-md px-2" aria-label="Aegis-Sec overview">
+        <NavLink to="/" className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
           <Brand />
         </NavLink>
         <nav aria-label="Main">
@@ -148,7 +148,7 @@ export function Layout() {
       {/* Mobile header */}
       <header className="sticky top-0 z-30 border-b border-line bg-rail lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <NavLink to="/" className="rounded-md" aria-label="Aegis-Sec overview">
+          <NavLink to="/" className="rounded-md" aria-label="Kestrix overview">
             <Brand />
           </NavLink>
           <button

@@ -129,7 +129,7 @@ function CandidateItem({
 
 function evidenceName(report: DetectReport): string {
   const subject = report.case?.case_id ?? report.rule?.title ?? "rule";
-  return `aegis-detect-${slug(subject)}-${report.outcome}.json`;
+  return `kestrix-detect-${slug(subject)}-${report.outcome}.json`;
 }
 
 export function ReportView({ report }: { report: DetectReport }) {

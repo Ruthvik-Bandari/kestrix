@@ -1,6 +1,6 @@
 # Model card: M1 detection-repair adapter (research, not released)
 
-**Status: research result, not shipped.** Under plan section 13, adaptation ships only if it credibly beats the strongest baseline, and M1 does not (see Results). The shipped `aegis-sec detect` uses the deterministic generator; B1 retrieval is the recommended research baseline.
+**Status: research result, not shipped.** Under plan section 13, adaptation ships only if it credibly beats the strongest baseline, and M1 does not (see Results). The shipped `kestrix detect` uses the deterministic generator; B1 retrieval is the recommended research baseline.
 
 ## Model
 
@@ -11,7 +11,7 @@
 | Training | Supervised fine-tuning on completions only; AdamW with learning rate 2e-4 and a cosine schedule (5% warmup); effective batch 8; 3 epochs; bf16; context 4,096 with no truncation observed |
 | Hardware | One A100-SXM4-80GB. Peak memory 18.9 GB, about 2,100 tokens per second, 4.5 minutes per seed |
 | Seeds | 1, 2, 3; identical validated success, development loss 0.019 to 0.020 |
-| Code | `src/aegisbench/m1.py` (training), `src/aegisbench/sft.py` (data), `src/aegisbench/hf.py` (inference) |
+| Code | `src/kestrixbench/m1.py` (training), `src/kestrixbench/sft.py` (data), `src/kestrixbench/hf.py` (inference) |
 | Run records | `reports/m1-seed*-training.json`, which hold the configuration, loss history, memory, throughput, base revision and data SHA-256 |
 
 ## Intended use

@@ -67,7 +67,7 @@ export default function MigrationPage() {
             </section>
           ) : null}
           <p className="rounded-lg bg-inset px-4 py-3 text-ink-2">
-            Do every step in your own wallet software. Aegis-Sec never needs, and will never ask for, your seed phrase or
+            Do every step in your own wallet software. Kestrix never needs, and will never ask for, your seed phrase or
             private keys.
           </p>
         </div>

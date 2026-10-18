@@ -5,17 +5,17 @@ import os
 
 import pytest
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.detect import cases, workflow
-from aegissec.detect.candidate import Candidate, apply
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.fixtures import Dataset, Event
-from aegissec.detect.mapping import FieldMapping, to_lucene
-from aegissec.detect.replay import score
-from aegissec.detect.rule import has_wildcard, parse_rule, sigma_escape
-from aegissec.detect.workflow import Inputs, policy_failures
+from kestrix.core.errors import Reason, Rejected
+from kestrix.detect import cases, workflow
+from kestrix.detect.candidate import Candidate, apply
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.fixtures import Dataset, Event
+from kestrix.detect.mapping import FieldMapping, to_lucene
+from kestrix.detect.replay import score
+from kestrix.detect.rule import has_wildcard, parse_rule, sigma_escape
+from kestrix.detect.workflow import Inputs, policy_failures
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 MAPPING = FieldMapping("m", {"Image": "process.executable", "CommandLine": "process.command_line", "User": "user.name"})
 HEADER = "title: t\nlogsource: {category: process_creation, product: windows}\ndetection:\n"
 
@@ -257,7 +257,7 @@ def test_lucene_for_escaped_value_is_literal(es):
 
 def test_engine_client_ignores_proxy_environment(monkeypatch):
     """Cluster nodes set http_proxy without NO_PROXY; the local engine must not be proxied."""
-    from aegissec.detect.engine import Elasticsearch
+    from kestrix.detect.engine import Elasticsearch
 
     monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:3128")
     monkeypatch.setenv("http_proxy", "http://proxy.invalid:3128")

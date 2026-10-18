@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from aegissec.bitcoin.migration import parse_address_type, plan_for
-from aegissec.bitcoin.models import AddressType
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin.migration import parse_address_type, plan_for
+from kestrix.bitcoin.models import AddressType
+from kestrix.core.errors import Reason, Rejected
 
 
 def test_p2pk_plan_is_urgent_and_explains_sweeping() -> None:

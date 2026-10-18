@@ -15,7 +15,7 @@ export const outcomeMeta: Record<Outcome, OutcomeMeta> = {
     label: "Repaired",
     title: "Repaired: a tested fix is ready to review",
     explain:
-      "Aegis-Sec found the cause, proposed a bounded change and replayed it on labeled events. Review the change before you deploy it.",
+      "Kestrix found the cause, proposed a bounded change and replayed it on labeled events. Review the change before you deploy it.",
   },
   unchanged: {
     tone: "ok",
@@ -28,12 +28,12 @@ export const outcomeMeta: Record<Outcome, OutcomeMeta> = {
     label: "Abstained",
     title: "No safe fix found, so the rule was left as it is",
     explain:
-      "Aegis-Sec would rather propose nothing than a change it could not verify. The diagnosis below shows what it tried.",
+      "Kestrix would rather propose nothing than a change it could not verify. The diagnosis below shows what it tried.",
   },
   unsupported: {
     tone: "low",
     label: "Unsupported",
-    title: "This rule uses a feature Aegis-Sec can't repair yet",
+    title: "This rule uses a feature Kestrix can't repair yet",
     explain: "Nothing was changed. The reason below names the unsupported part of the rule.",
   },
   insufficient_evidence: {

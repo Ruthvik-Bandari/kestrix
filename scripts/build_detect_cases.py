@@ -1,7 +1,7 @@
 """Generate the bundled detection-repair demo cases (synthetic, labeled fixtures).
 
 Run from the repo root: ``uv run python scripts/build_detect_cases.py``. Output goes to
-``src/aegissec/detect/cases/<case_id>/``. Every event is synthetic (provenance
+``src/kestrix/detect/cases/<case_id>/``. Every event is synthetic (provenance
 ``synthetic``): these are unit-level demonstrations, not evidence about real telemetry.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 
-OUT = Path(__file__).resolve().parents[1] / "src" / "aegissec" / "detect" / "cases"
+OUT = Path(__file__).resolve().parents[1] / "src" / "kestrix" / "detect" / "cases"
 
 HEALTHY_MAPPING = {
     "Image": "process.executable",

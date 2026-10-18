@@ -1,7 +1,7 @@
 [project]
-name = "aegis-sec-ai"
+name = "kestrix"
 version = "0.1.0"
-description = "Aegis-Sec: a local-first security workbench for detection repair, file forensics, web exposure checks and Bitcoin quantum-risk scanning."
+description = "Kestrix: a local-first security workbench for detection repair, file forensics, web exposure checks and Bitcoin quantum-risk scanning."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
@@ -35,7 +35,7 @@ ai = ["anthropic>=0.75"]
 exif = ["pillow>=11"]
 
 [project.scripts]
-aegis-sec = "aegissec.cli:app"
+kestrix = "kestrix.cli:app"
 
 [project.urls]
 Repository = "https://github.com/Ruthvik-Bandari/CTPPO-Cyber_Threat_Propagation_Path_Optimizer"
@@ -45,7 +45,7 @@ requires = ["uv_build>=0.11.16,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "aegissec"
+module-name = "kestrix"
 
 [dependency-groups]
 dev = ["pytest>=9", "pytest-cov>=6", "ruff>=0.14", "mypy>=1.18", "types-pyyaml"]
@@ -56,7 +56,7 @@ gpu = ["torch>=2.6,<2.7", "transformers>=4.46,<5", "accelerate>=1.0", "peft>=0.1
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
-markers = ["engine: requires the pinned Elasticsearch at AEGIS_ES_URL (default http://127.0.0.1:9200)"]
+markers = ["engine: requires the pinned Elasticsearch at KESTRIX_ES_URL (default http://127.0.0.1:9200)"]
 
 [tool.ruff]
 line-length = 120
@@ -72,12 +72,12 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "PLR0917"]
 "scripts/**" = ["PLR0915", "PLR0917"]
-"src/aegissec/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter
+"src/kestrix/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["aegissec", "aegisbench"]
+packages = ["kestrix", "kestrixbench"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]

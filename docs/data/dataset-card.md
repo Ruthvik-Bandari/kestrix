@@ -1,4 +1,4 @@
-# Dataset card: Aegis-Sec detection-repair benchmark (v1, preview)
+# Dataset card: Kestrix detection-repair benchmark (v1, preview)
 
 **Status: frozen 2026-10-17.** The frozen split is in [`split-manifest.json`](split-manifest.json), SHA-256 `0353bc1e84787150eab2c13a0ca9fa4d2967227bc55a4df726a12cde5fc48bd4`. It holds ids and source hashes only, and is never overwritten. The owner waived the human label check. A sensitivity analysis that excludes every AI-assisted label replaces it (see "Labels").
 

@@ -4,13 +4,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.core.netguard import check_url
-from aegissec.webcheck import checks
-from aegissec.webcheck.cli import app as cli_app
-from aegissec.webcheck.grade import grade
-from aegissec.webcheck.models import Finding, TlsInfo
-from aegissec.webcheck.scan import scan
+from kestrix.core.errors import Reason, Rejected
+from kestrix.core.netguard import check_url
+from kestrix.webcheck import checks
+from kestrix.webcheck.cli import app as cli_app
+from kestrix.webcheck.grade import grade
+from kestrix.webcheck.models import Finding, TlsInfo
+from kestrix.webcheck.scan import scan
 
 OK_TLS = TlsInfo(host="site.test", status="ok", protocol="TLSv1.3", days_remaining=90)
 GOOD = {
@@ -239,7 +239,7 @@ def test_private_targets_allowed_on_request(fake_dns):
 
 
 def test_api_and_cli(monkeypatch):
-    from aegissec.webcheck import api, cli
+    from kestrix.webcheck import api, cli
 
     monkeypatch.setattr(api, "scan", lambda url, allow_private, site_type: _fake_report())
     monkeypatch.setattr(cli, "scan", lambda url, allow_private, site_type: _fake_report())
@@ -253,7 +253,7 @@ def test_api_and_cli(monkeypatch):
 
 
 def _fake_report():
-    from aegissec.webcheck.models import Report, Timings
+    from kestrix.webcheck.models import Report, Timings
 
     return Report(
         requested_url="https://site.test",
@@ -270,7 +270,7 @@ def _fake_report():
 
 
 def test_cli_rejected_exit_code(monkeypatch):
-    from aegissec.webcheck import cli
+    from kestrix.webcheck import cli
 
     def boom(url, allow_private, site_type):
         raise Rejected(Reason.TARGET_NOT_ALLOWED, "private")

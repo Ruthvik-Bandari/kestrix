@@ -1,11 +1,12 @@
 # Changelog
 
-All notable changes to Aegis-Sec are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Before 1.0, a minor version may change commands, report fields or API routes; each such change is listed here.
+All notable changes to Kestrix are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Before 1.0, a minor version may change commands, report fields or API routes; each such change is listed here.
 
 ## [Unreleased]
 
 ### Changed
 
+- **Breaking:** the project is renamed to Kestrix. The package is `kestrix` (was `aegis-sec-ai`), the command is `kestrix` (was `aegis-sec`), the import packages are `kestrix` and `kestrixbench`, environment variables start with `KESTRIX_`, and the config directory is `kestrix`. The benchmark split seed stays `aegis-bench-v1` so the frozen split is unchanged. The pre-rename state is tagged `pre-kestrix-rename`.
 - The detection-repair Sigma subset now covers the four idioms that excluded most SigmaHQ rules ([ADR 0002](docs/adr/0002-sigma-subset-common-idioms.md)): selections written as lists of field maps, the `|all` modifier suffix, and `1 of` / `all of` quantifiers over name patterns or `them`. Each has a test on the pinned engine.
 - **Breaking:** in `POST /api/detect/parse`, `selections` is now `{name: [[predicate, ...], ...]}`, a list of alternative maps, and each predicate includes `match_all`. Candidate predicate specs accept an optional `match_all`.
 - Rendered conditions keep parentheses on every nested group, so a condition re-parses to the identical tree and swapping `1 of` for `all of` counts as one edit.
@@ -17,7 +18,7 @@ All notable changes to Aegis-Sec are recorded here. The format follows [Keep a C
 - The website check adds `hsts.disabled` (`max-age=0`), `hsts.not_preload_ready` (info) and `cookie.prefix_violation` (`__Host-` and `__Secure-` rules).
 - `scripts/webcheck_conformance.py` is a live conformance run against badssl.com endpoints. A table of known-bad header pages is also tested through the full scan.
 
-- `aegis-sec detect`'s workflow accepts a pluggable candidate generator, with the deterministic B0 as the default. Research systems reuse the same candidate contract, screening, freeze and validation.
+- `kestrix detect`'s workflow accepts a pluggable candidate generator, with the deterministic B0 as the default. Research systems reuse the same candidate contract, screening, freeze and validation.
 
 - The website check profiles the site before grading (`static`, `static_api` or `dynamic`), using bounded, non-executing parsing of the page it already fetches.
   - CSP, framing and referrer findings are re-weighed for the profile, and only ever lowered, with the original severity and a reason recorded.
@@ -32,7 +33,7 @@ All notable changes to Aegis-Sec are recorded here. The format follows [Keep a C
 
 ### Added
 
-- `aegisbench`, a research package that is not shipped in the wheel:
+- `kestrixbench`, a research package that is not shipped in the wheel:
   - fetches SigmaHQ, OTRF Security-Datasets and Atomic Red Team at their pinned commits;
   - records license and per-file SHA-256 manifests;
   - writes aggregate-only QC reports.
@@ -40,11 +41,11 @@ All notable changes to Aegis-Sec are recorded here. The format follows [Keep a C
 
 ## [0.1.0] - 2026-10-14
 
-First release of Aegis-Sec as one installable package, `aegis-sec-ai`, with the `aegis-sec` CLI and a local dashboard. See [ADR 0001](docs/adr/0001-platform-direction.md) for the platform decision.
+First release of Kestrix as one installable package, `kestrix`, with the `kestrix` CLI and a local dashboard. See [ADR 0001](docs/adr/0001-platform-direction.md) for the platform decision.
 
 ### Added
 
-- **Detection repair** (`aegis-sec detect`), the deterministic B0 baseline from the [engineering plan](docs/CyberGuard_Engineering_Plan.md):
+- **Detection repair** (`kestrix detect`), the deterministic B0 baseline from the [engineering plan](docs/CyberGuard_Engineering_Plan.md):
   - parser for a bounded single-event Sigma subset (Windows `process_creation`, exact/`contains`/`startswith`/`endswith`, value lists, `and`/`or`/`not`), with a reason code for every rejection;
   - environment field mappings and conversion with the pySigma Lucene backend;
   - replay on Elasticsearch 8.19.3 pinned by image digest, with a disposable index per run, count verification and full pagination;
@@ -53,25 +54,25 @@ First release of Aegis-Sec as one installable package, `aegis-sec-ai`, with the 
   - outcomes `repaired`, `unchanged`, `abstained`, `insufficient_evidence`, `unsupported` and `engine_unavailable`, with stable exit codes;
   - content-addressed JSON evidence (`--evidence-dir`);
   - 11 synthetic demonstration cases (`detect cases`, `detect demo`) and `engine-up` / `engine-status` helpers.
-- **File and URL forensics** (`aegis-sec forensics`), adapted from CyberSafeX Detection Suite:
+- **File and URL forensics** (`kestrix forensics`), adapted from CyberSafeX Detection Suite:
   - streaming MD5, SHA-1, SHA-256 and SHA-512;
   - whole-file and per-block entropy, and a byte histogram;
   - magic-byte format detection with extension-mismatch, double-extension and bidirectional-control findings;
   - EXIF and GPS privacy findings through the optional `[exif]` extra;
   - offline URL phishing heuristics.
-- **Website check** (`aegis-sec webcheck scan`): one guarded GET plus one TLS handshake, checks for HTTPS, TLS, headers, information disclosure and cookies, and an A to F grade from a fixed rubric.
-- **Bitcoin quantum risk** (`aegis-sec bitcoin`), adapted from BitShield (MIT Bitcoin Expo 2026, Team ACE):
+- **Website check** (`kestrix webcheck scan`): one guarded GET plus one TLS handshake, checks for HTTPS, TLS, headers, information disclosure and cookies, and an A to F grade from a fixed rubric.
+- **Bitcoin quantum risk** (`kestrix bitcoin`), adapted from BitShield (MIT Bitcoin Expo 2026, Team ACE):
   - Base58Check, Bech32 and Bech32m decoding;
   - key-exposure risk per address type;
   - migration plans;
   - optional mempool.space spend-history lookups;
-  - an optional intent guardian that uses your own Anthropic key (`[ai]` extra, `AEGIS_SEC_AI_MODEL`).
-- **Dashboard and API** (`aegis-sec dashboard`): a FastAPI server on `127.0.0.1:8765` serving the bundled React dashboard and a JSON API described at `/api/openapi.json`. Protections:
+  - an optional intent guardian that uses your own Anthropic key (`[ai]` extra, `KESTRIX_AI_MODEL`).
+- **Dashboard and API** (`kestrix dashboard`): a FastAPI server on `127.0.0.1:8765` serving the bundled React dashboard and a JSON API described at `/api/openapi.json`. Protections:
   - `Host` allowlist;
   - cross-site write refusal;
   - per-route body caps;
   - strict security headers.
-- `aegis-sec config` commands to store, clear and inspect the local Anthropic key (`0600` file).
+- `kestrix config` commands to store, clear and inspect the local Anthropic key (`0600` file).
 - Documentation: module guides under `docs/modules/`, `docs/api.md`, `docs/security-model.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` and `CITATION.cff`.
 - CI with these jobs:
   - lint and strict types;

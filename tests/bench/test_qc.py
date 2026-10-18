@@ -2,7 +2,7 @@ import json
 import zipfile
 from pathlib import Path
 
-from aegisbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL, qc_atomic, qc_otrf, qc_sigma
+from kestrixbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL, qc_atomic, qc_otrf, qc_sigma
 
 RULE = """title: {title}
 id: {rid}
@@ -111,8 +111,8 @@ def test_sigma_regression_accepts_concatenated_events(tmp_path):
 
 
 def test_sigma_qc_counts_conversion_failures(tmp_path, monkeypatch):
-    from aegisbench import qc
-    from aegissec.core.errors import Reason, Rejected
+    from kestrix.core.errors import Reason, Rejected
+    from kestrixbench import qc
 
     def fail(rule, mapping):
         raise Rejected(Reason.CONVERSION_FAILED, "backend refused")

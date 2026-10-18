@@ -1,12 +1,12 @@
 #!/bin/bash
-# Run on the transfer node: ssh explorer-xfer 'cd ~/aegis-sec && bash -l hpc/fetch_engine.sh'
+# Run on the transfer node: ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/fetch_engine.sh'
 # Downloads the pinned Elasticsearch 8.19.3 Linux tarball, verifies it against the SHA-512 pinned
 # here (not fetched alongside it), and unpacks it under scratch. The cluster has no Docker, so the
 # tarball's bundled JDK runs it as a normal user inside a Slurm job.
 set -euo pipefail
 VERSION=8.19.3
 SHA512=a313f961fdc14eed528c0d4ca1588685903aa139cff5527f018cfcc638eb74e5178e443d50eb34d5f1e409a5a23cfb25b7b1b18025d6e8cbb7d9e88f2dd7b351
-DIR="/scratch/$USER/aegis-sec/engine"
+DIR="/scratch/$USER/kestrix/engine"
 TARBALL="elasticsearch-$VERSION-linux-x86_64.tar.gz"
 mkdir -p "$DIR"
 cd "$DIR"

@@ -1,4 +1,4 @@
-/** Response shapes mirrored from the FastAPI source (src/aegissec/**). */
+/** Response shapes mirrored from the FastAPI source (src/kestrix/**). */
 
 export type Severity = "info" | "low" | "medium" | "high";
 

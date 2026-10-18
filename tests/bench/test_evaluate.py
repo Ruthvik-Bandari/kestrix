@@ -4,10 +4,10 @@ import shutil
 
 import pytest
 
-from aegisbench.evaluate import bootstrap, run_cases, score, summarize
-from aegissec.detect.engine import Elasticsearch
+from kestrix.detect.engine import Elasticsearch
+from kestrixbench.evaluate import bootstrap, run_cases, score, summarize
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 
 
 def _manifest(kind, expected, validation=True, root="r1"):
@@ -63,8 +63,8 @@ def test_bootstrap_resamples_roots_and_summary_keeps_failures_in_denominator():
 
 @pytest.mark.engine
 def test_b0_runs_generated_cases_and_skips_locked_test(tmp_path):
-    from aegisbench.evaluate import SYSTEMS
-    from aegisbench.variants import build
+    from kestrixbench.evaluate import SYSTEMS
+    from kestrixbench.variants import build
     from tests.bench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path)

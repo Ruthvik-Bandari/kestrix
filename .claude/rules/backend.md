@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/aegissec/server/**"
-  - "src/aegissec/*/api.py"
+  - "src/kestrix/server/**"
+  - "src/kestrix/*/api.py"
 ---
 
 # Local API server (FastAPI)

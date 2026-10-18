@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from aegissec.bitcoin.address import (
+from kestrix.bitcoin.address import (
     Bech32Encoding,
     base58_decode,
     base58check_decode,
@@ -13,8 +13,8 @@ from aegissec.bitcoin.address import (
     decode_segwit,
     parse_address,
 )
-from aegissec.bitcoin.models import AddressType, Network
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin.models import AddressType, Network
+from kestrix.core.errors import Reason, Rejected
 from tests.bitcoin.btc_helpers import (
     G_COMPRESSED,
     GENESIS_P2PKH,

@@ -9,11 +9,11 @@ import zipfile
 import pytest
 import yaml
 
-from aegisbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
-from aegisbench.variants import _drop, build, to_ecs
-from aegissec.detect.engine import Elasticsearch
+from kestrix.detect.engine import Elasticsearch
+from kestrixbench.qc import SIGMA_REGRESSION, SIGMA_RULES, SYSMON_CHANNEL
+from kestrixbench.variants import _drop, build, to_ecs
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 RID = "00000000-0000-4000-8000-0000000000aa"
 RULE = f"""title: certutil download
 id: {RID}
@@ -94,7 +94,7 @@ def split_manifest():
 
 @pytest.mark.engine
 def test_variants_are_verified_written_privately_and_repairable(root):
-    from aegissec.detect.workflow import Inputs, run
+    from kestrix.detect.workflow import Inputs, run
 
     report = {"per_rule": {RID: {"matched_event_ids": [f"sigma:{RID}:0", f"sigma:{RID}:1"]}}}
     es = Elasticsearch(ES_URL)
@@ -137,10 +137,10 @@ def test_negative_control_weakened_repair_fails_validation(tmp_path):
     """Plan section 9: an always-true style repair must fail validation. It catches the missed
     attack, so it passes development screening, and only the reference negatives (labeled
     benign) expose it as a false-alarm generator."""
-    from aegisbench.variants import HEALTHY, _jsonl, _mapping_yaml, to_ecs
-    from aegissec.detect.candidate import Candidate
-    from aegissec.detect.fixtures import Event
-    from aegissec.detect.workflow import Inputs, run
+    from kestrix.detect.candidate import Candidate
+    from kestrix.detect.fixtures import Event
+    from kestrix.detect.workflow import Inputs, run
+    from kestrixbench.variants import HEALTHY, _jsonl, _mapping_yaml, to_ecs
 
     healthy = RULE
     impaired = RULE.replace("['-urlcache', '-verifyctl']", "'-urlcache'")  # misses -verifyctl downloads
@@ -189,7 +189,7 @@ def test_negative_control_weakened_repair_fails_validation(tmp_path):
 
 
 def test_background_negatives_never_include_a_known_positive():
-    from aegisbench.variants import background_negatives, known_positives
+    from kestrixbench.variants import background_negatives, known_positives
 
     manifest = {"splits": {"test": [{"rules": [{"id": "t", "positive_event_ids": ["otrf:a:1"]}]}], "reserve": []}}
     excluded = known_positives(manifest, {"otrf:b:2"})

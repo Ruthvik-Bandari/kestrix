@@ -1,4 +1,4 @@
-# ADR 0001: Aegis-Sec as one installable local-first package
+# ADR 0001: Kestrix as one installable local-first package
 
 - Status: accepted
 - Date: 2026-10-14
@@ -13,7 +13,7 @@ changed direction:
 
 - The upstream Java backend and Next.js frontend are not reused. The platform is rebuilt to production
   engineering standards instead of extending a student incident tracker.
-- The product is a single Python package (`pip install aegis-sec-ai`) with a CLI and a bundled local
+- The product is a single Python package (`pip install kestrix`) with a CLI and a bundled local
   dashboard. It serves everyday users, students, practitioners and researchers.
 - The package combines four modules: Sigma detection repair (the core of the plan), file and URL
   forensics (adapted from CyberSafeX Detection Suite), passive website exposure checks, and Bitcoin
@@ -22,7 +22,7 @@ changed direction:
 
 ## Decision
 
-1. **Runtime:** a FastAPI application, served by `aegis-sec dashboard`, that binds to 127.0.0.1 by default.
+1. **Runtime:** a FastAPI application, served by `kestrix dashboard`, that binds to 127.0.0.1 by default.
    A prebuilt React SPA ships inside the wheel, so users need no Node toolchain.
 2. **One shared core:** the CLI and the HTTP API call the same module functions. No business logic
    lives in either adapter.

@@ -24,9 +24,9 @@ function Answer({ result, onUseAddresses }: { result: GuardianResult; onUseAddre
         <p className="font-medium">{intentText[result.intent]}</p>
       </div>
 
-      {/* Deterministic text written by Aegis-Sec, not the model. */}
+      {/* Deterministic text written by Kestrix, not the model. */}
       <div className="rounded-lg bg-accent-soft px-4 py-3">
-        <p className="text-[0.8125rem] font-medium text-accent-text">Next step from Aegis-Sec</p>
+        <p className="text-[0.8125rem] font-medium text-accent-text">Next step from Kestrix</p>
         <p className="mt-1 text-ink">{result.next_step}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {result.addresses.length > 0 ? (
@@ -84,7 +84,7 @@ export function Guardian({ onUseAddresses }: { onUseAddresses: (addresses: strin
         Ask the guardian
       </h2>
       <p className="mt-1 text-ink-2">
-        Describe what you want in your own words. An AI model works out what you mean; Aegis-Sec decides what happens
+        Describe what you want in your own words. An AI model works out what you mean; Kestrix decides what happens
         next. Uses your Anthropic API key.
       </p>
       <form onSubmit={submit} className="mt-4 space-y-3">
@@ -116,7 +116,7 @@ export function Guardian({ onUseAddresses }: { onUseAddresses: (addresses: strin
                 <Link to="/settings" className="link">
                   Settings
                 </Link>
-                , or set the <code>ANTHROPIC_API_KEY</code> environment variable before starting Aegis-Sec. The address
+                , or set the <code>ANTHROPIC_API_KEY</code> environment variable before starting Kestrix. The address
                 scanner above works without it.
               </p>
               <p className="mt-2 text-[0.8125rem] text-ink-3">Server said: {keyMissing.detail}</p>

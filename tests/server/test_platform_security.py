@@ -7,9 +7,9 @@ import sys
 import pytest
 from fastapi.testclient import TestClient
 
-from aegissec.core import config
-from aegissec.core.netguard import _is_public
-from aegissec.server.app import create_app
+from kestrix.core import config
+from kestrix.core.netguard import _is_public
+from kestrix.server.app import create_app
 
 
 @pytest.fixture

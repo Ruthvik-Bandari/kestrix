@@ -12,7 +12,7 @@ export function RouteError() {
     <div className="mx-auto max-w-xl px-4 py-16">
       <h1 className="text-2xl font-semibold">This page couldn't load</h1>
       <p className="mt-2 text-ink-2">
-        If you just upgraded Aegis-Sec, reload the page to fetch the new dashboard files.
+        If you just upgraded Kestrix, reload the page to fetch the new dashboard files.
       </p>
       <p className="mt-3 rounded-lg bg-inset px-3 py-2 font-mono text-[0.8125rem] break-words">{detail}</p>
       <div className="mt-6 flex gap-2">

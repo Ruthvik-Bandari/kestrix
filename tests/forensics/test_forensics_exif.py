@@ -3,9 +3,9 @@ import sys
 
 import pytest
 
-from aegissec.forensics import exif as exif_module
-from aegissec.forensics.analysis import analyze_file
-from aegissec.forensics.exif import MAX_TAGS, collect, exif_findings, read_exif
+from kestrix.forensics import exif as exif_module
+from kestrix.forensics.analysis import analyze_file
+from kestrix.forensics.exif import MAX_TAGS, collect, exif_findings, read_exif
 
 GPS = {1: "N", 2: (40.0, 26.0, 46.0), 3: "W", 4: (79.0, 58.0, 56.0)}
 NAMES = {0x010F: "Make", 0x0110: "Model", 0x927C: "MakerNote", 0xA431: "BodySerialNumber"}

@@ -7,7 +7,7 @@ import json
 from types import SimpleNamespace
 from typing import Any
 
-from aegissec.bitcoin.address import Bech32Encoding, _bech32_polymod, _hrp_expand
+from kestrix.bitcoin.address import Bech32Encoding, _bech32_polymod, _hrp_expand
 
 # Known-valid addresses (BIP-173/BIP-350 examples and well-known mainnet addresses).
 GENESIS_P2PKH = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"

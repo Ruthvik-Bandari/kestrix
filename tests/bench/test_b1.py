@@ -2,11 +2,11 @@ import os
 
 import pytest
 
-from aegisbench.b1 import build_memory, edit_signature
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.rule import parse_condition
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.rule import parse_condition
+from kestrixbench.b1 import build_memory, edit_signature
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 NAMES = ["a", "b", "c"]
 
 
@@ -26,7 +26,7 @@ def test_edit_signature(before, after, signature):
 
 
 def _cases(tmp_path, split):
-    from aegisbench.variants import build
+    from kestrixbench.variants import build
     from tests.bench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path / split)
@@ -37,7 +37,7 @@ def _cases(tmp_path, split):
 
 @pytest.mark.engine
 def test_memory_reads_train_only_and_b1_repairs_by_analogy(tmp_path):
-    from aegisbench.evaluate import SYSTEMS, run_cases
+    from kestrixbench.evaluate import SYSTEMS, run_cases
 
     es = Elasticsearch(ES_URL)
     try:
@@ -63,11 +63,11 @@ def test_memory_reads_train_only_and_b1_repairs_by_analogy(tmp_path):
 
 
 def test_out_of_contract_proposals_are_skipped_not_fatal():
-    from aegisbench.b1 import Repair, generator
-    from aegissec.detect.diagnose import Family, Hypothesis
-    from aegissec.detect.fixtures import Dataset
-    from aegissec.detect.mapping import FieldMapping
-    from aegissec.detect.rule import parse_rule
+    from kestrix.detect.diagnose import Family, Hypothesis
+    from kestrix.detect.fixtures import Dataset
+    from kestrix.detect.mapping import FieldMapping
+    from kestrix.detect.rule import parse_rule
+    from kestrixbench.b1 import Repair, generator
 
     values = ", ".join(f"'v{i}.exe'" for i in range(9))
     rule = parse_rule(

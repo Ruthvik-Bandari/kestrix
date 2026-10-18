@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from aegissec.bitcoin.address import ParsedAddress, parse_address
-from aegissec.bitcoin.models import ChainActivity, KeyExposure, Risk
-from aegissec.bitcoin.risk import MAX_BATCH, assess, scan
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin.address import ParsedAddress, parse_address
+from kestrix.bitcoin.models import ChainActivity, KeyExposure, Risk
+from kestrix.bitcoin.risk import MAX_BATCH, assess, scan
+from kestrix.core.errors import Reason, Rejected
 from tests.bitcoin.btc_helpers import (
     G_COMPRESSED,
     GENESIS_P2PKH,

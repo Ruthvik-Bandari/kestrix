@@ -1,9 +1,9 @@
 cff-version: 1.2.0
-message: "If you use Aegis-Sec in your work, please cite it as below."
+message: "If you use Kestrix in your work, please cite it as below."
 type: software
-title: "Aegis-Sec: a local-first security workbench"
+title: "Kestrix: a local-first security workbench"
 abstract: >-
-  Aegis-Sec is a local-first security workbench with four modules: Sigma
+  Kestrix is a local-first security workbench with four modules: Sigma
   detection repair validated by replay on a pinned Elasticsearch, file and
   URL forensics, passive website exposure checks, and Bitcoin quantum
   key-exposure scanning. It ships as one Python package with a CLI and a

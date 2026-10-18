@@ -4,12 +4,12 @@ import os
 
 import pytest
 
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.fixtures import Event
-from aegissec.detect.mapping import FieldMapping, to_lucene
-from aegissec.detect.rule import parse_rule
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.fixtures import Event
+from kestrix.detect.mapping import FieldMapping, to_lucene
+from kestrix.detect.rule import parse_rule
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 MAPPING = FieldMapping(
     "ecs",
     {

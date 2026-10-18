@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from aegisbench import __main__ as cli
-from aegisbench.acquire import AcquisitionError, checkout, manifest, sparse_patterns
-from aegisbench.qc import QC
-from aegisbench.sources import SOURCES, Source
+from kestrixbench import __main__ as cli
+from kestrixbench.acquire import AcquisitionError, checkout, manifest, sparse_patterns
+from kestrixbench.qc import QC
+from kestrixbench.sources import SOURCES, Source
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -116,7 +116,7 @@ def test_qc_detects_files_changed_after_acquisition(upstream, monkeypatch, capsy
 
 def test_acquire_imports_only_the_standard_library():
     code = (
-        "import sys, aegisbench.__main__; print(sorted(m for m in ('yaml', 'pydantic', 'httpx') if m in sys.modules))"
+        "import sys, kestrixbench.__main__; print(sorted(m for m in ('yaml', 'pydantic', 'httpx') if m in sys.modules))"
     )
     out = subprocess.run([sys.executable, "-c", code], check=True, capture_output=True, text=True).stdout
     assert out.strip() == "[]"

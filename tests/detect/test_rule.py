@@ -1,8 +1,8 @@
 import pytest
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.core.safe_load import MAX_RULE_BYTES
-from aegissec.detect.rule import And, Not, Or, Ref, parse_condition, parse_rule, render_condition
+from kestrix.core.errors import Reason, Rejected
+from kestrix.core.safe_load import MAX_RULE_BYTES
+from kestrix.detect.rule import And, Not, Or, Ref, parse_condition, parse_rule, render_condition
 
 BASE = """
 title: Test rule
@@ -171,7 +171,7 @@ def test_real_sigma_header_with_dates_parses():
 
 
 def test_dates_load_as_text_and_other_tags_stay_refused():
-    from aegissec.core.safe_load import load_yaml
+    from kestrix.core.safe_load import load_yaml
 
     assert load_yaml("date: 2025-12-25\n") == {"date": "2025-12-25"}
     with pytest.raises(Rejected) as exc:

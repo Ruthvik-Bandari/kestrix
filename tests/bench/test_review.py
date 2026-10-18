@@ -5,8 +5,8 @@ import zipfile
 
 import pytest
 
-from aegisbench.qc import SIGMA_RULES, SYSMON_CHANNEL
-from aegisbench.review import ReviewError, status, write_sheet
+from kestrixbench.qc import SIGMA_RULES, SYSMON_CHANNEL
+from kestrixbench.review import ReviewError, status, write_sheet
 
 RULE_A = "00000000-0000-4000-8000-00000000000a"
 RULE_B = "00000000-0000-4000-8000-00000000000b"
@@ -111,8 +111,8 @@ def _metadata(root):
 
 
 def test_label_loop_walks_candidates_and_keeps_other_rows(root, capsys):
-    from aegisbench import __main__ as cli
-    from aegisbench.review import format_candidate, next_candidate, set_label
+    from kestrixbench import __main__ as cli
+    from kestrixbench.review import format_candidate, next_candidate, set_label
 
     _metadata(root)
     write_sheet(root, _report())
@@ -139,7 +139,7 @@ def test_label_loop_walks_candidates_and_keeps_other_rows(root, capsys):
 
 
 def test_import_keeps_human_labels_and_rejects_a_bad_batch_atomically(root):
-    from aegisbench.review import import_labels, set_label
+    from kestrixbench.review import import_labels, set_label
 
     write_sheet(root, _report())
     set_label(root, E0, "benign", "updater", "rb")  # a human decision
@@ -156,7 +156,7 @@ def test_import_keeps_human_labels_and_rejects_a_bad_batch_atomically(root):
 
 
 def test_import_tolerates_missing_or_null_fields(root):
-    from aegisbench.review import import_labels
+    from kestrixbench.review import import_labels
 
     write_sheet(root, _report())
     counts = import_labels(root, [{"event_id": E1, "label": "unknown", "reviewer": "ai-x", "rationale": None}])
@@ -169,7 +169,7 @@ def test_check_page_embeds_hostile_event_text_inertly(root):
     import json as _json
     import re
 
-    from aegisbench.review import render_check_page
+    from kestrixbench.review import render_check_page
 
     write_sheet(root, _report())
     sheet = root / "review/candidates.jsonl"
@@ -186,13 +186,13 @@ def test_check_page_embeds_hostile_event_text_inertly(root):
 
 
 def test_ignore_ai_labels_switch_keeps_only_human_labels(root, monkeypatch):
-    from aegisbench import __main__ as cli
-    from aegisbench.review import import_labels, set_label
+    from kestrixbench import __main__ as cli
+    from kestrixbench.review import import_labels, set_label
 
     write_sheet(root, _report())
     import_labels(root, [{"event_id": E0, "label": "malicious", "rationale": "ai", "reviewer": "ai-consensus"}])
     set_label(root, E1, "benign", "updater", "rb")
-    monkeypatch.delenv("AEGIS_IGNORE_AI_LABELS", raising=False)
+    monkeypatch.delenv("KESTRIX_IGNORE_AI_LABELS", raising=False)
     assert cli._reviewed(root, _report()) == {E0: "malicious", E1: "benign"}
-    monkeypatch.setenv("AEGIS_IGNORE_AI_LABELS", "1")
+    monkeypatch.setenv("KESTRIX_IGNORE_AI_LABELS", "1")
     assert cli._reviewed(root, _report()) == {E1: "benign"}

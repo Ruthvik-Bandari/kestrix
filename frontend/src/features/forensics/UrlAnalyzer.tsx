@@ -58,7 +58,7 @@ function Report({ report }: { report: UrlReport }) {
           <FindingsList findings={report.findings} />
         </section>
       ) : null}
-      <RawJson data={report} filename={`aegis-url-${slug(report.host)}.json`} />
+      <RawJson data={report} filename={`kestrix-url-${slug(report.host)}.json`} />
     </section>
   );
 }

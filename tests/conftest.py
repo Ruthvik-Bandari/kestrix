@@ -3,7 +3,7 @@ import os
 import httpx
 import pytest
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 
 
 def _engine_up() -> bool:
@@ -16,7 +16,7 @@ def _engine_up() -> bool:
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     if _engine_up():
         return
-    skip = pytest.mark.skip(reason=f"pinned Elasticsearch not reachable at {ES_URL} (run `aegis-sec detect engine-up`)")
+    skip = pytest.mark.skip(reason=f"pinned Elasticsearch not reachable at {ES_URL} (run `kestrix detect engine-up`)")
     for item in items:
         if "engine" in item.keywords:
             item.add_marker(skip)
@@ -25,5 +25,5 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 @pytest.fixture(autouse=True)
 def isolated_home(tmp_path, monkeypatch):
     """Keep tests away from the user's real config and secrets."""
-    monkeypatch.setenv("AEGIS_SEC_HOME", str(tmp_path / "aegis-home"))
+    monkeypatch.setenv("KESTRIX_HOME", str(tmp_path / "kestrix-home"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)

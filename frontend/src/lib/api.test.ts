@@ -65,7 +65,7 @@ describe("api client error paths", () => {
     const error = await failure(api.health());
     expect(error.status).toBe(0);
     expect(error.reason).toBe("network_error");
-    expect(error.detail).toMatch(/aegis-sec dashboard/);
+    expect(error.detail).toMatch(/kestrix dashboard/);
   });
 
   it("maps a 413 from the body-size guard", async () => {

@@ -1,11 +1,11 @@
 ---
 paths:
-  - "src/aegissec/**/*.py"
+  - "src/kestrix/**/*.py"
   - "tests/**/*.py"
   - "scripts/**/*.py"
 ---
 
-# Python package (`src/aegissec`)
+# Python package (`src/kestrix`)
 
 - Run `uv run pytest`, `uv run ruff check src tests scripts`, `uv run ruff format --check src tests scripts` and `uv run mypy`. Add dependencies through `uv` so `uv.lock` stays authoritative.
 - The module functions are shared by the CLI and the FastAPI API. Keep each `cli.py` and `api.py` thin; no business logic in adapters.

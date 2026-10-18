@@ -16,8 +16,8 @@ node_modules/
 frontend/dist/
 *.tsbuildinfo
 # Built dashboard is generated into the package at build time
-src/aegissec/server/static/*
-!src/aegissec/server/static/.gitkeep
+src/kestrix/server/static/*
+!src/kestrix/server/static/.gitkeep
 
 # Secrets and private data (never commit)
 .env

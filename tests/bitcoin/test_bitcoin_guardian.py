@@ -8,11 +8,11 @@ import anthropic
 import httpx2
 import pytest
 
-from aegissec.bitcoin import guardian
-from aegissec.bitcoin.guardian import DEFAULT_MODEL, MODEL_ENV, _ModelIntent, build_client, classify_intent
-from aegissec.bitcoin.models import AddressType, GuardianIntent
-from aegissec.core import config
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin import guardian
+from kestrix.bitcoin.guardian import DEFAULT_MODEL, MODEL_ENV, _ModelIntent, build_client, classify_intent
+from kestrix.bitcoin.models import AddressType, GuardianIntent
+from kestrix.core import config
+from kestrix.core.errors import Reason, Rejected
 from tests.bitcoin.btc_helpers import G_COMPRESSED, P2TR_MAIN, P2WPKH_MAIN, FakeAnthropic, FakeMessages
 
 _REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
@@ -74,7 +74,7 @@ def test_model_comes_from_environment_without_fallbacks(monkeypatch: pytest.Monk
 def test_migration_intent_points_to_the_plan() -> None:
     result, _ = _classify(_output(GuardianIntent.MIGRATION_HELP, address_type=AddressType.P2TR), "move my taproot")
     assert result.address_type is AddressType.P2TR
-    assert "aegis-sec bitcoin migration P2TR" in result.next_step
+    assert "kestrix bitcoin migration P2TR" in result.next_step
 
 
 def test_address_type_is_dropped_for_other_intents() -> None:
@@ -143,7 +143,7 @@ def test_build_client_requires_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(Rejected) as info:
         build_client()
     assert info.value.reason is Reason.AI_KEY_MISSING
-    assert "aegis-sec config set-anthropic-key" in info.value.detail
+    assert "kestrix config set-anthropic-key" in info.value.detail
 
 
 def test_build_client_uses_the_configured_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -159,4 +159,4 @@ def test_build_client_without_the_ai_extra(monkeypatch: pytest.MonkeyPatch) -> N
     with pytest.raises(Rejected) as info:
         build_client()
     assert info.value.reason is Reason.AI_KEY_MISSING
-    assert 'pip install "aegis-sec-ai[ai]"' in info.value.detail
+    assert 'pip install "kestrix[ai]"' in info.value.detail

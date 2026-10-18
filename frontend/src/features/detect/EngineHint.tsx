@@ -1,6 +1,6 @@
 import { CopyButton } from "../../components/ui";
 
-const COMMAND = "aegis-sec detect engine-up";
+const COMMAND = "kestrix detect engine-up";
 
 export function EngineHint() {
   return (

@@ -1,6 +1,6 @@
 ---
 name: cg-platform-integration
-description: Wire an Aegis-Sec module function into the CLI, the FastAPI routes in src/aegissec/server and the React dashboard in frontend/ - commands, exit codes, routes, report rendering and evidence export. Use when exposing new analysis results to users. Do not use for changing rule semantics, replay internals or ML training.
+description: Wire an Kestrix module function into the CLI, the FastAPI routes in src/kestrix/server and the React dashboard in frontend/ - commands, exit codes, routes, report rendering and evidence export. Use when exposing new analysis results to users. Do not use for changing rule semantics, replay internals or ML training.
 ---
 
 # CLI, API and dashboard integration
@@ -9,12 +9,12 @@ Plan refs: sections 4 (FR05-FR10), 5 (analyst workflow), 6, 7, 8 (routes, job be
 
 ## Expected inputs
 
-- The contracts from cg-schema-contract and the module functions in `src/aegissec/<module>/`.
+- The contracts from cg-schema-contract and the module functions in `src/kestrix/<module>/`.
 - The target CLI command, API route(s) and affected dashboard pages under `frontend/src/features/`.
 
 ## Steps
 
-1. Keep one core: `src/aegissec/<module>/cli.py` and `api.py` call the same function and add no business logic.
+1. Keep one core: `src/kestrix/<module>/cli.py` and `api.py` call the same function and add no business logic.
 2. The CLI emits a text summary by default and the full report with `--json`. Exit codes match domain outcomes (detect: 0, 2, 3, 10, 11) and are documented.
 3. Each route validates its body with a Pydantic model, raises `Rejected(Reason, detail)` for invalid input, and maps non-400 reasons in `server/app.py` `_STATUS`. Large bodies need a `LARGE_BODY_ROUTES` entry and a streaming or field limit.
 4. Artifacts: write temp, SHA-256, atomic rename (`core/evidence.py`). Evidence holds content and hashes, never secrets.

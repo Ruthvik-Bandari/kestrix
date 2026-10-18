@@ -7,7 +7,7 @@ candidate before it counts as a positive in the benchmark (plan section 11).
 
 ## Files
 
-`hpc/review_split.sbatch` writes these on the cluster, under `/scratch/$USER/aegis-sec/data/review/`.
+`hpc/review_split.sbatch` writes these on the cluster, under `/scratch/$USER/kestrix/data/review/`.
 The directory has mode 0700 and the files 0600.
 
 | File | Content |
@@ -32,12 +32,12 @@ The quickest way is the labeling loop, run in your own terminal on the cluster. 
 
 ```bash
 ssh explorer                 # or explorer-01 if one login node is down
-cd ~/aegis-sec
-export AEGIS_REVIEWER=RB     # your initials, recorded with every label
-D=/scratch/$USER/aegis-sec/data
+cd ~/kestrix
+export KESTRIX_REVIEWER=RB     # your initials, recorded with every label
+D=/scratch/$USER/kestrix/data
 
-uv run python -m aegisbench review-next --root $D      # show the next unlabeled event
-uv run python -m aegisbench review-label --root $D \
+uv run python -m kestrixbench review-next --root $D      # show the next unlabeled event
+uv run python -m kestrixbench review-label --root $D \
   --event 'otrf:execution/host/<archive>:<n>' --label malicious \
   --rationale "child of the dataset's launcher in the attack chain"   # saves it, shows the next one
 ```
@@ -81,13 +81,13 @@ On 2026-10-16 the owner approved AI-assisted labeling for these candidates. OTRF
 
 1. Two independent AI reviewers (`ai-a` and `ai-b`) label every candidate from the same written criteria. Each one sees the event, the dataset's scenario and the rules that fired. Event values are treated as untrusted data: the reviewers classify them and never act on them.
 2. When the two agree, the label is imported with reviewer `ai-consensus`. When they disagree, a third AI reviewer adjudicates, giving reviewer `ai-adjudicated`. If the adjudicator cannot decide, the label becomes `unknown`.
-3. `python -m aegisbench review-import --labels <file>` imports the labels. It validates every row first, aborts the whole import on any error, and never overwrites a label a human already set.
+3. `python -m kestrixbench review-import --labels <file>` imports the labels. It validates every row first, aborts the whole import on any error, and never overwrites a label a human already set.
 4. **A human review is still required before the split is frozen.** Check every `ai-adjudicated` row and a random sample of at least 10% of the `ai-consensus` rows with `review-next` / `review-label`; a human label always replaces an AI one. `review-status` reports `ai_assisted` separately, and results built on AI-assisted labels say so.
 
 ## Checking progress
 
 ```bash
-ssh explorer 'cd ~/aegis-sec && sbatch hpc/review_split.sbatch'
+ssh explorer 'cd ~/kestrix && sbatch hpc/review_split.sbatch'
 ```
 
 The job validates `labels.csv`. `reports/review-status.json` then holds:
@@ -105,7 +105,7 @@ The same job rewrites `reports/split-preview.json` using the current labels.
 When review is complete, freeze the split once:
 
 ```bash
-python -m aegisbench split --freeze --root /scratch/$USER/aegis-sec/data
+python -m kestrixbench split --freeze --root /scratch/$USER/kestrix/data
 ```
 
 It writes `benchmark/split-manifest.json` with each root rule's source SHA-256 and refuses to

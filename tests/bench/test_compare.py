@@ -1,6 +1,6 @@
 import pytest
 
-from aegisbench.compare import CompareError, compare, markdown
+from kestrixbench.compare import CompareError, compare, markdown
 
 
 def _report(successes, locked=False, split="development"):

@@ -1,6 +1,6 @@
-# Aegis-Sec
+# Kestrix
 
-Local-first security workbench: one Python package (`aegis-sec-ai`) with a Typer CLI and a
+Local-first security workbench: one Python package (`kestrix`) with a Typer CLI and a
 FastAPI server that serves a bundled React dashboard on 127.0.0.1:8765. Platform decision:
 `docs/adr/0001-platform-direction.md`. Detection-repair research plan:
 `docs/CyberGuard_Engineering_Plan.md` (its CyberGuard/Spring Boot wording is historical).
@@ -8,12 +8,12 @@ Session state: `docs/handoff.md`. Workflow: `docs/claude/workflow.md`.
 
 ## Layout
 
-- `src/aegissec/core/` reason codes, safe YAML/JSONL loading, netguard, config/secrets, evidence
-- `src/aegissec/detect/` Sigma repair: rule, mapping, fixtures, engine, replay, diagnose,
+- `src/kestrix/core/` reason codes, safe YAML/JSONL loading, netguard, config/secrets, evidence
+- `src/kestrix/detect/` Sigma repair: rule, mapping, fixtures, engine, replay, diagnose,
   candidate, repair, workflow; bundled cases in `detect/cases/` (generated)
-- `src/aegissec/forensics/`, `webcheck/`, `bitcoin/` the other three modules
-- `src/aegissec/server/` FastAPI app; dashboard bundle built into `server/static/`
-- `src/aegissec/cli.py` entry point; each module has thin `cli.py` and `api.py` adapters
+- `src/kestrix/forensics/`, `webcheck/`, `bitcoin/` the other three modules
+- `src/kestrix/server/` FastAPI app; dashboard bundle built into `server/static/`
+- `src/kestrix/cli.py` entry point; each module has thin `cli.py` and `api.py` adapters
 - `frontend/` React + Vite dashboard source; `tests/` per module; `scripts/` generators
 - Docs: `docs/modules/*.md`, `docs/api.md`, `docs/security-model.md`
 
@@ -22,7 +22,7 @@ Session state: `docs/handoff.md`. Workflow: `docs/claude/workflow.md`.
 ```bash
 uv sync --all-extras
 uv run pytest                          # engine tests skip if Elasticsearch is down
-uv run pytest -m engine                # needs `uv run aegis-sec detect engine-up`
+uv run pytest -m engine                # needs `uv run kestrix detect engine-up`
 uv run ruff check src tests scripts
 uv run ruff format --check src tests scripts
 uv run mypy

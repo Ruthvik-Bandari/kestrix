@@ -1,4 +1,4 @@
-"""Live conformance run of `aegis-sec webcheck` against badssl.com's known-broken endpoints.
+"""Live conformance run of `kestrix webcheck` against badssl.com's known-broken endpoints.
 
 Run from the repo root: ``uv run python scripts/webcheck_conformance.py``. It makes real network
 requests, one scan per endpoint, to badssl.com only (a public service built for this purpose),
@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import sys
 
-from aegissec.core.errors import Rejected
-from aegissec.webcheck.scan import scan
+from kestrix.core.errors import Rejected
+from kestrix.webcheck.scan import scan
 
 # endpoint -> (TLS statuses accepted, finding ids that must appear, finding ids that must not appear)
 CASES: dict[str, tuple[set[str], set[str], set[str]]] = {

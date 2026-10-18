@@ -1,7 +1,7 @@
 import pytest
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.forensics.url import MAX_URL_CHARS, analyze_url
+from kestrix.core.errors import Reason, Rejected
+from kestrix.forensics.url import MAX_URL_CHARS, analyze_url
 
 CYRILLIC_A = chr(0x0430)
 RU_HOST = "".join(map(chr, [0x043F, 0x0440, 0x0438, 0x043C, 0x0435, 0x0440])) + "." + chr(0x0440) + chr(0x0444)

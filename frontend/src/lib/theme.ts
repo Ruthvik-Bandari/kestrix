@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 export type ThemeChoice = "system" | "light" | "dark";
-const STORAGE_KEY = "aegis-theme";
+const STORAGE_KEY = "kestrix-theme";
 const listeners = new Set<() => void>();
 
 function read(): ThemeChoice {

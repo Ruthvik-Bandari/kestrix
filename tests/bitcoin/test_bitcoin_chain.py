@@ -7,11 +7,11 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from aegissec.bitcoin import chain
-from aegissec.bitcoin.address import parse_address
-from aegissec.bitcoin.chain import MAX_RESPONSE_BYTES, MempoolClient
-from aegissec.bitcoin.models import PublicTestnet
-from aegissec.core.errors import Reason, Rejected
+from kestrix.bitcoin import chain
+from kestrix.bitcoin.address import parse_address
+from kestrix.bitcoin.chain import MAX_RESPONSE_BYTES, MempoolClient
+from kestrix.bitcoin.models import PublicTestnet
+from kestrix.core.errors import Reason, Rejected
 from tests.bitcoin.btc_helpers import GENESIS_P2PKH, P2WPKH_MAIN, P2WPKH_TEST, bech32_encode, stats_body
 
 Handler = Callable[[httpx.Request], httpx.Response]

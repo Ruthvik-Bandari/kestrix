@@ -44,7 +44,7 @@ describe("outcome banner mapping", () => {
 
   it("shows the engine start command when the engine is down", () => {
     render(<OutcomeBanner report={report("engine_unavailable", { reason: "cannot reach Elasticsearch" })} />);
-    expect(screen.getByText("aegis-sec detect engine-up")).toBeTruthy();
+    expect(screen.getByText("kestrix detect engine-up")).toBeTruthy();
   });
 
   it("summarises the before/after impact of a repair", () => {

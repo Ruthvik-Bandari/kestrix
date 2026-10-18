@@ -6,11 +6,11 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from aegissec.bitcoin import cli
-from aegissec.bitcoin.chain import MempoolClient
-from aegissec.bitcoin.guardian import _ModelIntent
-from aegissec.bitcoin.models import GuardianIntent, PublicTestnet
-from aegissec.core import config
+from kestrix.bitcoin import cli
+from kestrix.bitcoin.chain import MempoolClient
+from kestrix.bitcoin.guardian import _ModelIntent
+from kestrix.bitcoin.models import GuardianIntent, PublicTestnet
+from kestrix.core import config
 from tests.bitcoin.btc_helpers import G_COMPRESSED, P2TR_MAIN, P2WPKH_MAIN, FakeAnthropic, FakeMessages, stats_body
 
 runner = CliRunner()

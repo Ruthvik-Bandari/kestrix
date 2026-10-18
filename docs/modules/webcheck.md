@@ -2,15 +2,15 @@
 
 The website check grades how well a site protects its visitors at the connection and browser level: HTTPS, the TLS certificate, security headers and cookie flags. Use it on a site you own or are authorized to assess, after a deploy or a hosting change, or to get a concrete fix list for a small site. It sends one GET request (following up to five redirects) and makes one TLS handshake. It does not crawl, fuzz, log in or scan ports, so it cannot find application bugs such as SQL injection.
 
-Each problem comes with a recommendation, and the result is an A to F grade from a fixed rubric. Source files are under [`src/aegissec/webcheck/`](../../src/aegissec/webcheck/).
+Each problem comes with a recommendation, and the result is an A to F grade from a fixed rubric. Source files are under [`src/kestrix/webcheck/`](../../src/kestrix/webcheck/).
 
 ## Command
 
 ```bash
-aegis-sec webcheck scan https://your-site.example
-aegis-sec webcheck scan http://192.168.1.20:8080 --allow-private   # a lab host you own
-aegis-sec webcheck scan https://your-site.example --json
-aegis-sec webcheck scan https://your-site.example --site-type dynamic   # it has a login the page doesn't show
+kestrix webcheck scan https://your-site.example
+kestrix webcheck scan http://192.168.1.20:8080 --allow-private   # a lab host you own
+kestrix webcheck scan https://your-site.example --json
+kestrix webcheck scan https://your-site.example --site-type dynamic   # it has a login the page doesn't show
 ```
 
 | Option | Effect |
@@ -19,7 +19,7 @@ aegis-sec webcheck scan https://your-site.example --site-type dynamic   # it has
 | `--json` | Prints the full report as JSON and skips the notice line. |
 | `--site-type static\|static_api\|dynamic` | Declares what you know the site is. It can raise the detected profile, never lower it (see [Site profile](#site-profile)). |
 
-| Exit code | Meaning ([`cli.py`](../../src/aegissec/webcheck/cli.py)) |
+| Exit code | Meaning ([`cli.py`](../../src/kestrix/webcheck/cli.py)) |
 | --- | --- |
 | 0 | The check completed. A poor grade still exits 0. |
 | 2 | The URL or target was rejected: `invalid_url` or `target_not_allowed`. |
@@ -29,13 +29,13 @@ The text output starts with the notice "Only check websites you own or are autho
 
 ## What the check sends
 
-The fetch logic is in [`fetch.py`](../../src/aegissec/webcheck/fetch.py).
+The fetch logic is in [`fetch.py`](../../src/kestrix/webcheck/fetch.py).
 
-- **Target validation.** Every hop, including each redirect, passes [`core/netguard.py`](../../src/aegissec/core/netguard.py):
+- **Target validation.** Every hop, including each redirect, passes [`core/netguard.py`](../../src/kestrix/core/netguard.py):
   - only `http` and `https` URLs with a host, at most 2,048 characters, with no credentials in the URL;
   - every resolved address must be public unless `--allow-private` is set. This refuses private, loopback, link-local (which includes cloud metadata at 169.254.169.254), multicast and reserved ranges, including IPv4 addresses embedded in IPv6 forms.
 - **Connect to the validated IP.** The request goes to the first validated address in sorted order. The `Host` header and TLS SNI carry the real hostname, so a DNS answer that changes between the check and the connection cannot redirect the request.
-- **One GET per hop.** The request has `User-Agent: aegis-sec-webcheck/<version>`, no proxy settings from the environment, and certificate verification on. It asks for an uncompressed response (`Accept-Encoding: identity`) and reads raw bytes, so nothing is decompressed. At most 1 MiB of the final page is kept for the [site profile](#site-profile); bodies of redirect hops are discarded.
+- **One GET per hop.** The request has `User-Agent: kestrix-webcheck/<version>`, no proxy settings from the environment, and certificate verification on. It asks for an uncompressed response (`Accept-Encoding: identity`) and reads raw bytes, so nothing is decompressed. At most 1 MiB of the final page is kept for the [site profile](#site-profile); bodies of redirect hops are discarded.
 - **Redirects.** Up to 5 redirects (301, 302, 303, 307, 308) are followed. More than that fails with `upstream_error`.
 - **Time limit.** 10 seconds for the whole redirect chain, and 10 seconds for the TLS probe.
 - **TLS probe.** When the final URL is `https`, one more verified handshake is made against the same validated IP. It records the protocol version, issuer, expiry date and days remaining.
@@ -44,7 +44,7 @@ If the HTTPS connection fails during the TLS handshake, the report still comes b
 
 ## Site profile
 
-A missing CSP or framing protection matters most where there is something to steal or click: logins, forms, sessions and API calls. On a static page the same gaps are real but carry less risk. Before grading, the check profiles the site from the page it already fetched ([`profile.py`](../../src/aegissec/webcheck/profile.py)):
+A missing CSP or framing protection matters most where there is something to steal or click: logins, forms, sessions and API calls. On a static page the same gaps are real but carry less risk. Before grading, the check profiles the site from the page it already fetched ([`profile.py`](../../src/kestrix/webcheck/profile.py)):
 
 | Profile | Assigned when |
 | --- | --- |
@@ -68,7 +68,7 @@ Every other finding keeps its checklist severity on every profile, including all
 
 ## Grading rubric
 
-The rubric is in [`grade.py`](../../src/aegissec/webcheck/grade.py):
+The rubric is in [`grade.py`](../../src/kestrix/webcheck/grade.py):
 
 1. Start at 100.
 2. Subtract 25 per `high`, 10 per `medium` and 4 per `low` finding. `info` findings cost nothing. The score does not go below 0.
@@ -79,7 +79,7 @@ The rubric is a summary for prioritizing fixes. It is not a compliance rating.
 
 ## Findings
 
-Every finding has `id`, `severity`, `title`, `explanation`, `recommendation` and, where useful, `evidence` (header values cut to 200 characters). Cookie findings name the cookie but never echo its value. The checks are in [`checks.py`](../../src/aegissec/webcheck/checks.py).
+Every finding has `id`, `severity`, `title`, `explanation`, `recommendation` and, where useful, `evidence` (header values cut to 200 characters). Cookie findings name the cookie but never echo its value. The checks are in [`checks.py`](../../src/kestrix/webcheck/checks.py).
 
 ### HTTPS and TLS
 

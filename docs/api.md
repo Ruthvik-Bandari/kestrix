@@ -1,8 +1,8 @@
 # HTTP API
 
-`aegis-sec dashboard` starts a local HTTP server that serves the dashboard and a JSON API on `http://localhost:8765`. Use the API when you want to script Aegis-Sec from another program on the same machine, or to see exactly what the dashboard sends. The API calls the same functions as the CLI, so results match. It has no accounts or tokens: it is meant for one user on their own computer, and it refuses requests that do not come from a loopback address name.
+`kestrix dashboard` starts a local HTTP server that serves the dashboard and a JSON API on `http://localhost:8765`. Use the API when you want to script Kestrix from another program on the same machine, or to see exactly what the dashboard sends. The API calls the same functions as the CLI, so results match. It has no accounts or tokens: it is meant for one user on their own computer, and it refuses requests that do not come from a loopback address name.
 
-The machine-readable schema is served at `GET /api/openapi.json`. To browse it, open it in any OpenAPI viewer. For example, run `npx @redocly/cli preview-docs http://localhost:8765/api/openapi.json`, or paste a saved copy into editor.swagger.io. This page adds what the schema cannot express: error behavior, size limits and the local-only rules. Routes are defined in [`server/app.py`](../src/aegissec/server/app.py) and each module's `api.py`.
+The machine-readable schema is served at `GET /api/openapi.json`. To browse it, open it in any OpenAPI viewer. For example, run `npx @redocly/cli preview-docs http://localhost:8765/api/openapi.json`, or paste a saved copy into editor.swagger.io. This page adds what the schema cannot express: error behavior, size limits and the local-only rules. Routes are defined in [`server/app.py`](../src/kestrix/server/app.py) and each module's `api.py`.
 
 ## Contents
 
@@ -30,12 +30,12 @@ Clients outside a browser, such as `curl` or Python `httpx`, send no `Origin` or
 
 ## Local-only protections
 
-Every request passes the `_LocalOnly` middleware in [`server/app.py`](../src/aegissec/server/app.py) before it reaches a route. The checks run in this order.
+Every request passes the `_LocalOnly` middleware in [`server/app.py`](../src/kestrix/server/app.py) before it reaches a route. The checks run in this order.
 
 **1. Host allowlist (HTTP 421).** The `Host` header, with its port removed, must be `127.0.0.1`, `localhost` or `[::1]`. A web page that uses DNS rebinding to point its own name at 127.0.0.1 still sends its own name in `Host`, so it is refused. If you start the dashboard with `--host` set to another interface, that one name is added to the allowlist.
 
 ```json
-{"reason": "host_not_allowed", "detail": "Aegis-Sec only serves local requests"}
+{"reason": "host_not_allowed", "detail": "Kestrix only serves local requests"}
 ```
 
 **2. Cross-site write refusal (HTTP 403).** For every method except `GET`, `HEAD` and `OPTIONS`, a request is refused when either of these holds:
@@ -75,13 +75,13 @@ Bodies sent with chunked transfer encoding and no `Content-Length` are counted a
 
 ## Errors
 
-Aegis-Sec errors use one envelope:
+Kestrix errors use one envelope:
 
 ```json
 {"reason": "invalid_url", "detail": "the URL is empty"}
 ```
 
-`reason` is a stable machine-readable code (the `Reason` enum in [`core/errors.py`](../src/aegissec/core/errors.py)); `detail` is a human-readable message. Status codes:
+`reason` is a stable machine-readable code (the `Reason` enum in [`core/errors.py`](../src/kestrix/core/errors.py)); `detail` is a human-readable message. Status codes:
 
 | Status | `reason` |
 | --- | --- |
@@ -114,7 +114,7 @@ Any other `GET` path outside `/api/` serves the dashboard's static files, fallin
 
 ## Detection repair
 
-Semantics, limits and report fields are in [`docs/modules/detect.md`](modules/detect.md). Routes are in [`detect/api.py`](../src/aegissec/detect/api.py). The engine URL comes from `AEGIS_ES_URL` (default `http://127.0.0.1:9200`).
+Semantics, limits and report fields are in [`docs/modules/detect.md`](modules/detect.md). Routes are in [`detect/api.py`](../src/kestrix/detect/api.py). The engine URL comes from `KESTRIX_ES_URL` (default `http://127.0.0.1:9200`).
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -141,7 +141,7 @@ An engine that is down when the run starts gives HTTP 200 with `"outcome": "engi
 
 ## Forensics
 
-Routes are in [`forensics/api.py`](../src/aegissec/forensics/api.py). Field-level descriptions are in the OpenAPI schema (`FileReport`, `UrlReport`); behavior is in [`docs/modules/forensics.md`](modules/forensics.md).
+Routes are in [`forensics/api.py`](../src/kestrix/forensics/api.py). Field-level descriptions are in the OpenAPI schema (`FileReport`, `UrlReport`); behavior is in [`docs/modules/forensics.md`](modules/forensics.md).
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -160,7 +160,7 @@ For uploads:
 
 ## Website check
 
-The route is in [`webcheck/api.py`](../src/aegissec/webcheck/api.py); behavior and the grading rubric are in [`docs/modules/webcheck.md`](modules/webcheck.md).
+The route is in [`webcheck/api.py`](../src/kestrix/webcheck/api.py); behavior and the grading rubric are in [`docs/modules/webcheck.md`](modules/webcheck.md).
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -170,7 +170,7 @@ A target that resolves to a non-public address returns 403 `target_not_allowed` 
 
 ## Bitcoin
 
-Routes are in [`bitcoin/api.py`](../src/aegissec/bitcoin/api.py); behavior is in [`docs/modules/bitcoin.md`](modules/bitcoin.md). The request models forbid unknown keys.
+Routes are in [`bitcoin/api.py`](../src/kestrix/bitcoin/api.py); behavior is in [`docs/modules/bitcoin.md`](modules/bitcoin.md). The request models forbid unknown keys.
 
 | Route | Request | Response |
 | --- | --- | --- |

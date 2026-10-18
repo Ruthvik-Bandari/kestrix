@@ -3,13 +3,13 @@ import os
 
 import pytest
 
-from aegisbench.b2 import build_prompt, generator, parse
-from aegissec.detect.engine import Elasticsearch
-from aegissec.detect.fixtures import Dataset, Event
-from aegissec.detect.mapping import FieldMapping
-from aegissec.detect.rule import parse_rule
+from kestrix.detect.engine import Elasticsearch
+from kestrix.detect.fixtures import Dataset, Event
+from kestrix.detect.mapping import FieldMapping
+from kestrix.detect.rule import parse_rule
+from kestrixbench.b2 import build_prompt, generator, parse
 
-ES_URL = os.environ.get("AEGIS_ES_URL", "http://127.0.0.1:9200")
+ES_URL = os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200")
 RULE = parse_rule(
     "title: t\nid: 00000000-0000-4000-8000-0000000000b2\n"
     "logsource: {category: process_creation, product: windows}\n"
@@ -65,9 +65,9 @@ def test_generator_counts_calls_and_drops():
 
 @pytest.mark.engine
 def test_model_candidate_goes_through_screening_and_validation(tmp_path):
-    from aegisbench.evaluate import load_case, score
-    from aegisbench.variants import build
-    from aegissec.detect.workflow import run
+    from kestrix.detect.workflow import run
+    from kestrixbench.evaluate import load_case, score
+    from kestrixbench.variants import build
     from tests.bench.test_variants import make_root, split_manifest
 
     def oracle(prompt: str) -> str:  # stands in for the GPU model
@@ -104,7 +104,7 @@ def test_model_candidate_goes_through_screening_and_validation(tmp_path):
 def test_fetch_script_pins_the_same_model():
     from pathlib import Path
 
-    from aegisbench.b2 import MODEL_REPO, MODEL_REVISION
+    from kestrixbench.b2 import MODEL_REPO, MODEL_REVISION
 
     script = (Path(__file__).resolve().parents[2] / "hpc/fetch_model.sh").read_text()
     assert f"REPO={MODEL_REPO}\n" in script and f"REV={MODEL_REVISION}\n" in script

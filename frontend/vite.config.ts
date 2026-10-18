@@ -5,12 +5,12 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
-const outDir = resolve(import.meta.dirname, "../src/aegissec/server/static");
+const outDir = resolve(import.meta.dirname, "../src/kestrix/server/static");
 
 /** `emptyOutDir` wipes the package's static dir; recreate the tracked placeholder. */
 function keepGitkeep(): Plugin {
   return {
-    name: "aegis-keep-gitkeep",
+    name: "kestrix-keep-gitkeep",
     apply: "build",
     closeBundle() {
       mkdirSync(outDir, { recursive: true });

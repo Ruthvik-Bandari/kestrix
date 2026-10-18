@@ -2,13 +2,13 @@ import json
 
 import pytest
 
-from aegissec.core.errors import Reason, Rejected
-from aegissec.detect.candidate import Candidate, apply, condition_edits
-from aegissec.detect.fixtures import Dataset, Event, lookup, profile
-from aegissec.detect.mapping import FieldMapping, parse_mapping, to_lucene
-from aegissec.detect.replay import score
-from aegissec.detect.rule import Ref, parse_condition, parse_rule, render_condition
-from aegissec.detect.workflow import policy_failures
+from kestrix.core.errors import Reason, Rejected
+from kestrix.detect.candidate import Candidate, apply, condition_edits
+from kestrix.detect.fixtures import Dataset, Event, lookup, profile
+from kestrix.detect.mapping import FieldMapping, parse_mapping, to_lucene
+from kestrix.detect.replay import score
+from kestrix.detect.rule import Ref, parse_condition, parse_rule, render_condition
+from kestrix.detect.workflow import policy_failures
 
 RULE = parse_rule("""
 title: t
@@ -176,8 +176,8 @@ detection:
 
 
 def test_set_predicate_reaches_into_alternative_maps():
-    from aegissec.detect.candidate import Candidate, apply
-    from aegissec.detect.mapping import FieldMapping
+    from kestrix.detect.candidate import Candidate, apply
+    from kestrix.detect.mapping import FieldMapping
 
     rule = parse_rule(MULTI)
     cand = Candidate.model_validate(
@@ -210,7 +210,7 @@ def test_set_predicate_reaches_into_alternative_maps():
 
 
 def test_repeated_field_across_maps_is_not_a_single_target():
-    from aegissec.detect.repair import logic_candidates
+    from kestrix.detect.repair import logic_candidates
 
     rule = parse_rule(MULTI.replace("OriginalFileName: 'CertUtil.exe'", "Image: 'urlcache.exe'"))
     assert not [c for c in logic_candidates(rule) if c.patch[0].kind == "set_predicate"]
@@ -218,9 +218,9 @@ def test_repeated_field_across_maps_is_not_a_single_target():
 
 def test_quantifier_and_or_swap_is_one_edit():
     """Review finding: '1 of' -> 'all of' must fit the edit budget (it counted 15 before)."""
-    from aegissec.detect.candidate import apply
-    from aegissec.detect.mapping import FieldMapping
-    from aegissec.detect.repair import logic_candidates
+    from kestrix.detect.candidate import apply
+    from kestrix.detect.mapping import FieldMapping
+    from kestrix.detect.repair import logic_candidates
 
     rule = parse_rule(
         "title: t\nlogsource: {category: process_creation, product: windows}\ndetection:\n"
@@ -239,7 +239,7 @@ def test_quantifier_and_or_swap_is_one_edit():
 def test_match_all_requires_a_string_modifier():
     from pydantic import ValidationError
 
-    from aegissec.detect.candidate import PredicateSpec
+    from kestrix.detect.candidate import PredicateSpec
 
     with pytest.raises(ValidationError):
         PredicateSpec(field="Image", modifier="equals", values=("a",), match_all=True)

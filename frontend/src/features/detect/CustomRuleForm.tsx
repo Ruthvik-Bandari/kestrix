@@ -234,7 +234,7 @@ export function CustomRuleForm({
   return (
     <form onSubmit={submit} noValidate className="space-y-6">
       <p className="max-w-[68ch] text-ink-2">
-        Paste or load your own rule, field mapping and labeled events. They are sent only to the Aegis-Sec server on
+        Paste or load your own rule, field mapping and labeled events. They are sent only to the Kestrix server on
         this computer and replayed on the local engine.
       </p>
       <div className="grid gap-6 lg:grid-cols-2">

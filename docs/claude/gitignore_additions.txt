@@ -1,4 +1,4 @@
-# --- Aegis-Sec (detection repair data and run outputs) ---
+# --- Kestrix (detection repair data and run outputs) ---
 data/raw/
 data/locked/
 artifacts/

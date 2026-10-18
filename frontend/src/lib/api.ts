@@ -79,7 +79,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     throw new ApiError(
       0,
       "network_error",
-      "Could not reach the Aegis-Sec server. Check that `aegis-sec dashboard` is still running.",
+      "Could not reach the Kestrix server. Check that `kestrix dashboard` is still running.",
     );
   }
   if (!response.ok) throw await toError(response);

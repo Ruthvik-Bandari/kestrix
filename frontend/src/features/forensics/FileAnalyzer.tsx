@@ -17,7 +17,7 @@ const MAX_UPLOAD = 50 * 1024 * 1024;
 const exifText: Record<Exclude<ExifStatus, "ok">, string> = {
   no_exif: "This image carries no EXIF metadata.",
   not_image: "This file is not a format that carries EXIF metadata.",
-  pillow_not_installed: "Reading image metadata needs the optional extra: pip install \"aegis-sec-ai[exif]\".",
+  pillow_not_installed: "Reading image metadata needs the optional extra: pip install \"kestrix[exif]\".",
   unreadable: "The image metadata is malformed and could not be read.",
   too_many_pixels: "The image declares implausibly large dimensions, so it was not opened.",
 };
@@ -37,7 +37,7 @@ function headline(report: FileReport): { tone: Tone; title: string } {
     };
   }
   const level = worst(report.findings);
-  const what = t.id === "unknown" ? "isn't a format Aegis-Sec recognizes" : `is detected as ${t.label}`;
+  const what = t.id === "unknown" ? "isn't a format Kestrix recognizes" : `is detected as ${t.label}`;
   return {
     tone: level ? severityTone[level] : "ok",
     title:
@@ -268,7 +268,7 @@ function Report({ report }: { report: FileReport }) {
       </section>
 
       <div className="mt-10">
-        <RawJson data={report} filename={`aegis-forensics-${slug(report.filename)}.json`} />
+        <RawJson data={report} filename={`kestrix-forensics-${slug(report.filename)}.json`} />
       </div>
     </section>
   );
@@ -338,7 +338,7 @@ export function FileAnalyzer() {
       </label>
       <p className="mt-3 flex gap-2 text-[0.875rem] text-ink-2">
         <Icon name="lock" size={16} className="mt-0.5 flex-none text-ink-3" />
-        Files are analyzed by the Aegis-Sec server on this computer and are never uploaded anywhere else. Nothing is run
+        Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else. Nothing is run
         or saved.
       </p>
 
