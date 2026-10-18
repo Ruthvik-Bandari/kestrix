@@ -55,7 +55,7 @@ All comparisons are paired, and the intervals come from a root-resampling bootst
 | B2, unmodified model | 0.523 | 0.659 | 3 | 27% | −0.068 (−0.139 to 0) |
 | M1, seeds 1/2/3 | 0.568 / 0.568 / 0.545 | 0.886 / 0.864 / 0.864 | 0 | 11–14% | −0.023 to −0.045 (CIs include 0) |
 
-- **M1 vs B2:** +0.045 (CI 0 to +0.111) for every seed, with 2 cases won and 0 lost. Logic outcome match rose from 0.00 to between 0.73 and 0.82.
+- **M1 vs B2:** on test, +0.074 for every seed (B2 loses 4 cases that M1 gets right); on development, +0.045 (seeds 1 and 2) and +0.023 (seed 3). Logic outcome match on development rose from 0.00 to between 0.73 and 0.82.
 - **M1 vs B0:** within noise on development, and tied on test with every seed. M1 closes the untrained model's gap; B2 is the only system measurably worse on test. M1 does not beat the strongest baseline, so **M1 does not ship** (plan section 13). B1 is the recommended baseline: it matches B0's success and never weakened a rule in any run.
 - **Sensitivity:** without AI-assisted labels, M1 reaches the same 0.476 ceiling as every baseline, with outcome match 0.929 and no weakened rules.
 

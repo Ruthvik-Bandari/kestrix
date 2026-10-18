@@ -21,10 +21,12 @@ def test_every_source_file_has_the_spdx_header():
     names = subprocess.run(
         ["git", "ls-files", *PATTERNS], cwd=ROOT, capture_output=True, text=True, check=True
     ).stdout.split()
+    # A tracked file deleted in the working tree is not a source file any more.
+    present = [name for name in names if (ROOT / name).is_file()]
     missing = [
         name
-        for name in names
-        if "SPDX-FileCopyrightText: 2026 Ruthvik Bandari" not in (ROOT / name).read_text()[:400]
-        or "SPDX-License-Identifier: Apache-2.0" not in (ROOT / name).read_text()[:400]
+        for name in present
+        if "SPDX-FileCopyrightText: 2026 Ruthvik Bandari" not in (head := (ROOT / name).read_text()[:400])
+        or "SPDX-License-Identifier: Apache-2.0" not in head
     ]
-    assert names and missing == []
+    assert present and missing == []
