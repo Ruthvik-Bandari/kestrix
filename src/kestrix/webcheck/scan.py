@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from .checks import apply_profile, check_https, check_tls, evaluate
-from .fetch import TlsProbe, fetch, tls_probe
+from .fetch import USER_AGENT, TlsProbe, fetch, tls_probe
 from .grade import grade
 from .models import Report, Timings, TlsInfo
 from .profile import SiteKind, SiteProfile, profile_site
@@ -23,10 +23,11 @@ def scan(
     transport: httpx.BaseTransport | None = None,
     probe: TlsProbe = tls_probe,
     site_type: SiteKind | None = None,
+    agent: str = USER_AGENT,
 ) -> Report:
     """``site_type``: the owner's declared site kind; it can raise but never lower the detected one."""
     t0 = time.monotonic()
-    result = fetch(url, allow_private=allow_private, transport=transport)
+    result = fetch(url, allow_private=allow_private, transport=transport, agent=agent)
     http_ms = round((time.monotonic() - t0) * 1000)
     scheme = urlsplit(result.final_url).scheme
     t1 = time.monotonic()

@@ -42,6 +42,10 @@ class Reason(StrEnum):
     AI_KEY_MISSING = "ai_key_missing"
     # Generic validated input
     INVALID_INPUT = "invalid_input"
+    # Hosted mode: accounts, CSRF and abuse limits
+    SIGN_IN_REQUIRED = "sign_in_required"
+    CSRF_FAILED = "csrf_failed"
+    RATE_LIMITED = "rate_limited"
 
 
 class Rejected(Exception):

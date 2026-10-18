@@ -9,6 +9,11 @@ The server is meant for the user's own machine. Every request passes ``_LocalOnl
   which blocks cross-site "simple" POSTs such as multipart uploads;
 - request bodies are capped: a declared Content-Length is checked up front and streamed
   (chunked) bodies are counted as they arrive.
+
+With ``KESTRIX_MODE=hosted`` (ADR 0004, ``server/settings.py``) the same middleware allows only
+the public origin's host, compares ``Origin`` with the public origin, and adds HSTS. Behind it,
+``server/hosted.py`` requires sign-in, CSRF tokens and rate limits; detect, bitcoin and the
+Anthropic-key settings are not served.
 """
 
 from __future__ import annotations
@@ -17,6 +22,7 @@ from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -31,7 +37,15 @@ from ..core.errors import Reason, Rejected
 from ..detect.api import router as detect_router
 from ..forensics.api import router as forensics_router
 from ..mail.api import router as mail_router
+from ..webcheck.api import hosted_router as hosted_webcheck_router
 from ..webcheck.api import router as webcheck_router
+from ..webcheck.fetch import user_agent
+from .auth import AuthService
+from .auth_api import auth_router
+from .hosted import AccessLog, HostedGate
+from .ratelimit import RateLimiter
+from .settings import Settings, load_settings
+from .store import Store
 
 STATIC_DIR = Path(str(files("kestrix.server") / "static"))
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
@@ -43,6 +57,7 @@ LARGE_BODY_ROUTES = {
     "/api/mail/analyze": 26 * 1024 * 1024,
 }
 MODULES = ("detect", "forensics", "webcheck", "bitcoin", "mail")
+HOSTED_MODULES = ("forensics", "webcheck", "mail")
 
 _STATUS = {
     Reason.INPUT_TOO_LARGE: 413,
@@ -51,6 +66,9 @@ _STATUS = {
     Reason.UPSTREAM_ERROR: 502,
     Reason.TARGET_UNREACHABLE: 502,
     Reason.TARGET_NOT_ALLOWED: 403,
+    Reason.SIGN_IN_REQUIRED: 401,
+    Reason.CSRF_FAILED: 403,
+    Reason.RATE_LIMITED: 429,
 }
 
 _HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 413: "input_too_large"}
@@ -65,6 +83,8 @@ _SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
     "Cross-Origin-Opener-Policy": "same-origin",
 }
+HSTS = "max-age=63072000; includeSubDomains; preload"
+_HOSTED_HEADERS = {**_SECURITY_HEADERS, "Strict-Transport-Security": HSTS}
 
 
 def _hostname(host_header: str) -> str:
@@ -74,14 +94,22 @@ def _hostname(host_header: str) -> str:
     return host_header.split(":", 1)[0]
 
 
-def _refuse(reason: str, detail: str, status: int) -> JSONResponse:
-    return JSONResponse({"reason": reason, "detail": detail}, status_code=status, headers=_SECURITY_HEADERS)
+def _refuse(reason: str, detail: str, status: int, headers: dict[str, str] = _SECURITY_HEADERS) -> JSONResponse:
+    return JSONResponse({"reason": reason, "detail": detail}, status_code=status, headers=headers)
 
 
 class _LocalOnly(BaseHTTPMiddleware):
-    def __init__(self, app: object, allowed_hosts: frozenset[str]) -> None:
+    def __init__(
+        self,
+        app: object,
+        allowed_hosts: frozenset[str],
+        public_origin: str | None = None,
+        headers: dict[str, str] = _SECURITY_HEADERS,
+    ) -> None:
         super().__init__(app)  # type: ignore[arg-type]
         self.allowed_hosts = allowed_hosts
+        self.public_origin = public_origin  # hosted mode: Origin must equal it exactly
+        self.headers = headers
 
     def _cross_site(self, request: Request) -> bool:
         if request.method in SAFE_METHODS:
@@ -90,19 +118,22 @@ class _LocalOnly(BaseHTTPMiddleware):
         if fetch_site is not None and fetch_site not in {"same-origin", "none"}:
             return True
         origin = request.headers.get("origin")
+        if origin is not None and self.public_origin is not None:
+            return origin.lower() != self.public_origin
         return origin is not None and _hostname(urlsplit(origin).netloc) not in self.allowed_hosts
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if _hostname(request.headers.get("host", "")) not in self.allowed_hosts:
-            return _refuse("host_not_allowed", "Kestrix only serves local requests", 421)
+            detail = "Kestrix only serves local requests" if self.public_origin is None else "unknown host"
+            return _refuse("host_not_allowed", detail, 421, self.headers)
         if self._cross_site(request):
-            return _refuse("cross_site_request", "requests from other websites are not allowed", 403)
+            return _refuse("cross_site_request", "requests from other websites are not allowed", 403, self.headers)
         declared = request.headers.get("content-length", "0")
         limit = body_limit(request.url.path)
         if not declared.isdigit() or int(declared) > limit:
-            return _refuse("input_too_large", f"request body exceeds {limit} bytes", 413)
+            return _refuse("input_too_large", f"request body exceeds {limit} bytes", 413, self.headers)
         response = await call_next(request)
-        response.headers.update(_SECURITY_HEADERS)
+        response.headers.update(self.headers)
         return response
 
 
@@ -139,10 +170,32 @@ class KeyUpdate(BaseModel):
     key: str | None = Field(default=None, min_length=20, max_length=512)
 
 
-def create_app(extra_hosts: frozenset[str] = frozenset()) -> FastAPI:
+def create_app(
+    extra_hosts: frozenset[str] = frozenset(),
+    *,
+    server_settings: Settings | None = None,
+    provider_transport: httpx.BaseTransport | None = None,
+) -> FastAPI:
+    """Build the app. Settings default to the environment; hosted mode raises ``SettingsError``
+    when misconfigured. ``extra_hosts`` applies to local mode only; ``provider_transport``
+    replaces the network for sign-in providers in tests."""
+    hosted = (load_settings() if server_settings is None else server_settings).hosted
     app = FastAPI(title="Kestrix", version=__version__, docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
     app.add_middleware(_StreamedBodyLimit)
-    app.add_middleware(_LocalOnly, allowed_hosts=LOOPBACK_HOSTS | extra_hosts)
+    auth: AuthService | None = None
+    if hosted is None:
+        app.add_middleware(_LocalOnly, allowed_hosts=LOOPBACK_HOSTS | extra_hosts)
+    else:
+        auth = AuthService(hosted, Store(hosted.db_path), transport=provider_transport)
+        app.state.auth = auth
+        app.add_middleware(HostedGate, auth=auth, limiter=RateLimiter())
+        app.add_middleware(
+            _LocalOnly,
+            allowed_hosts=frozenset({hosted.public_host}),
+            public_origin=hosted.public_origin,
+            headers=_HOSTED_HEADERS,
+        )
+        app.add_middleware(AccessLog, auth=auth)
 
     @app.exception_handler(HTTPException)
     async def _http_error(_: Request, exc: HTTPException) -> JSONResponse:
@@ -155,21 +208,43 @@ def create_app(extra_hosts: frozenset[str] = frozenset()) -> FastAPI:
             {"reason": exc.reason.value, "detail": exc.detail}, status_code=_STATUS.get(exc.reason, 400)
         )
 
-    @app.get("/api/health", tags=["platform"])
-    def health() -> dict[str, object]:
-        return {"status": "ok", "version": __version__, "generated_by": ATTRIBUTION, "modules": list(MODULES)}
+    if auth is None:
 
-    @app.get("/api/settings", tags=["platform"])
-    def settings() -> dict[str, bool]:
-        return {"anthropic_key_configured": config.anthropic_key() is not None}
+        @app.get("/api/health", tags=["platform"])
+        def health() -> dict[str, object]:
+            return {"status": "ok", "version": __version__, "generated_by": ATTRIBUTION, "modules": list(MODULES)}
 
-    @app.put("/api/settings/anthropic-key", tags=["platform"], status_code=204)
-    def set_key(body: KeyUpdate) -> Response:
-        config.set_secret("anthropic_api_key", body.key)
-        return Response(status_code=204)
+        @app.get("/api/settings", tags=["platform"])
+        def settings() -> dict[str, bool]:
+            return {"anthropic_key_configured": config.anthropic_key() is not None}
 
-    for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
-        app.include_router(router)
+        @app.put("/api/settings/anthropic-key", tags=["platform"], status_code=204)
+        def set_key(body: KeyUpdate) -> Response:
+            config.set_secret("anthropic_api_key", body.key)
+            return Response(status_code=204)
+
+        for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
+            app.include_router(router)
+    else:
+        assert hosted is not None
+
+        @app.get("/api/health", tags=["platform"])
+        def hosted_health() -> dict[str, object]:
+            return {
+                "status": "ok",
+                "version": __version__,
+                "generated_by": ATTRIBUTION,
+                "mode": "hosted",
+                "modules": list(HOSTED_MODULES),
+            }
+
+        for router in (
+            forensics_router,
+            hosted_webcheck_router(user_agent(hosted.abuse_contact)),
+            mail_router,
+            auth_router(auth),
+        ):
+            app.include_router(router)
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str) -> Response:

@@ -35,13 +35,15 @@ Running Kestrix for strangers changes the threat model:
 - **Users table:** internal id, provider, the provider's subject id, verified email, display name, created and
   last-login times. Nothing else.
 - **Sessions:**
-  - A random 256-bit id, stored only as its SHA-256 hash.
+  - A random 256-bit id, stored only as its HMAC-SHA256 under a server-side pepper.
   - Sent as the `__Host-kx_session` cookie: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`.
   - Expires after 7 days idle and 30 days absolute.
   - Rotated at sign-in; deleted at sign-out.
 - **CSRF protection:**
   - every state-changing request needs a per-session CSRF token header;
   - the existing cross-site write refusal stays (`Sec-Fetch-Site` / `Origin`).
+- **Login CSRF:** `state` is also bound to the browser with a short-lived `__Host-kx_login` cookie, so a victim
+  cannot be signed in to an attacker's account through a crafted callback link.
 - **Account deletion** is one action that removes the user row and all of that user's sessions immediately.
 - **Store:** SQLite on a mounted volume to start, opened through a small repository layer so Postgres can replace
   it.
@@ -63,7 +65,7 @@ Running Kestrix for strangers changes the threat model:
   - analyses: 120 per hour;
   - sign-ins: 10 per 10 minutes.
 - **Hard caps:**
-  - concurrent analyses per user;
+  - concurrent analyses per user (not yet implemented; the per-hour limits apply);
   - the existing body-size caps;
   - request timeouts.
 - **Website checks:**

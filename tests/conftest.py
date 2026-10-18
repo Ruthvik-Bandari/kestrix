@@ -29,3 +29,6 @@ def isolated_home(tmp_path, monkeypatch):
     """Keep tests away from the user's real config and secrets."""
     monkeypatch.setenv("KESTRIX_HOME", str(tmp_path / "kestrix-home"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    for name in list(os.environ):
+        if name.startswith("KESTRIX_") and name not in {"KESTRIX_HOME", "KESTRIX_ES_URL"}:
+            monkeypatch.delenv(name)  # hosted-mode settings must come from each test, never the shell

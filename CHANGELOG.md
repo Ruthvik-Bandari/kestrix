@@ -37,6 +37,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- Hosted mode (preview), the H2 slice of [ADR 0004](docs/adr/0004-hosted-mode.md). Local mode is unchanged and stays the default. See [docs/hosted.md](docs/hosted.md).
+  - `KESTRIX_MODE=hosted` and the new `kestrix serve-hosted` command run a public service. It refuses to start without an `https` `KESTRIX_PUBLIC_ORIGIN`, a `KESTRIX_SESSION_PEPPER` of at least 32 bytes and at least one sign-in provider.
+  - Sign-in with Google (OpenID Connect) or GitHub (OAuth 2.0): authorization code with PKCE, single-use `state` bound to the browser, and a Google `nonce`. Routes: `GET /api/auth/providers`, `/login/{provider}`, `/callback/{provider}`, `/me`, `POST /api/auth/logout` and `DELETE /api/auth/account`.
+  - Sessions in SQLite, stored only as keyed hashes, in a `__Host-kx_session` cookie, with 7-day idle and 30-day absolute expiry. A CSRF token is required in `X-CSRF-Token` on state-changing requests.
+  - Only the website check, forensics and the email check are served, and they need sign-in. Detection repair, Bitcoin and `/api/settings*` return 404.
+  - Per-user and per-IP rate limits, HSTS, a privacy-safe access log, and a website check that accepts only public targets and needs `"authorized": true` for each scan.
+  - New reason codes: `sign_in_required` (401), `csrf_failed` (403) and `rate_limited` (429).
 - `kestrix mail`, offline analysis of one saved email message (`.eml`), as the first slice of [ADR 0003](docs/adr/0003-mail-module.md):
   - bounded parsing with the stdlib `email` package (25 MiB, 500 headers per part, 16 KiB per header, MIME depth 10, 200 parts, 5 MiB of decoded text, 500 links); HTML is tokenized for links and visible text, never rendered;
   - `auth`, `sender`, `links` and `attachments` analyzers with stable reason codes such as `mail.sender.reply_to_mismatch`;

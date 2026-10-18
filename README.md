@@ -249,6 +249,12 @@ kestrix config set-anthropic-key       # stored in ~/.config/kestrix/secrets.jso
 
 Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
+### Hosted mode (preview)
+
+Kestrix can also run as a public website with Google or GitHub sign-in (`kestrix serve-hosted`), serving the
+website check, forensics and the email check. It is opt-in and not yet ready for launch. Setup and its security
+properties are in [docs/hosted.md](docs/hosted.md).
+
 ## Architecture
 
 ```mermaid

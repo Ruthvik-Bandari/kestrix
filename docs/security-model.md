@@ -11,7 +11,7 @@ Kestrix is a single-user tool that runs on your own computer. It has two front e
 - the `kestrix` CLI;
 - a FastAPI server, started by `kestrix dashboard`, that serves a bundled React dashboard and a JSON API on `127.0.0.1:8765`.
 
-There are no accounts, no database and no background jobs. Detection repair talks to a local Elasticsearch container. Two features reach the internet, and both only when you ask: the website check contacts the site you name, and the Bitcoin module contacts mempool.space and the Anthropic API.
+There are no accounts, no database and no background jobs in the default local mode. The opt-in hosted mode, which has accounts and a database, is covered in [Hosted mode](#hosted-mode-preview). Detection repair talks to a local Elasticsearch container. Two features reach the internet, and both only when you ask: the website check contacts the site you name, and the Bitcoin module contacts mempool.space and the Anthropic API.
 
 ## Assets
 
@@ -155,3 +155,54 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 - **Heuristics are not verdicts.** The URL score, entropy findings and website grade are signals. A clean result does not mean a file, link or site is safe.
 - **Validation covers only its suite.** A `repaired` outcome shows behavior on the labeled scenarios you supplied. The bundled cases are synthetic.
 - **The development tooling is not a sandbox.** The Claude Code configuration in `.claude/` denies edits to secrets and protected data paths and blocks writes outside the project. It does not intercept shell commands.
+
+## Hosted mode (preview)
+
+`KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) runs Kestrix as a public website with Google and GitHub sign-in ([ADR 0004](adr/0004-hosted-mode.md), slice H2). Local mode is unchanged. Configuration and operation are in [hosted.md](hosted.md). This section covers what changes in the threat model.
+
+### Additional assets
+
+| Asset | Why it matters |
+| --- | --- |
+| Accounts and sessions | A stolen session lets someone act as the user and delete their account. |
+| Users' files, messages and URLs | They now belong to strangers, not to the machine's owner. |
+| The service's network position and reputation | The website check makes requests on users' behalf and can be abused for scanning. |
+| OAuth client secrets and the session pepper | They let an attacker impersonate the service or forge session hashes. |
+
+### Additional adversaries
+
+| Adversary | Example threats |
+| --- | --- |
+| Any internet user | Credential stuffing is not possible (no passwords), but sign-in flooding, scan abuse, upload floods and probing for unauthenticated routes are |
+| A malicious web page | Login CSRF (forcing the victim into the attacker's account), cross-site writes, open redirects through `next` |
+| Someone with a copy of the database | Replaying session ids, harvesting emails |
+| A network attacker between the server and a provider | Forged ID tokens or user info |
+
+### Controls
+
+| Control | Implementation |
+| --- | --- |
+| Refuses to start without an `https` public origin, a pepper of at least 32 bytes and at least one complete provider | [`server/settings.py`](../src/kestrix/server/settings.py) |
+| `Host` must be the public host; `Origin` on writes must equal the public origin; HSTS with `preload` on every response, plus the existing CSP and headers | `_LocalOnly` in [`server/app.py`](../src/kestrix/server/app.py) |
+| Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404 | [`server/app.py`](../src/kestrix/server/app.py), `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Every `/api/` route needs a session unless it is on a short public list, so new routes are private by default (401) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Authorization code with PKCE S256, single-use 10-minute `state` stored under a keyed hash, Google `nonce`, and `state` bound to the browser by a `__Host-` cookie | [`server/auth.py`](../src/kestrix/server/auth.py) |
+| Google ID-token claims checked (`iss`, `aud`/`azp`, `exp`, `iat`, `nonce`, `email_verified`). The signature is not checked: the token comes directly from Google's token endpoint over verified TLS, as OpenID Connect Core 3.1.3.7 permits. GitHub sign-in needs a primary, verified email. | [`server/auth.py`](../src/kestrix/server/auth.py) |
+| Provider requests only to four fixed hosts over https:443, verified TLS, no redirects, no environment proxies, 10 s timeout, 64 KiB cap | `ProviderClient` in [`server/auth.py`](../src/kestrix/server/auth.py) |
+| `next` accepts only same-origin paths; `//`, backslashes, control characters, whitespace and absolute URLs fall back to `/app` | `safe_next` in [`server/auth.py`](../src/kestrix/server/auth.py) |
+| Session ids are 256-bit random and stored only as HMAC-SHA256 with the pepper; `__Host-` cookie, `Secure`, `HttpOnly`, `SameSite=Lax`; 7-day idle and 30-day absolute expiry; rotated at sign-in | [`server/auth.py`](../src/kestrix/server/auth.py), [`server/store.py`](../src/kestrix/server/store.py) |
+| A per-session CSRF token, derived from the session id and stored only as a keyed hash, is required in `X-CSRF-Token` on state-changing requests (403 otherwise) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Account deletion removes the user and, by cascade, all of that user's sessions | [`server/store.py`](../src/kestrix/server/store.py) |
+| Rate limits: 20 website checks and 120 analyses per user per hour; 10 sign-in starts and 10 callbacks per IP per 10 minutes (429 with `Retry-After`) | [`server/ratelimit.py`](../src/kestrix/server/ratelimit.py), [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Website check: public targets only, an authorization confirmation per scan, and a `User-Agent` with the abuse contact | `hosted_router` in [`webcheck/api.py`](../src/kestrix/webcheck/api.py) |
+| Access logs hold the method, route template, status, duration and a salted user-id hash; never bodies, file names, emails, query strings, cookies or tokens. uvicorn's access log is off. | `AccessLog` in [`server/hosted.py`](../src/kestrix/server/hosted.py), `serve-hosted` in [`cli.py`](../src/kestrix/cli.py) |
+| SQLite file `0600` in a `0700` directory, parameterized queries only | [`server/store.py`](../src/kestrix/server/store.py) |
+
+### Hosted-mode limitations
+
+- **Rate limits are per process.** Several instances or workers each count separately. See [hosted.md](hosted.md#limitations).
+- **Client IPs behind a proxy.** Without `KESTRIX_TRUST_PROXY_HEADERS=1`, every visitor behind the platform proxy shares one per-IP sign-in limit. With it, the right-most `X-Forwarded-For` entry is trusted, which is correct only behind a proxy that always appends it.
+- **The pepper is a single key.** Anyone who has both the database and the pepper can check guesses of session ids, but cannot recover them, since the ids are 256-bit random. A leaked pepper should be rotated, which signs everyone out.
+- **Sessions are bearer cookies.** Malware or an extension in the user's browser can still use them. `HttpOnly` keeps page scripts from reading them.
+- **No per-user concurrency cap yet.** The body caps and per-hour limits still apply.
+- **Uploads are still parsed by the same code as locally.** A parser bug now affects a shared server rather than one person's machine.

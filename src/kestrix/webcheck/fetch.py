@@ -45,6 +45,11 @@ _VERIFY_CODES = {
 TlsProbe = Callable[[str, str, int, float], TlsInfo]
 
 
+def user_agent(abuse_contact: str | None = None) -> str:
+    """The honest User-Agent: names Kestrix and, on a hosted service, where to report abuse."""
+    return f"{USER_AGENT} (abuse contact: {abuse_contact})" if abuse_contact else USER_AGENT
+
+
 @dataclass
 class FetchResult:
     final_url: str
@@ -78,6 +83,7 @@ def fetch(
     *,
     allow_private: bool = False,
     transport: httpx.BaseTransport | None = None,
+    agent: str = USER_AGENT,
 ) -> FetchResult:
     deadline = time.monotonic() + TIMEOUT_S
     chain: list[Hop] = []
@@ -95,7 +101,7 @@ def fetch(
                 target.copy_with(host=ips[0]),
                 headers={
                     "Host": target.netloc.decode(),
-                    "User-Agent": USER_AGENT,
+                    "User-Agent": agent,
                     "Accept": "text/html,*/*",
                     # Uncompressed, so the bounded body read is the real page size.
                     "Accept-Encoding": "identity",

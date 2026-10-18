@@ -15,6 +15,7 @@ The machine-readable schema is served at `GET /api/openapi.json`. To browse it, 
 - [Website check](#website-check)
 - [Bitcoin](#bitcoin)
 - [Mail](#mail)
+- [Hosted mode](#hosted-mode)
 
 ## Quick example
 
@@ -88,10 +89,12 @@ Kestrix errors use one envelope:
 | Status | `reason` |
 | --- | --- |
 | 400 | Any rejected input not listed below, for example `invalid_input`, `invalid_url`, `invalid_rule`, `unsupported_modifier`, `invalid_mapping`, `invalid_fixture`, `malformed_yaml`, `engine_error`, `index_count_mismatch` |
-| 403 | `target_not_allowed`, and `cross_site_request` from the middleware |
+| 401 | `sign_in_required` (hosted mode only) |
+| 403 | `target_not_allowed`, `cross_site_request` from the middleware, and `csrf_failed` (hosted mode only) |
 | 404 | `not_found`, for an unknown path under `/api/` |
 | 413 | `input_too_large` |
 | 421 | `host_not_allowed` |
+| 429 | `rate_limited` (hosted mode only), with a `Retry-After` header in seconds |
 | 502 | `upstream_error`, `target_unreachable` |
 | 503 | `engine_unavailable`, `ai_key_missing`, and `dashboard_not_built` for page requests when the dashboard bundle is missing |
 
@@ -200,3 +203,31 @@ curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_d
 - The body is counted while it streams, and the request is refused with 413 `input_too_large` once it passes 25 MiB plus 64 KiB of multipart overhead.
 - Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels returns 400 `nesting_too_deep`; too many parts or headers, or an oversized header, return 413 `input_too_large`.
 - The report never contains the message body, link text or attachment bytes. The one exception is an `intent` finding, whose evidence is the matched cue phrase (at most 60 characters).
+
+## Hosted mode
+
+With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, signed-in service. Setup, security properties and limits are in [hosted.md](hosted.md). Everything above still applies, with these differences:
+
+- **Host and origin.** `Host` must be the host of `KESTRIX_PUBLIC_ORIGIN` (no loopback names), else 421. On state-changing requests, `Origin`, when sent, must equal `KESTRIX_PUBLIC_ORIGIN` exactly, else 403 `cross_site_request`.
+- **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`.
+- **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not.
+- **Sign-in required.** Every `/api/` route except `GET /api/health`, `GET /api/openapi.json` and the `/api/auth/*` routes marked public below returns 401 `sign_in_required` without a valid session cookie.
+- **CSRF.** A signed-in `POST`, `PUT`, `PATCH` or `DELETE` must send `X-CSRF-Token` with the token from `GET /api/auth/me`, else 403 `csrf_failed`.
+- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 10 sign-in starts and 10 callbacks per client IP per 10 minutes.
+- **Health.** `GET /api/health` adds `"mode": "hosted"` and lists only `["forensics", "webcheck", "mail"]`.
+- **Website check.** `POST /api/webcheck` also takes `"authorized": bool` and refuses unknown keys. `authorized` must be `true` ("I own or am authorized to test this site") and `allow_private` must be `false`; otherwise 400 `invalid_input`.
+
+| Route | Public | Request | Response |
+| --- | --- | --- | --- |
+| `GET /api/auth/providers` | Yes | none | `{"providers": ["google", "github"]}`: the providers configured on this server |
+| `GET /api/auth/login/{provider}` | Yes | Optional `?next=` a same-origin path starting with `/` (not `//`, no backslashes, control characters or spaces); anything else is ignored | 302 to the provider's authorization page, with a 10-minute `__Host-kx_login` cookie. An unknown or disabled provider gives 404. |
+| `GET /api/auth/callback/{provider}` | Yes | The provider's `code` and `state` | 303 to `next` (default `/app`) with the `__Host-kx_session` cookie. Any failure gives 303 to `/welcome?signin=failed` with no detail. |
+| `GET /api/auth/me` | Yes | none | `{"signed_in": false}`, or `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string}`. Sent with `Cache-Control: no-store`. |
+| `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when signed in | 204. Deletes the session and clears the cookie. |
+| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user and every session of that user, then clears the cookie. |
+
+```json
+{"reason": "sign_in_required", "detail": "sign in to use this feature"}
+{"reason": "csrf_failed", "detail": "missing or invalid X-CSRF-Token header"}
+{"reason": "rate_limited", "detail": "too many requests; try again in 1200 seconds"}
+```
