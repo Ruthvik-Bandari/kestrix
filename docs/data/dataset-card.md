@@ -1,4 +1,4 @@
-# Dataset card: Kestrix detection-repair benchmark (v1, preview)
+# Dataset card: Kestrix detection-repair benchmark (v1)
 
 **Status: frozen 2026-10-17.** The frozen split is in [`split-manifest.json`](split-manifest.json), SHA-256 `0353bc1e84787150eab2c13a0ca9fa4d2967227bc55a4df726a12cde5fc48bd4`. It holds ids and source hashes only, and is never overwritten. The owner waived the human label check. A sensitivity analysis that excludes every AI-assisted label replaces it (see "Labels").
 
@@ -68,11 +68,24 @@ By split, the synthetic cases are train 124, development 40 and test 52, and the
 
 - **Small and skewed.** 65 roots are in the evaluated splits, most with one positive, so the intervals are wide and the results exploratory.
 - **The synthetic faults partly mirror B0's search space.** Logic faults are one-edit mutations, so the deterministic baseline is favored on them. Natural faults are the unbiased probe, but there are only 13.
-- **AI-assisted labels.** The human check of 10 adjudicated events and a 10% sample is pending. Some console-host children of attacker shells are `unknown` by design.
+- **AI-assisted labels.** The owner waived the human check of 10 adjudicated events and a 10% sample. A sensitivity run that drops every AI-assisted label reaches the same conclusions (see Results). Some console-host children of attacker shells are `unknown` by design.
 - **Process creation only:** Windows Sysmon EID 1, in an ECS-style layout. Other log sources and schemas are not covered.
 - **False-positive fixes are not represented.** A natural fix that only removes false positives cannot be verified without reviewed benign events.
 
-## Open items before v1 is final
+## Results
 
-1. Record the AI-label sensitivity analysis: the benchmark rebuilt on SigmaHQ's maintainer-verified recordings only.
-2. Record the one-time locked test evaluation.
+The full tables are in [`qc/README.md`](qc/README.md), under "Final results on the frozen split".
+
+**Best possible validated success.** Cases with one recorded attack have no validation suite, so the best possible validated success is below 1:
+- development: 0.591;
+- test: 0.648;
+- sensitivity run: 0.476.
+
+**Systems:**
+- **B0 (deterministic) and B1 (retrieval)** reach 1.000 of the provable development cases and 0.971 of the provable test cases.
+- **B2 (an unmodified 7B model)** is the only system measurably worse: −0.074 against B0 on test (95% CI −0.135 to −0.018). It also weakens rules.
+- **M1 (LoRA fine-tune)** ties B0 and B1 on test with all three seeds and never weakens a rule.
+
+**Sensitivity run.** Without AI-assisted labels every system reaches the 0.476 ceiling, and the ordering on outcome match and weakening is unchanged.
+
+The test split was evaluated once, on 2026-10-18 (Slurm jobs 11177293 to 11177301 and 11190540 to 11190542).

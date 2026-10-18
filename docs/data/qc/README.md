@@ -397,3 +397,63 @@ All three seeds trained on 126 contract-verified examples, about 4.5 minutes eac
 2. **Fine-tuning moves the model in the right direction, and does so consistently.** Logic outcome match rose from 0.00 (B2) to between 0.73 and 0.82 (M1), and all three seeds reach the same validated success. On this small held-out set, the difference against B2 is not significant.
 3. **Safety separates the systems more than success does.** B0 and B2 each weakened 3 rules to reach their scores. B1 and M1 never weakened a rule. That makes **B1 the recommended research baseline**: B0's success with zero weakening.
 4. **Natural faults are unsolved:** 0 validated success for every system. This is the open problem, and a larger frozen split and test evaluation are needed before any claim.
+
+## Final results on the frozen split (2026-10-18)
+
+The split was frozen on 2026-10-17 ([`split-manifest.json`](../split-manifest.json), SHA-256 `0353bc1e…48bd4`). The owner waived the human label check, so every result is reported twice: once with all labels, and once in a sensitivity run that drops every AI-assisted label (`AEGIS_IGNORE_AI_LABELS=1`, a separate data root). The test split was evaluated exactly once, after the development results were in.
+
+Slurm jobs:
+- main pipeline: 11177252 to 11177301 and 11190540 to 11190542;
+- sensitivity run: 11177550 to 11178192, 11190538 and 11190539.
+
+Comparison files:
+- [`comparison-frozen-development.md`](comparison-frozen-development.md)
+- [`comparison-locked-test.md`](comparison-locked-test.md)
+- [`comparison-sensitivity-development.md`](comparison-sensitivity-development.md)
+
+Each has a matching `.json`.
+
+**Reading the tables:**
+- **Validated success has a ceiling below 1.** A broken rule with only one recorded attack has nothing left to validate a repair on, so any repair is provisional by design. The ceiling is the "best possible" figure.
+- **"Of provable cases"** is success divided by the number of cases that can be proven.
+- **Weakened rules** counts repairs that raised false alarms above the healthy rule's on the development events.
+
+### Development (44 cases, 12 roots; best possible 0.591)
+
+| System | Validated success | Of provable | Outcome match | Abstained | Weakened rules | Δ vs B0 (95% CI) |
+| --- | --- | --- | --- | --- | --- | --- |
+| B0, deterministic | 0.591 | 1.000 | 0.932 | 0.000 | 3 | — |
+| B1, retrieval | 0.591 | 1.000 | 0.932 | 0.068 | 0 | +0.000 |
+| B2, unmodified model | 0.523 | 0.885 | 0.659 | 0.273 | 3 | −0.068 (−0.139 to +0.000) |
+| M1 seed 1 | 0.568 | 0.962 | 0.886 | 0.114 | 0 | −0.023 (−0.073 to +0.000) |
+| M1 seed 2 | 0.568 | 0.962 | 0.864 | 0.136 | 0 | −0.023 (−0.073 to +0.000) |
+| M1 seed 3 | 0.545 | 0.923 | 0.864 | 0.136 | 0 | −0.045 (−0.108 to +0.000) |
+
+### Test, locked, evaluated once (54 cases, 14 roots; best possible 0.648)
+
+| System | Validated success | Of provable | Outcome match | Abstained | Weakened rules | Δ vs B0 (95% CI) |
+| --- | --- | --- | --- | --- | --- | --- |
+| B0, deterministic | 0.630 | 0.971 | 0.982 | 0.018 | 0 | — |
+| B1, retrieval | 0.630 | 0.971 | 0.982 | 0.018 | 0 | +0.000 |
+| B2, unmodified model | 0.556 | 0.857 | 0.741 | 0.204 | 3 | **−0.074 (−0.135 to −0.018)** |
+| M1 seed 1 | 0.630 | 0.971 | 0.944 | 0.056 | 0 | +0.000 |
+| M1 seed 2 | 0.630 | 0.971 | 0.963 | 0.037 | 0 | +0.000 |
+| M1 seed 3 | 0.630 | 0.971 | 0.944 | 0.056 | 0 | +0.000 |
+
+### Sensitivity: no AI-assisted labels (development, 42 cases, 13 roots; best possible 0.476)
+
+| System | Validated success | Of provable | Outcome match | Abstained | Weakened rules |
+| --- | --- | --- | --- | --- | --- |
+| B0, deterministic | 0.476 | 1.000 | 0.952 | 0.000 | 1 |
+| B1, retrieval | 0.476 | 1.000 | 0.929 | 0.048 | 0 |
+| B2, unmodified model | 0.476 | 1.000 | 0.643 | 0.143 | 8 |
+| M1 seed 1 | 0.476 | 1.000 | 0.929 | 0.048 | 0 |
+
+### Conclusions (exploratory)
+
+1. **On the provable cases, the deterministic and retrieval baselines are near-perfect.** They reach 1.000 on development and 0.971 on test, so they sit at the benchmark's ceiling. The benchmark cannot show a learned system beating them. That limit belongs to the benchmark, not evidence about the systems.
+2. **The unmodified model (B2) is the only system that is measurably worse.** On test, its difference from B0 has a 95% interval that excludes zero (−0.135 to −0.018). It abstains most often and weakens rules: 3 in development, 3 in test, and 8 in the sensitivity run.
+3. **Fine-tuning closes B2's gap.** M1 ties B0 and B1 on test with all three seeds, and never weakens a rule. Under plan section 13 a learned system ships only if it credibly beats the strongest baseline, and M1 does not, so **M1 does not ship**.
+4. **B1 is the recommended baseline.** It matches B0's success everywhere, and it never weakened a rule in any run, while B0 weakened 3 in development and 1 in the sensitivity run.
+5. **The AI-assisted labels do not drive the conclusions.** Without them every system reaches the lower ceiling of 0.476. The ordering on outcome match and on weakening is the same: B2 is clearly worst, and B1 and M1 never weaken a rule.
+6. **Next step for the benchmark: more recorded attacks per rule.** Most failed validations come from rules with a single positive. More recorded attacks would turn provisional cases into provable ones and give harder cases where the systems can differ. Natural faults also remain unproven, since each has only one recorded attack.

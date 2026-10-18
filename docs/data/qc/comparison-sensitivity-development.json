@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "baseline": "b0",
+  "cases": 42,
+  "roots": 13,
+  "locked_test_included": false,
+  "splits": [
+    "development"
+  ],
+  "note": "Exploratory: a small benchmark of synthetic faults on public telemetry; intervals resample roots.",
+  "systems": {
+    "b0": {
+      "success_rate": 0.4762,
+      "success_of_provable": 1.0,
+      "outcome_match_rate": 0.9524,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.0,
+        "mapping": 0.0,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      }
+    },
+    "b1": {
+      "success_rate": 0.4762,
+      "success_of_provable": 1.0,
+      "outcome_match_rate": 0.9286,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0476,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.0,
+        "mapping": 0.0,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    },
+    "b2": {
+      "success_rate": 0.4762,
+      "success_of_provable": 1.0,
+      "outcome_match_rate": 0.6429,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.1429,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.0,
+        "mapping": 0.0,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    },
+    "m1-seed1": {
+      "success_rate": 0.4762,
+      "success_of_provable": 1.0,
+      "outcome_match_rate": 0.9286,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0476,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.0,
+        "mapping": 0.0,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    }
+  },
+  "provable_cases": 20,
+  "best_possible_success": 0.4762
+}

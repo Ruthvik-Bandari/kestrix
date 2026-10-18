@@ -33,22 +33,36 @@ The model has no tools and no network access. It loads with `trust_remote_code=F
 
 ## Results
 
-The comparison is paired on the held-out **development** split: 44 cases from 12 roots. The test split is locked, and the intervals come from a root-resampling bootstrap. Full tables are in [`data/qc/README.md`](data/qc/README.md), under "Corrected results".
+All comparisons are paired, and the intervals come from a root-resampling bootstrap. Full tables are in [`data/qc/README.md`](data/qc/README.md), under "Final results on the frozen split".
+
+**Best possible success.** A case with one recorded attack has no validation suite, so the best possible validated success is 0.591 on development and 0.648 on test.
+
+**Locked test split, evaluated once** (54 cases, 14 roots):
+
+| System | Validated success | Of provable cases | Outcome match | Weakened rules | Δ vs B0 (95% CI) |
+| --- | --- | --- | --- | --- | --- |
+| B0, deterministic | 0.630 | 0.971 | 0.982 | 0 | — |
+| B1, retrieval | 0.630 | 0.971 | 0.982 | 0 | ±0 |
+| B2, unmodified model | 0.556 | 0.857 | 0.741 | 3 | −0.074 (−0.135 to −0.018) |
+| M1, seeds 1/2/3 | 0.630 each | 0.971 each | 0.944 / 0.963 / 0.944 | 0 | ±0 |
+
+**Development split** (44 cases, 12 roots), on the frozen split:
 
 | System | Validated success | Outcome match | Weakened rules | Abstained | Δ vs B0 (95% CI) |
 | --- | --- | --- | --- | --- | --- |
 | B0, deterministic | 0.591 | 0.932 | 3 | 0% | — |
 | B1, retrieval | 0.591 | 0.932 | 0 | 7% | ±0 |
 | B2, unmodified model | 0.523 | 0.659 | 3 | 27% | −0.068 (−0.139 to 0) |
-| M1, mean of 3 seeds | 0.568 (identical across seeds) | 0.879 | 0 | 12% | −0.023 (−0.073 to 0) |
+| M1, seeds 1/2/3 | 0.568 / 0.568 / 0.545 | 0.886 / 0.864 / 0.864 | 0 | 11–14% | −0.023 to −0.045 (CIs include 0) |
 
 - **M1 vs B2:** +0.045 (CI 0 to +0.111) for every seed, with 2 cases won and 0 lost. Logic outcome match rose from 0.00 to between 0.73 and 0.82.
-- **M1 vs B0:** within noise, and below it. **M1 does not ship;** B1 is the recommended baseline, matching B0's success without weakening any rule.
+- **M1 vs B0:** within noise on development, and tied on test with every seed. M1 closes the untrained model's gap; B2 is the only system measurably worse on test. M1 does not beat the strongest baseline, so **M1 does not ship** (plan section 13). B1 is the recommended baseline: it matches B0's success and never weakened a rule in any run.
+- **Sensitivity:** without AI-assisted labels, M1 reaches the same 0.476 ceiling as every baseline, with outcome match 0.929 and no weakened rules.
 
 ## Limitations and risks
 
 - **The benchmark is small and partly synthetic.** Its logic faults mirror B0's own search space, which favors B0. Natural faults are few. Results are exploratory.
-- **The labels are AI-assisted,** and the human check is pending. The split is a preview and not yet frozen.
+- **The labels are AI-assisted.** The owner waived the human check; a sensitivity run without those labels reaches the same conclusions. The split is frozen.
 - **A model proposal can be wrong or weaken a rule.** The validation policy is the guard, and it needs reviewed benign events to detect weakening. Provisional repairs (no validation suite) are less trustworthy.
 - **Prompt injection.** Rule text is passed to the model, and a malicious rule could try to steer it. The model has no tools, and every output passes the candidate contract and engine validation, so the worst case is a rejected or abstained repair.
 

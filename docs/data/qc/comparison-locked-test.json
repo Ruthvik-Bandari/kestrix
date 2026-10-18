@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "baseline": "b0",
+  "cases": 54,
+  "roots": 14,
+  "locked_test_included": true,
+  "splits": [
+    "test"
+  ],
+  "note": "Exploratory: a small benchmark of synthetic faults on public telemetry; intervals resample roots.",
+  "systems": {
+    "b0": {
+      "success_rate": 0.6296,
+      "success_of_provable": 0.9714,
+      "outcome_match_rate": 0.9815,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0185,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.3077,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      }
+    },
+    "b1": {
+      "success_rate": 0.6296,
+      "success_of_provable": 0.9714,
+      "outcome_match_rate": 0.9815,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0185,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.3077,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    },
+    "b2": {
+      "success_rate": 0.5556,
+      "success_of_provable": 0.8571,
+      "outcome_match_rate": 0.7407,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.2037,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.0,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": -0.0741,
+        "ci95": [
+          -0.1346,
+          -0.0185
+        ],
+        "cases_won": 0,
+        "cases_lost": 4
+      }
+    },
+    "m1-seed1": {
+      "success_rate": 0.6296,
+      "success_of_provable": 0.9714,
+      "outcome_match_rate": 0.9444,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0556,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.3077,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    },
+    "m1-seed2": {
+      "success_rate": 0.6296,
+      "success_of_provable": 0.9714,
+      "outcome_match_rate": 0.963,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.037,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.3077,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    },
+    "m1-seed3": {
+      "success_rate": 0.6296,
+      "success_of_provable": 0.9714,
+      "outcome_match_rate": 0.9444,
+      "wrong_change_rate": 0.0,
+      "abstention_rate": 0.0556,
+      "by_kind": {
+        "healthy": 1.0,
+        "logic": 0.3077,
+        "mapping": 0.3077,
+        "missing_telemetry": 1.0,
+        "natural": 0.0
+      },
+      "vs_baseline": {
+        "mean_success_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "cases_won": 0,
+        "cases_lost": 0
+      }
+    }
+  },
+  "provable_cases": 35,
+  "best_possible_success": 0.6481
+}
