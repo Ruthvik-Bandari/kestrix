@@ -16,6 +16,7 @@ const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/settings", label: "Settings", icon: "sliders" },
 ];
 
+// Wordmark only; a white-label copy (say, for bramfordwend.example) still has to keep the NOTICE.
 function Brand() {
   return (
     <span className="flex items-center gap-2.5">

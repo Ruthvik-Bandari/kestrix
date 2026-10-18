@@ -54,6 +54,7 @@ MIN_BRAND_LABEL = 3
 # --- shared helpers -----------------------------------------------------------------------
 
 
+# A sending subdomain such as ``news.sellowebrin.example`` belongs to ``sellowebrin.example``.
 def org_domain(domain: str) -> str:
     """Approximate organizational domain: ``mail.example.co.uk`` -> ``example.co.uk``."""
     labels = domain.lower().strip(".").split(".")
@@ -486,6 +487,7 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
     return hits
 
 
+# Anchor text like ``www.dunholtquill.example`` counts as a shown host; plain words do not.
 def _shown_host(link: Link) -> str | None:
     """The host an HTML anchor's visible text shows, when the text reads as a web address."""
     if link.source != "html" or not link.text or any(char.isspace() for char in link.text.strip()):

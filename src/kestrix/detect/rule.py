@@ -154,6 +154,7 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+# Example: a rule titled 'Suspicious Thorntorfen Child Process' renders with every nested group in parentheses.
 def render_condition(cond: Cond, parent: type | None = None) -> str:
     match cond:
         case Ref(name):

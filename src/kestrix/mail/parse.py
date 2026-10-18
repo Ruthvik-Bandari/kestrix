@@ -142,6 +142,7 @@ def parse_message(raw: bytes) -> ParsedMessage:
     )
 
 
+# e.g. ``Mail.fenholtmor.example.`` and ``mail.fenholtmor.example`` compare equal after this.
 def normalize_domain(domain: str) -> tuple[str, str]:
     """Return the lower-case ASCII (punycode) form and the IDNA-decoded display form of a domain."""
     name = domain.strip().strip(".").lower()
@@ -325,6 +326,7 @@ _FLAG_ENCRYPTED = 0x1
 _FLAG_UTF8 = 0x800
 
 
+# A listing such as ``hollcroftquill-invoice.zip`` -> member names only; nothing is inflated.
 def _zip_listing(data: bytes) -> Archive:
     """Read member names and encryption flags from the central directory. Nothing is decompressed."""
     eocd = data.rfind(_EOCD, max(0, len(data) - _EOCD_SEARCH))

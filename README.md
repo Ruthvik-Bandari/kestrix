@@ -310,4 +310,4 @@ manifests, and writes aggregate QC reports. Related docs:
 - **Bitcoin module:** adapted from [BitShield](https://github.com/Ruthvik-Bandari/MIT-BTC-Hackathon-Team_ACE), built by Team ACE at the MIT Bitcoin Expo 2026 hackathon.
 - **Built on:** [pySigma](https://github.com/SigmaHQ/pySigma) and the pySigma Elasticsearch backend.
 
-Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE).
+Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) and [docs/provenance.md](docs/provenance.md) for authorship evidence.

@@ -43,6 +43,7 @@ def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     return ip.is_global and not ip.is_multicast
 
 
+# A name like ``intranet.fentorfen.example`` that resolves to 10.0.0.0/8 is refused here.
 def check_url(url: str, *, allow_private: bool = False) -> tuple[str, int, list[str]]:
     """Return ``(host, port, resolved_ips)`` or raise ``Rejected``."""
     if len(url) > 2048:

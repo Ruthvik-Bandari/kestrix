@@ -21,6 +21,7 @@ def canonical_json(obj: object) -> bytes:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
+# Two runs that produce identical bytes (say, both scans of ``thorndenetars.example``) share one file.
 def write_artifact(root: Path, obj: object) -> tuple[str, Path]:
     """Write to a temp file, hash, then atomically rename to ``<sha256>.json``."""
     data = canonical_json(obj)

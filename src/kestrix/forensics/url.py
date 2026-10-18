@@ -72,6 +72,7 @@ class _Host:
     subdomains: tuple[str, ...] = ()
 
 
+# For instance ``http://login.fensteadquill.example@203.0.113.9/`` is scored from the text alone.
 def analyze_url(raw: str) -> UrlReport:
     """Score a URL from its text alone. Raises ``Rejected`` for empty, oversized or unparseable input."""
     url = raw.strip()

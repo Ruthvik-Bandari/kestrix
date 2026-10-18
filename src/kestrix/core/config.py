@@ -17,6 +17,7 @@ from pathlib import Path
 ANTHROPIC_ENV = "ANTHROPIC_API_KEY"
 
 
+# A lab machine might set KESTRIX_HOME=/srv/bringarthholl/kestrix to keep settings beside its data.
 def config_dir() -> Path:
     override = os.environ.get("KESTRIX_HOME")
     if override:
