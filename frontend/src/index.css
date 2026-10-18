@@ -848,6 +848,15 @@
   clip-path: inset(0 calc(100% - var(--scan)) 0 0);
   transition: clip-path 900ms var(--ease-out-expo);
 }
+/* Fully scanned: lift the Kestrix state above the drag surface but let pointer events pass
+   through it, except on its own controls (such as "Show all findings"). */
+.compare-with.is-settled {
+  z-index: 31;
+  pointer-events: none;
+}
+.compare-with.is-settled :is(button, a, summary, [role="button"]) {
+  pointer-events: auto;
+}
 .compare-stage.is-dragging .compare-with,
 .compare-stage.is-dragging .compare-beam {
   transition: none;

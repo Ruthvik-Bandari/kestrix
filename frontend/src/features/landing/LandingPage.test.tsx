@@ -7,6 +7,7 @@ import { DASHBOARD_PATH, LANDING_PATH } from "../../app/paths";
 import { REPO_URL } from "../../lib/site";
 import { chapters } from "./content";
 import LandingPage from "./LandingPage";
+import { FINDINGS_SHOWN } from "./parts";
 import { emailSample } from "./samples";
 
 function mockMedia(matching: string[]) {
@@ -111,11 +112,18 @@ describe("LandingPage", () => {
     const section = screen.getByRole("heading", { level: 2, name: chapters[0]?.title ?? "" }).closest("section");
     if (!section) throw new Error("email section missing");
     const withView = within(section).getByRole("group", { name: "With Kestrix" });
-    const list = within(withView).getByRole("list", { name: "Email findings" });
-    const titles = within(list)
-      .getAllByRole("listitem")
-      .map((item) => item.querySelector("[data-finding-title]")?.textContent);
-    expect(titles).toEqual(emailSample.report.findings.map((f) => f.title));
+    const titles = () =>
+      within(within(withView).getByRole("list", { name: "Email findings" }))
+        .getAllByRole("listitem")
+        .map((item) => item.querySelector("[data-finding-title]")?.textContent);
+    const all = emailSample.report.findings.map((f) => f.title);
+    // The most severe few first, so both states of the scene stay about as tall.
+    expect(titles()).toEqual(all.slice(0, FINDINGS_SHOWN));
+    const more = within(withView).getByRole("button", { name: `Show all ${String(all.length)} findings` });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(more);
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    expect(titles()).toEqual(all);
     expect(within(withView).getByText(emailSample.report.verdict)).toBeTruthy();
     expect(within(withView).getByText(`${String(emailSample.report.findings.length)} reasons`, { exact: false })).toBeTruthy();
   });

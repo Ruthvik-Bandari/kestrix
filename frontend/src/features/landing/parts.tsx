@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "../../components/Icon";
 import { Reveal } from "../../components/Reveal";
 import { severityLabel, severityTone, tones } from "../../components/tone";
@@ -83,30 +83,57 @@ export interface ShownFinding {
   pin?: number;
 }
 
-/** Real findings as a list: severity, title, and the evidence or explanation behind each. */
-export function FindingList({ findings, label }: { findings: ShownFinding[]; label: string }) {
+/** How many findings a scene shows before "Show all", so both states of a scene stay about as tall. */
+export const FINDINGS_SHOWN = 4;
+
+/**
+ * Real findings as a list: severity, title, and the evidence or explanation behind each. Long
+ * lists open with the most severe few and a "Show all" button; the rest are not rendered until
+ * asked for, so the "without" state is not left with a tall empty stage beside a long list.
+ */
+export function FindingList({ findings, label, initial = FINDINGS_SHOWN }: { findings: ShownFinding[]; label: string; initial?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+  const hidden = Math.max(0, findings.length - initial);
+  const shown = expanded || hidden === 0 ? findings : findings.slice(0, initial);
   return (
-    <ul className="glass divide-y divide-line overflow-hidden rounded-2xl" aria-label={label} data-testid="finding-list">
-      {findings.map((finding, index) => (
-        <li
-          key={`${finding.id}-${String(index)}`}
-          className="finding-row flex gap-3 px-3.5 py-2.5"
-          style={{ animationDelay: `${String(index * 60)}ms` }}
+    <div className="grid gap-2">
+      <ul id={listId} className="glass divide-y divide-line overflow-hidden rounded-2xl" aria-label={label} data-testid="finding-list">
+        {shown.map((finding, index) => (
+          <li
+            key={`${finding.id}-${String(index)}`}
+            className="finding-row flex gap-3 px-3.5 py-2.5"
+            style={{ animationDelay: `${String(index * 60)}ms` }}
+          >
+            {finding.pin !== undefined ? <Pin n={finding.pin} severity={finding.severity} className="mt-0.5" /> : null}
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <SeverityChip severity={finding.severity} />
+                <span className="text-[0.875rem] leading-snug font-semibold text-ink" data-finding-title="">
+                  {finding.title}
+                </span>
+              </p>
+              {finding.detail ? <p className="mt-1 text-[0.8125rem] leading-snug break-words text-ink-2">{finding.detail}</p> : null}
+              <code className="mt-0.5 block truncate text-[0.6875rem] text-ink-3">{finding.id}</code>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => {
+            setExpanded((open) => !open);
+          }}
+          className="btn btn-ghost btn-sm w-fit"
         >
-          {finding.pin !== undefined ? <Pin n={finding.pin} severity={finding.severity} className="mt-0.5" /> : null}
-          <div className="min-w-0 flex-1">
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <SeverityChip severity={finding.severity} />
-              <span className="text-[0.875rem] leading-snug font-semibold text-ink" data-finding-title="">
-                {finding.title}
-              </span>
-            </p>
-            {finding.detail ? <p className="mt-1 text-[0.8125rem] leading-snug break-words text-ink-2">{finding.detail}</p> : null}
-            <code className="mt-0.5 block truncate text-[0.6875rem] text-ink-3">{finding.id}</code>
-          </div>
-        </li>
-      ))}
-    </ul>
+          <Icon name="chevronDown" size={15} className={cx("transition-transform", expanded && "rotate-180")} />
+          {expanded ? "Show fewer" : `Show all ${String(findings.length)} findings`}
+        </button>
+      ) : null}
+    </div>
   );
 }
 

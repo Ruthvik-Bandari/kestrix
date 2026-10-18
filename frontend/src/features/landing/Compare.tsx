@@ -53,7 +53,20 @@ function SideTag({ side, className }: { side: Side; className?: string }) {
   );
 }
 
-function Layer({ side, children, hidden = false, still = false }: { side: Side; children: ReactNode; hidden?: boolean; still?: boolean }) {
+function Layer({
+  side,
+  children,
+  hidden = false,
+  still = false,
+  settled = false,
+}: {
+  side: Side;
+  children: ReactNode;
+  hidden?: boolean;
+  still?: boolean;
+  /** Fully revealed: its buttons sit above the drag surface so they can be clicked. */
+  settled?: boolean;
+}) {
   const value = useMemo(() => ({ side, visible: !hidden, still }), [side, hidden, still]);
   return (
     <SideContext.Provider value={value}>
@@ -66,6 +79,7 @@ function Layer({ side, children, hidden = false, still = false }: { side: Side; 
           "compare-layer relative min-w-0",
           still ? "overflow-hidden rounded-[1.75rem] border border-line-strong" : "[grid-area:1/1]",
           side === "with" && !still && "compare-with",
+          settled && "is-settled",
         )}
       >
         {children}
@@ -156,7 +170,7 @@ export function Compare({
         <Layer side="without" hidden={scan >= 100}>
           {without}
         </Layer>
-        <Layer side="with" hidden={scan <= 0}>
+        <Layer side="with" hidden={scan <= 0} settled={scan >= 100}>
           {withKestrix}
         </Layer>
 
