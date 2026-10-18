@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
+import { LANDING_PATH } from "../../app/paths";
 import { Link } from "react-router";
 import { Icon, type IconName } from "../../components/Icon";
-import { PageHeader, StatusPill } from "../../components/ui";
+import { TiltCard } from "../../components/TiltCard";
+import { cx, PageHeader, StatusPill } from "../../components/ui";
 import type { Tone } from "../../components/tone";
 import { useEngine, useSettings } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
@@ -16,29 +18,31 @@ interface Module {
   actions: { to: string; label: string; primary?: boolean }[];
 }
 
-function ModuleRow({ module }: { module: Module }) {
+function ModuleRow({ module, wide }: { module: Module; wide: boolean }) {
   return (
-    <li className="grid gap-4 py-6 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-8">
-      <div className="flex gap-4">
-        <span className="flex size-10 flex-none items-center justify-center rounded-lg border border-line bg-rail text-ink-2">
-          <Icon name={module.icon} size={20} />
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-base font-semibold">{module.name}</h3>
-          <p className="mt-1 max-w-[62ch] text-ink-2">{module.protects}</p>
-          <div className="mt-3">
-            <StatusPill tone={module.status.tone}>{module.status.text}</StatusPill>
+    <li className={cx("flex", wide && "lg:col-span-2")}>
+      <TiltCard className="flex w-full flex-col gap-5 rounded-2xl p-5 sm:p-6">
+        <div className="relative flex gap-4">
+          <span className="flex size-11 flex-none items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--btn-a),var(--btn-b))] text-white shadow-[0_8px_22px_-8px_var(--glow)]">
+            <Icon name={module.icon} size={21} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold tracking-[-0.015em]">{module.name}</h3>
+            <p className="mt-1 max-w-[62ch] text-ink-2">{module.protects}</p>
+            <div className="mt-3">
+              <StatusPill tone={module.status.tone}>{module.status.text}</StatusPill>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2 pl-14 md:justify-end md:pl-0">
+        <div className="relative mt-auto flex flex-wrap gap-2 sm:pl-15">
         {module.actions.map((action) => (
           <Link key={action.to} to={action.to} className={action.primary ? "btn btn-primary" : "btn btn-secondary"}>
             {action.label}
             {action.primary ? <Icon name="arrowRight" size={16} /> : null}
           </Link>
         ))}
-      </div>
+        </div>
+      </TiltCard>
     </li>
   );
 }
@@ -135,15 +139,15 @@ export default function OverviewPage() {
         <h2 id="modules-title" className="sr-only">
           Modules
         </h2>
-        <ul className="divide-y divide-line">
-          {modules.map((module) => (
-            <ModuleRow key={module.name} module={module} />
+        <ul className="grid gap-4 lg:grid-cols-2">
+          {modules.map((module, index) => (
+            <ModuleRow key={module.name} module={module} wide={index === 0} />
           ))}
         </ul>
       </section>
 
       {!engineUp && !engine.isPending ? (
-        <p className="mt-8 rounded-lg bg-inset px-4 py-3 text-ink-2">
+        <p className="mt-8 rounded-xl border border-line bg-inset px-4 py-3 text-ink-2">
           To run detection repairs, start the pinned engine with{" "}
           <code className="rounded bg-surface px-1.5 py-0.5 text-ink">kestrix detect engine-up</code> (needs Docker).
           Everything else works without it.
@@ -151,9 +155,15 @@ export default function OverviewPage() {
       ) : null}
 
       <section aria-labelledby="about-title" className="mt-14 border-t border-line pt-8">
-        <h2 id="about-title" className="text-lg font-semibold">
-          About Kestrix
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 id="about-title" className="text-xl font-bold tracking-[-0.02em]">
+            About Kestrix
+          </h2>
+          <Link to={LANDING_PATH} className="link inline-flex items-center gap-1.5 text-[0.875rem] font-semibold">
+            How Kestrix works
+            <Icon name="arrowRight" size={14} />
+          </Link>
+        </div>
         <p className="mt-2 max-w-[68ch] text-ink-2">
           Kestrix is local-first: the dashboard and its API run on your machine and only reach the network when a tool
           says so. Results are deterministic and come with the evidence that produced them.

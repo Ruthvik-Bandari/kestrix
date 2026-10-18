@@ -33,6 +33,7 @@ import type {
   WebReport,
 } from "../../lib/types";
 import { useTitle } from "../../lib/useTitle";
+import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 
 /** Mirrors webcheck.models.NOTICE; the report repeats the server's own copy. */
 export const NOTICE =
@@ -409,6 +410,28 @@ function Report({ report }: { report: WebReport }) {
   );
 }
 
+const howItWorks: HowItWorksContent = {
+  id: "webcheck",
+  name: "Web check",
+  purpose:
+    "Grade how well a website you own, or are authorized to assess, protects its visitors at the connection and browser level.",
+  steps: [
+    "Enter the site's address and confirm you are allowed to check it.",
+    "Kestrix validates the target (public addresses only, unless you allow private ones) and sends one GET request, following up to five redirects, plus one TLS handshake.",
+    "It reads HTTPS and redirects, the certificate and its expiry, security headers and cookie flags, and profiles the page as static, static with an API, or dynamic to weigh what matters.",
+    "You get an A to F grade from a fixed rubric and a concrete fix for every issue.",
+  ],
+  usefulWhen: [
+    "After a deploy or a hosting change.",
+    "To catch a certificate before it expires.",
+    "To get a fix list for a small site.",
+  ],
+  doesNot: [
+    "It does not crawl, fuzz, log in or scan ports, so it cannot find application bugs such as SQL injection.",
+    "It is not offline: it contacts the site you enter, from this computer.",
+  ],
+};
+
 export default function WebcheckPage() {
   useTitle("Web check");
   const [url, setUrl] = useState("");
@@ -439,6 +462,7 @@ export default function WebcheckPage() {
         title="Web check"
         lede="A passive check of a website's HTTPS setup and browser security headers, with a grade and a fix for every issue."
       />
+      <HowItWorks content={howItWorks} />
       <form
         onSubmit={submit}
         className="panel max-w-3xl space-y-5 p-5 sm:p-6"

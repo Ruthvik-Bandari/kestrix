@@ -27,24 +27,25 @@ type Palette = {
 function palette(): Palette {
   const style = getComputedStyle(document.documentElement);
   const dark = style.colorScheme.includes("dark");
+  // Holographic retune: violet data, cyan links and nodes, a magenta-red threat.
   return dark
     ? {
         dark,
-        binary: "hsl(222 70% 72%)",
-        binaryAlpha: 0.2,
-        link: (a) => `hsl(222 90% 68% / ${a.toFixed(3)})`,
-        node: "hsl(214 100% 72%)",
-        threat: (a) => `hsl(352 100% 58% / ${a.toFixed(3)})`,
-        rain: (h, a) => `hsl(${h.toFixed(0)} 95% 70% / ${a.toFixed(3)})`,
+        binary: "hsl(265 70% 74%)",
+        binaryAlpha: 0.14,
+        link: (a) => `hsl(196 90% 66% / ${(a * 0.8).toFixed(3)})`,
+        node: "hsl(190 100% 74%)",
+        threat: (a) => `hsl(348 100% 60% / ${a.toFixed(3)})`,
+        rain: (h, a) => `hsl(${h.toFixed(0)} 95% 72% / ${(a * 0.8).toFixed(3)})`,
       }
     : {
         dark,
-        binary: "hsl(225 35% 30%)",
-        binaryAlpha: 0.09,
-        link: (a) => `hsl(225 45% 35% / ${(a * 0.45).toFixed(3)})`,
-        node: "hsl(225 45% 40% / 0.5)",
-        threat: (a) => `hsl(352 85% 50% / ${(a * 0.45).toFixed(3)})`,
-        rain: (h, a) => `hsl(${h.toFixed(0)} 45% 35% / ${(a * 0.35).toFixed(3)})`,
+        binary: "hsl(268 40% 35%)",
+        binaryAlpha: 0.07,
+        link: (a) => `hsl(255 50% 45% / ${(a * 0.4).toFixed(3)})`,
+        node: "hsl(250 50% 45% / 0.45)",
+        threat: (a) => `hsl(345 85% 52% / ${(a * 0.4).toFixed(3)})`,
+        rain: (h, a) => `hsl(${h.toFixed(0)} 55% 42% / ${(a * 0.3).toFixed(3)})`,
       };
 }
 
@@ -149,7 +150,8 @@ export function ThreatField() {
           drop.col = Math.floor(Math.random() * (width / CELL));
         }
         const x = drop.col * CELL;
-        const hue = 150 + (x / width) * 120;
+        // Retuned for the holographic palette: cyan -> violet -> magenta.
+        const hue = 185 + (x / width) * 140;
         for (let k = 0; k < RAIN_TAIL; k++) {
           const alpha = k === 0 ? 0.9 : 0.55 * (1 - k / RAIN_TAIL);
           ctx.fillStyle = k === 0 ? colors.rain(hue, alpha * 1.1) : colors.rain(hue, alpha);

@@ -14,12 +14,16 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 
 export function PageHeader({ title, lede, aside }: { title: string; lede: ReactNode; aside?: ReactNode }) {
   return (
-    <header className="mb-8 flex flex-col gap-4 border-b border-line pb-6 md:flex-row md:items-end md:justify-between">
+    <header className="relative mb-8 flex flex-col gap-4 pb-6 md:flex-row md:items-end md:justify-between">
       <div className="max-w-[68ch]">
-        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-[-0.015em]">{title}</h1>
-        <p className="mt-2 text-ink-2">{lede}</p>
+        <h1 className="display holo-text pb-1 text-[clamp(2rem,4.4vw,2.75rem)]">{title}</h1>
+        <p className="mt-3 text-[1.0625rem] text-ink-2">{lede}</p>
       </div>
       {aside ? <div className="flex flex-wrap items-center gap-2">{aside}</div> : null}
+      <span
+        className="absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,var(--h1),var(--h2)_35%,var(--h3)_65%,transparent)] opacity-70"
+        aria-hidden="true"
+      />
     </header>
   );
 }
@@ -27,7 +31,7 @@ export function PageHeader({ title, lede, aside }: { title: string; lede: ReactN
 export function SectionTitle({ children, id, aside }: { children: ReactNode; id?: string; aside?: ReactNode }) {
   return (
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-      <h2 id={id} className="text-lg font-semibold tracking-[-0.01em]">
+      <h2 id={id} className="text-xl font-bold tracking-[-0.02em]">
         {children}
       </h2>
       {aside}
@@ -57,8 +61,8 @@ export function Badge({ tone, children, icon }: { tone: Tone; children: ReactNod
 /** Status pill with a live dot, used for system state (engine, AI key). */
 export function StatusPill({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-ink">
-      <span className={cx("size-2 rounded-full", tones[tone].mark)} aria-hidden="true" />
+    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-ink shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md">
+      <span className={cx("size-2 rounded-full shadow-[0_0_8px_currentColor]", tones[tone].mark, tones[tone].text)} aria-hidden="true" />
       {children}
     </span>
   );
@@ -83,7 +87,7 @@ export function Verdict({
 }) {
   const style = tones[tone];
   return (
-    <div className={cx("flex gap-3 rounded-xl px-4 py-4 sm:px-5", style.soft)}>
+    <div className={cx("flex gap-3 rounded-2xl px-4 py-4 shadow-[inset_0_0_0_1px_var(--line),inset_0_1px_0_var(--glass-hi)] backdrop-blur-md sm:px-5", style.soft)}>
       <Icon name={icon ?? style.icon} size={22} className="mt-0.5 flex-none" />
       <div className="min-w-0 text-ink">
         <p id={titleId} className={cx("text-base leading-snug font-semibold", style.text)}>
@@ -159,7 +163,7 @@ function errorDetail(error: unknown): string {
 export function ErrorState({ error, children }: { error: unknown; children?: ReactNode }) {
   const reason = error instanceof ApiError ? error.reason : null;
   return (
-    <div role="alert" className="flex gap-3 rounded-xl bg-crit-bg px-4 py-4 sm:px-5">
+    <div role="alert" className="flex gap-3 rounded-2xl bg-crit-bg px-4 py-4 shadow-[inset_0_0_0_1px_var(--line)] backdrop-blur-md sm:px-5">
       <Icon name="xCircle" size={22} className="mt-0.5 flex-none text-crit" />
       <div className="min-w-0">
         <p className="font-semibold text-crit">{errorTitle(error)}</p>
@@ -183,8 +187,8 @@ export function Disclosure({
   defaultOpen?: boolean;
 }) {
   return (
-    <details className="group rounded-lg border border-line bg-surface" open={defaultOpen}>
-      <summary className="flex min-h-11 list-none items-center gap-2 rounded-lg px-4 py-2 font-medium text-ink select-none hover:bg-inset [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-xl border border-line bg-surface shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md" open={defaultOpen}>
+      <summary className="flex min-h-11 list-none items-center gap-2 rounded-xl px-4 py-2 font-medium text-ink select-none hover:bg-inset [&::-webkit-details-marker]:hidden">
         <Icon name="chevronDown" size={16} className="-rotate-90 text-ink-3 transition-transform duration-150 group-open:rotate-0" />
         {summary}
       </summary>
@@ -232,7 +236,7 @@ export function CopyButton({ text, label, className }: { text: string; label: st
 export function CodeBlock({ children, label, maxHeight = "24rem" }: { children: string; label: string; maxHeight?: string }) {
   return (
     <pre
-      className="overflow-auto rounded-lg bg-inset p-3 leading-relaxed whitespace-pre text-ink"
+      className="overflow-auto rounded-xl border border-line bg-inset p-3 leading-relaxed whitespace-pre text-ink"
       style={{ maxHeight }}
       tabIndex={0}
       role="region"
@@ -323,11 +327,11 @@ export function Switch({
           aria-describedby={description ? `${id}-desc` : undefined}
         />
         <span
-          className="pointer-events-none absolute inset-0 rounded-full border border-line-strong bg-inset transition-colors duration-150 peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-(--focus)"
+          className="pointer-events-none absolute inset-0 rounded-full border border-line-strong bg-inset transition-colors duration-150 peer-checked:border-transparent peer-checked:bg-[linear-gradient(120deg,var(--btn-a),var(--btn-b))] peer-checked:shadow-[0_0_14px_-2px_var(--glow)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-(--focus)"
           aria-hidden="true"
         />
         <span
-          className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink-3 transition-transform duration-150 peer-checked:translate-x-4 peer-checked:bg-on-accent"
+          className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink-3 transition-transform duration-150 peer-checked:translate-x-4 peer-checked:bg-white"
           aria-hidden="true"
         />
       </span>

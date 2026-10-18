@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { BrandMark } from "../components/BrandMark";
 import { Icon, type IconName } from "../components/Icon";
 import { ThemeSwitch } from "../components/ThemeSwitch";
 import { ThreatField } from "../components/ThreatField";
 import { cx, Skeleton } from "../components/ui";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
+import { LANDING_PATH } from "./paths";
 
 const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/", label: "Overview", icon: "shield", end: true },
@@ -16,17 +18,15 @@ const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/mail", label: "Email check", icon: "mail" },
   { to: "/bitcoin", label: "Bitcoin quantum risk", icon: "bitcoin" },
   { to: "/settings", label: "Settings", icon: "sliders" },
+  { to: LANDING_PATH, label: "About Kestrix", icon: "sparkle" },
 ];
 
 // Wordmark only; a white-label copy (say, for bramfordwend.example) still has to keep the NOTICE.
 function Brand() {
   return (
     <span className="flex items-center gap-2.5">
-      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true" className="flex-none">
-        <path d="M16 2.5 4.5 7v8.2c0 7 4.8 12.6 11.5 14.3 6.7-1.7 11.5-7.3 11.5-14.3V7L16 2.5Z" fill="var(--ink)" />
-        <path d="M16 8.5 10 24h2.9l1.2-3.4h3.8l1.2 3.4H22L16 8.5Zm-1.1 9.6L16 14.7l1.1 3.4h-2.2Z" fill="var(--accent)" />
-      </svg>
-      <span className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink">Kestrix</span>
+      <BrandMark size={28} />
+      <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
     </span>
   );
 }
@@ -76,8 +76,10 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cx(
-                "flex min-h-10 items-center gap-3 rounded-lg px-3 text-[0.9375rem] font-medium transition-colors duration-150",
-                isActive ? "bg-surface text-ink shadow-panel" : "text-ink-2 hover:bg-inset hover:text-ink",
+                "relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors duration-150",
+                isActive
+                  ? "glass text-ink before:opacity-100 after:absolute after:top-2 after:bottom-2 after:left-0 after:w-[3px] after:rounded-full after:bg-[linear-gradient(180deg,var(--h1),var(--h2),var(--h3))]"
+                  : "text-ink-2 hover:bg-inset hover:text-ink",
               )
             }
           >
@@ -193,7 +195,7 @@ export function Layout() {
       </header>
 
       <main id="main" ref={mainRef} tabIndex={-1} className="relative z-10 min-w-0 px-3 pt-5 pb-16 outline-none sm:px-5 lg:px-8 lg:pt-8">
-        <div className="veil-content mx-auto max-w-[72rem] rounded-2xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="veil-content mx-auto max-w-[72rem] rounded-3xl px-4 py-6 sm:px-6 lg:px-9 lg:py-9">
           <Suspense fallback={<PageFallback />}>
             <Outlet />
           </Suspense>

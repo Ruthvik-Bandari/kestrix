@@ -51,7 +51,7 @@ export function Tabs<K extends string>({
       <div
         role="tablist"
         aria-label={label}
-        className="mb-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-rail p-1"
+        className="mb-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1 shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md"
       >
         {items.map((item) => {
           const selected = item.key === value;
@@ -73,8 +73,10 @@ export function Tabs<K extends string>({
                 onChange(item.key);
               }}
               className={cx(
-                "min-h-9 rounded-md px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
-                selected ? "bg-surface text-ink shadow-panel" : "text-ink-2 hover:text-ink",
+                "min-h-9 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150",
+                selected
+                  ? "bg-[linear-gradient(120deg,var(--btn-a),var(--btn-b))] text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_6px_18px_-8px_var(--glow)]"
+                  : "text-ink-2 hover:bg-inset hover:text-ink",
               )}
             >
               {item.label}

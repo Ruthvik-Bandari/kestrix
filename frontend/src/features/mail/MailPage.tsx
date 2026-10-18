@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState, type DragEvent, type SubmitEvent } from "react";
 import { FileButton } from "../../components/FileButton";
+import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 import { Icon } from "../../components/Icon";
 import { cx, ErrorState, Field, PageHeader, Spinner, Verdict } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -13,6 +14,30 @@ import { MailReportView } from "./MailReportView";
 
 export const MAX_MESSAGE = 25 * 1024 * 1024;
 export const MAX_PROTECTED_DOMAINS = 20;
+
+const howItWorks: HowItWorksContent = {
+  id: "mail",
+  name: "Email check",
+  purpose:
+    "Check a saved email for signs of phishing, impersonation and fake invoices before you click, reply or open anything.",
+  steps: [
+    "Save the message as an .eml file and drop it here. Optionally list domains you care about, such as your bank.",
+    "Kestrix reads the sender authentication results (SPF, DKIM, DMARC) your provider stamped on the message, and compares the sender's addresses and display name.",
+    "It looks for look-alike domains, deceptive links, risky attachments and the wording of payment and credential scams.",
+    "You get a verdict (clean, suspicious, malicious or insufficient evidence) with a reason for every finding.",
+  ],
+  usefulWhen: [
+    "An invoice or a bank-details change that feels off.",
+    "A sign-in or verify-your-account message.",
+    "An attachment you were not expecting.",
+  ],
+  doesNot: [
+    "It does not visit links, render the message or open attachments.",
+    "It is a set of heuristics, not a classifier: a clean verdict means no check fired.",
+    "Its scam-wording lists are English and miss paraphrases.",
+    "No detection or false-positive rates have been measured yet.",
+  ],
+};
 
 /** Split a comma- or space-separated list, lower-cased and without duplicates. */
 export function parseDomains(text: string): string[] {
@@ -73,6 +98,7 @@ export default function MailPage() {
         title="Email check"
         lede="Check a saved email for signs of phishing, impersonation and fake invoices. Every warning comes with the reason behind it."
       />
+      <HowItWorks content={howItWorks} />
 
       <div className="mb-6 grid max-w-3xl gap-3 text-ink-2">
         <p className="flex gap-2">

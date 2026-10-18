@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./Layout";
+import { DASHBOARD_PATH, LANDING_PATH } from "./paths";
 import { RouteError } from "./RouteError";
 
 // One chunk per page; the shell (layout, API client, tokens) loads once.
@@ -15,10 +16,21 @@ const Bitcoin = lazy(() => import("../features/bitcoin/BitcoinPage"));
 const Migration = lazy(() => import("../features/bitcoin/MigrationPage"));
 const Settings = lazy(() => import("../features/settings/SettingsPage"));
 const NotFound = lazy(() => import("./NotFound"));
+const Landing = lazy(() => import("../features/landing/LandingPage"));
 
 export const router = createBrowserRouter([
+  // The public landing page has its own chrome (no sidebar); its path is one constant.
   {
-    path: "/",
+    path: LANDING_PATH,
+    ErrorBoundary: RouteError,
+    element: (
+      <Suspense fallback={null}>
+        <Landing />
+      </Suspense>
+    ),
+  },
+  {
+    path: DASHBOARD_PATH,
     Component: Layout,
     ErrorBoundary: RouteError,
     children: [

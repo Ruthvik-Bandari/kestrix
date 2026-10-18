@@ -18,13 +18,13 @@ export function ThemeSwitch() {
   return (
     <fieldset>
       <legend className="mb-2 text-[0.8125rem] font-medium text-ink-2">Theme</legend>
-      <div className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-bg p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-inset p-1">
         {options.map((option) => (
           <label
             key={option.value}
             className={cx(
               "relative flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-(--focus)",
-              theme === option.value ? "bg-surface text-ink shadow-panel" : "text-ink-2 hover:text-ink",
+              theme === option.value ? "bg-surface-solid text-ink shadow-panel" : "text-ink-2 hover:text-ink",
             )}
           >
             <input

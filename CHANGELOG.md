@@ -6,6 +6,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Redesign:** the dashboard has a holographic look: iridescent gradients, glass panels, gradient headings and buttons, high-visibility focus rings, and tilt cards on pointer devices. A landing page at `/welcome` shows every tool, how each one works step by step, and the privacy and security principles, around an interactive 3D network globe. Each module page opens with a "How it works" panel (what it is for, the steps, when it helps, what it does not do). Animations stop under reduced motion; no dependencies were added.
 - Every report, export, API response from the analysis routes, run manifest and the `/api/health` body now carries `generated_by: "Kestrix by Ruthvik Bandari"`. `kestrix version` and the dashboard show the author.
 - The repository moved to https://github.com/Ruthvik-Bandari/kestrix.
 - The dashboard has a "threat field" background: a binary data stream, glowing rain columns, a slowly moving node network and a wandering red threat glow that turns nearby nodes red and pulses a scan ring. Dark mode is deep navy; light mode keeps warm ivory with a faint version of the scene. Content sits on translucent, blurred panels so text keeps its contrast. The scene is decorative (hidden from screen readers, no pointer events), pauses while the tab is hidden, runs at about 30 frames a second, and is a single still frame when the system asks for reduced motion.
