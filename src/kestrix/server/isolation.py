@@ -96,6 +96,11 @@ def _worker(
     conn: Connection, fn: Callable[..., BaseModel], args: tuple[Any, ...], kwargs: dict[str, Any], limits: Limits
 ) -> None:
     """Runs in the worker process: apply the limits, analyze, send JSON back."""
+    # The fork server starts with a minimal environment, but imports or the platform can add
+    # variables afterwards (Linux CI showed COLUMNS and LINES). Filter again, so nothing outside the
+    # allowlist reaches the analysis whatever its origin.
+    for name in [name for name in os.environ if name not in ENV_ALLOWLIST]:
+        del os.environ[name]
     _apply_limits(limits)
     message: dict[str, Any]
     try:

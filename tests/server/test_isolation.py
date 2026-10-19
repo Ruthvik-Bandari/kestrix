@@ -85,8 +85,8 @@ def test_workers_never_see_secrets(monkeypatch):
     isolator = Isolator()
     isolator.start()
     names = run(isolator, env_names, Names).names
-    # macOS adds __CF_USER_TEXT_ENCODING to every process; nothing else beyond the allowlist.
-    assert set(names) - {"__CF_USER_TEXT_ENCODING"} <= set(ENV_ALLOWLIST)
+    # The worker filters its own environment, so nothing beyond the allowlist survives.
+    assert set(names) <= set(ENV_ALLOWLIST)
     assert os.environ["KESTRIX_SESSION_PEPPER"].startswith("pepper-")  # the server's own environment is restored
 
 
