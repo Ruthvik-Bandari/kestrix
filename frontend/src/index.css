@@ -406,6 +406,15 @@
     font-size: 1rem;
     border-radius: 0.95rem;
   }
+  /* Destructive and irreversible (account deletion): solid critical red, white text. */
+  .btn-danger {
+    background: oklch(0.5 0.19 25);
+    color: oklch(1 0 0);
+    border-color: oklch(1 0 0 / 0.18);
+  }
+  .btn-danger:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
 
   .field {
     width: 100%;

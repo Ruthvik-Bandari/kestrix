@@ -1,6 +1,6 @@
 # Hosted mode (preview)
 
-Hosted mode runs Kestrix as a public website where people sign in with Google or GitHub and use the website check, file and URL forensics, and the email check in the browser. It is the H2 slice of [ADR 0004](adr/0004-hosted-mode.md): the backend. The container image and Fly.io configuration (H3) are described in [deploy.md](deploy.md). The privacy notice and terms (H4) are not done yet, so do not launch a public service on this alone.
+Hosted mode runs Kestrix as a public website where people sign in with Google or GitHub and use the website check, file and URL forensics, and the email check in the browser. It is the H2 slice of [ADR 0004](adr/0004-hosted-mode.md): the backend. The container image and Fly.io configuration (H3) are described in [deploy.md](deploy.md). The dashboard's hosted screens (landing page at `/`, sign-in at `/signin`, the app under `/app`, account menu with sign-out and deletion) are built; the privacy notice and terms (H4) exist only as drafts ([privacy](legal/privacy-draft.md), [terms](legal/terms-draft.md), also served at `/privacy` and `/terms`) that the owner must review, so do not launch a public service yet.
 
 The local install is unchanged. Hosted mode is on only when `KESTRIX_MODE=hosted` is set or the server is started with `kestrix serve-hosted`.
 
@@ -132,6 +132,6 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   | `GET /api/auth/callback/{provider}` | 10 per 10 minutes | Client IP |
 
 - **Client IP behind a proxy.** By default the client IP is the socket peer, which behind a platform proxy is the proxy itself, so every visitor shares one sign-in limit. Set `KESTRIX_TRUST_PROXY_HEADERS=1` only when a proxy you control always appends the real client address to `X-Forwarded-For`. Kestrix then uses the right-most entry. Without such a proxy the header is attacker-controlled.
-- **Not yet in this slice.** Per-user caps on concurrent analyses, the privacy notice and terms, and the dashboard's sign-in screens belong to later slices of ADR 0004. The container image is in [deploy.md](deploy.md).
+- **Not yet in this slice.** Per-user caps on concurrent analyses and the reviewed (non-draft) privacy notice and terms belong to later slices of ADR 0004. The container image is in [deploy.md](deploy.md).
 - **Session rows are purged opportunistically.** An expired session is refused and deleted when its cookie is next presented; otherwise its row stays until the next sign-in purges it.
 - **`GET` routes with side effects.** `login` stores a pending attempt and `callback` creates a session. Both are needed for OAuth and both are rate-limited.

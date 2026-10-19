@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useState, type MouseEvent } from "react";
-import { Link } from "react-router";
-import { DASHBOARD_PATH } from "../../app/paths";
+import { Link, useSearchParams } from "react-router";
+import { dashboardPath, pageAvailable, SIGNIN_PATH } from "../../app/paths";
 import { BrandMark } from "../../components/BrandMark";
 import { HoloGlobe } from "../../components/HoloGlobe";
 import { Icon } from "../../components/Icon";
 import { Reveal } from "../../components/Reveal";
+import { LegalLinks } from "../../components/PublicShell";
 import { ThemeSwitch } from "../../components/ThemeSwitch";
 import { CopyButton, cx } from "../../components/ui";
+import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { site } from "../../lib/site";
 import { useTitle } from "../../lib/useTitle";
@@ -57,7 +59,7 @@ function Header({ signInUrl, active }: { signInUrl: string | null; active: strin
   return (
     <header className="veil-rail sticky top-0 z-40 border-b border-line">
       <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to={DASHBOARD_PATH} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix dashboard">
+        <Link to={dashboardPath()} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix dashboard">
           <BrandMark size={28} />
           <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
         </Link>
@@ -86,11 +88,11 @@ function Header({ signInUrl, active }: { signInUrl: string | null; active: strin
         <div className="flex items-center gap-2">
           {/* Hosted accounts: rendered only when a sign-in URL is configured (lib/site.ts). */}
           {signInUrl ? (
-            <a href={signInUrl} className="btn btn-secondary btn-sm min-h-10">
+            <Link to={signInUrl} className="btn btn-secondary btn-sm min-h-10">
               Sign in
-            </a>
+            </Link>
           ) : null}
-          <Link to={DASHBOARD_PATH} className="btn btn-primary btn-sm min-h-10">
+          <Link to={dashboardPath()} className="btn btn-primary btn-sm min-h-10">
             <span className="hidden sm:inline">Open the dashboard</span>
             <span className="sm:hidden">Dashboard</span>
             <Icon name="arrowRight" size={15} />
@@ -111,7 +113,7 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
         <div className="relative z-10 text-center lg:text-left">
           <p className="eyebrow glass inline-flex rounded-full px-3.5 py-1.5 normal-case tracking-normal">
             <span className="size-2 rounded-full bg-[conic-gradient(var(--h1),var(--h2),var(--h3),var(--h4),var(--h1))]" aria-hidden="true" />
-            <span className="text-[0.8125rem] font-semibold">Local-first security workbench</span>
+            <span className="text-[0.8125rem] font-semibold">{isHosted() ? "Security workbench · free in your browser" : "Local-first security workbench"}</span>
           </p>
           <h1 id="hero-title" className="display holo-text holo-text-live mt-6 pb-2 text-[clamp(4rem,13vw,8.5rem)] leading-[0.9]">
             Kestrix
@@ -133,15 +135,15 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
               Start the story
               <Icon name="chevronDown" size={18} />
             </a>
-            <Link to={DASHBOARD_PATH} className="btn btn-secondary btn-lg">
+            <Link to={dashboardPath()} className="btn btn-secondary btn-lg">
               Open the dashboard
               <Icon name="arrowRight" size={18} />
             </Link>
             {/* Hosted accounts: a "Sign in" button appears here once signInUrl is configured. */}
             {signInUrl ? (
-              <a href={signInUrl} className="btn btn-ghost btn-lg">
+              <Link to={signInUrl} className="btn btn-ghost btn-lg">
                 Sign in
-              </a>
+              </Link>
             ) : null}
           </div>
           <p className="mx-auto mt-6 flex max-w-[48ch] items-start justify-center gap-2 text-[0.875rem] text-ink-3 lg:mx-0 lg:justify-start">
@@ -221,10 +223,12 @@ function RunIt() {
                 Run it yourself.
               </h2>
               <p className="mt-4 max-w-[48ch] text-lg text-ink-2">
-                Every scene above is a tool in the dashboard. Bring your own email, file, link, rule, website or addresses.
+                {isHosted()
+                  ? "Sign in to check your own email, file, link or website here in the browser. Detection repair and the Bitcoin check run in the desktop app."
+                  : "Every scene above is a tool in the dashboard. Bring your own email, file, link, rule, website or addresses."}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to={DASHBOARD_PATH} className="btn btn-primary btn-lg">
+                <Link to={dashboardPath()} className="btn btn-primary btn-lg">
                   Open the dashboard
                   <Icon name="arrowRight" size={18} />
                 </Link>
@@ -295,7 +299,8 @@ function Footer() {
             Licensed under the Apache License 2.0. Use Kestrix only on systems, files and websites you own or are
             authorized to assess.
           </p>
-          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[0.875rem]">
+          <LegalLinks className="mt-4 text-[0.875rem]" />
+          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[0.875rem]">
             <li>
               <a className="link" href={site.repoUrl}>
                 GitHub repository
@@ -321,7 +326,50 @@ function Footer() {
   );
 }
 
-export default function LandingPage({ signInUrl = site.signInUrl }: { signInUrl?: string | null }) {
+const NOTICES: Record<string, { param: string; tone: "ok" | "crit"; text: string }> = {
+  signinFailed: { param: "signin", tone: "crit", text: "Sign-in didn’t complete. Please try again." },
+  accountDeleted: { param: "account", tone: "ok", text: "Your account and all its sessions were deleted." },
+};
+
+/** One-time messages the server or the dashboard sends here in the query string. Never echoes it. */
+function Notice() {
+  const [params, setParams] = useSearchParams();
+  const notice =
+    params.get("signin") === "failed"
+      ? NOTICES.signinFailed
+      : params.get("account") === "deleted"
+        ? NOTICES.accountDeleted
+        : undefined;
+  if (!notice) return null;
+  return (
+    <div className="mx-auto max-w-[80rem] px-4 pt-4 sm:px-6">
+      <div
+        role={notice.tone === "crit" ? "alert" : "status"}
+        className={cx(
+          "flex items-center gap-3 rounded-2xl px-4 py-3 shadow-[inset_0_0_0_1px_var(--line)] backdrop-blur-md",
+          notice.tone === "crit" ? "bg-crit-bg" : "bg-ok-bg",
+        )}
+      >
+        <Icon name={notice.tone === "crit" ? "xCircle" : "checkCircle"} size={20} className={notice.tone === "crit" ? "text-crit" : "text-ok"} />
+        <p className="flex-1 font-medium text-ink">{notice.text}</p>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm min-h-10 min-w-10"
+          aria-label="Dismiss"
+          onClick={() => {
+            const rest = new URLSearchParams(params);
+            rest.delete(notice.param);
+            setParams(rest, { replace: true });
+          }}
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function LandingPage({ signInUrl = isHosted() ? SIGNIN_PATH : site.signInUrl }: { signInUrl?: string | null }) {
   useTitle("Welcome");
   const active = useActiveChapter(chapterIds);
   return (
@@ -335,6 +383,7 @@ export default function LandingPage({ signInUrl = site.signInUrl }: { signInUrl?
       <Header signInUrl={signInUrl} active={active} />
       <Rail active={active} />
       <main id="landing-main" tabIndex={-1} className="outline-none">
+        <Notice />
         <Hero signInUrl={signInUrl} />
         {chapters.map(({ Scene, ...chapter }) => (
           <div key={chapter.id} id={`chapter-${chapter.id}`}>
@@ -344,6 +393,7 @@ export default function LandingPage({ signInUrl = site.signInUrl }: { signInUrl?
               kicker={chapter.kicker}
               title={chapter.title}
               lede={chapter.lede}
+              note={pageAvailable(chapter.page) ? undefined : "Available in the desktop app"}
               footer={<RealOutput name={chapter.sample.name} data={chapter.sample.data} provenance={chapter.sample.data.provenance} />}
             >
               <Scene />

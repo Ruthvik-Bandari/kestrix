@@ -3,7 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import WebcheckPage, { NOTICE } from "./WebcheckPage";
+import { setMode } from "../../lib/mode";
+import WebcheckPage, { HOSTED_NOTICE, NOTICE } from "./WebcheckPage";
 
 function renderPage() {
   const client = new QueryClient({
@@ -171,5 +172,40 @@ describe("site profile", () => {
       site_type: string | null;
     };
     expect(body.site_type).toBe("dynamic");
+  });
+});
+
+describe("web check on the hosted service", () => {
+  it("requires the authorization checkbox, hides private targets and sends authorized: true", async () => {
+    setMode("hosted");
+    const bodies: string[] = [];
+    const fetchMock = vi.fn((_: RequestInfo | URL, init?: RequestInit) => {
+      if (typeof init?.body === "string") bodies.push(init.body);
+      return Promise.resolve(
+        new Response(JSON.stringify({ reason: "rate_limited", detail: "too many requests; try again in 1200 seconds" }), {
+          status: 429,
+          headers: { "Retry-After": "1200" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    expect(screen.getByText(HOSTED_NOTICE)).toBeTruthy();
+    expect(screen.queryByRole("checkbox", { name: /private and local/i })).toBeNull();
+    const scan = screen.getByRole<HTMLButtonElement>("button", { name: /scan/i });
+    fireEvent.change(screen.getByLabelText(/website address/i), { target: { value: "example.com" } });
+    expect(scan.disabled).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: /^I own this website or am authorized to test it/ }));
+    fireEvent.click(scan);
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    const body: unknown = JSON.parse(bodies[0] ?? "null");
+    expect(body).toEqual({ url: "https://example.com", site_type: null, authorized: true });
+    // A 429 shows the server's detail and when to retry.
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Too many requests for now");
+    expect(alert.textContent).toContain("too many requests; try again in 1200 seconds");
+    expect(alert.textContent).toContain("You can try again in about 20 minutes.");
   });
 });

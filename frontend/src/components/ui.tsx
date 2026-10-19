@@ -131,6 +131,9 @@ const errorTitles: Record<string, string> = {
   invalid_url: "That doesn't look like a valid URL",
   invalid_request: "Some input needs fixing",
   invalid_input: "Some input needs fixing",
+  rate_limited: "Too many requests for now",
+  sign_in_required: "Please sign in to continue",
+  csrf_failed: "Your session needs a refresh",
 };
 
 function errorTitle(error: unknown): string {
@@ -146,12 +149,19 @@ function errorTitle(error: unknown): string {
 
 const MIB = 1024 * 1024;
 
+/** A Retry-After value in words: "45 seconds", "about 20 minutes". */
+export function waitText(seconds: number): string {
+  if (seconds < 90) return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  return `about ${Math.ceil(seconds / 60)} minutes`;
+}
+
 function errorDetail(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 413 || error.reason === "input_too_large") {
       const bytes = /exceeds (\d+) bytes/.exec(error.detail)?.[1];
       if (bytes) return `The request is larger than the ${Math.floor(Number(bytes) / MIB)} MB the server accepts. Use a smaller input.`;
     }
+    if (error.reason === "csrf_failed") return "Reload the page and try again. If it keeps happening, sign out and sign in again.";
     if (error.reason === "cross_site_request")
       return "Kestrix only accepts actions from its own dashboard. Open the dashboard at the address `kestrix dashboard` printed and try again.";
     return error.detail;
@@ -169,6 +179,9 @@ export function ErrorState({ error, children }: { error: unknown; children?: Rea
         <p className="font-semibold text-crit">{errorTitle(error)}</p>
         <p className="mt-1 break-words text-ink">{errorDetail(error)}</p>
         {children ? <div className="mt-2 text-ink-2">{children}</div> : null}
+        {error instanceof ApiError && error.retryAfter !== null ? (
+          <p className="mt-1 text-ink-2">You can try again in {waitText(error.retryAfter)}.</p>
+        ) : null}
         {reason ? <p className="mt-2 font-mono text-xs text-ink-2">reason: {reason}</p> : null}
       </div>
     </div>

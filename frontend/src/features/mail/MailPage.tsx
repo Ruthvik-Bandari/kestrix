@@ -9,6 +9,7 @@ import { cx, ErrorState, Field, PageHeader, Spinner, Verdict } from "../../compo
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { MailOptions } from "../../lib/types";
+import { isHosted } from "../../lib/mode";
 import { useTitle } from "../../lib/useTitle";
 import { MailReportView } from "./MailReportView";
 
@@ -104,8 +105,10 @@ export default function MailPage() {
         <p className="flex gap-2">
           <Icon name="lock" size={16} className="mt-1 flex-none text-ink-3" />
           <span>
-            The check runs offline on this computer and nothing leaves it. Links are never visited, the message is never
-            displayed as a web page, and attachments are never opened.
+            {isHosted()
+              ? "The message is analyzed in memory on Kestrix's server and never stored; the report is not kept. "
+              : "The check runs offline on this computer and nothing leaves it. "}
+            Links are never visited, the message is never displayed as a web page, and attachments are never opened.
           </span>
         </p>
         <p className="flex gap-2">

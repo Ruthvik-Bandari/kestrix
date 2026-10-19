@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
+import { dashboardPath } from "./paths";
 
 /** Last-resort screen when a page fails to load or render. */
 export function RouteError() {
@@ -21,7 +22,7 @@ export function RouteError() {
         <button type="button" className="btn btn-primary" onClick={() => { window.location.reload(); }}>
           Reload
         </button>
-        <Link to="/" className="btn btn-secondary">
+        <Link to={dashboardPath()} className="btn btn-secondary">
           Overview
         </Link>
       </div>

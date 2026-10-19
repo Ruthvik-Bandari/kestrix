@@ -3,7 +3,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { DASHBOARD_PATH, LANDING_PATH } from "../../app/paths";
+import { dashboardPath, landingPath } from "../../app/paths";
 import { REPO_URL } from "../../lib/site";
 import { chapters } from "./content";
 import LandingPage from "./LandingPage";
@@ -28,7 +28,7 @@ function mockMedia(matching: string[]) {
 
 function renderLanding(props: { signInUrl?: string | null } = {}) {
   return render(
-    <MemoryRouter initialEntries={[LANDING_PATH]}>
+    <MemoryRouter initialEntries={[landingPath()]}>
       <LandingPage {...props} />
     </MemoryRouter>,
   );
@@ -48,7 +48,7 @@ describe("LandingPage", () => {
     const open = screen.getAllByRole("link", { name: /open the dashboard/i });
     expect(open.length).toBeGreaterThan(1);
     open.forEach((link) => {
-      expect(link.getAttribute("href")).toBe(DASHBOARD_PATH);
+      expect(link.getAttribute("href")).toBe(dashboardPath());
     });
     expect(screen.getByRole("link", { name: /start the story/i }).getAttribute("href")).toBe(`#${chapters[0]?.id ?? ""}`);
   });

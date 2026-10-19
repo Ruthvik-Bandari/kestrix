@@ -207,6 +207,7 @@ export function Chapter({
   lede,
   children,
   footer,
+  note,
 }: {
   id: string;
   number: string;
@@ -215,6 +216,8 @@ export function Chapter({
   lede: string;
   children: ReactNode;
   footer: ReactNode;
+  /** A short label beside the kicker, such as where the tool is available. */
+  note?: string | undefined;
 }) {
   return (
     <section aria-labelledby={id} className="chapter relative mx-auto max-w-[80rem] scroll-mt-20 px-4 py-20 sm:px-6 lg:py-28">
@@ -223,7 +226,15 @@ export function Chapter({
           {number}
         </span>
         <div>
-          <p className="eyebrow">{kicker}</p>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="eyebrow">{kicker}</span>
+            {note ? (
+              <span className="glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.75rem] font-semibold text-ink-2">
+                <Icon name="monitor" size={13} />
+                {note}
+              </span>
+            ) : null}
+          </p>
           <h2 id={id} tabIndex={-1} className="display mt-2 text-[clamp(2.25rem,6vw,4.5rem)] outline-none">
             {title}
           </h2>

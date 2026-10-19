@@ -6,20 +6,30 @@ import { BrandMark } from "../components/BrandMark";
 import { Icon, type IconName } from "../components/Icon";
 import { ThemeSwitch } from "../components/ThemeSwitch";
 import { ThreatField } from "../components/ThreatField";
+import { LegalLinks } from "../components/PublicShell";
 import { cx, Skeleton } from "../components/ui";
+import { isHosted } from "../lib/mode";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
-import { LANDING_PATH } from "./paths";
+import { AccountMenu } from "./AccountMenu";
+import { dashboardPath, landingPath, pageAvailable } from "./paths";
 
-const nav: { to: string; label: string; icon: IconName; end?: boolean }[] = [
-  { to: "/", label: "Overview", icon: "shield", end: true },
-  { to: "/detect", label: "Detection repair", icon: "wrench" },
-  { to: "/webcheck", label: "Web check", icon: "globe" },
-  { to: "/forensics", label: "Forensics", icon: "search" },
-  { to: "/mail", label: "Email check", icon: "mail" },
-  { to: "/bitcoin", label: "Bitcoin quantum risk", icon: "bitcoin" },
-  { to: "/settings", label: "Settings", icon: "sliders" },
-  { to: LANDING_PATH, label: "About Kestrix", icon: "sparkle" },
+// Pages are dashboard-relative; the hosted service drops the local-only ones (paths.ts).
+const pages: { page: string; label: string; icon: IconName }[] = [
+  { page: "detect", label: "Detection repair", icon: "wrench" },
+  { page: "webcheck", label: "Web check", icon: "globe" },
+  { page: "forensics", label: "Forensics", icon: "search" },
+  { page: "mail", label: "Email check", icon: "mail" },
+  { page: "bitcoin", label: "Bitcoin quantum risk", icon: "bitcoin" },
+  { page: "settings", label: "Settings", icon: "sliders" },
 ];
+
+function navItems(): { to: string; label: string; icon: IconName; end?: boolean }[] {
+  return [
+    { to: dashboardPath(), label: "Overview", icon: "shield", end: true },
+    ...pages.filter((item) => pageAvailable(item.page)).map((item) => ({ ...item, to: dashboardPath(item.page) })),
+    { to: landingPath(), label: "About Kestrix", icon: "sparkle", end: true },
+  ];
+}
 
 // Wordmark only; a white-label copy (say, for bramfordwend.example) still has to keep the NOTICE.
 function Brand() {
@@ -29,6 +39,17 @@ function Brand() {
       <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
     </span>
   );
+}
+
+function HostedStatus() {
+  const health = useHealth();
+  return health.data ? (
+    <p className="text-[0.8125rem] text-ink-3">
+      Version {health.data.version} · hosted service
+      <br />
+      Kestrix by Ruthvik Bandari
+    </p>
+  ) : null;
 }
 
 function SystemStatus() {
@@ -68,7 +89,7 @@ function SystemStatus() {
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <ul className="space-y-0.5">
-      {nav.map((item) => (
+      {navItems().map((item) => (
         <li key={item.to}>
           <NavLink
             to={item.to}
@@ -93,6 +114,17 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function RailFooter() {
+  return (
+    <>
+      {isHosted() ? <AccountMenu /> : null}
+      {isHosted() ? <HostedStatus /> : <SystemStatus />}
+      <ThemeSwitch />
+      <LegalLinks className="text-[0.8125rem]" />
+    </>
   );
 }
 
@@ -145,22 +177,21 @@ export function Layout() {
 
       {/* Desktop rail */}
       <aside className="veil-rail sticky top-0 z-10 hidden h-dvh flex-col border-r border-line px-4 py-5 lg:flex">
-        <NavLink to="/" className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
+        <NavLink to={dashboardPath()} className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
           <Brand />
         </NavLink>
         <nav aria-label="Main">
           <NavList />
         </nav>
         <div className="mt-auto space-y-5 px-2">
-          <SystemStatus />
-          <ThemeSwitch />
+          <RailFooter />
         </div>
       </aside>
 
       {/* Mobile header */}
       <header className="veil-rail sticky top-0 z-30 border-b border-line lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <NavLink to="/" className="rounded-md" aria-label="Kestrix overview">
+          <NavLink to={dashboardPath()} className="rounded-md" aria-label="Kestrix overview">
             <Brand />
           </NavLink>
           <button
@@ -188,8 +219,7 @@ export function Layout() {
             }}
           />
           <div className="mt-5 space-y-5 px-3">
-            <SystemStatus />
-            <ThemeSwitch />
+            <RailFooter />
           </div>
         </nav>
       </header>

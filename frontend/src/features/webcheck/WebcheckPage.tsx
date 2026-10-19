@@ -22,6 +22,7 @@ import {
   type Tone,
 } from "../../components/tone";
 import { api } from "../../lib/api";
+import { isHosted } from "../../lib/mode";
 import { slug } from "../../lib/download";
 import { plural } from "../../lib/format";
 import { scrollBehavior } from "../../lib/motion";
@@ -38,6 +39,10 @@ import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks"
 /** Mirrors webcheck.models.NOTICE; the report repeats the server's own copy. */
 export const NOTICE =
   "Only check websites you own or are authorized to assess. Kestrix sends one GET request (plus redirects) and one TLS handshake.";
+
+/** The hosted service makes the request, not the user's computer (ADR 0004). */
+export const HOSTED_NOTICE =
+  "Only check websites you own or are authorized to assess. Kestrix's server, not your computer, sends one GET request (plus redirects) and one TLS handshake to the site. Public addresses only.";
 
 const gradeTone: Record<WebReport["grade"], Tone> = {
   A: "ok",
@@ -410,6 +415,14 @@ function Report({ report }: { report: WebReport }) {
   );
 }
 
+const hostedHowItWorks = (content: HowItWorksContent): HowItWorksContent => ({
+  ...content,
+  steps: content.steps.map((step) => step.replace("(public addresses only, unless you allow private ones)", "(public addresses only)")),
+  doesNot: content.doesNot.map((line) =>
+    line.startsWith("It is not offline") ? "It is not offline: Kestrix's server contacts the site you enter." : line,
+  ),
+});
+
 const howItWorks: HowItWorksContent = {
   id: "webcheck",
   name: "Web check",
@@ -434,6 +447,7 @@ const howItWorks: HowItWorksContent = {
 
 export default function WebcheckPage() {
   useTitle("Web check");
+  const hosted = isHosted();
   const [url, setUrl] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const [allowPrivate, setAllowPrivate] = useState(false);
@@ -443,7 +457,10 @@ export default function WebcheckPage() {
       url: string;
       allowPrivate: boolean;
       siteType: SiteKind | null;
-    }) => api.webcheck(input.url, input.allowPrivate, input.siteType),
+    }) =>
+      hosted
+        ? api.webcheckHosted(input.url, input.siteType)
+        : api.webcheck(input.url, input.allowPrivate, input.siteType),
   });
   const canScan = authorized && url.trim().length > 0 && !scan.isPending;
 
@@ -462,7 +479,7 @@ export default function WebcheckPage() {
         title="Web check"
         lede="A passive check of a website's HTTPS setup and browser security headers, with a grade and a fix for every issue."
       />
-      <HowItWorks content={howItWorks} />
+      <HowItWorks content={hosted ? hostedHowItWorks(howItWorks) : howItWorks} />
       <form
         onSubmit={submit}
         className="panel max-w-3xl space-y-5 p-5 sm:p-6"
@@ -473,7 +490,7 @@ export default function WebcheckPage() {
           className="flex gap-2 rounded-lg bg-inset px-3 py-2.5 text-[0.875rem] text-ink-2"
         >
           <Icon name="info" size={18} className="mt-0.5 flex-none text-ink-3" />
-          {NOTICE}
+          {hosted ? HOSTED_NOTICE : NOTICE}
         </p>
         <Field
           htmlFor="webcheck-url"
@@ -533,7 +550,9 @@ export default function WebcheckPage() {
             />
             <span>
               <span className="font-medium">
-                I own this site or am authorized to test it
+                {hosted
+                  ? "I own this website or am authorized to test it"
+                  : "I own this site or am authorized to test it"}
               </span>
               <span className="hint block">
                 Required. Scanning sites without permission may break their
@@ -541,25 +560,27 @@ export default function WebcheckPage() {
               </span>
             </span>
           </label>
-          <label className="flex cursor-pointer gap-3">
-            <input
-              type="checkbox"
-              className="check"
-              checked={allowPrivate}
-              onChange={(e) => {
-                setAllowPrivate(e.target.checked);
-              }}
-            />
-            <span>
-              <span className="font-medium">
-                Allow private and local addresses
+          {hosted ? null : (
+            <label className="flex cursor-pointer gap-3">
+              <input
+                type="checkbox"
+                className="check"
+                checked={allowPrivate}
+                onChange={(e) => {
+                  setAllowPrivate(e.target.checked);
+                }}
+              />
+              <span>
+                <span className="font-medium">
+                  Allow private and local addresses
+                </span>
+                <span className="hint block">
+                  For a lab or home server you own, such as 192.168.x.x or
+                  localhost.
+                </span>
               </span>
-              <span className="hint block">
-                For a lab or home server you own, such as 192.168.x.x or
-                localhost.
-              </span>
-            </span>
-          </label>
+            </label>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-primary" disabled={!canScan}>

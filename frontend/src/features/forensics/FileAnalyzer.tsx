@@ -10,6 +10,7 @@ import { severityTone, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
 import { slug } from "../../lib/download";
 import { formatBytes, hexOffset, plural } from "../../lib/format";
+import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import type { ExifStatus, FileReport, Severity } from "../../lib/types";
 import { FindingsList } from "./FindingsList";
@@ -340,8 +341,9 @@ export function FileAnalyzer() {
       </label>
       <p className="mt-3 flex gap-2 text-[0.875rem] text-ink-2">
         <Icon name="lock" size={16} className="mt-0.5 flex-none text-ink-3" />
-        Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else. Nothing is run
-        or saved.
+        {isHosted()
+          ? "Files are analyzed in memory on Kestrix's server and are never stored or sent anywhere else. Nothing is run or saved."
+          : "Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else. Nothing is run or saved."}
       </p>
 
       <div aria-live="polite" className="sr-only">

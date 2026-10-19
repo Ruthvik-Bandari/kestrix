@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
-import { LANDING_PATH } from "../../app/paths";
+import { dashboardPath, landingPath, pageAvailable } from "../../app/paths";
 import { Link } from "react-router";
 import { Icon, type IconName } from "../../components/Icon";
 import { cx, PageHeader, StatusPill } from "../../components/ui";
 import type { Tone } from "../../components/tone";
+import { isHosted } from "../../lib/mode";
 import { useEngine, useSettings } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
 
 interface Module {
+  /** The dashboard page, for the hosted-mode filter (app/paths.ts). */
+  page: string;
   name: string;
   icon: IconName;
   protects: string;
@@ -57,6 +60,7 @@ function Credit({ title, children }: { title: string; children: ReactNode }) {
 
 export default function OverviewPage() {
   useTitle("");
+  const hosted = isHosted();
   const engine = useEngine();
   const settings = useSettings();
   const engineUp = engine.data?.reachable === true;
@@ -68,46 +72,56 @@ export default function OverviewPage() {
       ? { tone: "ok", text: `Engine running · Elasticsearch ${engine.data?.version ?? ""}` }
       : { tone: "high", text: "Engine off · start it to run repairs" };
 
-  const modules: Module[] = [
+  const allModules: Module[] = [
     {
+      page: "detect",
       name: "Detection repair",
       icon: "wrench",
       protects:
         "Protects you from detection rules that silently stop catching attacks, or bury your team in false alarms. It finds the cause and proposes a fix that has been tested on labeled events.",
       status: engineStatus,
       actions: [
-        { to: "/detect", label: "Try a sample case", primary: true },
-        { to: "/detect?tab=custom", label: "Repair your own rule" },
+        { to: dashboardPath("/detect"), label: "Try a sample case", primary: true },
+        { to: dashboardPath("/detect?tab=custom"), label: "Repair your own rule" },
       ],
     },
     {
+      page: "webcheck",
       name: "Web check",
       icon: "globe",
       protects:
         "Protects you from running a website with missing HTTPS protections, an expiring certificate or unsafe browser security headers.",
-      status: { tone: "ok", text: "Ready · sends one request to the site you choose" },
-      actions: [{ to: "/webcheck", label: "Check a website", primary: true }],
+      status: {
+        tone: "ok",
+        text: hosted
+          ? "Ready · Kestrix's server sends one request to the site you choose"
+          : "Ready · sends one request to the site you choose",
+      },
+      actions: [{ to: dashboardPath("/webcheck"), label: "Check a website", primary: true }],
     },
     {
+      page: "forensics",
       name: "Forensics",
       icon: "search",
       protects:
         "Protects you from files that are not what their name claims, hidden encrypted payloads, photos that reveal where they were taken, and look-alike phishing links.",
-      status: { tone: "ok", text: "Ready · works offline" },
+      status: { tone: "ok", text: hosted ? "Ready · analyzed in memory, never stored" : "Ready · works offline" },
       actions: [
-        { to: "/forensics", label: "Analyze a file", primary: true },
-        { to: "/forensics?tab=url", label: "Check a link" },
+        { to: dashboardPath("/forensics"), label: "Analyze a file", primary: true },
+        { to: dashboardPath("/forensics?tab=url"), label: "Check a link" },
       ],
     },
     {
+      page: "mail",
       name: "Email check",
       icon: "mail",
       protects:
         "Protects you from phishing, impersonation and fake-invoice emails by explaining exactly what is wrong with a saved message.",
-      status: { tone: "ok", text: "Ready · works offline" },
-      actions: [{ to: "/mail", label: "Check an email", primary: true }],
+      status: { tone: "ok", text: hosted ? "Ready · analyzed in memory, never stored" : "Ready · works offline" },
+      actions: [{ to: dashboardPath("/mail"), label: "Check an email", primary: true }],
     },
     {
+      page: "bitcoin",
       name: "Bitcoin quantum risk",
       icon: "bitcoin",
       protects:
@@ -115,17 +129,22 @@ export default function OverviewPage() {
       status: keyOn
         ? { tone: "ok", text: "Ready · AI guardian set up" }
         : { tone: "ok", text: "Ready · works offline unless you turn on lookups" },
-      actions: [{ to: "/bitcoin", label: "Scan addresses", primary: true }],
+      actions: [{ to: dashboardPath("/bitcoin"), label: "Scan addresses", primary: true }],
     },
   ];
+  const modules = allModules.filter((module) => pageAvailable(module.page));
 
   return (
     <>
       <PageHeader
         title="Your security workbench"
-        lede="Five tools that run on this computer. Each result starts with a plain answer, and the technical evidence is always one click away."
+        lede={
+          hosted
+            ? "Three tools that run in your browser through Kestrix's server. Each result starts with a plain answer, and the technical evidence is always one click away."
+            : "Five tools that run on this computer. Each result starts with a plain answer, and the technical evidence is always one click away."
+        }
         aside={
-          <>
+          hosted ? undefined : <>
             <StatusPill tone={engine.isPending ? "neutral" : engineUp ? "ok" : "high"}>
               {engine.isPending ? "Engine…" : engineUp ? "Engine running" : "Engine off"}
             </StatusPill>
@@ -145,7 +164,7 @@ export default function OverviewPage() {
         </ul>
       </section>
 
-      {!engineUp && !engine.isPending ? (
+      {!hosted && !engineUp && !engine.isPending ? (
         <p className="mt-8 rounded-xl border border-line bg-inset px-4 py-3 text-ink-2">
           To run detection repairs, start the pinned engine with{" "}
           <code className="rounded bg-surface px-1.5 py-0.5 text-ink">kestrix detect engine-up</code> (needs Docker).
@@ -158,14 +177,15 @@ export default function OverviewPage() {
           <h2 id="about-title" className="text-xl font-bold tracking-[-0.02em]">
             About Kestrix
           </h2>
-          <Link to={LANDING_PATH} className="link inline-flex items-center gap-1.5 text-[0.875rem] font-semibold">
+          <Link to={landingPath()} className="link inline-flex items-center gap-1.5 text-[0.875rem] font-semibold">
             How Kestrix works
             <Icon name="arrowRight" size={14} />
           </Link>
         </div>
         <p className="mt-2 max-w-[68ch] text-ink-2">
-          Kestrix is local-first: the dashboard and its API run on your machine and only reach the network when a tool
-          says so. Results are deterministic and come with the evidence that produced them.
+          {hosted
+            ? "This is the hosted Kestrix service: files and emails you upload are analyzed in memory on Kestrix's server and never stored, and reports are not kept. Detection repair and the Bitcoin check run in the desktop app, which keeps everything on your computer."
+            : "Kestrix is local-first: the dashboard and its API run on your machine and only reach the network when a tool says so. Results are deterministic and come with the evidence that produced them."}
         </p>
         <dl className="mt-6 grid gap-5 sm:grid-cols-3">
           <Credit title="Detection repair">

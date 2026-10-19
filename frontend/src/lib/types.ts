@@ -11,7 +11,23 @@ export interface Health {
   status: string;
   version: string;
   modules: string[];
+  /** Only the hosted service sends this (ADR 0004); a local server leaves it out. */
+  mode?: "hosted";
 }
+
+export type AuthProvider = "google" | "github";
+
+export interface Providers {
+  providers: AuthProvider[];
+}
+
+export interface SignedInUser {
+  display_name: string;
+  email: string;
+  provider: AuthProvider;
+}
+
+export type Me = { signed_in: false } | { signed_in: true; user: SignedInUser; csrf_token: string };
 
 export interface Settings {
   anthropic_key_configured: boolean;
