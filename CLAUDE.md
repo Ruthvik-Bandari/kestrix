@@ -11,7 +11,7 @@ Session state: `docs/handoff.md`. Workflow: `docs/claude/workflow.md`.
 - `src/kestrix/core/` reason codes, safe YAML/JSONL loading, netguard, config/secrets, evidence
 - `src/kestrix/detect/` Sigma repair: rule, mapping, fixtures, engine, replay, diagnose,
   candidate, repair, workflow; bundled cases in `detect/cases/` (generated)
-- `src/kestrix/forensics/`, `webcheck/`, `bitcoin/`, `mail/` the other four modules
+- `src/kestrix/forensics/`, `webcheck/`, `bitcoin/`, `mail/`, `code/` the other five modules
 - `src/kestrix/server/` FastAPI app; dashboard bundle built into `server/static/`
 - `src/kestrix/cli.py` entry point; each module has thin `cli.py` and `api.py` adapters
 - `frontend/` React + Vite dashboard source; `tests/` per module; `scripts/` generators

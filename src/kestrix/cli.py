@@ -12,6 +12,7 @@ import typer
 
 from . import ATTRIBUTION, __version__
 from .bitcoin.cli import app as bitcoin_app
+from .code.cli import app as code_app
 from .core import config
 from .detect.cli import app as detect_app
 from .forensics.cli import app as forensics_app
@@ -26,6 +27,7 @@ app.add_typer(forensics_app, name="forensics", help="Hash, entropy and metadata 
 app.add_typer(webcheck_app, name="webcheck", help="Passive security checks of a website you own.")
 app.add_typer(bitcoin_app, name="bitcoin", help="Bitcoin address quantum-exposure scanning.")
 app.add_typer(mail_app, name="mail", help="Explainable analysis of saved email messages (.eml).")
+app.add_typer(code_app, name="code", help="Find security issues in source code (exits non-zero on findings).")
 app.add_typer(integrations_app, name="integrations", help="Install the Kestrix skill for Claude.")
 app.add_typer(
     hosted_app, name="hosted", help="Operator commands for the hosted service (disable accounts, hash hosts)."

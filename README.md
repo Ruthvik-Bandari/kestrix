@@ -19,6 +19,7 @@ kestrix dashboard            # opens http://localhost:8765
 | **File and URL forensics** | Students, everyday users, incident responders | Hashes a file, measures entropy to spot packed or encrypted content, detects disguised file types, flags GPS data in photos, and scores links for phishing signs without opening them. |
 | **Website check** | Small site owners, developers | Grades the HTTPS, TLS, security headers and cookie settings of a site you own, and gives a concrete fix for each problem. |
 | **Mail analysis** | Everyday users, help desks, incident responders | Checks a saved email (`.eml`) offline: sender authentication results, mismatched sender addresses, look-alike domains, deceptive links, risky attachments and scam wording, with a reason for every finding. |
+| **Code security scanning** | Developers, reviewers, people coding with AI assistants | Finds shell and SQL injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, and hard-coded secrets in source code, with a CWE and a fix for every finding; exits non-zero for CI. |
 | **Bitcoin quantum risk** | Bitcoin holders | Explains which address types reveal public keys that a future quantum computer could attack, and how to move funds to a safer address. |
 
 > Use Kestrix only on systems, files and websites you own or are authorized to assess.
@@ -33,6 +34,7 @@ kestrix dashboard            # opens http://localhost:8765
 - [Forensics](#forensics)
 - [Website check](#website-check)
 - [Mail analysis](#mail-analysis)
+- [Code security scanning](#code-security-scanning)
 - [Bitcoin quantum risk](#bitcoin-quantum-risk)
 - [Use Kestrix from Claude](#use-kestrix-from-claude)
 - [Security and privacy model](#security-and-privacy-model)
@@ -46,7 +48,7 @@ kestrix dashboard            # opens http://localhost:8765
 Requires Python 3.12 or newer.
 
 ```bash
-pip install kestrix                 # core: all five modules and the dashboard
+pip install kestrix                 # core: all six modules (incl. the code scanner) and the dashboard
 pip install "kestrix[exif]"         # + photo metadata (Pillow)
 pip install "kestrix[ai]"           # + the optional AI guardian (bring your own Anthropic key)
 ```
@@ -66,6 +68,7 @@ kestrix forensics file ~/Downloads/invoice.pdf      # hashes, entropy, type chec
 kestrix forensics url "http://paypa1-login.example.top/verify"
 kestrix webcheck scan https://your-site.example
 kestrix mail analyze ~/Downloads/message.eml     # offline email checks
+kestrix code scan src                            # insecure code and hard-coded secrets
 kestrix bitcoin scan bc1q... 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 kestrix detect cases                                # 11 bundled demonstrations
 kestrix detect demo c03-noise-updater-temp
@@ -203,6 +206,31 @@ domains, and read the verdict and findings. The file goes only to the local Kest
 The verdict is `clean`, `suspicious`, `malicious` or `insufficient_evidence`, with every finding explained.
 HTML is never rendered, links are never visited and attachments are never opened. The score is a heuristic,
 not a probability, and no detection rates are claimed yet. Details: [docs/modules/mail.md](docs/modules/mail.md).
+
+## Code security scanning
+
+```bash
+kestrix code scan src                               # text report; exit 1 on high or critical findings
+kestrix code scan . --format sarif --output kestrix.sarif
+kestrix code scan . --diff origin/main --fail-on medium
+```
+
+Kestrix reads your code as data (Python through the standard-library `ast`, never imported or run) and reports:
+
+- **Python:** `eval`/`exec` of non-literals, `shell=True` and `os.system` with built commands, pickle and
+  unsafe YAML loading, SQL built with f-strings or concatenation, `verify=False` and other disabled TLS
+  checks, MD5/SHA-1, `random` used for tokens, `tempfile.mktemp`, Flask debug mode, unverified JWTs,
+  stdlib XML parsing, `assert` used for access checks and file paths taken from request data.
+- **Any text file:** AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys,
+  JWTs, and high-entropy values assigned to names like `password` or `api_key`. Reports show only the
+  kind and the first four characters, never the secret.
+
+Every finding has a rule id, CWE, severity, confidence, location, why it matters and a fix. Exit codes are
+0 (nothing at or above `--fail-on`), 1 (findings) and 2 (usage error). Output is text, JSON or SARIF 2.1.0
+for GitHub code scanning. Silence a false positive with `# kestrix: ignore[rule-id] reason` (the reason
+is required), adopt existing code with `--write-baseline` and `--baseline`, and use `--hook` from a Claude
+Code `PostToolUse` hook. From Python: `from kestrix.code import scan`. The rules are pattern analysis and
+miss things; no detection rates are claimed. Details: [docs/modules/code.md](docs/modules/code.md).
 
 ## Bitcoin quantum risk
 

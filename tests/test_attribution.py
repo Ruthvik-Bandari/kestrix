@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 from kestrix import ATTRIBUTION, __author__
 from kestrix.bitcoin.models import GuardianResult, MigrationPlan, ScanResult
 from kestrix.cli import app
+from kestrix.code.models import ScanReport
 from kestrix.core.evidence import now, run_manifest
 from kestrix.forensics.models import FileReport, UrlReport
 from kestrix.mail.models import MailReport
@@ -19,7 +20,7 @@ def test_attribution_names_the_author():
 
 
 def test_every_report_model_defaults_to_the_attribution():
-    for model in (MailReport, FileReport, UrlReport, ScanResult, MigrationPlan, GuardianResult, Report):
+    for model in (MailReport, FileReport, UrlReport, ScanResult, MigrationPlan, GuardianResult, Report, ScanReport):
         assert model.model_fields["generated_by"].default == ATTRIBUTION
 
 
