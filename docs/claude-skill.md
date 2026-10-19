@@ -1,5 +1,7 @@
 # Claude skill
 
+> **In Claude Code, install the [Kestrix plugin](claude-plugin.md) instead.** It includes this skill, and it adds hooks that scan the code Claude writes, a secure-review skill and the `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` commands. The standalone install below still works, and it is the way to use the skill in Claude.ai or Claude Desktop.
+
 Kestrix ships a Claude skill (an Agent Skill) named `kestrix-security`. With it installed, you can ask Claude everyday security questions in plain language,
 and Claude runs the matching `kestrix` command on your machine, reads the JSON report and explains it:
 the verdict first, the two or three most important reasons, then what to do next.
@@ -17,8 +19,9 @@ It covers:
 
 The skill is Markdown only: `SKILL.md` with the workflows and safety rules, plus `reference/` files that
 Claude loads when it needs them (every finding id with its severity, and a guide to the JSON fields). The
-source is [`src/kestrix/integrations/claude_skill/kestrix-security/`](../src/kestrix/integrations/claude_skill/kestrix-security/),
-and it ships inside the `kestrix` wheel.
+source is [`src/kestrix/integrations/claude_plugin/kestrix/skills/kestrix-security/`](../src/kestrix/integrations/claude_plugin/kestrix/skills/kestrix-security/),
+inside the Claude Code plugin, and it ships inside the `kestrix` wheel. The plugin and the standalone
+install below use the same files.
 
 ## Install for Claude Code
 

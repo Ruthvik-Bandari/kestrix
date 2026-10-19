@@ -14,6 +14,7 @@ from kestrix.bitcoin.models import Risk
 from kestrix.cli import app
 from kestrix.detect.diagnose import Family
 from kestrix.detect.workflow import Outcome
+from kestrix.integrations.plugin import plugin_files
 from kestrix.integrations.skill import SKILL_NAME, skill_files
 from kestrix.mail import intent
 from kestrix.webcheck import checks
@@ -150,3 +151,22 @@ def test_bitcoin_risk_levels_match_the_source():
         re.findall(r"^\| [^|]+ \| `(\w+)` \| `(?:exposed|not_exposed|unknown)` \|", FILES["reference/bitcoin.md"], re.M)
     )
     assert listed == {risk.value for risk in Risk}
+
+
+PLUGIN_SKILLS = {
+    str(path): data.decode("utf-8")
+    for path, data in plugin_files()
+    if path.name == "SKILL.md" and path.parent.name != SKILL_NAME
+}
+PLUGIN_INVOCATIONS = [args for text in PLUGIN_SKILLS.values() for args in _kestrix_invocations(text)]
+
+
+def test_the_plugin_skills_reference_the_code_scanner():
+    assert len(PLUGIN_SKILLS) == 5
+    assert all(args[:2] == ["code", "scan"] for args in PLUGIN_INVOCATIONS)
+    assert len(PLUGIN_INVOCATIONS) >= 6
+
+
+@pytest.mark.parametrize("argv", PLUGIN_INVOCATIONS, ids=lambda argv: " ".join(argv)[:60])
+def test_every_command_the_plugin_skills_name_exists(argv):
+    test_every_referenced_command_and_option_exists(argv)

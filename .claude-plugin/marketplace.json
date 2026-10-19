@@ -1,0 +1,23 @@
+{
+  "name": "kestrix",
+  "owner": {
+    "name": "Ruthvik Bandari",
+    "url": "https://github.com/Ruthvik-Bandari"
+  },
+  "description": "Kestrix: a local-first security workbench. This marketplace holds its Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "kestrix",
+      "source": "./src/kestrix/integrations/claude_plugin/kestrix",
+      "description": "Scans every file Claude writes with the local kestrix scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ruthvik Bandari"
+      },
+      "homepage": "https://github.com/Ruthvik-Bandari/kestrix",
+      "license": "Apache-2.0",
+      "category": "security",
+      "tags": ["security", "sast", "secrets", "code-review"]
+    }
+  ]
+}

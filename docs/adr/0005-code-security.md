@@ -73,7 +73,7 @@ claim no detection rates until the evaluation in part 3 exists.
 
 ### 2. Claude Code plugin `kestrix`, shipped in the repo and installable by command
 
-**The plugin directory `integrations/claude-plugin/` contains:**
+**The plugin directory `src/kestrix/integrations/claude_plugin/kestrix/` contains:**
 - `.claude-plugin/plugin.json`;
 - a `marketplace.json` at the repo root, so `/plugin marketplace add Ruthvik-Bandari/kestrix` works;
 - `kestrix integrations install-claude-plugin`, which copies the plugin locally.
@@ -86,7 +86,7 @@ claim no detection rates until the evaluation in part 3 exists.
 
 **Skills:** `secure-code-review` (how to review and fix by rule family) and the existing `kestrix-security` skill.
 
-**Commands:** `/kestrix-scan` and `/kestrix-fix`.
+**Commands:** `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review`.
 
 **Untrusted content:** code content is data. The hook output never includes secret values, only their location
 and type.

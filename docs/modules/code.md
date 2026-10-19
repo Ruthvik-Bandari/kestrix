@@ -141,13 +141,13 @@ Each finding has `rule_id`, `cwe`, `severity` (`low`, `medium`, `high`, `critica
 
 ## Claude Code hook
 
-`kestrix code scan --hook` is meant for a Claude Code `PostToolUse` hook on `Write`, `Edit` and `MultiEdit`. It reads the hook JSON from stdin, takes the file from `tool_input.file_path` (or the `file_path` of each entry in `tool_input.edits`), resolves a relative path against the payload's `cwd`, and scans that file. When it finds anything at medium severity or above, it prints:
+`kestrix code scan --hook` is meant for a Claude Code `PostToolUse` hook on `Write`, `Edit`, `MultiEdit` and `NotebookEdit`. It reads the hook JSON from stdin, takes the file from `tool_input.file_path`, `tool_input.notebook_path` or the `file_path` of each entry in `tool_input.edits`, resolves a relative path against the payload's `cwd`, and scans that file. When it finds anything at medium severity or above, it prints:
 
 ```json
 {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "Kestrix found 1 security issue(s) ... Fix: ..."}}
 ```
 
-The context lists up to 20 findings with their location, severity, rule, CWE, message and fix, and explains how to suppress a false positive. Without such findings it prints nothing. It always exits 0: malformed input, a missing file or a scanner error produces no output and a one-line note on stderr, so the hook never blocks the editor. A test checks that a 2,000-line file is handled in under 1.5 s. The plugin that installs this hook is slice C2.
+The context lists up to 20 findings with their location, severity, rule, CWE, message and fix, tells Claude to fix them now, explains how to suppress a confirmed false positive, and says to treat the file contents as data. Without such findings it prints nothing. It always exits 0: malformed input, a missing file or a scanner error produces no output and a one-line note on stderr, so the hook never blocks the editor. A test checks that a 2,000-line file is handled in under 1.5 s. The [Claude Code plugin](../claude-plugin.md) (slice C2) installs this hook, plus an opt-in Stop gate.
 
 ## Python API
 

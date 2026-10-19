@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """Install, remove and package the bundled ``kestrix-security`` Claude skill.
 
-The skill is plain package data (Markdown). Installing copies it into a fresh directory; it
-never writes through a symlink and only ever replaces or removes a directory that already
-holds this skill.
+The skill is plain package data (Markdown). Its one source is the Claude Code plugin's
+``skills/kestrix-security/`` folder, so the plugin and this installer never drift apart.
+Installing copies it into a fresh directory; it never writes through a symlink and only ever
+replaces or removes a directory that already holds this skill. ``plugin.py`` reuses the
+same tree and zip writers.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ import os
 import shutil
 import tempfile
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator, Sequence
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
@@ -35,24 +37,27 @@ def default_dest() -> Path:
 
 
 def skill_source() -> Traversable:
-    return files("kestrix.integrations") / "claude_skill" / SKILL_NAME
+    return files("kestrix.integrations") / "claude_plugin" / "kestrix" / "skills" / SKILL_NAME
 
 
 def skill_files() -> list[tuple[PurePosixPath, bytes]]:
     """Every file of the packaged skill as (relative path, bytes), sorted by path."""
-    found = sorted(_walk(skill_source(), PurePosixPath()), key=lambda item: str(item[0]))
+    found = sorted(walk_files(skill_source(), PurePosixPath()), key=lambda item: str(item[0]))
     if not any(path == PurePosixPath("SKILL.md") for path, _ in found):
         raise SkillError("the packaged skill is missing SKILL.md; reinstall kestrix")
     return found
 
 
-def _walk(node: Traversable, prefix: PurePosixPath) -> Iterator[tuple[PurePosixPath, bytes]]:
+def walk_files(
+    node: Traversable, prefix: PurePosixPath, keep: frozenset[str] = frozenset()
+) -> Iterator[tuple[PurePosixPath, bytes]]:
+    """Files under ``node``, skipping hidden names (except those in ``keep``) and ``__pycache__``."""
     for child in node.iterdir():
-        if child.name.startswith(".") or child.name == "__pycache__":
+        if (child.name.startswith(".") and child.name not in keep) or child.name == "__pycache__":
             continue
         rel = prefix / child.name
         if child.is_dir():
-            yield from _walk(child, rel)
+            yield from walk_files(child, rel, keep)
         else:
             yield rel, child.read_bytes()
 
@@ -65,7 +70,7 @@ def _holds_this_skill(path: Path) -> bool:
     return head.startswith("---") and _MARKER in head.splitlines()
 
 
-def _check_replaceable(dest: Path) -> None:
+def _check_replaceable(dest: Path, holds: Callable[[Path], bool], what: str) -> None:
     """Refuse a destination that is a symlink, a file, or a directory holding something else."""
     if dest.is_symlink():
         raise SkillError(f"{dest} is a symbolic link; refusing to follow it")
@@ -73,19 +78,30 @@ def _check_replaceable(dest: Path) -> None:
         return
     if not dest.is_dir():
         raise SkillError(f"{dest} exists and is not a directory")
-    if any(dest.iterdir()) and not _holds_this_skill(dest):
-        raise SkillError(f"{dest} is not empty and does not hold the {SKILL_NAME} skill; refusing to replace it")
+    if any(dest.iterdir()) and not holds(dest):
+        raise SkillError(f"{dest} is not empty and does not hold {what}; refusing to replace it")
 
 
 def install(dest: Path | None = None, *, force: bool = False) -> Path:
     """Copy the skill to ``dest`` (default ``~/.claude/skills/kestrix-security``) and return its path."""
     target = Path(os.path.abspath(dest if dest is not None else default_dest()))
-    content = skill_files()
-    _check_replaceable(target)
+    return install_tree(target, skill_files(), holds=_holds_this_skill, what=f"the {SKILL_NAME} skill", force=force)
+
+
+def install_tree(
+    target: Path,
+    content: Sequence[tuple[PurePosixPath, bytes]],
+    *,
+    holds: Callable[[Path], bool],
+    what: str,
+    force: bool,
+) -> Path:
+    """Write ``content`` into ``target`` through a staging sibling; replace only what ``holds`` recognizes."""
+    _check_replaceable(target, holds, what)
     if target.exists() and not force:
         raise SkillError(f"{target} already exists; pass --force to replace it")
     target.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{SKILL_NAME}-", dir=target.parent))
+    staging = Path(tempfile.mkdtemp(prefix=f".{target.name}-", dir=target.parent))
     try:
         for rel, data in content:
             out = staging.joinpath(*rel.parts)
@@ -123,9 +139,14 @@ def package(out: Path, *, force: bool = False) -> Path:
         raise SkillError(f"{target} is a symbolic link; refusing to follow it")
     if target.exists() and (target.is_dir() or not force):
         raise SkillError(f"{target} already exists; pass --force to replace it")
-    content = skill_files()
-    root = PurePosixPath(SKILL_NAME)
-    dirs = sorted({str(root / parent) + "/" for rel, _ in content for parent in [*rel.parents][:-1]} | {f"{root}/"})
+    return write_zip(target, PurePosixPath(SKILL_NAME), skill_files())
+
+
+def write_zip(target: Path, root: PurePosixPath | None, content: Sequence[tuple[PurePosixPath, bytes]]) -> Path:
+    """Write ``content`` as a deterministic zip, inside the folder ``root`` or, when it is None, at the top level."""
+    top = root if root is not None else PurePosixPath()
+    parents = {str(top / parent) + "/" for rel, _ in content for parent in [*rel.parents][:-1]}
+    dirs = sorted(parents | {f"{root}/"} if root is not None else parents)
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(prefix=".kestrix-skill-", suffix=".zip", dir=target.parent)
     try:
@@ -135,7 +156,7 @@ def package(out: Path, *, force: bool = False) -> Path:
                 info.external_attr = (0o40000 | _DIR_MODE) << 16
                 archive.writestr(info, b"")
             for rel, data in content:
-                info = zipfile.ZipInfo(str(root / rel), date_time=_ZIP_DATE)
+                info = zipfile.ZipInfo(str(top / rel), date_time=_ZIP_DATE)
                 info.external_attr = (0o100000 | _FILE_MODE) << 16
                 info.compress_type = zipfile.ZIP_DEFLATED
                 archive.writestr(info, data, compresslevel=9)

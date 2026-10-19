@@ -37,6 +37,7 @@ kestrix dashboard            # opens http://localhost:8765
 - [Code security scanning](#code-security-scanning)
 - [Bitcoin quantum risk](#bitcoin-quantum-risk)
 - [Use Kestrix from Claude](#use-kestrix-from-claude)
+- [Claude Code plugin](#claude-code-plugin)
 - [Security and privacy model](#security-and-privacy-model)
 - [Architecture](#architecture)
 - [Development](#development)
@@ -229,7 +230,7 @@ Every finding has a rule id, CWE, severity, confidence, location, why it matters
 0 (nothing at or above `--fail-on`), 1 (findings) and 2 (usage error). Output is text, JSON or SARIF 2.1.0
 for GitHub code scanning. Silence a false positive with `# kestrix: ignore[rule-id] reason` (the reason
 is required), adopt existing code with `--write-baseline` and `--baseline`, and use `--hook` from a Claude
-Code `PostToolUse` hook. From Python: `from kestrix.code import scan`. The rules are pattern analysis and
+Code `PostToolUse` hook (the [Claude Code plugin](#claude-code-plugin) sets that up). From Python: `from kestrix.code import scan`. The rules are pattern analysis and
 miss things; no detection rates are claimed. Details: [docs/modules/code.md](docs/modules/code.md).
 
 ## Bitcoin quantum risk
@@ -272,7 +273,35 @@ kestrix integrations package-claude-skill --out kestrix-security.zip   # to uplo
 
 The skill keeps everything on your machine, never opens links or runs files, treats email and file content
 as untrusted data, and checks only websites you own. Details and example prompts:
-[docs/claude-skill.md](docs/claude-skill.md).
+[docs/claude-skill.md](docs/claude-skill.md). In Claude Code, the plugin below includes this skill and is
+the recommended way to install it.
+
+## Claude Code plugin
+
+The `kestrix` plugin makes Claude Code scan every file it writes. A `PostToolUse` hook on `Write`, `Edit`,
+`MultiEdit` and `NotebookEdit` runs `kestrix code scan --hook` on the changed file. Findings at medium
+severity or above go back to Claude with the rule, the CWE and the fix, and Claude fixes them in the same
+turn. It suppresses a finding only when it is a confirmed false positive, with a written reason.
+
+```bash
+kestrix integrations install-claude-plugin            # copies the plugin to ~/.claude/kestrix-plugin
+claude plugin marketplace add ~/.claude/kestrix-plugin
+claude plugin install kestrix@kestrix-local
+```
+
+Once this repository is public: `/plugin marketplace add Ruthvik-Bandari/kestrix`, then
+`/plugin install kestrix@kestrix`.
+
+The plugin also includes:
+
+- **Skills:** `secure-code-review`, a per-rule `fixing-security-findings` playbook, and `kestrix-security`.
+- **Commands:** `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` (the review covers the current git diff).
+- **An opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, or `{"claude": {"block_on_stop": true}}` in
+  `.kestrix.json`, Claude cannot finish while high or critical findings remain in the files it changed.
+
+Everything runs locally, and the hooks fail open. When `kestrix` is not installed, the plugin shows one
+hint per session and never blocks an edit. Findings never include secret values. Details:
+[docs/claude-plugin.md](docs/claude-plugin.md).
 
 ## Security and privacy model
 

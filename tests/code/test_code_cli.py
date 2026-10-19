@@ -151,6 +151,13 @@ def test_hook_multiedit_edits_paths(tmp_path: Path) -> None:
     assert "py.subprocess.shell_true" in invoke("--hook", stdin=payload).stdout
 
 
+def test_hook_notebook_edit_uses_notebook_path(tmp_path: Path) -> None:
+    path = tmp_path / "analysis.ipynb"
+    path.write_text(json.dumps({"cells": [{"source": [f"GITHUB_TOKEN = '{fake('github_token')}'\n"]}]}))
+    payload = json.dumps({"tool_name": "NotebookEdit", "tool_input": {"notebook_path": str(path), "new_source": "x"}})
+    assert "secret.github_token" in invoke("--hook", stdin=payload).stdout
+
+
 def test_hook_is_silent_without_medium_findings(tmp_path: Path) -> None:
     path = tmp_path / "ok.py"
     path.write_text("import hashlib\nh = hashlib.md5(b'', usedforsecurity=False)\n")  # low only
