@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import ipaddress
 import socket
+import threading
+from typing import Any
 from urllib.parse import urlsplit
 
 from .errors import Reason, Rejected
@@ -44,8 +46,14 @@ def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
 
 
 # A name like ``intranet.fentorfen.example`` that resolves to 10.0.0.0/8 is refused here.
-def check_url(url: str, *, allow_private: bool = False) -> tuple[str, int, list[str]]:
-    """Return ``(host, port, resolved_ips)`` or raise ``Rejected``."""
+def check_url(
+    url: str, *, allow_private: bool = False, resolve_timeout: float | None = None
+) -> tuple[str, int, list[str]]:
+    """Return ``(host, port, resolved_ips)`` or raise ``Rejected``.
+
+    ``resolve_timeout`` bounds the DNS lookup, which the system resolver does not; ``None``
+    waits as long as the resolver does.
+    """
     if len(url) > 2048:
         raise Rejected(Reason.INVALID_URL, "URL is too long")
     parts = urlsplit(url)
@@ -58,13 +66,37 @@ def check_url(url: str, *, allow_private: bool = False) -> tuple[str, int, list[
         port = parts.port or (443 if parts.scheme == "https" else 80)
     except ValueError:
         raise Rejected(Reason.INVALID_URL, "invalid port") from None
-    try:
-        infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-    except socket.gaierror:
-        raise Rejected(Reason.TARGET_UNREACHABLE, f"cannot resolve {host}") from None
+    infos = _resolve(host, port, resolve_timeout)
     ips = sorted({str(info[4][0]) for info in infos})
     if not allow_private:
         blocked = [ip for ip in ips if not _is_public(ipaddress.ip_address(ip))]
         if blocked:
             raise Rejected(Reason.TARGET_NOT_ALLOWED, f"{host} resolves to non-public address {blocked[0]}")
     return host, port, ips
+
+
+def _resolve(host: str, port: int, timeout: float | None) -> list[Any]:
+    """``getaddrinfo`` with an optional time limit. A lookup that runs out of time is left to
+    finish in its daemon thread; its answer is discarded."""
+    result: list[Any] = []
+    errors: list[BaseException] = []
+
+    def lookup() -> None:
+        try:
+            result.extend(socket.getaddrinfo(host, port, type=socket.SOCK_STREAM))
+        except (OSError, UnicodeError) as exc:
+            errors.append(exc)
+
+    if timeout is None:
+        lookup()
+    else:
+        worker = threading.Thread(target=lookup, name="kestrix-dns", daemon=True)
+        worker.start()
+        worker.join(max(0.0, timeout))
+        if worker.is_alive():
+            raise Rejected(Reason.TARGET_UNREACHABLE, f"resolving {host} timed out")
+    if errors:
+        if isinstance(errors[0], UnicodeError):
+            raise Rejected(Reason.INVALID_URL, "the host name is not a valid DNS name")
+        raise Rejected(Reason.TARGET_UNREACHABLE, f"cannot resolve {host}")
+    return result

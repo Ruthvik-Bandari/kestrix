@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from collections.abc import Callable
+
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..core.errors import Reason, Rejected
@@ -13,6 +15,8 @@ from .profile import SiteKind
 from .scan import scan
 
 router = APIRouter(prefix="/api/webcheck", tags=["webcheck"])
+# The hosted service checks web servers only, on every hop.
+HOSTED_PORTS = frozenset({80, 443})
 
 
 class ScanBody(BaseModel):
@@ -39,17 +43,26 @@ class HostedScanBody(ScanBody):
     )
 
 
-def hosted_router(agent: str) -> APIRouter:
-    """The hosted-service variant: public targets only, an authorization confirmation per scan,
-    and a User-Agent that names an abuse contact."""
+def hosted_router(agent: str, audit: Callable[[Request, str], None]) -> APIRouter:
+    """The hosted-service variant: public targets on ports 80 and 443 only, an authorization
+    confirmation per scan, a User-Agent that names an abuse contact, one generic message for
+    connection failures, and ``audit(request, url)`` called before each scan."""
     hosted = APIRouter(prefix="/api/webcheck", tags=["webcheck"])
 
     @hosted.post("", response_model=Report)
-    def webcheck_hosted(body: HostedScanBody) -> Report:
+    def webcheck_hosted(body: HostedScanBody, request: Request) -> Report:
         if body.allow_private:
             raise Rejected(Reason.INVALID_INPUT, "the hosted service checks public websites only")
         if not body.authorized:
             raise Rejected(Reason.INVALID_INPUT, "confirm that you own or are authorized to test this site")
-        return scan(body.url, allow_private=False, site_type=body.site_type, agent=agent)
+        audit(request, body.url)
+        return scan(
+            body.url,
+            allow_private=False,
+            site_type=body.site_type,
+            agent=agent,
+            allowed_ports=HOSTED_PORTS,
+            generic_errors=True,
+        )
 
     return hosted

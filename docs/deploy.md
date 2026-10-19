@@ -18,17 +18,17 @@ This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004
 
 | Piece | What it does |
 | --- | --- |
-| `Dockerfile` | Three stages: Node builds the dashboard, uv builds the wheel and a venv with only the locked runtime dependencies (no dev or gpu groups, no `ai` or `exif` extras), then a `python:3.12-slim` final stage. Every base image is pinned by digest. |
+| `Dockerfile` | Three stages: Node builds the dashboard, uv builds the wheel and a venv with only the locked runtime dependencies (no dev or gpu groups, no `ai` or `exif` extras), then a `python:3.12-slim` final stage. Every base image is pinned by digest. The wheel is built with `uv build --offline` by the pinned uv binary's own `uv_build` backend, so no build backend is downloaded. |
 | `.dockerignore` | An allowlist: only `pyproject.toml`, `uv.lock`, `README.md`, `LICENSE`, `NOTICE`, `src/kestrix/` and `frontend/` reach the build. `src/kestrixbench`, `data/`, `docs/`, `hpc/`, `tests/`, `.git` and any `.env` files never do. |
 | `fly.toml` | One machine, a 1 GB volume at `/data` for the SQLite file, HTTPS forced at Fly's edge, and a health check on `/api/health`. |
 | CI job `container` | Builds the image (never pushes it) and checks that it runs as uid 10001 on a read-only root filesystem and answers `/api/health` in hosted mode. |
 
 The image:
 
-- runs `kestrix serve-hosted` as user `kestrix` (uid and gid 10001), with no login shell and no `pip`;
+- runs `kestrix serve-hosted` as user `kestrix` (uid and gid 10001), with no login shell and no `pip`. No tools are added to the base image; its own `/bin/sh` and `apt` are still there, owned by root;
 - sets `KESTRIX_MODE=hosted`, `KESTRIX_DB=/data/kestrix.db`, `KESTRIX_HOME=/data` and `PORT=8000`;
-- writes only to `/data` (the database) and `/tmp` (uploads over 1 MiB spill to an anonymous temporary file there while they are analyzed; nothing is kept);
-- runs on a read-only root filesystem when `/tmp` is a tmpfs;
+- writes only to `/data` (the database) and `/tmp` (uploads over 1 MiB spill to an anonymous temporary file there while they are analyzed, and the analysis workers' fork server keeps its socket there; nothing is kept);
+- runs on a read-only root filesystem when `/tmp` is a tmpfs (as in `docker run` below and the CI job). Fly.io Machines have no read-only-root or tmpfs option: there the root filesystem is the image's, writable but reset on every restart, and `/tmp` is on that disk. The app user can still write only to `/tmp` and `/data`, because everything else belongs to root;
 - refuses to start (exit code 2, with a message naming the variable) when the hosted configuration is missing or malformed.
 
 ## Try the image locally
@@ -54,7 +54,7 @@ curl -s -H 'Host: kestrix.test' http://127.0.0.1:8000/api/health
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/api/health   # 421: wrong Host
 ```
 
-The server answers only requests whose `Host` is the host of `KESTRIX_PUBLIC_ORIGIN`, so every probe, including health checks, has to send it. Sign-in cannot complete locally with dummy credentials, and the browser will not send the `__Host-` session cookie over plain `http`. The `/tmp` tmpfs must hold the largest upload (about 51 MB) times the number of concurrent uploads.
+The server answers only requests whose `Host` is the host of `KESTRIX_PUBLIC_ORIGIN`, so every probe, including health checks, has to send it. Sign-in cannot complete locally with dummy credentials, and the browser will not send the `__Host-` session cookie over plain `http`. The `/tmp` tmpfs must hold the largest hosted upload (10 MiB plus the multipart framing) for each upload in progress; 128 MB is ample.
 
 The image also has a Docker `HEALTHCHECK` that sends the right `Host`. Fly.io ignores it and uses the checks in `fly.toml`.
 
@@ -168,17 +168,17 @@ Then sign in with each provider in a browser, run a website check on a site you 
 
 ## Client IPs and rate limits
 
-The sign-in limits (10 per 10 minutes) are counted per client IP. Behind Fly's proxy:
+The sign-in limits (20 sign-in starts and 10 callbacks per 10 minutes) are counted per client IP, and per /64 for IPv6. Behind Fly's proxy:
 
-- **Socket peer (the default).** The server sees Fly's proxy as the peer, so every visitor shares one sign-in bucket. Ten sign-ins in ten minutes from anyone blocks everyone. This is safe against spoofing but will lock out real users once the site has traffic.
+- **Socket peer (the default).** The server sees Fly's proxy as the peer, so every visitor shares one sign-in bucket. Twenty sign-ins in ten minutes from anyone blocks everyone. This is safe against spoofing but will lock out real users once the site has traffic.
 - **`KESTRIX_TRUST_PROXY_HEADERS=1` (not recommended on Fly).** Kestrix uses the right-most `X-Forwarded-For` entry. Fly documents the right-most entry as a shared or dedicated IP address assigned to your app, not the client, so this gives no per-client limit. Leave it unset.
 - **`KESTRIX_CLIENT_IP_HEADER=Fly-Client-IP` (set in `fly.toml`).** Fly documents this header as the client's IP address as seen by its proxy. Kestrix reads it only when this setting names it. A missing value, a malformed one, or two copies of the header fall back to the socket peer. Fly does not document whether it replaces a `Fly-Client-IP` header sent by the client, so check that once after the first deploy:
 
   ```bash
-  # 11 sign-in starts, each claiming a different client IP. If Fly overwrites the header,
-  # they all count against your one real IP and the 11th gets 429. If the 11th is a 302,
+  # 21 sign-in starts, each claiming a different client IP. If Fly overwrites the header,
+  # they all count against your one real IP and the 21st gets 429. If the 21st is a 302,
   # the header is spoofable: remove KESTRIX_CLIENT_IP_HEADER from fly.toml and redeploy.
-  for i in $(seq 1 11); do
+  for i in $(seq 1 21); do
     curl -s -o /dev/null -w '%{http_code}\n' -H "Fly-Client-IP: 198.51.100.$i" \
       "https://YOUR_DOMAIN/api/auth/login/github"
   done
@@ -192,7 +192,7 @@ Without `KESTRIX_CLIENT_IP_HEADER` every visitor shares one sign-in bucket; trea
 
 The volume holds users, sessions and pending sign-ins. Losing it signs everyone out and forgets accounts; nobody's files are on it.
 
-- **Snapshots.** Fly takes daily volume snapshots, kept for the retention set when the volume was created (14 days with the command in step 3; `snapshot_retention` in `fly.toml` says the same for volumes that `fly deploy` creates). SQLite in WAL mode recovers from a crash-consistent snapshot.
+- **Snapshots.** Fly takes daily volume snapshots, kept for the retention set when the volume was created (14 days with the command in step 3; `snapshot_retention` in `fly.toml` says the same for volumes that `fly deploy` creates). SQLite in WAL mode recovers from a crash-consistent snapshot. A deleted account's row is overwritten in the live database at once, but stays in snapshots taken before the deletion until they expire; the draft privacy notice says so.
 
   ```bash
   fly volumes list                              # note the volume id
@@ -223,14 +223,14 @@ The volume holds users, sessions and pending sign-ins. Losing it signs everyone 
 
 ## Cost
 
-Fly.io's free allowances and prices change. Check [fly.io/pricing](https://fly.io/pricing) before you deploy. The things that cost money in this setup are the machine (`shared-cpu-1x`, 512 MB; 256 MB is possible, see the comment in `fly.toml`), the 1 GB volume and its snapshots, outbound data, and a dedicated IPv4 address if you add one (the default shared IPv4 is enough for HTTPS). Keeping the machine always on (`min_machines_running = 1`) costs more than letting it stop when idle. Set a spending limit or billing alert in the Fly dashboard.
+Fly.io's free allowances and prices change. Check [fly.io/pricing](https://fly.io/pricing) before you deploy. The things that cost money in this setup are the machine (`shared-cpu-1x`, 512 MB; less is not enough since analyses run in their own worker processes, see the measurement below), the 1 GB volume and its snapshots, outbound data, and a dedicated IPv4 address if you add one (the default shared IPv4 is enough for HTTPS). Keeping the machine always on (`min_machines_running = 1`) costs more than letting it stop when idle. Set a spending limit or billing alert in the Fly dashboard.
 
-In a local test, the idle container used about 70 MiB, and one 50 MB upload peaked near 125 MiB with `/tmp` on tmpfs.
+In a local test (Docker, `/tmp` on tmpfs), the idle container used about 120 MiB: the server, the analysis fork server and multiprocessing's resource tracker. Four users each sending a worst-case 9.9 MiB email at once, three times over, peaked at 377 MiB for the whole container: two analyses ran (each worker peaked near 170 MiB RSS, about 70 MiB of it shared with the fork server) and the rest got 503 `busy`. That fits 512 MB; 256 MB does not.
 
 ## Before launch
 
 - [ ] Privacy notice and terms (ADR 0004 slice H4) are published and linked from the site.
-- [ ] The `Fly-Client-IP` spoofing check passes (the 11th forged request gets 429; see [Client IPs and rate limits](#client-ips-and-rate-limits)).
+- [ ] The `Fly-Client-IP` spoofing check passes (the 21st forged request gets 429; see [Client IPs and rate limits](#client-ips-and-rate-limits)).
 - [ ] `auto_stop_machines = "off"` and `min_machines_running = 1`, so rate limits are not reset by idle stops.
 - [ ] Exactly one machine (`fly machines list`).
 - [ ] Both OAuth apps use the production redirect URIs; the Google consent screen is published; test users removed.

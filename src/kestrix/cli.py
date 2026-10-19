@@ -17,6 +17,7 @@ from .detect.cli import app as detect_app
 from .forensics.cli import app as forensics_app
 from .integrations.cli import app as integrations_app
 from .mail.cli import app as mail_app
+from .server.cli import app as hosted_app
 from .webcheck.cli import app as webcheck_app
 
 app = typer.Typer(help="Kestrix: local-first security workbench.", no_args_is_help=True, add_completion=False)
@@ -26,6 +27,9 @@ app.add_typer(webcheck_app, name="webcheck", help="Passive security checks of a 
 app.add_typer(bitcoin_app, name="bitcoin", help="Bitcoin address quantum-exposure scanning.")
 app.add_typer(mail_app, name="mail", help="Explainable analysis of saved email messages (.eml).")
 app.add_typer(integrations_app, name="integrations", help="Install the Kestrix skill for Claude.")
+app.add_typer(
+    hosted_app, name="hosted", help="Operator commands for the hosted service (disable accounts, hash hosts)."
+)
 config_app = typer.Typer(help="Manage local settings and API keys.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 
@@ -76,7 +80,7 @@ def serve_hosted(
     import uvicorn
 
     from .server.app import create_app
-    from .server.settings import SettingsError, load_settings
+    from .server.settings import SECRET_ENV, SettingsError, load_settings
 
     env_port = os.environ.get("PORT", "8000")
     if port is None and not (env_port.isdigit() and 1 <= int(env_port) <= 65535):
@@ -86,6 +90,8 @@ def serve_hosted(
     except SettingsError as exc:
         typer.echo(f"Hosted mode is not configured: {exc}", err=True)
         raise typer.Exit(2) from None
+    for name in SECRET_ENV:  # loaded into the settings; child processes must not inherit them
+        os.environ.pop(name, None)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     typer.echo(f"{ATTRIBUTION}, version {__version__}. Hosted mode on port {port or env_port}.")
     # TLS ends at the platform's proxy. uvicorn's own access log is off because it records query

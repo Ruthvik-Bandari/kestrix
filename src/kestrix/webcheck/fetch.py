@@ -6,6 +6,10 @@ Every hop is validated with :func:`kestrix.core.netguard.check_url` and the requ
 sent to the validated IP address (Host header and TLS SNI keep the real hostname), so a
 DNS answer that changes between the check and the connection cannot redirect the request
 to a private address.
+
+The whole fetch, DNS lookups included, has one deadline (``timeout``, 10 s by default): every
+socket operation's timeout is capped at the time left, so a server that drips its response
+cannot hold the check open. The TLS probe has its own deadline of the same length.
 """
 
 from __future__ import annotations
@@ -17,7 +21,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 
+import httpcore
 import httpx
 
 from .. import __version__
@@ -41,6 +47,10 @@ _VERIFY_CODES = {
     20: "untrusted",
     21: "untrusted",
 }
+
+# What the hosted service says for any connection-level failure, so a check cannot be used to
+# tell closed, filtered and non-HTTP ports apart.
+GENERIC_UNREACHABLE = "the site could not be reached"
 
 TlsProbe = Callable[[str, str, int, float], TlsInfo]
 
@@ -78,24 +88,122 @@ def _headers(resp: httpx.Response) -> Headers:
     return out
 
 
+class _DeadlineStream(httpcore.NetworkStream):
+    """A socket stream whose every operation times out no later than ``deadline``."""
+
+    def __init__(self, inner: httpcore.NetworkStream, deadline: float) -> None:
+        self._inner = inner
+        self._deadline = deadline
+
+    def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
+        return self._inner.read(max_bytes, _capped(timeout, self._deadline, httpcore.ReadTimeout))
+
+    def write(self, buffer: bytes, timeout: float | None = None) -> None:
+        self._inner.write(buffer, _capped(timeout, self._deadline, httpcore.WriteTimeout))
+
+    def close(self) -> None:
+        self._inner.close()
+
+    def start_tls(
+        self, ssl_context: ssl.SSLContext, server_hostname: str | None = None, timeout: float | None = None
+    ) -> httpcore.NetworkStream:
+        timeout = _capped(timeout, self._deadline, httpcore.ConnectTimeout)
+        return _DeadlineStream(self._inner.start_tls(ssl_context, server_hostname, timeout), self._deadline)
+
+    def get_extra_info(self, info: str) -> Any:
+        return self._inner.get_extra_info(info)
+
+
+class _DeadlineBackend(httpcore.NetworkBackend):
+    def __init__(self, deadline: float) -> None:
+        self._inner = httpcore.SyncBackend()
+        self._deadline = deadline
+
+    def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Any = None,
+    ) -> httpcore.NetworkStream:
+        timeout = _capped(timeout, self._deadline, httpcore.ConnectTimeout)
+        return _DeadlineStream(
+            self._inner.connect_tcp(host, port, timeout, local_address, socket_options), self._deadline
+        )
+
+    def connect_unix_socket(
+        self, path: str, timeout: float | None = None, socket_options: Any = None
+    ) -> httpcore.NetworkStream:
+        raise httpcore.ConnectError("unix sockets are not used")
+
+    def sleep(self, seconds: float) -> None:
+        time.sleep(seconds)
+
+
+def _capped(timeout: float | None, deadline: float, error: type[Exception]) -> float:
+    left = deadline - time.monotonic()
+    if left <= 0:
+        raise error("the check's time limit was reached")
+    return left if timeout is None else min(timeout, left)
+
+
+def _deadline_transport(deadline: float) -> httpx.HTTPTransport:
+    transport = httpx.HTTPTransport(verify=httpx.create_ssl_context(), trust_env=False)
+    # httpx has no public hook for the network backend, so its connection pool is replaced by an
+    # identical one that uses the deadline backend. tests/webcheck exercise this against local servers.
+    transport._pool = httpcore.ConnectionPool(
+        ssl_context=httpx.create_ssl_context(), network_backend=_DeadlineBackend(deadline)
+    )
+    return transport
+
+
+def _port_allowed(url: str, allowed_ports: frozenset[int]) -> None:
+    parts = urlsplit(url)
+    try:
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+    except ValueError:
+        return  # check_url rejects it
+    if port not in allowed_ports:
+        ports = " and ".join(str(p) for p in sorted(allowed_ports))
+        raise Rejected(Reason.TARGET_NOT_ALLOWED, f"only ports {ports} can be checked here")
+
+
 def fetch(
     url: str,
     *,
     allow_private: bool = False,
     transport: httpx.BaseTransport | None = None,
     agent: str = USER_AGENT,
+    timeout: float = TIMEOUT_S,
+    allowed_ports: frozenset[int] | None = None,
+    generic_errors: bool = False,
 ) -> FetchResult:
-    deadline = time.monotonic() + TIMEOUT_S
+    """GET ``url`` and follow up to five redirects within ``timeout`` seconds in total.
+
+    ``allowed_ports`` restricts every hop's port; ``generic_errors`` reports every
+    connection-level failure with one message. The hosted service sets both.
+    """
+    deadline = time.monotonic() + timeout
+
+    def unreachable(detail: str) -> Rejected:
+        return Rejected(Reason.TARGET_UNREACHABLE, GENERIC_UNREACHABLE if generic_errors else detail)
+
+    def left() -> float:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise unreachable("timed out")
+        return remaining
+
     chain: list[Hop] = []
     with httpx.Client(
-        transport=transport, follow_redirects=False, trust_env=False, verify=httpx.create_ssl_context()
+        transport=transport or _deadline_transport(deadline), follow_redirects=False, trust_env=False
     ) as client:
         for _ in range(MAX_REDIRECTS + 1):
-            host, port, ips = check_url(url, allow_private=allow_private)
+            if allowed_ports is not None:
+                _port_allowed(url, allowed_ports)
+            host, port, ips = check_url(url, allow_private=allow_private, resolve_timeout=left())
             target = httpx.URL(url)
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise Rejected(Reason.TARGET_UNREACHABLE, "timed out")
             request = httpx.Request(
                 "GET",
                 target.copy_with(host=ips[0]),
@@ -106,7 +214,7 @@ def fetch(
                     # Uncompressed, so the bounded body read is the real page size.
                     "Accept-Encoding": "identity",
                 },
-                extensions={"sni_hostname": host, "timeout": httpx.Timeout(remaining).as_dict()},
+                extensions={"sni_hostname": host, "timeout": httpx.Timeout(left()).as_dict()},
             )
             started = time.monotonic()
             try:
@@ -114,10 +222,12 @@ def fetch(
             except httpx.ConnectError as exc:
                 if _is_tls_error(exc):
                     return FetchResult(url, None, {}, chain, host, ips[0], port)
-                raise Rejected(Reason.TARGET_UNREACHABLE, f"cannot connect to {host}") from None
+                raise unreachable(f"cannot connect to {host}") from None
             except httpx.TimeoutException:
-                raise Rejected(Reason.TARGET_UNREACHABLE, f"{host} timed out") from None
+                raise unreachable(f"{host} timed out") from None
             except httpx.HTTPError as exc:
+                if generic_errors:
+                    raise unreachable("") from None
                 raise Rejected(Reason.UPSTREAM_ERROR, type(exc).__name__) from None
             body = bytearray()
             try:
@@ -125,6 +235,13 @@ def fetch(
                     body += chunk[: MAX_BODY_BYTES - len(body)]
                     if len(body) >= MAX_BODY_BYTES:
                         break
+                    left()
+            except httpx.TimeoutException:
+                raise unreachable(f"{host} timed out") from None
+            except httpx.HTTPError as exc:
+                if generic_errors:
+                    raise unreachable("") from None
+                raise Rejected(Reason.UPSTREAM_ERROR, type(exc).__name__) from None
             finally:
                 resp.close()
             chain.append(
@@ -149,15 +266,17 @@ def _issuer(cert: dict[str, Any]) -> str | None:
 
 
 def tls_probe(host: str, ip: str, port: int, timeout: float = TIMEOUT_S) -> TlsInfo:
-    """One verified handshake against the validated IP with the real hostname as SNI."""
+    """One verified handshake against the validated IP with the real hostname as SNI, connect
+    and handshake together within ``timeout`` seconds."""
+    deadline = time.monotonic() + timeout
     ctx = httpx.create_ssl_context()
     try:
-        with (
-            socket.create_connection((ip, port), timeout=timeout) as sock,
-            ctx.wrap_socket(sock, server_hostname=host) as tls,
-        ):
-            cert = tls.getpeercert() or {}
-            protocol = tls.version()
+        with socket.create_connection((ip, port), timeout=timeout) as sock:
+            # The handshake treats the socket timeout as one deadline for the whole exchange.
+            sock.settimeout(_capped(None, deadline, TimeoutError))
+            with ctx.wrap_socket(sock, server_hostname=host) as tls:
+                cert = tls.getpeercert() or {}
+                protocol = tls.version()
     except ssl.SSLCertVerificationError as exc:
         return TlsInfo(host=host, status=_VERIFY_CODES.get(exc.verify_code, "untrusted"), detail=exc.verify_message)  # type: ignore[arg-type]
     except ssl.SSLError as exc:

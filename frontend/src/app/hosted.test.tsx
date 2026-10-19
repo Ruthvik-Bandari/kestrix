@@ -74,7 +74,7 @@ describe("hosted routing", () => {
     const github = await screen.findByRole("link", { name: "Continue with GitHub" });
     expect(github.getAttribute("href")).toBe("/api/auth/login/github?next=%2Fapp");
     expect(screen.queryByRole("link", { name: /google/i })).toBeNull();
-    expect(screen.getByText(/analyzed in memory and never stored/i)).toBeTruthy();
+    expect(screen.getByText(/analyzed and never stored/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "privacy notice" }).getAttribute("href")).toBe("/privacy");
     expect(screen.getByRole("link", { name: "terms of use" }).getAttribute("href")).toBe("/terms");
   });

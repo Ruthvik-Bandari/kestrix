@@ -105,7 +105,7 @@ export default function OverviewPage() {
       icon: "search",
       protects:
         "Protects you from files that are not what their name claims, hidden encrypted payloads, photos that reveal where they were taken, and look-alike phishing links.",
-      status: { tone: "ok", text: hosted ? "Ready · analyzed in memory, never stored" : "Ready · works offline" },
+      status: { tone: "ok", text: hosted ? "Ready · analyzed, never stored" : "Ready · works offline" },
       actions: [
         { to: dashboardPath("/forensics"), label: "Analyze a file", primary: true },
         { to: dashboardPath("/forensics?tab=url"), label: "Check a link" },
@@ -117,7 +117,7 @@ export default function OverviewPage() {
       icon: "mail",
       protects:
         "Protects you from phishing, impersonation and fake-invoice emails by explaining exactly what is wrong with a saved message.",
-      status: { tone: "ok", text: hosted ? "Ready · analyzed in memory, never stored" : "Ready · works offline" },
+      status: { tone: "ok", text: hosted ? "Ready · analyzed, never stored" : "Ready · works offline" },
       actions: [{ to: dashboardPath("/mail"), label: "Check an email", primary: true }],
     },
     {
@@ -184,7 +184,7 @@ export default function OverviewPage() {
         </div>
         <p className="mt-2 max-w-[68ch] text-ink-2">
           {hosted
-            ? "This is the hosted Kestrix service: files and emails you upload are analyzed in memory on Kestrix's server and never stored, and reports are not kept. Detection repair and the Bitcoin check run in the desktop app, which keeps everything on your computer."
+            ? "This is the hosted Kestrix service: files and emails you upload are analyzed on Kestrix's server and never stored, and reports are not kept. Detection repair and the Bitcoin check run in the desktop app, which keeps everything on your computer."
             : "Kestrix is local-first: the dashboard and its API run on your machine and only reach the network when a tool says so. Results are deterministic and come with the evidence that produced them."}
         </p>
         <dl className="mt-6 grid gap-5 sm:grid-cols-3">
@@ -194,9 +194,11 @@ export default function OverviewPage() {
           <Credit title="Forensics">Adapted from the CyberSafeX Detection Suite.</Credit>
           <Credit title="Bitcoin quantum risk">Adapted from BitShield (MIT Bitcoin Expo 2026, Team ACE).</Credit>
         </dl>
-        <p className="mt-6 text-[0.8125rem] text-ink-3">
-          API schema for scripting: <a className="link" href="/api/openapi.json">/api/openapi.json</a>
-        </p>
+        {hosted ? null : (
+          <p className="mt-6 text-[0.8125rem] text-ink-3">
+            API schema for scripting: <a className="link" href="/api/openapi.json">/api/openapi.json</a>
+          </p>
+        )}
       </section>
     </>
   );

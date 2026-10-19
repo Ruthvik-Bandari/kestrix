@@ -36,8 +36,10 @@ RUN uv export --frozen --no-dev --no-emit-project --format requirements-txt --ou
  && uv pip install --python /opt/kestrix/bin/python --require-hashes --no-deps -r /build/requirements.txt
 COPY src/kestrix ./src/kestrix
 COPY --from=dashboard /build/src/kestrix/server/static ./src/kestrix/server/static
+# The build backend is uv_build, which the pinned uv binary above implements itself, so nothing is
+# downloaded for the build; --offline makes the build fail rather than fetch a backend if that changes.
 RUN test -f src/kestrix/server/static/index.html \
- && uv build --wheel --out-dir /build/dist \
+ && uv build --offline --wheel --out-dir /build/dist \
  && uv pip install --python /opt/kestrix/bin/python --no-deps /build/dist/kestrix-*.whl
 
 # Final stage: the same Python base, the venv, and nothing else.

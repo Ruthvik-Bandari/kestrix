@@ -134,6 +134,9 @@ const errorTitles: Record<string, string> = {
   rate_limited: "Too many requests for now",
   sign_in_required: "Please sign in to continue",
   csrf_failed: "Your session needs a refresh",
+  busy: "Busy right now",
+  analysis_timeout: "That took too long to check",
+  internal_error: "Something went wrong on the server",
 };
 
 function errorTitle(error: unknown): string {

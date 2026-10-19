@@ -22,9 +22,19 @@ from urllib.parse import urlsplit
 
 from ..core import config
 
+MIB = 1024 * 1024
 MIN_PEPPER_BYTES = 32
 MIN_LOG_SALT_BYTES = 16
 MAX_ABUSE_CONTACT = 200
+# Read once at start-up; ``kestrix serve-hosted`` then removes them from the process environment
+# so no child process (analysis workers, a restarted fork server) can inherit them.
+SECRET_ENV = (
+    "KESTRIX_SESSION_PEPPER",
+    "KESTRIX_LOG_SALT",
+    "KESTRIX_GOOGLE_CLIENT_SECRET",
+    "KESTRIX_GITHUB_CLIENT_SECRET",
+    "ANTHROPIC_API_KEY",
+)
 PROVIDER_ENV = {
     "google": ("KESTRIX_GOOGLE_CLIENT_ID", "KESTRIX_GOOGLE_CLIENT_SECRET"),
     "github": ("KESTRIX_GITHUB_CLIENT_ID", "KESTRIX_GITHUB_CLIENT_SECRET"),
@@ -53,6 +63,14 @@ class HostedSettings:
     # A header that the platform's proxy always overwrites with the client address (Fly: Fly-Client-IP).
     client_ip_header: str | None = None
     abuse_contact: str | None = None
+    # Fixed service limits (not read from the environment); tests shrink them.
+    max_mail_bytes: int = 10 * MIB
+    max_file_bytes: int = 10 * MIB
+    max_concurrent_analyses: int = 2
+    max_concurrent_webchecks: int = 8
+    analysis_cpu_s: int = 10
+    analysis_memory_bytes: int = 384 * MIB
+    analysis_wall_s: float = 20.0
 
 
 @dataclass(frozen=True)

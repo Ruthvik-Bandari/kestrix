@@ -183,10 +183,16 @@ Files over 25 MiB and more than 20 protected domains are refused in the browser 
 | Message size | 25 MiB (26,214,400 bytes) | `input_too_large` |
 | Header fields per part | 500 | `input_too_large` |
 | One header field | 16 KiB (16,384 characters, name plus value) | `input_too_large` |
+| One header block (a message's or a part's headers), checked on the raw bytes before parsing | 64 KiB | `input_too_large` |
+| All header blocks together, checked before parsing | 1 MiB | `input_too_large` |
+| Parameters (`;`) in one `Content-Type` or `Content-Disposition` field, checked before parsing | 50 | `input_too_large` |
+| Nesting inside a header value (comments, groups) | Python's recursion limit | `nesting_too_deep` |
 | MIME nesting depth | 10 | `nesting_too_deep` |
 | MIME parts | 200 | `input_too_large` |
 | Decoded text scanned | 5 MiB of characters | The rest is skipped; `counts.text_truncated` is true. |
 | Links extracted | 500 | The rest are skipped; `counts.links_truncated` is true. |
 | ZIP members listed | 1,000 | The rest are not listed. |
 
-Input with none of the usual message headers (`From`, `Date`, `Message-ID`, `Received`, `Subject`, `To`, `MIME-Version`) is rejected with `invalid_input` rather than reported as clean. Bad character encodings are decoded with replacement characters.
+The checks marked "before parsing" run on the raw bytes, because the standard library's MIME parameter parsing slows down sharply with many parameters. They look at the message's own headers, the headers after every line that starts with `--` (any possible MIME boundary, however it is declared), and the headers of attached messages. The hosted service also caps messages at 10 MiB and runs each analysis in a limited worker process ([hosted.md](../hosted.md)).
+
+Input with none of the usual message headers (`From`, `Date`, `Message-ID`, `Received`, `Subject`, `To`, `MIME-Version`) is rejected with `invalid_input` rather than reported as clean. Bad character encodings are decoded with replacement characters. A header the standard library cannot parse at all (for example a NUL in a charset name) rejects the message with `invalid_input`, and undecodable header bytes appear as U+FFFD in the report.

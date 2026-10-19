@@ -15,7 +15,10 @@ import { scrollBehavior } from "../../lib/motion";
 import type { ExifStatus, FileReport, Severity } from "../../lib/types";
 import { FindingsList } from "./FindingsList";
 
-const MAX_UPLOAD = 50 * 1024 * 1024;
+/** The server's upload cap: 50 MB locally, 10 MB on the hosted service. */
+function maxUpload(): number {
+  return (isHosted() ? 10 : 50) * 1024 * 1024;
+}
 
 const exifText: Record<Exclude<ExifStatus, "ok">, string> = {
   no_exif: "This image carries no EXIF metadata.",
@@ -285,9 +288,10 @@ export function FileAnalyzer() {
 
   function accept(file: File | undefined) {
     if (!file) return;
-    if (file.size > MAX_UPLOAD) {
+    const limit = maxUpload();
+    if (file.size > limit) {
       analyze.reset();
-      setLocalError(`${file.name} is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_UPLOAD)}.`);
+      setLocalError(`${file.name} is ${formatBytes(file.size)}. The limit is ${formatBytes(limit)}.`);
       return;
     }
     setLocalError(null);
@@ -325,7 +329,7 @@ export function FileAnalyzer() {
           <>
             <Icon name="file" size={28} className="text-ink-3" />
             <span className="font-medium text-ink">Drop a file here, or choose one</span>
-            <span className="hint">Any file type, up to {formatBytes(MAX_UPLOAD)}.</span>
+            <span className="hint">Any file type, up to {formatBytes(maxUpload())}.</span>
           </>
         )}
         <input
@@ -342,7 +346,7 @@ export function FileAnalyzer() {
       <p className="mt-3 flex gap-2 text-[0.875rem] text-ink-2">
         <Icon name="lock" size={16} className="mt-0.5 flex-none text-ink-3" />
         {isHosted()
-          ? "Files are analyzed in memory on Kestrix's server and are never stored or sent anywhere else. Nothing is run or saved."
+          ? "Files are analyzed on Kestrix's server and are never stored or sent anywhere else. Nothing is run or saved."
           : "Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else. Nothing is run or saved."}
       </p>
 

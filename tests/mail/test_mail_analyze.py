@@ -423,3 +423,25 @@ def test_analyze_stream_refuses_oversized(monkeypatch: pytest.MonkeyPatch) -> No
     with pytest.raises(Rejected) as exc:
         analyze_stream(io.BytesIO(message()))
     assert exc.value.reason is Reason.INPUT_TOO_LARGE
+
+
+def test_undecodable_header_bytes_do_not_break_the_report() -> None:
+    raw = b"From: a@b.example\r\nAuthentication-Results: mx.example; dmarc=fail header.from=b.ex\xff\xffample\r\nSubject: s\xff\r\n\r\nhi\r\n"
+    report = analyze(raw)
+    assert report.model_dump_json()  # lone surrogates were replaced, so the report serializes
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'From: a@b.example\r\nContent-Type: text/plain; charset="ut\x00f"\r\n\r\nhi\r\n',
+        b"From: a@b.example\r\nContent-Type: application/x; name*=\r\n\r\nhi\r\n",
+        b"From: a@b.example\r\nContent-Type: multipart/mixed; boundary=B\r\n\r\n--B\r\nContent-Type: a/b; x*0*=utf-8''a; x*1*=\x00\r\nContent-Disposition: attachment; filename*=\x00''a\r\n\r\nx\r\n--B--\r\n",
+    ],
+    ids=["nul-charset", "empty-parameter", "nul-parameter"],
+)
+def test_malformed_mime_parameters_are_rejected_or_tolerated_never_a_crash(raw: bytes) -> None:
+    try:
+        analyze(raw)
+    except Rejected as exc:
+        assert exc.reason is Reason.INVALID_INPUT

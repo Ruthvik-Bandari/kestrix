@@ -82,10 +82,19 @@ def test_local_only_modules_are_not_found(hosted, providers, method, path):
     assert signed_in.status_code == 404 and signed_in.json()["reason"] == "not_found"
 
 
-def test_openapi_lists_only_hosted_routes(hosted):
-    paths = hosted.get("/api/openapi.json").json()["paths"]
+def test_only_hosted_routes_are_mounted(hosted):
+    paths = hosted.app.openapi()["paths"]  # generated in-process; not served over HTTP
     assert not [p for p in paths if p.startswith(("/api/detect", "/api/bitcoin", "/api/settings"))]
     assert "/api/auth/me" in paths and "/api/webcheck" in paths
+
+
+def test_openapi_schema_is_not_served_in_hosted_mode(hosted, providers):
+    assert hosted.get("/api/openapi.json").status_code == 401  # private by default, like any unknown route
+    sign_in(hosted, providers)
+    resp = hosted.get("/api/openapi.json")
+    assert resp.status_code == 404 and resp.json()["reason"] == "not_found"
+    local = TestClient(create_app(extra_hosts=frozenset({"testserver"}), server_settings=Settings()))
+    assert "/api/webcheck" in local.get("/api/openapi.json").json()["paths"]
 
 
 @pytest.mark.parametrize(
@@ -123,7 +132,7 @@ def test_signed_in_users_can_use_the_modules(hosted, providers):
 
 
 def test_sign_in_routes_are_rate_limited_per_ip(hosted):
-    for _ in range(10):
+    for _ in range(20):
         assert hosted.get("/api/auth/login/google", follow_redirects=False).status_code == 302
     resp = hosted.get("/api/auth/login/google", follow_redirects=False)
     assert resp.status_code == 429
@@ -160,7 +169,7 @@ def test_rate_limiter_memory_is_bounded():
     limiter = RateLimiter(clock=lambda: now[0], max_keys=3)
     for key in "abcdef":
         limiter.hit(key, 5, 60)
-    assert len(limiter._hits) <= 3
+    assert len(limiter) <= 3
 
 
 def _request(peer: str, forwarded: list[str]) -> Request:

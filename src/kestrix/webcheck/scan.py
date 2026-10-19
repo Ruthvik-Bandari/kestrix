@@ -24,10 +24,20 @@ def scan(
     probe: TlsProbe = tls_probe,
     site_type: SiteKind | None = None,
     agent: str = USER_AGENT,
+    allowed_ports: frozenset[int] | None = None,
+    generic_errors: bool = False,
 ) -> Report:
-    """``site_type``: the owner's declared site kind; it can raise but never lower the detected one."""
+    """``site_type``: the owner's declared site kind; it can raise but never lower the detected one.
+    ``allowed_ports`` and ``generic_errors`` are passed to :func:`fetch` (the hosted service sets them)."""
     t0 = time.monotonic()
-    result = fetch(url, allow_private=allow_private, transport=transport, agent=agent)
+    result = fetch(
+        url,
+        allow_private=allow_private,
+        transport=transport,
+        agent=agent,
+        allowed_ports=allowed_ports,
+        generic_errors=generic_errors,
+    )
     http_ms = round((time.monotonic() - t0) * 1000)
     scheme = urlsplit(result.final_url).scheme
     t1 = time.monotonic()

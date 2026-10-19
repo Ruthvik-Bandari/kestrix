@@ -16,7 +16,7 @@ const howItWorks: HowItWorksContent = {
   purpose:
     "Find out what a file really is, and whether a link shows common phishing signs, without running the file or opening the link.",
   steps: [
-    "Choose a file (up to 50 MB) or paste a link.",
+    "Choose a file (up to 50 MB, or 10 MB on the hosted service) or paste a link.",
     "For a file: four hashes (MD5, SHA-1, SHA-256, SHA-512) to look up elsewhere, the real format from its first bytes, entropy per block to spot packed or encrypted data, and photo metadata such as GPS location.",
     "For a link: offline checks of the text, such as IP-address hosts, look-alike letters, brand names in subdomains, shorteners and embedded credentials.",
     "Each finding comes with a severity and a plain explanation. The link score is a heuristic, not a probability.",

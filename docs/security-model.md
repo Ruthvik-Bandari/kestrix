@@ -78,7 +78,7 @@ Data crosses a boundary at each of these points:
 | Upload size counted while streaming; file held in an anonymous spooled temp file and never executed | [`forensics/api.py`](../src/kestrix/forensics/api.py) |
 | Strict CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, COOP `same-origin` on every response | `_SECURITY_HEADERS` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Static file paths resolved and confined to the bundle directory | `spa` route in [`server/app.py`](../src/kestrix/server/app.py) |
-| Errors returned as `{reason, detail}`, never stack traces | Exception handler in [`server/app.py`](../src/kestrix/server/app.py) |
+| Errors returned as `{reason, detail}`, never stack traces; an unexpected exception becomes a JSON 500 `internal_error` that still carries the security headers | Exception handlers and `_LocalOnly` in [`server/app.py`](../src/kestrix/server/app.py) |
 
 ### Untrusted input
 
@@ -94,7 +94,7 @@ Data crosses a boundary at each of these points:
 | Uploaded file names reduced to a printable base name | `display_name` in [`forensics/analysis.py`](../src/kestrix/forensics/analysis.py) |
 | Image metadata read with Pillow restricted to four formats, pixel data never decoded, a pixel-count ceiling | [`forensics/exif.py`](../src/kestrix/forensics/exif.py) |
 | URL forensics never fetches or resolves the URL | [`forensics/url.py`](../src/kestrix/forensics/url.py) |
-| Email messages parsed with caps on size (25 MiB), headers, MIME depth and parts, decoded text and links; HTML tokenized for links and text only, never rendered; links never visited; archives listed from the central directory, never extracted; reports carry no body or attachment bytes beyond an intent cue phrase of at most 60 characters | [`mail/parse.py`](../src/kestrix/mail/parse.py), [`mail/analyzers.py`](../src/kestrix/mail/analyzers.py), [`mail/intent.py`](../src/kestrix/mail/intent.py) |
+| Email messages parsed with caps on size (25 MiB), headers, MIME depth and parts, decoded text and links; header blocks (64 KiB each, 1 MiB in total) and MIME parameters (50 per `Content-Type` or `Content-Disposition`) are capped on the raw bytes before the standard library parses them, and header nesting that exhausts its recursion is rejected; HTML tokenized for links and text only, never rendered; links never visited; archives listed from the central directory, never extracted; reports carry no body or attachment bytes beyond an intent cue phrase of at most 60 characters | [`mail/parse.py`](../src/kestrix/mail/parse.py), [`mail/analyzers.py`](../src/kestrix/mail/analyzers.py), [`mail/intent.py`](../src/kestrix/mail/intent.py) |
 
 ### Outbound requests
 
@@ -103,7 +103,7 @@ Data crosses a boundary at each of these points:
 | Only `http`/`https` with a host, at most 2,048 characters, no credentials in the URL | `check_url` in [`core/netguard.py`](../src/kestrix/core/netguard.py) |
 | Every resolved address must be global unicast: no private, loopback, link-local (including cloud metadata), multicast or reserved ranges, including IPv4 embedded in IPv6 (mapped, 6to4, NAT64, IPv4-compatible). `--allow-private` lifts this for one run. | [`core/netguard.py`](../src/kestrix/core/netguard.py) |
 | Website check connects to the validated IP, keeping the hostname in `Host` and SNI, so DNS changes after the check cannot redirect it | [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py) |
-| Each redirect re-validated; at most 5; 10 s total; 1 MiB read per response; no environment proxies | [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py) |
+| Each redirect re-validated; at most 5; 10 s for the whole fetch including DNS, enforced on every socket operation, and 10 s for the TLS handshake; 1 MiB read per response; no environment proxies | [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py), `check_url` in [`core/netguard.py`](../src/kestrix/core/netguard.py) |
 | mempool.space lookups validated, no redirects, 10 s timeout, 64 KiB response cap, schema-checked | [`bitcoin/chain.py`](../src/kestrix/bitcoin/chain.py) |
 | Engine client never follows redirects | [`detect/engine.py`](../src/kestrix/detect/engine.py) |
 
@@ -185,16 +185,20 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 | Refuses to start without an `https` public origin, a pepper of at least 32 bytes and at least one complete provider | [`server/settings.py`](../src/kestrix/server/settings.py) |
 | `Host` must be the public host; `Origin` on writes must equal the public origin; HSTS with `preload` on every response, plus the existing CSP and headers | `_LocalOnly` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404 | [`server/app.py`](../src/kestrix/server/app.py), `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
-| Every `/api/` route needs a session unless it is on a short public list, so new routes are private by default (401) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Every `/api/` route needs a session unless it is on a short public list, so new routes are private by default (401); the OpenAPI schema is not served; every `/api/` response is `Cache-Control: no-store` | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py), [`server/app.py`](../src/kestrix/server/app.py) |
 | Authorization code with PKCE S256, single-use 10-minute `state` stored under a keyed hash, Google `nonce`, and `state` bound to the browser by a `__Host-` cookie | [`server/auth.py`](../src/kestrix/server/auth.py) |
 | Google ID-token claims checked (`iss`, `aud`/`azp`, `exp`, `iat`, `nonce`, `email_verified`). The signature is not checked: the token comes directly from Google's token endpoint over verified TLS, as OpenID Connect Core 3.1.3.7 permits. GitHub sign-in needs a primary, verified email. | [`server/auth.py`](../src/kestrix/server/auth.py) |
 | Provider requests only to four fixed hosts over https:443, verified TLS, no redirects, no environment proxies, 10 s timeout, 64 KiB cap | `ProviderClient` in [`server/auth.py`](../src/kestrix/server/auth.py) |
 | `next` accepts only same-origin paths; `//`, backslashes, control characters, whitespace and absolute URLs fall back to `/app` | `safe_next` in [`server/auth.py`](../src/kestrix/server/auth.py) |
 | Session ids are 256-bit random and stored only as HMAC-SHA256 with the pepper; `__Host-` cookie, `Secure`, `HttpOnly`, `SameSite=Lax`; 7-day idle and 30-day absolute expiry; rotated at sign-in | [`server/auth.py`](../src/kestrix/server/auth.py), [`server/store.py`](../src/kestrix/server/store.py) |
 | A per-session CSRF token, derived from the session id and stored only as a keyed hash, is required in `X-CSRF-Token` on state-changing requests (403 otherwise) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
-| Account deletion removes the user and, by cascade, all of that user's sessions | [`server/store.py`](../src/kestrix/server/store.py) |
-| Rate limits: 20 website checks and 120 analyses per user per hour; 10 sign-in starts and 10 callbacks per IP per 10 minutes (429 with `Retry-After`) | [`server/ratelimit.py`](../src/kestrix/server/ratelimit.py), [`server/hosted.py`](../src/kestrix/server/hosted.py) |
-| Website check: public targets only, an authorization confirmation per scan, and a `User-Agent` with the abuse contact | `hosted_router` in [`webcheck/api.py`](../src/kestrix/webcheck/api.py) |
+| Account deletion removes the user and, by cascade, all of that user's sessions, and clears the user's rate-limit counters; deleted rows are overwritten (`secure_delete`), the WAL is checkpointed and truncated, and user ids are never reused | [`server/store.py`](../src/kestrix/server/store.py), [`server/auth_api.py`](../src/kestrix/server/auth_api.py) |
+| Operators can disable an account (`kestrix hosted disable-user`): it cannot sign in and its sessions end | [`server/cli.py`](../src/kestrix/server/cli.py), [`server/store.py`](../src/kestrix/server/store.py) |
+| Rate limits: 20 website checks and 120 analyses per user per hour; 20 sign-in starts and 10 callbacks per IP (IPv6 per /64) per 10 minutes (429 with `Retry-After`). Cross-site sign-in starts that are not top-level navigations are refused before they count. The limiter evicts stale and least recently requested keys first and keeps blocked ones | [`server/ratelimit.py`](../src/kestrix/server/ratelimit.py), [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Concurrency: one module request at a time per user (429 `busy`), at most 2 analyses and 8 website checks at once (503 `busy`); nothing queues or holds a thread | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Uploads capped at 10 MiB before and while the body is read | `hosted_body_limits` in [`server/app.py`](../src/kestrix/server/app.py), `hosted_router` in [`forensics/api.py`](../src/kestrix/forensics/api.py) and [`mail/api.py`](../src/kestrix/mail/api.py) |
+| Each analysis runs in a fresh worker process with a scrubbed environment (no secrets), `RLIMIT_CPU` 10 s, `RLIMIT_AS` 384 MiB on Linux, no core dumps and a 20 s wall-clock kill; results come back as JSON validated against the report model, never as a pickle | [`server/isolation.py`](../src/kestrix/server/isolation.py) |
+| Website check: public targets on ports 80 and 443 only (every hop), one generic message for connection failures, an authorization confirmation per scan, a `User-Agent` with the abuse contact, and a log line with the user hash and a keyed hash of the host for abuse reports | `hosted_router` in [`webcheck/api.py`](../src/kestrix/webcheck/api.py), [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py), [`server/app.py`](../src/kestrix/server/app.py) |
 | Access logs hold the method, route template, status, duration and a salted user-id hash; never bodies, file names, emails, query strings, cookies or tokens. uvicorn's access log is off. | `AccessLog` in [`server/hosted.py`](../src/kestrix/server/hosted.py), `serve-hosted` in [`cli.py`](../src/kestrix/cli.py) |
 | SQLite file `0600` in a `0700` directory, parameterized queries only | [`server/store.py`](../src/kestrix/server/store.py) |
 
@@ -204,5 +208,6 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 - **Client IPs behind a proxy.** Without `KESTRIX_TRUST_PROXY_HEADERS=1`, every visitor behind the platform proxy shares one per-IP sign-in limit. With it, the right-most `X-Forwarded-For` entry is trusted, which is correct only behind a proxy that always appends it.
 - **The pepper is a single key.** Anyone who has both the database and the pepper can check guesses of session ids, but cannot recover them, since the ids are 256-bit random. A leaked pepper should be rotated, which signs everyone out.
 - **Sessions are bearer cookies.** Malware or an extension in the user's browser can still use them. `HttpOnly` keeps page scripts from reading them.
-- **No per-user concurrency cap yet.** The body caps and per-hour limits still apply.
-- **Uploads are still parsed by the same code as locally.** A parser bug now affects a shared server rather than one person's machine.
+- **Uploads are still parsed by the same code as locally.** A parser bug now affects a shared server rather than one person's machine. The worker process limits contain CPU and memory exhaustion, but a memory-safety bug in a C extension would run with the server user's file-system access (the worker shares the uid; there is no seccomp or namespace sandbox).
+- **Uploads can touch disk.** Uploads over 1 MiB are spooled to an anonymous temporary file in `/tmp`, which on Fly.io is on the machine's disk, until the request ends.
+- **Counters reset on restart.** Rate-limit counters and concurrency slots live in memory.

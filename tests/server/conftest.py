@@ -2,11 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """Hosted-mode fixtures. The providers are an ``httpx.MockTransport``; no test touches the network."""
 
+import dataclasses
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from kestrix.server.app import create_app
+from kestrix.server.settings import load_settings
 
 from .hosted_support import (
     GITHUB_ID,
@@ -52,3 +55,18 @@ def hosted(hosted_env, providers, clock):
     app = create_app(provider_transport=httpx.MockTransport(providers.handler))
     app.state.auth.clock = clock
     return TestClient(app, base_url=ORIGIN)
+
+
+@pytest.fixture
+def make_hosted(hosted_env, providers, clock):
+    """A hosted app whose ``HostedSettings`` fields are overridden, such as smaller service limits."""
+
+    def make(**overrides):
+        settings = load_settings()
+        assert settings.hosted is not None
+        settings = dataclasses.replace(settings, hosted=dataclasses.replace(settings.hosted, **overrides))
+        app = create_app(server_settings=settings, provider_transport=httpx.MockTransport(providers.handler))
+        app.state.auth.clock = clock
+        return TestClient(app, base_url=ORIGIN)
+
+    return make

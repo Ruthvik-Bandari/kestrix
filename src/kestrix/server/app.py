@@ -8,16 +8,21 @@ The server is meant for the user's own machine. Every request passes ``_LocalOnl
 - state-changing requests from another origin (``Origin`` / ``Sec-Fetch-Site``) are refused,
   which blocks cross-site "simple" POSTs such as multipart uploads;
 - request bodies are capped: a declared Content-Length is checked up front and streamed
-  (chunked) bodies are counted as they arrive.
+  (chunked) bodies are counted as they arrive;
+- an unexpected exception becomes a JSON 500 that still carries the security headers.
 
 With ``KESTRIX_MODE=hosted`` (ADR 0004, ``server/settings.py``) the same middleware allows only
-the public origin's host, compares ``Origin`` with the public origin, and adds HSTS. Behind it,
-``server/hosted.py`` requires sign-in, CSRF tokens and rate limits; detect, bitcoin and the
-Anthropic-key settings are not served.
+the public origin's host, compares ``Origin`` with the public origin, adds HSTS, marks every
+``/api/`` response ``Cache-Control: no-store`` and applies the lower hosted upload caps. Behind it,
+``server/hosted.py`` requires sign-in, CSRF tokens, rate limits and concurrency caps; analyses run
+in limited worker processes (``server/isolation.py``); detect, bitcoin, the Anthropic-key
+settings and the OpenAPI schema are not served.
 """
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Mapping
 from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -35,16 +40,19 @@ from ..bitcoin.api import router as bitcoin_router
 from ..core import config
 from ..core.errors import Reason, Rejected
 from ..detect.api import router as detect_router
+from ..forensics.api import hosted_router as hosted_forensics_router
 from ..forensics.api import router as forensics_router
+from ..mail.api import hosted_router as hosted_mail_router
 from ..mail.api import router as mail_router
 from ..webcheck.api import hosted_router as hosted_webcheck_router
 from ..webcheck.api import router as webcheck_router
 from ..webcheck.fetch import user_agent
-from .auth import AuthService
+from .auth import AuthService, current_session
 from .auth_api import auth_router
 from .hosted import AccessLog, HostedGate
+from .isolation import Isolator, Limits
 from .ratelimit import RateLimiter
-from .settings import Settings, load_settings
+from .settings import HostedSettings, Settings, load_settings
 from .store import Store
 
 STATIC_DIR = Path(str(files("kestrix.server") / "static"))
@@ -56,6 +64,8 @@ LARGE_BODY_ROUTES = {
     "/api/forensics/file": 51 * 1024 * 1024,
     "/api/mail/analyze": 26 * 1024 * 1024,
 }
+# Room for the multipart boundary and part headers around a hosted upload.
+MULTIPART_OVERHEAD = 64 * 1024
 MODULES = ("detect", "forensics", "webcheck", "bitcoin", "mail")
 HOSTED_MODULES = ("forensics", "webcheck", "mail")
 
@@ -69,6 +79,7 @@ _STATUS = {
     Reason.SIGN_IN_REQUIRED: 401,
     Reason.CSRF_FAILED: 403,
     Reason.RATE_LIMITED: 429,
+    Reason.ANALYSIS_TIMEOUT: 422,
 }
 
 _HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 413: "input_too_large"}
@@ -85,6 +96,10 @@ _SECURITY_HEADERS = {
 }
 HSTS = "max-age=63072000; includeSubDomains; preload"
 _HOSTED_HEADERS = {**_SECURITY_HEADERS, "Strict-Transport-Security": HSTS}
+_NO_STORE = {"Cache-Control": "no-store"}
+
+log = logging.getLogger("kestrix.server")
+webcheck_log = logging.getLogger("kestrix.webcheck")
 
 
 def _hostname(host_header: str) -> str:
@@ -105,11 +120,18 @@ class _LocalOnly(BaseHTTPMiddleware):
         allowed_hosts: frozenset[str],
         public_origin: str | None = None,
         headers: dict[str, str] = _SECURITY_HEADERS,
+        body_limits: Mapping[str, int] = LARGE_BODY_ROUTES,
     ) -> None:
         super().__init__(app)  # type: ignore[arg-type]
         self.allowed_hosts = allowed_hosts
         self.public_origin = public_origin  # hosted mode: Origin must equal it exactly
         self.headers = headers
+        self.body_limits = body_limits
+
+    def _headers(self, path: str) -> dict[str, str]:
+        if self.public_origin is not None and path.startswith("/api/"):
+            return {**self.headers, **_NO_STORE}  # hosted API responses are per-user: never cached
+        return self.headers
 
     def _cross_site(self, request: Request) -> bool:
         if request.method in SAFE_METHODS:
@@ -123,36 +145,53 @@ class _LocalOnly(BaseHTTPMiddleware):
         return origin is not None and _hostname(urlsplit(origin).netloc) not in self.allowed_hosts
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        headers = self._headers(request.url.path)
         if _hostname(request.headers.get("host", "")) not in self.allowed_hosts:
             detail = "Kestrix only serves local requests" if self.public_origin is None else "unknown host"
-            return _refuse("host_not_allowed", detail, 421, self.headers)
+            return _refuse("host_not_allowed", detail, 421, headers)
         if self._cross_site(request):
-            return _refuse("cross_site_request", "requests from other websites are not allowed", 403, self.headers)
+            return _refuse("cross_site_request", "requests from other websites are not allowed", 403, headers)
         declared = request.headers.get("content-length", "0")
-        limit = body_limit(request.url.path)
+        limit = body_limit(request.url.path, self.body_limits)
         if not declared.isdigit() or int(declared) > limit:
-            return _refuse("input_too_large", f"request body exceeds {limit} bytes", 413, self.headers)
-        response = await call_next(request)
-        response.headers.update(self.headers)
+            return _refuse("input_too_large", f"request body exceeds {limit} bytes", 413, headers)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            if self.public_origin is None:
+                log.exception("unexpected error")  # local: the traceback is the user's own data
+            else:  # hosted: the type only; a traceback could quote another person's upload
+                log.error("unexpected error %s on %s", type(exc).__name__, request.method)
+            response = JSONResponse({"reason": "internal_error", "detail": "unexpected error"}, status_code=500)
+        response.headers.update(headers)
         return response
 
 
-def body_limit(path: str) -> int:
-    return LARGE_BODY_ROUTES.get(path, MAX_BODY_BYTES)
+def body_limit(path: str, limits: Mapping[str, int] = LARGE_BODY_ROUTES) -> int:
+    return limits.get(path, MAX_BODY_BYTES)
+
+
+def hosted_body_limits(settings: HostedSettings) -> dict[str, int]:
+    """The hosted service's upload caps: the module limit plus room for the multipart framing."""
+    return {
+        "/api/forensics/file": settings.max_file_bytes + MULTIPART_OVERHEAD,
+        "/api/mail/analyze": settings.max_mail_bytes + MULTIPART_OVERHEAD,
+    }
 
 
 class _StreamedBodyLimit:
     """Counts body bytes as they are received, so chunked uploads without a
     Content-Length cannot exceed the cap either."""
 
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, body_limits: Mapping[str, int] = LARGE_BODY_ROUTES) -> None:
         self.app = app
+        self.body_limits = body_limits
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        limit, seen = body_limit(scope["path"]), 0
+        limit, seen = body_limit(scope["path"], self.body_limits), 0
 
         async def counted() -> Message:
             nonlocal seen
@@ -180,20 +219,27 @@ def create_app(
     when misconfigured. ``extra_hosts`` applies to local mode only; ``provider_transport``
     replaces the network for sign-in providers in tests."""
     hosted = (load_settings() if server_settings is None else server_settings).hosted
-    app = FastAPI(title="Kestrix", version=__version__, docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
-    app.add_middleware(_StreamedBodyLimit)
+    # The hosted service publishes no API schema: it is a website, not a scripting API.
+    openapi_url = "/api/openapi.json" if hosted is None else None
+    app = FastAPI(title="Kestrix", version=__version__, docs_url=None, redoc_url=None, openapi_url=openapi_url)
     auth: AuthService | None = None
+    limiter: RateLimiter | None = None
     if hosted is None:
+        app.add_middleware(_StreamedBodyLimit)
         app.add_middleware(_LocalOnly, allowed_hosts=LOOPBACK_HOSTS | extra_hosts)
     else:
+        limits = hosted_body_limits(hosted)
+        limiter = RateLimiter()
         auth = AuthService(hosted, Store(hosted.db_path), transport=provider_transport)
         app.state.auth = auth
-        app.add_middleware(HostedGate, auth=auth, limiter=RateLimiter())
+        app.add_middleware(_StreamedBodyLimit, body_limits=limits)
+        app.add_middleware(HostedGate, auth=auth, limiter=limiter)
         app.add_middleware(
             _LocalOnly,
             allowed_hosts=frozenset({hosted.public_host}),
             public_origin=hosted.public_origin,
             headers=_HOSTED_HEADERS,
+            body_limits=limits,
         )
         app.add_middleware(AccessLog, auth=auth)
 
@@ -226,7 +272,20 @@ def create_app(
         for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
             app.include_router(router)
     else:
-        assert hosted is not None
+        assert hosted is not None and limiter is not None
+        isolator = Isolator(Limits(hosted.analysis_cpu_s, hosted.analysis_memory_bytes, hosted.analysis_wall_s))
+        isolator.start()
+        hosted_auth = auth
+
+        def audit_webcheck(request: Request, url: str) -> None:
+            """One line per hosted website check: who (salted user hash) and a keyed hash of the host,
+            so an abuse report about a host can be matched (``kestrix hosted hash-host``)."""
+            session = current_session(request)
+            webcheck_log.info(
+                "webcheck user=%s host=%s",
+                hosted_auth.user_tag(session.user_id) if session is not None else "-",
+                hosted_auth.host_tag(url),
+            )
 
         @app.get("/api/health", tags=["platform"])
         def hosted_health() -> dict[str, object]:
@@ -239,10 +298,10 @@ def create_app(
             }
 
         for router in (
-            forensics_router,
-            hosted_webcheck_router(user_agent(hosted.abuse_contact)),
-            mail_router,
-            auth_router(auth),
+            hosted_forensics_router(isolator, hosted.max_file_bytes),
+            hosted_webcheck_router(user_agent(hosted.abuse_contact), audit_webcheck),
+            hosted_mail_router(isolator, hosted.max_mail_bytes),
+            auth_router(auth, limiter),
         ):
             app.include_router(router)
 

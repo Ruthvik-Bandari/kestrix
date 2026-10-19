@@ -31,6 +31,12 @@ MIB = 1024 * 1024
 MAX_MESSAGE_BYTES = 25 * MIB
 MAX_HEADERS = 500
 MAX_HEADER_CHARS = 16 * 1024
+# Checked on the raw bytes before the stdlib parser runs, whose MIME parameter handling is
+# super-linear: one header block (the message's or a part's) and all of them together, and the
+# parameters (";") in one Content-Type or Content-Disposition field.
+MAX_HEADER_BLOCK_BYTES = 64 * 1024
+MAX_TOTAL_HEADER_BYTES = 1024 * 1024
+MAX_MIME_PARAMS = 50
 MAX_DEPTH = 10
 MAX_PARTS = 200
 MAX_TEXT_CHARS = 5 * MIB
@@ -48,7 +54,19 @@ _SKIPPED_TAGS = frozenset({"script", "style"})
 _TEXT_URL = re.compile(r"https?://[^\s<>\"'()\[\]{}]+", re.IGNORECASE)
 _TRAILING_PUNCTUATION = ".,;:!?"
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+# The stdlib keeps undecodable header bytes as lone surrogates, which are not valid text in a report.
+_SURROGATE = re.compile("[\ud800-\udfff]")
 _PARSE_ERRORS = (MessageError, ValueError, TypeError, IndexError, AttributeError, LookupError)
+# What the stdlib raises on some malformed header values (for example a NUL in a charset name,
+# or a parameter list that ends after "*"); the whole message is then rejected as invalid.
+_MALFORMED = (MessageError, ValueError, IndexError, LookupError)
+# The stdlib parser's line endings and header-line rule (email.feedparser NLCRE and headerRE).
+_EOL = re.compile(rb"\r\n|\r|\n")
+_HEADER_LINE = re.compile(rb"From |[\x21-\x39\x3b-\x7e]*:")
+# Any line starting with "--" may be a MIME boundary, whatever the declared boundary is; only
+# those followed by a header-shaped line start a block worth checking.
+_DELIMITER = re.compile(rb"(?:(?<=[\r\n])|^)--[^\r\n]*(?:\r\n|\r|\n)(?=From |[\x21-\x39\x3b-\x7e]*:|[ \t])")
+_PARAMETERIZED = frozenset({b"content-type", b"content-disposition"})
 
 LinkSource = Literal["html", "text"]
 
@@ -112,10 +130,21 @@ def parse_message(raw: bytes) -> ParsedMessage:
     """Parse ``raw`` within the caps above. Raises ``Rejected`` for oversized or non-message input."""
     if len(raw) > MAX_MESSAGE_BYTES:
         raise Rejected(Reason.INPUT_TOO_LARGE, f"message is larger than the {MAX_MESSAGE_BYTES:,} byte limit")
+    check_raw_headers(raw)
     try:
         msg = BytesParser(EmailMessage, policy=policy.default).parsebytes(raw)
     except RecursionError:
         raise Rejected(Reason.NESTING_TOO_DEEP, f"MIME nesting is deeper than {MAX_DEPTH} levels") from None
+    try:
+        return _parsed(raw, msg)
+    except RecursionError:
+        # Header values are parsed lazily; deeply nested comments exhaust the stdlib's recursion.
+        raise Rejected(Reason.NESTING_TOO_DEEP, "a header is nested too deeply to parse") from None
+    except _MALFORMED:
+        raise Rejected(Reason.INVALID_INPUT, "the message has a malformed header that cannot be parsed") from None
+
+
+def _parsed(raw: bytes, msg: EmailMessage) -> ParsedMessage:
     if not any(name in msg for name in _MESSAGE_HEADERS):
         raise Rejected(Reason.INVALID_INPUT, "input is not an email message: it has no message headers")
     parts = _walk(msg)
@@ -157,6 +186,70 @@ def normalize_domain(domain: str) -> tuple[str, str]:
         except UnicodeError:
             labels.append(label)
     return ascii_form, ".".join(labels)
+
+
+def check_raw_headers(raw: bytes) -> None:
+    """Bound header sizes and MIME parameter counts on the raw bytes, before the stdlib parses them.
+
+    A header block is the run of header and continuation lines, read as the stdlib parser reads
+    it. Blocks are checked at the start of the message, after every line that starts with ``--``
+    (a superset of the real MIME boundaries, so a boundary declared in an unusual way cannot hide
+    a part's headers), and after a block that declares no type or a ``message/*`` type, whose
+    body may itself start with headers (an attached message, or a digest part). Raises
+    ``Rejected(INPUT_TOO_LARGE)``.
+    """
+    total = _check_chain(raw, 0, 0)
+    for match in _DELIMITER.finditer(raw):
+        total = _check_chain(raw, match.end(), total)
+
+
+def _check_chain(raw: bytes, pos: int, total: int) -> int:
+    """Check the block at ``pos`` and any nested message's block after it; return the header-byte total."""
+    while True:
+        total, body = _check_block(raw, pos, total)
+        if body is None:
+            return total
+        pos = body
+
+
+def _check_block(raw: bytes, pos: int, total: int) -> tuple[int, int | None]:
+    """Check one header block. Return the running header-byte total and, when the body after the
+    block may itself start with headers, the position where that body starts."""
+    block = params = 0
+    name = ctype = b""
+    has_lines = False
+    while pos < len(raw):
+        eol = _EOL.search(raw, pos)
+        end = eol.start() if eol else len(raw)
+        line = raw[pos:end]
+        if not line:
+            nested = has_lines and (not ctype or ctype.lstrip().lower().startswith(b"message/"))
+            return total, (eol.end() if nested and eol else None)
+        if line[:1] in (b" ", b"\t"):
+            params += line.count(b";")
+            value = line
+        elif _HEADER_LINE.match(line):
+            name, _, value = line.partition(b":")
+            name = name.strip().lower()
+            params = line.count(b";")
+        else:
+            break
+        if name == b"content-type" and len(ctype) < 64:
+            ctype += value.strip()
+        has_lines = True
+        nxt = eol.end() if eol else len(raw)
+        block += nxt - pos
+        total += nxt - pos
+        if block > MAX_HEADER_BLOCK_BYTES:
+            raise Rejected(Reason.INPUT_TOO_LARGE, f"a header block is larger than {MAX_HEADER_BLOCK_BYTES:,} bytes")
+        if total > MAX_TOTAL_HEADER_BYTES:
+            raise Rejected(Reason.INPUT_TOO_LARGE, f"the headers total more than {MAX_TOTAL_HEADER_BYTES:,} bytes")
+        if name in _PARAMETERIZED and params > MAX_MIME_PARAMS:
+            raise Rejected(
+                Reason.INPUT_TOO_LARGE, f"a {name.decode()} header has more than {MAX_MIME_PARAMS} parameters"
+            )
+        pos = nxt
+    return total, None
 
 
 def _walk(msg: EmailMessage) -> list[EmailMessage]:
@@ -290,7 +383,7 @@ def _decode_text(part: EmailMessage) -> str:
     charset = part.get_content_charset() or "utf-8"
     try:
         codecs.lookup(charset)
-    except LookupError:
+    except (LookupError, ValueError):  # unknown, or not a valid name at all (a NUL byte)
         charset = "utf-8"
     return data.decode(charset, errors="replace")
 
@@ -312,7 +405,7 @@ def _attachment(part: EmailMessage, filename: str | None) -> Attachment:
 def _clean_name(name: str) -> str:
     """Base name only, without control characters, at most 255 characters."""
     base = re.split(r"[\\/]", name)[-1]
-    return _CONTROL.sub("", base).strip()[:MAX_NAME_CHARS]
+    return _text(_CONTROL.sub("", base)).strip()[:MAX_NAME_CHARS]
 
 
 # ZIP end-of-central-directory and central-directory file header layouts (APPNOTE 4.3.12, 4.3.16).
@@ -356,7 +449,7 @@ def _header(msg: EmailMessage, name: str) -> str | None:
         value = msg.get(name)
     except _PARSE_ERRORS:
         return None
-    return None if value is None else _CONTROL.sub(" ", str(value)).strip()
+    return None if value is None else _text(_CONTROL.sub(" ", str(value))).strip()
 
 
 def _all_headers(msg: EmailMessage, name: str) -> list[str]:
@@ -364,7 +457,7 @@ def _all_headers(msg: EmailMessage, name: str) -> list[str]:
         values = msg.get_all(name) or []
     except _PARSE_ERRORS:
         return []
-    return [_CONTROL.sub(" ", str(value)).strip() for value in values]
+    return [_text(_CONTROL.sub(" ", str(value))).strip() for value in values]
 
 
 def _addresses(msg: EmailMessage, name: str) -> tuple[Address, ...]:
@@ -384,14 +477,19 @@ def _single_address(value: str | None) -> Address | None:
 
 
 def _address(display_name: str, addr_spec: str) -> Address | None:
-    addr = addr_spec.strip().strip("<>")
+    addr = _text(addr_spec).strip().strip("<>")
     if "@" not in addr:
         return None
     domain, display = normalize_domain(addr.rsplit("@", 1)[1])
     if not domain:
         return None
-    return Address(_CONTROL.sub(" ", display_name).strip(), addr, domain, display)
+    return Address(_text(_CONTROL.sub(" ", display_name)).strip(), addr, domain, display)
 
 
 def _first(addresses: tuple[Address, ...]) -> Address | None:
     return addresses[0] if addresses else None
+
+
+def _text(value: str) -> str:
+    """``value`` with undecodable bytes (lone surrogates) replaced by U+FFFD."""
+    return _SURROGATE.sub("\ufffd", value)

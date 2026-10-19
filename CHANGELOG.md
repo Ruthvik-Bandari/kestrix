@@ -6,6 +6,21 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Security review fixes (hosted mode).** An independent review found no authentication, session, CSRF or SSRF bypass. The following were fixed.
+  - **Resource abuse:**
+    - email header-parameter bombs are rejected before parsing, in both modes;
+    - hosted analyses run in isolated worker processes with CPU, memory and time limits;
+    - website checks have a true 10-second deadline;
+    - one request at a time per user, at most 2 analyses and 8 website checks at once;
+    - 10 MiB hosted uploads.
+  - **Website check:** ports 80 and 443 only, and generic connection errors.
+  - **Sign-in limits:** cross-site sign-in starts are refused, IPv6 is limited per /64, and the limiter evicts fairly.
+  - **Errors:** a JSON 500 with security headers.
+  - **Deletion:** secure delete, ids that are never reused, and the user's limiter counters cleared.
+  - **Operators:** `kestrix hosted disable-user` / `enable-user` / `hash-host` for abuse handling.
+  - **Responses:** `Cache-Control: no-store` on hosted API responses, and no public OpenAPI schema.
+  - **Parser robustness:** three parser crashes found by fuzzing.
+  - **Docs:** corrected wording.
 - **Hosted-mode interface:** when the server runs in hosted mode, the landing page is at `/` and the dashboard at `/app`. Visitors sign in with Google or GitHub on `/signin`; an account menu offers sign-out and account deletion (type DELETE to confirm). Every write sends the CSRF token, a 401 leads to sign-in, rate-limit replies show when to retry, and only the website check, forensics and email check appear. The website check asks for an "I own this website or am authorized to test it" confirmation. Draft privacy notice and terms of use pages (`/privacy`, `/terms`, and `docs/legal/`) are marked for the owner's review before launch. Local mode is unchanged.
 - **Deployment:** a hardened container image (`Dockerfile`: pinned base images by digest, hash-checked dependencies, non-root uid 10001, read-only root filesystem, no pip) and a Fly.io configuration (`fly.toml`, one machine, SQLite on a volume) with a step-by-step guide in `docs/deploy.md`. CI builds the image and smoke-tests it read-only.
 - `KESTRIX_CLIENT_IP_HEADER` names a header the platform proxy overwrites with the client address (Fly: `Fly-Client-IP`), so sign-in rate limits are per visitor behind a proxy. It cannot be combined with `KESTRIX_TRUST_PROXY_HEADERS`; `docs/deploy.md` has a post-deploy spoofing check.

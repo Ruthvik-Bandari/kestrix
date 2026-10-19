@@ -90,3 +90,18 @@ def test_local_dashboard_refuses_hosted_mode(monkeypatch):
     result = CliRunner().invoke(cli, ["dashboard", "--no-open"])
     assert result.exit_code == 2
     assert "serve-hosted" in result.output
+
+
+def test_serve_hosted_removes_secrets_from_the_environment(monkeypatch, tmp_path):
+    import os
+
+    import uvicorn
+
+    for name, value in {**BASE, "KESTRIX_DB": str(tmp_path / "db" / "hosted.sqlite3")}.items():
+        monkeypatch.setenv(name, value)
+    served = []
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kwargs: served.append(kwargs))
+    result = CliRunner().invoke(cli, ["serve-hosted"])
+    assert result.exit_code == 0 and served
+    assert "KESTRIX_SESSION_PEPPER" not in os.environ and "KESTRIX_GOOGLE_CLIENT_SECRET" not in os.environ
+    assert os.environ["KESTRIX_GOOGLE_CLIENT_ID"] == GOOGLE_ID  # not a secret; left alone

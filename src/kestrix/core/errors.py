@@ -46,6 +46,8 @@ class Reason(StrEnum):
     SIGN_IN_REQUIRED = "sign_in_required"
     CSRF_FAILED = "csrf_failed"
     RATE_LIMITED = "rate_limited"
+    BUSY = "busy"
+    ANALYSIS_TIMEOUT = "analysis_timeout"
 
 
 class Rejected(Exception):

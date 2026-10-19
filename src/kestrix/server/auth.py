@@ -317,9 +317,10 @@ class AuthService:
             identity = self._google_identity(client, code, attempt, now)
         else:
             identity = self._github_identity(client, code, attempt)
-        user_id = self.store.upsert_user(
-            identity.provider, identity.subject, identity.email, identity.display_name, now
-        )
+        user = self.store.upsert_user(identity.provider, identity.subject, identity.email, identity.display_name, now)
+        if user.disabled_at is not None:
+            raise AuthFailed("account_disabled")
+        user_id = user.id
         if previous_session_id:
             self.store.delete_session(self.session_hash(previous_session_id))  # rotate on sign-in
         session_id = secrets.token_urlsafe(32)
@@ -449,6 +450,27 @@ class AuthService:
     def user_tag(self, user_id: int) -> str:
         """A short salted hash of the user id for logs."""
         return hmac.new(self.settings.log_salt, str(user_id).encode(), hashlib.sha256).hexdigest()[:16]
+
+    def host_tag(self, url_or_host: str) -> str:
+        return host_tag(self.settings.log_salt, url_or_host)
+
+
+def host_tag(log_salt: bytes, url_or_host: str) -> str:
+    """A short keyed hash of a website check's host for logs (``kestrix hosted hash-host``).
+
+    The host is lower-cased without a trailing dot or IPv6 brackets, so ``https://Site.example./x``
+    and ``site.example`` give the same tag. The operator can match a host named in an abuse report
+    without the logs ever holding host names.
+    """
+    value = url_or_host.strip()
+    try:
+        host = urlsplit(value).hostname if "://" in value else value.strip("[]")
+    except ValueError:
+        host = None
+    if not host:
+        return "-"
+    normalized = host.lower().rstrip(".")
+    return hmac.new(log_salt, b"kx-host\x00" + normalized.encode(), hashlib.sha256).hexdigest()[:16]
 
 
 def current_session(request: Request) -> Session | None:

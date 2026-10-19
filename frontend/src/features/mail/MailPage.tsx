@@ -13,7 +13,10 @@ import { isHosted } from "../../lib/mode";
 import { useTitle } from "../../lib/useTitle";
 import { MailReportView } from "./MailReportView";
 
-export const MAX_MESSAGE = 25 * 1024 * 1024;
+/** The server's message cap: 25 MB locally, 10 MB on the hosted service. */
+export function maxMessage(): number {
+  return (isHosted() ? 10 : 25) * 1024 * 1024;
+}
 export const MAX_PROTECTED_DOMAINS = 20;
 
 const howItWorks: HowItWorksContent = {
@@ -59,11 +62,12 @@ export default function MailPage() {
   function choose(next: File | undefined) {
     if (!next) return;
     analyze.reset();
-    if (next.size > MAX_MESSAGE) {
+    const limit = maxMessage();
+    if (next.size > limit) {
       setFile(null);
       setLocalError({
         title: "That message is too large",
-        detail: `${next.name} is ${formatBytes(next.size)}. The limit is ${formatBytes(MAX_MESSAGE)}.`,
+        detail: `${next.name} is ${formatBytes(next.size)}. The limit is ${formatBytes(limit)}.`,
       });
       return;
     }
@@ -106,7 +110,7 @@ export default function MailPage() {
           <Icon name="lock" size={16} className="mt-1 flex-none text-ink-3" />
           <span>
             {isHosted()
-              ? "The message is analyzed in memory on Kestrix's server and never stored; the report is not kept. "
+              ? "The message is analyzed on Kestrix's server and never stored; the report is not kept. "
               : "The check runs offline on this computer and nothing leaves it. "}
             Links are never visited, the message is never displayed as a web page, and attachments are never opened.
           </span>
@@ -140,7 +144,7 @@ export default function MailPage() {
         >
           <Icon name="mail" size={28} className="text-ink-3" />
           <p className="font-medium text-ink">{file ? file.name : "Drop an .eml file here, or choose one"}</p>
-          <p className="hint">{file ? formatBytes(file.size) : `Up to ${formatBytes(MAX_MESSAGE)}.`}</p>
+          <p className="hint">{file ? formatBytes(file.size) : `Up to ${formatBytes(maxMessage())}.`}</p>
           <FileButton
             label={file ? "Choose another .eml file" : "Choose an .eml file"}
             accept=".eml,message/rfc822"

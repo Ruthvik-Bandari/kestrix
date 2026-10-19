@@ -28,6 +28,8 @@ from .auth import (
     AuthService,
     current_session,
 )
+from .hosted import user_limit_keys
+from .ratelimit import RateLimiter
 
 log = logging.getLogger("kestrix.auth")
 _NO_STORE = {"Cache-Control": "no-store"}
@@ -42,7 +44,7 @@ def _clear_cookie(response: Response, name: str) -> None:
     response.delete_cookie(name, path="/", secure=True, httponly=True, samesite="lax")
 
 
-def auth_router(auth: AuthService) -> APIRouter:
+def auth_router(auth: AuthService, limiter: RateLimiter) -> APIRouter:
     router = APIRouter(prefix="/api/auth", tags=["auth"])
 
     @router.get("/providers")
@@ -108,11 +110,13 @@ def auth_router(auth: AuthService) -> APIRouter:
 
     @router.delete("/account", status_code=204)
     def delete_account(request: Request) -> Response:
-        """Delete the signed-in user and every session of that user. Requires ``X-CSRF-Token``."""
+        """Delete the signed-in user, every session of that user and their rate-limit counters.
+        Requires ``X-CSRF-Token``."""
         session = current_session(request)
         if session is None:  # the gate already refuses this; kept so the route is safe on its own
             raise Rejected(Reason.SIGN_IN_REQUIRED, "sign in first")
         auth.delete_account(session)
+        limiter.forget(user_limit_keys(session.user_id))
         response = Response(status_code=204)
         _clear_cookie(response, SESSION_COOKIE)
         return response

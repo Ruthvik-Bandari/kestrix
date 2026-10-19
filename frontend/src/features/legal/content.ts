@@ -8,7 +8,8 @@
  * (legal.test.tsx) keeps the two in step.
  */
 
-export const DRAFT_BANNER = "Draft — to be reviewed by the owner before launch. Not legal advice.";
+export const DRAFT_BANNER =
+  "Draft — to be reviewed by the owner before launch. Not legal advice.";
 
 export type Block = { p: string } | { ul: string[] };
 
@@ -44,7 +45,7 @@ export const privacy: LegalDoc = {
             "the sign-in provider you used (Google or GitHub) and that provider's identifier for your account;",
             "your verified email address;",
             "your display name;",
-            "when the account was created and when you last signed in.",
+            "when the account was created and when you last signed in, and, if we disable it for abuse, when that happened.",
           ],
         },
         {
@@ -55,7 +56,9 @@ export const privacy: LegalDoc = {
     {
       heading: "Sessions and cookies",
       blocks: [
-        { p: "We set two cookies, both needed to sign you in. We use no advertising, analytics or tracking cookies." },
+        {
+          p: "We set two cookies, both needed to sign you in. We use no advertising, analytics or tracking cookies.",
+        },
         {
           ul: [
             "__Host-kx_session keeps you signed in. It ends after 7 days without use or 30 days after sign-in, whichever comes first, and is deleted when you sign out. We store only a keyed hash of it, not the cookie value.",
@@ -75,10 +78,10 @@ export const privacy: LegalDoc = {
       blocks: [
         {
           ul: [
-            "Files and emails you upload are analyzed in memory (very large uploads may pass through an unnamed temporary file while they are processed). They are never written to our database and are not kept after the analysis.",
+            "Files and emails you upload are analyzed in a separate, short-lived process on our server. While an upload is received and analyzed it is held in memory, and an upload larger than 1 MB may be spooled briefly to temporary disk storage; it is deleted as soon as the analysis ends. Uploads are never written to our database and are not kept after the analysis.",
             "The report is sent back to your browser. We do not keep a copy.",
             "Links you check in forensics are examined as text; Kestrix does not visit them.",
-            "For a website check, our server sends one request to the site you enter (following up to five redirects) plus one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. We do not store the address you checked or the result.",
+            "For a website check, our server sends one request to the site you enter (following up to five redirects) plus one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. We do not store the address you checked or the result; our logs keep only a keyed hash of the site's host name (see Logs).",
           ],
         },
       ],
@@ -90,6 +93,9 @@ export const privacy: LegalDoc = {
           p: "For each request our server logs the time, the kind of request and which page or API route it was for, the result code, how long it took, and a salted hash of your account identifier (not your email or name). Failed sign-ins add a short reason code.",
         },
         {
+          p: "For each website check we also log your hashed account identifier and a keyed hash of the site's host name, not the name itself. If a site's owner reports abuse from our service, we can hash the host name they give us and find the account that checked it; the hash cannot be turned back into a host name.",
+        },
+        {
           p: "Logs never contain file contents, file names, email messages, email addresses, the websites or links you check, cookies or tokens. Log retention: [retention period to be set by the owner].",
         },
       ],
@@ -98,7 +104,7 @@ export const privacy: LegalDoc = {
       heading: "Rate limits",
       blocks: [
         {
-          p: "To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, and 10 sign-in attempts per network address per 10 minutes. The counters live only in the server's memory and are not stored.",
+          p: "To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts and 10 returns from Google or GitHub per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.",
         },
       ],
     },
@@ -108,7 +114,12 @@ export const privacy: LegalDoc = {
         {
           p: "Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and every session immediately. Signing out deletes that session.",
         },
-        { p: "Backups: [the owner will describe any backups of the account database and how long they last]." },
+        {
+          p: "Backups: our hosting provider keeps daily snapshots of the storage volume that holds the account database, for 14 days. After you delete your account, its record can remain in those snapshots until they expire, at most 14 days later.",
+        },
+        {
+          p: "If an account is used to abuse the service, we can disable it: it can no longer sign in and its sessions end. The account record, with the time it was disabled, stays until it is deleted.",
+        },
       ],
     },
     {
@@ -121,7 +132,9 @@ export const privacy: LegalDoc = {
             "The website you choose to check receives one request from our server.",
           ],
         },
-        { p: "We do not sell or share your data with anyone else, and we show no ads." },
+        {
+          p: "We do not sell or share your data with anyone else, and we show no ads.",
+        },
       ],
     },
     {
@@ -227,7 +240,9 @@ export const terms: LegalDoc = {
     },
     {
       heading: "Privacy",
-      blocks: [{ p: "How we handle your data is described in the privacy notice." }],
+      blocks: [
+        { p: "How we handle your data is described in the privacy notice." },
+      ],
     },
     {
       heading: "Changes and governing law",

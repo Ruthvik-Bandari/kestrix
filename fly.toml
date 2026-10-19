@@ -60,6 +60,9 @@ kill_timeout = "30s"
 
 # One machine only: rate limits are per process and SQLite is one file on one volume.
 # Scale with `fly scale count 1`; never add a second machine or region.
+# Fly Machines have no read-only root filesystem or tmpfs option: the root filesystem is the image's,
+# writable but reset on restart, and /tmp (upload spill files, the worker fork server's socket) is on
+# it. The app user can write only to /tmp and /data. See docs/deploy.md, "What you get".
 [[mounts]]
   source = "kestrix_data"
   destination = "/data"
@@ -69,5 +72,8 @@ kill_timeout = "30s"
 [[vm]]
   size = "shared-cpu-1x"
   # A 50 MB upload peaked near 125 MiB in a local test (docs/deploy.md); 512 MB leaves headroom
-  # for a few concurrent analyses. 256mb is possible if cost matters more than concurrency.
+  # for a few concurrent analyses.
+  # Update (security review, 2026-10-19): analyses now run in separate worker processes. Measured
+  # peak with the hosted caps was about 380 MiB (docs/deploy.md, "Cost"), so keep 512mb; 256mb is
+  # no longer enough.
   memory = "512mb"

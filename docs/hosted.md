@@ -11,6 +11,7 @@ The local install is unchanged. Hosted mode is on only when `KESTRIX_MODE=hosted
 - [Register the OAuth apps](#register-the-oauth-apps)
 - [Run it](#run-it)
 - [Security properties](#security-properties)
+- [Abuse handling](#abuse-handling)
 - [Limitations](#limitations)
 
 ## What changes in hosted mode
@@ -22,9 +23,13 @@ The local install is unchanged. Hosted mode is on only when `KESTRIX_MODE=hosted
 | Accounts | None | Sign-in with Google or GitHub; no passwords |
 | Modules | All five | Website check, forensics, email check. Detection repair, Bitcoin and `/api/settings*` return 404. |
 | Module API routes | Open to local callers | Need a session (401 `sign_in_required`) and an `X-CSRF-Token` header on state-changing requests (403 `csrf_failed`) |
-| Website check | `allow_private` allowed | Public targets only; each scan needs `"authorized": true` |
+| Website check | `allow_private` allowed; any port; detailed connection errors | Public targets on ports 80 and 443 only; each scan needs `"authorized": true`; one generic message for connection failures |
+| Uploads | Files up to 50 MiB, messages up to 25 MiB | Both up to 10 MiB |
+| Analyses | In the server process | In a separate worker process with CPU, memory and time limits |
+| Concurrency | No limit | One module request at a time per user; at most 2 analyses and 8 website checks at once |
 | Rate limits | None | Per user and per IP (see below) |
-| Headers | CSP and friends | The same, plus `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` |
+| Headers | CSP and friends | The same, plus `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and `Cache-Control: no-store` on every `/api/` response |
+| API schema | `/api/openapi.json` | Not served |
 | Logs | uvicorn's access log | A privacy-safe access line per request; uvicorn's access log is off |
 
 ## Configuration
@@ -95,32 +100,51 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   - OAuth 2.0 authorization code with PKCE (S256), a random `state`, and for Google an OpenID Connect `nonce`.
   - The pending attempt (provider, PKCE verifier, nonce, `next`) is stored server-side under a keyed hash of `state`, expires after 10 minutes, and is deleted on first use, so a `state` works once.
   - The `state` is also set in a 10-minute `__Host-kx_login` cookie and must match on the callback. This ties the callback to the browser that started sign-in, which blocks login CSRF (an attacker pasting their own callback link).
+  - A sign-in start that another site loads without a top-level navigation (an image, script, frame or `fetch`: `Sec-Fetch-Site: cross-site` without `Sec-Fetch-Mode: navigate` and `Sec-Fetch-Dest: document`) is refused with 403 before it is counted or stored, so a page cannot use up its visitors' sign-in allowance.
+  - A disabled account (see [Abuse handling](#abuse-handling)) cannot sign in: the callback redirects to `/welcome?signin=failed` and logs `reason=account_disabled`.
 - **Google identity.**
   - The ID token comes straight from Google's token endpoint over verified TLS, in exchange for the code and the client secret. OpenID Connect Core 1.0, section 3.1.3.7, lets a client in this position rely on TLS instead of checking the token's signature, and Kestrix does that.
   - It still checks the claims: `iss` is `https://accounts.google.com` or `accounts.google.com`; `aud` is the client ID (with several audiences, `azp` must be the client ID too); `exp` is in the future; `iat` is within the last 15 minutes, allowing 5 minutes of clock skew; `nonce` matches the attempt; `email_verified` is `true`.
 - **GitHub identity.** The access token is used once for `GET /user` and `GET /user/emails`. Sign-in needs an email that is both primary and verified. The access token is not stored.
 - **Outbound requests.** Only to `accounts.google.com`, `oauth2.googleapis.com`, `github.com` and `api.github.com`, over `https` on port 443, with certificate verification, no redirects, no environment proxies, a 10-second timeout and a 64 KiB response cap. These are fixed provider hosts, so `netguard`'s private-address check is not used for them; the allowlist is the control.
-- **Accounts.** Users are keyed by `(provider, subject)`. The table holds the verified email, display name and two timestamps. No passwords and no provider tokens.
+- **Accounts.** Users are keyed by `(provider, subject)`. The table holds the verified email, display name, two timestamps and, for a disabled account, when it was disabled. No passwords and no provider tokens. User ids are never reused (`AUTOINCREMENT`).
 - **Sessions.**
   - The session id is 256 random bits. The database stores only HMAC-SHA256(pepper, id), so a copy of the database cannot be replayed as cookies.
   - Cookie: `__Host-kx_session`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`.
   - A session ends after 7 days without use or 30 days after sign-in, whichever comes first. The last-seen time is updated at most every 5 minutes.
   - Signing in again replaces the browser's previous session. Expired rows are purged when someone signs in.
+  - A disabled account's sessions are deleted and refused.
 - **CSRF.**
   - The token is derived from the session id with the pepper, returned by `/api/auth/me`, and stored only as a keyed hash. It is compared in constant time.
   - It is required on every state-changing request from a signed-in user, on top of the existing `Origin` / `Sec-Fetch-Site` refusal, which now compares against the public origin.
-- **Route gating.** Every `/api/` route is private unless it is on a short public list: health, the OpenAPI schema, providers, `me`, `logout`, `login` and `callback`. A route added later is private by default. Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404.
+- **Route gating.** Every `/api/` route is private unless it is on a short public list: health, providers, `me`, `logout`, `login` and `callback`. The OpenAPI schema is not served. A route added later is private by default. Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404.
 - **Website check.**
   - Public targets only: `allow_private: true` is refused with 400, and `netguard` still applies to every hop.
   - Each scan needs `"authorized": true`, the user's confirmation that they own or are authorized to test the site.
   - The `User-Agent` names Kestrix and, if set, `KESTRIX_ABUSE_CONTACT`.
-- **Uploads.** Files and messages are analyzed as in local mode (in memory or an anonymous spooled temporary file) and are not stored. Reports are not kept on the server.
-- **Logs.** One `kestrix.access` line per request: method, route template (`/api/auth/callback/{provider}`, never the query string), status, duration in ms, and the first 16 hex characters of HMAC-SHA256(log salt, user id). For unmatched paths, the path (without query) is logged instead of a template. Failed sign-ins add a `kestrix.auth` line with a fixed reason code, such as `id_token_wrong_audience`. Bodies, file names, emails, URLs being checked, cookies and tokens are never logged.
-- **Database file.** Created `0600`, in a directory created or tightened to `0700` when Kestrix owns it. All queries are parameterized.
+  - Only ports 80 and 443, on the first request and on every redirect, and one generic `target_unreachable` message for every connection-level failure, so the check cannot map open ports.
+  - One scan sends at most 6 requests (the first and up to 5 redirects) and 1 TLS handshake. The fetch, DNS lookups included, has 10 seconds in total, enforced on every socket operation; the TLS handshake has its own 10 seconds.
+- **Uploads.** At most 10 MiB per file or message, refused while the body arrives. The multipart parser keeps an upload in memory up to 1 MiB and spills larger ones to an anonymous temporary file (Starlette's `SpooledTemporaryFile`, in `/tmp`), which is deleted when the request ends. Files and messages are never stored, and reports are not kept on the server.
+- **Analyses run in worker processes** ([`server/isolation.py`](../src/kestrix/server/isolation.py)). Each email check, file analysis and URL analysis runs in a fresh process forked from a fork server that was started with only `PATH`, locale, time-zone and temp-directory variables, so workers never see the pepper or client secrets; `kestrix serve-hosted` also removes the secret variables (`KESTRIX_SESSION_PEPPER`, `KESTRIX_LOG_SALT`, the client secrets) from its own environment once the settings are loaded, so a restarted fork server cannot inherit them either. A worker gets the input bytes and options, and returns JSON that the server validates against the report model (never a pickle). Limits: 10 seconds of CPU (`RLIMIT_CPU`), 384 MiB of address space on Linux (`RLIMIT_AS`; macOS does not enforce it), no core dumps, and 20 seconds of wall-clock time, after which the worker is killed. A stopped analysis returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`. In a container test a worker for a worst-case 9.9 MiB email peaked at 170 MiB RSS, about 70 MiB of it shared with the fork server.
+- **Concurrency.** One website check or analysis at a time per user (a second one gets 429 `busy`), and at most 2 analyses and 8 website checks across the service (then 503 `busy`). Both answer at once with `Retry-After: 5` and do not count against the hourly limits; requests never wait in a queue or hold a worker thread, so health checks and pages stay responsive.
+- **Logs.** One `kestrix.access` line per request: method, route template (`/api/auth/callback/{provider}`, never the query string), status, duration in ms, and the first 16 hex characters of HMAC-SHA256(log salt, user id). For unmatched paths, the path (without query) is logged instead of a template. Failed sign-ins add a `kestrix.auth` line with a fixed reason code, such as `id_token_wrong_audience`. Each website check adds a `kestrix.webcheck` line, `webcheck user=<user hash> host=<host hash>`, where the host hash is the first 16 hex characters of HMAC-SHA256(log salt, lower-cased host name); see [Abuse handling](#abuse-handling). An unexpected error logs `unexpected error <exception type> on <method>` and never a traceback, which could quote someone's upload. Bodies, file names, emails, URLs or host names being checked, cookies and tokens are never logged.
+- **Database file.** Created `0600`, in a directory created or tightened to `0700` when Kestrix owns it. All queries are parameterized. Deleted rows are overwritten (`PRAGMA secure_delete=ON`), and deleting an account also checkpoints and truncates the write-ahead log, so the email does not linger in the database files (volume snapshots keep it until they expire; see [deploy.md](deploy.md#backups)). A database created by an earlier preview of hosted mode, without `AUTOINCREMENT` ids or the `disabled_at` column, is refused at start-up with exit code 2 and a message: stop the service, move the file and its `-wal` and `-shm` files aside, and start again. Users sign in again to recreate their accounts.
+
+## Abuse handling
+
+Operator commands read the same `KESTRIX_*` variables as `kestrix serve-hosted`, so run them where the service runs, for example `fly ssh console -C "kestrix hosted disable-user --email someone@mail.example"`. They never print secrets.
+
+| Command | What it does |
+| --- | --- |
+| `kestrix hosted disable-user --email ADDRESS` | Disables every account with that email (any provider, case-insensitive): it can no longer sign in, and its sessions are deleted. Exit code 1 if no account matches. |
+| `kestrix hosted enable-user --email ADDRESS` | Lets those accounts sign in again. |
+| `kestrix hosted hash-host HOST` | Prints the host hash that `kestrix.webcheck` log lines carry for a host name or URL, such as one named in an abuse report. Search the logs for it to find the user hash, and so the account, that checked it. |
+
+The host hash changes when `KESTRIX_LOG_SALT` changes (or, without it, the pepper), so hash a reported host with the salt that was in use when the log line was written.
 
 ## Limitations
 
-- **Single instance.** Rate limits are kept in process memory. With more than one instance or worker, each keeps its own counters, so the effective limit is multiplied by the instance count. Run one instance until a shared store is added. The limiter keeps at most 100,000 keys; above that the oldest keys are dropped, which resets their counters.
+- **Single instance.** Rate limits are kept in process memory. With more than one instance or worker, each keeps its own counters, so the effective limit is multiplied by the instance count. Run one instance until a shared store is added. The limiter keeps at most 100,000 keys. Above that it drops keys with no hit inside their window, then the least recently requested ones, until 10% of the room is free; a key that is blocked right now is dropped only when nothing else is left. Dropping a live key resets its counter. A restart resets every counter.
 - **SQLite.** One file on a persistent volume, fine for one instance. It is reached through a small repository class (`server/store.py`) so Postgres can replace it.
 - **Rate limits** (all return 429 `rate_limited` with `Retry-After`):
 
@@ -128,10 +152,12 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   | --- | --- | --- |
   | `POST /api/webcheck` | 20 per hour | User |
   | `POST /api/forensics/file`, `/api/forensics/url`, `/api/mail/analyze` (one shared bucket) | 120 per hour | User |
-  | `GET /api/auth/login/{provider}` | 10 per 10 minutes | Client IP |
-  | `GET /api/auth/callback/{provider}` | 10 per 10 minutes | Client IP |
+  | `GET /api/auth/login/{provider}` | 20 per 10 minutes | Client IP (IPv6: its /64) |
+  | `GET /api/auth/callback/{provider}` | 10 per 10 minutes | Client IP (IPv6: its /64) |
 
 - **Client IP behind a proxy.** By default the client IP is the socket peer, which behind a platform proxy is the proxy itself, so every visitor shares one sign-in limit. Set `KESTRIX_TRUST_PROXY_HEADERS=1` only when a proxy you control always appends the real client address to `X-Forwarded-For`. Kestrix then uses the right-most entry. Without such a proxy the header is attacker-controlled.
-- **Not yet in this slice.** Per-user caps on concurrent analyses and the reviewed (non-draft) privacy notice and terms belong to later slices of ADR 0004. The container image is in [deploy.md](deploy.md).
+- **Not yet in this slice.** The reviewed (non-draft) privacy notice and terms belong to a later slice of ADR 0004. The container image is in [deploy.md](deploy.md).
+- **Worker processes and the entry point.** Python's `multiprocessing` re-runs the server's entry script in each analysis worker, so the hosted server must be started from an import-safe entry point (`kestrix serve-hosted`, or any script with an `if __name__ == "__main__":` guard). Workers are a fork server's children, so they need `/tmp` for its socket.
+- **Uploads can touch disk.** An upload over 1 MiB is spooled to an anonymous file in `/tmp` while it is processed. On Fly.io `/tmp` is on the machine's root disk, not a tmpfs (see [deploy.md](deploy.md)).
 - **Session rows are purged opportunistically.** An expired session is refused and deleted when its cookie is next presented; otherwise its row stays until the next sign-in purges it.
 - **`GET` routes with side effects.** `login` stores a pending attempt and `callback` creates a session. Both are needed for OAuth and both are rate-limited.

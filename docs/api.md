@@ -2,7 +2,7 @@
 
 `kestrix dashboard` starts a local HTTP server that serves the dashboard and a JSON API on `http://localhost:8765`. Use the API when you want to script Kestrix from another program on the same machine, or to see exactly what the dashboard sends. The API calls the same functions as the CLI, so results match. It has no accounts or tokens: it is meant for one user on their own computer, and it refuses requests that do not come from a loopback address name.
 
-The machine-readable schema is served at `GET /api/openapi.json`. To browse it, open it in any OpenAPI viewer. For example, run `npx @redocly/cli preview-docs http://localhost:8765/api/openapi.json`, or paste a saved copy into editor.swagger.io. This page adds what the schema cannot express: error behavior, size limits and the local-only rules. Routes are defined in [`server/app.py`](../src/kestrix/server/app.py) and each module's `api.py`.
+The machine-readable schema is served at `GET /api/openapi.json` (by the local server only; the hosted service does not publish it). To browse it, open it in any OpenAPI viewer. For example, run `npx @redocly/cli preview-docs http://localhost:8765/api/openapi.json`, or paste a saved copy into editor.swagger.io. This page adds what the schema cannot express: error behavior, size limits and the local-only rules. Routes are defined in [`server/app.py`](../src/kestrix/server/app.py) and each module's `api.py`.
 
 ## Contents
 
@@ -94,9 +94,11 @@ Kestrix errors use one envelope:
 | 404 | `not_found`, for an unknown path under `/api/` |
 | 413 | `input_too_large` |
 | 421 | `host_not_allowed` |
-| 429 | `rate_limited` (hosted mode only), with a `Retry-After` header in seconds |
+| 422 | `analysis_timeout` (hosted mode only): the analysis was stopped at its CPU or time limit |
+| 429 | `rate_limited` and `busy` (hosted mode only), with a `Retry-After` header in seconds |
+| 500 | `internal_error`, for an unexpected server error; `detail` is always `unexpected error` and the security headers are still sent |
 | 502 | `upstream_error`, `target_unreachable` |
-| 503 | `engine_unavailable`, `ai_key_missing`, and `dashboard_not_built` for page requests when the dashboard bundle is missing |
+| 503 | `engine_unavailable`, `ai_key_missing`, `busy` (hosted mode only, when the service-wide cap is reached), and `dashboard_not_built` for page requests when the dashboard bundle is missing |
 
 **Validation errors (422).** A request body that does not fit the route's schema (a missing field, a wrong type, a string over its `max_length`, an unknown key where extras are forbidden) gets FastAPI's standard response instead of the envelope:
 
@@ -171,7 +173,7 @@ The route is in [`webcheck/api.py`](../src/kestrix/webcheck/api.py); behavior an
 | --- | --- | --- |
 | `POST /api/webcheck` | `{"url": string (1 to 2,048 characters), "allow_private": bool = false, "site_type": "static" \| "static_api" \| "dynamic" \| null = null}` | `Report`: `notice`, `requested_url`, `final_url`, `status_code`, `headers_checked`, `redirect_chain`, `tls`, `grade`, `score`, `findings` (each may carry `baseline_severity` and `context`), `timings`, `profile` |
 
-A target that resolves to a non-public address returns 403 `target_not_allowed` unless `allow_private` is true. Connection failures and timeouts return 502 `target_unreachable`; too many redirects and other HTTP failures return 502 `upstream_error`.
+A target that resolves to a non-public address returns 403 `target_not_allowed` unless `allow_private` is true. A host name that is not a valid DNS name returns 400 `invalid_url`. Connection failures, DNS failures and timeouts (the whole check has 10 seconds) return 502 `target_unreachable`; too many redirects, a broken response and other HTTP failures return 502 `upstream_error`.
 
 ## Bitcoin
 
@@ -201,7 +203,7 @@ curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_d
 
 - A body that is not `multipart/form-data`, has no `file` field, or has extra fields returns 400 `invalid_input`.
 - The body is counted while it streams, and the request is refused with 413 `input_too_large` once it passes 25 MiB plus 64 KiB of multipart overhead.
-- Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels returns 400 `nesting_too_deep`; too many parts or headers, or an oversized header, return 413 `input_too_large`.
+- Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels, or a header nested too deeply to parse (such as thousands of nested comments), returns 400 `nesting_too_deep`; too many parts or headers, an oversized header or header block, or a `Content-Type` or `Content-Disposition` with more than 50 parameters return 413 `input_too_large`.
 - The report never contains the message body, link text or attachment bytes. The one exception is an `intent` finding, whose evidence is the matched cue phrase (at most 60 characters).
 
 ## Hosted mode
@@ -209,13 +211,18 @@ curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_d
 With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, signed-in service. Setup, security properties and limits are in [hosted.md](hosted.md). Everything above still applies, with these differences:
 
 - **Host and origin.** `Host` must be the host of `KESTRIX_PUBLIC_ORIGIN` (no loopback names), else 421. On state-changing requests, `Origin`, when sent, must equal `KESTRIX_PUBLIC_ORIGIN` exactly, else 403 `cross_site_request`.
-- **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`.
+- **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and every `/api/` response carries `Cache-Control: no-store`.
+- **No API schema.** `GET /api/openapi.json` is not served (401 without a session, 404 with one).
 - **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not.
-- **Sign-in required.** Every `/api/` route except `GET /api/health`, `GET /api/openapi.json` and the `/api/auth/*` routes marked public below returns 401 `sign_in_required` without a valid session cookie.
+- **Sign-in required.** Every `/api/` route except `GET /api/health` and the `/api/auth/*` routes marked public below returns 401 `sign_in_required` without a valid session cookie.
 - **CSRF.** A signed-in `POST`, `PUT`, `PATCH` or `DELETE` must send `X-CSRF-Token` with the token from `GET /api/auth/me`, else 403 `csrf_failed`.
-- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 10 sign-in starts and 10 callbacks per client IP per 10 minutes.
+- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 20 sign-in starts and 10 callbacks per client IP (IPv6: per /64) per 10 minutes.
+- **One request at a time.** A user's second website check or analysis while the first is still running gets 429 `busy` with `Retry-After: 5`. When the service already runs 2 analyses or 8 website checks, the next one gets 503 `busy` with `Retry-After: 5`. Neither counts against the hourly limits, and nothing is queued.
+- **Uploads.** `POST /api/forensics/file` and `POST /api/mail/analyze` accept at most 10 MiB of file or message (10 MiB plus 64 KiB of request body); more gives 413 `input_too_large`.
+- **Analyses run in a worker process** with 10 seconds of CPU, 384 MiB of address space (on Linux) and 20 seconds of wall-clock time. An analysis stopped by these limits returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`.
+- **Sign-in from other sites.** `GET /api/auth/login/{provider}` with `Sec-Fetch-Site: cross-site` is refused with 403 `cross_site_request` unless it is a top-level navigation (`Sec-Fetch-Mode: navigate` and `Sec-Fetch-Dest: document`); refused requests do not count against the limit.
 - **Health.** `GET /api/health` adds `"mode": "hosted"` and lists only `["forensics", "webcheck", "mail"]`.
-- **Website check.** `POST /api/webcheck` also takes `"authorized": bool` and refuses unknown keys. `authorized` must be `true` ("I own or am authorized to test this site") and `allow_private` must be `false`; otherwise 400 `invalid_input`.
+- **Website check.** `POST /api/webcheck` also takes `"authorized": bool` and refuses unknown keys. `authorized` must be `true` ("I own or am authorized to test this site") and `allow_private` must be `false`; otherwise 400 `invalid_input`. Only ports 80 and 443 can be checked, on the first request and every redirect (403 `target_not_allowed`), and every connection failure, timeout or broken response is reported as 502 `target_unreachable` with the detail `the site could not be reached`.
 
 | Route | Public | Request | Response |
 | --- | --- | --- | --- |
@@ -224,10 +231,12 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 | `GET /api/auth/callback/{provider}` | Yes | The provider's `code` and `state` | 303 to `next` (default `/app`) with the `__Host-kx_session` cookie. Any failure gives 303 to `/welcome?signin=failed` with no detail. |
 | `GET /api/auth/me` | Yes | none | `{"signed_in": false}`, or `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string}`. Sent with `Cache-Control: no-store`. |
 | `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when signed in | 204. Deletes the session and clears the cookie. |
-| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user and every session of that user, then clears the cookie. |
+| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every session of that user and their rate-limit counters, then clears the cookie. |
 
 ```json
 {"reason": "sign_in_required", "detail": "sign in to use this feature"}
 {"reason": "csrf_failed", "detail": "missing or invalid X-CSRF-Token header"}
 {"reason": "rate_limited", "detail": "too many requests; try again in 1200 seconds"}
+{"reason": "busy", "detail": "your previous check is still running; try again when it finishes"}
+{"reason": "analysis_timeout", "detail": "the analysis took too long and was stopped; the input may be too complex to check here"}
 ```

@@ -15,7 +15,7 @@ When you sign in, we store one account record with:
 - the sign-in provider you used (Google or GitHub) and that provider's identifier for your account;
 - your verified email address;
 - your display name;
-- when the account was created and when you last signed in.
+- when the account was created and when you last signed in, and, if we disable it for abuse, when that happened.
 
 We do not store passwords, and we do not keep the access tokens Google or GitHub give us; they are used once during sign-in and discarded. We ask Google only for your basic profile and email (openid, email, profile) and GitHub only for your profile and email addresses (read:user, user:email).
 
@@ -32,26 +32,30 @@ Your browser also remembers your light or dark theme choice and which help panel
 
 ## Files, emails and links you check
 
-- Files and emails you upload are analyzed in memory (very large uploads may pass through an unnamed temporary file while they are processed). They are never written to our database and are not kept after the analysis.
+- Files and emails you upload are analyzed in a separate, short-lived process on our server. While an upload is received and analyzed it is held in memory, and an upload larger than 1 MB may be spooled briefly to temporary disk storage; it is deleted as soon as the analysis ends. Uploads are never written to our database and are not kept after the analysis.
 - The report is sent back to your browser. We do not keep a copy.
 - Links you check in forensics are examined as text; Kestrix does not visit them.
-- For a website check, our server sends one request to the site you enter (following up to five redirects) plus one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. We do not store the address you checked or the result.
+- For a website check, our server sends one request to the site you enter (following up to five redirects) plus one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. We do not store the address you checked or the result; our logs keep only a keyed hash of the site's host name (see Logs).
 
 ## Logs
 
 For each request our server logs the time, the kind of request and which page or API route it was for, the result code, how long it took, and a salted hash of your account identifier (not your email or name). Failed sign-ins add a short reason code.
 
+For each website check we also log your hashed account identifier and a keyed hash of the site's host name, not the name itself. If a site's owner reports abuse from our service, we can hash the host name they give us and find the account that checked it; the hash cannot be turned back into a host name.
+
 Logs never contain file contents, file names, email messages, email addresses, the websites or links you check, cookies or tokens. Log retention: [retention period to be set by the owner].
 
 ## Rate limits
 
-To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, and 10 sign-in attempts per network address per 10 minutes. The counters live only in the server's memory and are not stored.
+To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts and 10 returns from Google or GitHub per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.
 
 ## How long we keep your data, and deleting it
 
 Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and every session immediately. Signing out deletes that session.
 
-Backups: [the owner will describe any backups of the account database and how long they last].
+Backups: our hosting provider keeps daily snapshots of the storage volume that holds the account database, for 14 days. After you delete your account, its record can remain in those snapshots until they expire, at most 14 days later.
+
+If an account is used to abuse the service, we can disable it: it can no longer sign in and its sessions end. The account record, with the time it was disabled, stays until it is deleted.
 
 ## Who else is involved
 
