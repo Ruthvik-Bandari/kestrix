@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
+#
+# Fly.io configuration for Kestrix hosted mode (ADR 0004, slice H3). Step by step: docs/deploy.md.
+#
+# Before the first deploy, replace the three placeholders:
+#   app                    -> your Fly app name
+#   primary_region         -> the region closest to your users (`fly platform regions`)
+#   kestrix.example.org    -> your public host, in BOTH KESTRIX_PUBLIC_ORIGIN and the check's Host header
+#
+# Secrets are not set here. Set them with `fly secrets set` (docs/deploy.md, "Set the secrets").
+
+app = "kestrix"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  KESTRIX_MODE = "hosted"
+  KESTRIX_DB = "/data/kestrix.db"
+  # Not a secret: it is the site's address. It must match the check's Host header below,
+  # because the server answers only requests whose Host is this origin's host (421 otherwise).
+  KESTRIX_PUBLIC_ORIGIN = "https://kestrix.example.org"
+  PORT = "8000"
+  # KESTRIX_TRUST_PROXY_HEADERS stays unset. Fly documents the right-most X-Forwarded-For entry
+  # as the app's own IP, not the client, so trusting it would not give per-client sign-in limits.
+  # See docs/deploy.md, "Client IPs and rate limits".
+  # Per-client sign-in limits come from Fly-Client-IP instead. Run the spoofing check in
+  # docs/deploy.md after the first deploy; remove this line if it fails.
+  KESTRIX_CLIENT_IP_HEADER = "Fly-Client-IP"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Cheapest setting: the machine stops when idle and starts on the next request (a cold start of
+  # a few seconds). Rate-limit counters live in memory, so every stop resets them. For launch, set
+  # auto_stop_machines = "off" and min_machines_running = 1 so the hourly limits hold.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 50
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/api/health"
+
+    [http_service.checks.headers]
+      Host = "kestrix.example.org"
+      X-Forwarded-Proto = "https"
+
+# One machine only: rate limits are per process and SQLite is one file on one volume.
+# Scale with `fly scale count 1`; never add a second machine or region.
+[[mounts]]
+  source = "kestrix_data"
+  destination = "/data"
+  initial_size = "1gb"
+  snapshot_retention = 14
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # A 50 MB upload peaked near 125 MiB in a local test (docs/deploy.md); 512 MB leaves headroom
+  # for a few concurrent analyses. 256mb is possible if cost matters more than concurrency.
+  memory = "512mb"

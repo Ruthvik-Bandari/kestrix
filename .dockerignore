@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
+#
+# Allowlist: the build context holds only what the Dockerfile copies. Everything else
+# (.git, data/, docs/, hpc/, tests/, scripts/, src/kestrixbench, .venv, secrets, .env files,
+# caches and scratch output) never reaches the Docker daemon or a remote builder.
+*
+
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!NOTICE
+!src/kestrix/
+!frontend/
+
+# Generated or local-only files inside the allowed directories.
+src/kestrix/server/static/
+frontend/node_modules/
+frontend/dist/
+**/__pycache__/
+**/*.py[cod]
+**/*.tsbuildinfo
+**/.DS_Store
+**/.env
+**/.env.*
+**/*.pem
+**/*.key

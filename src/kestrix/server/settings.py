@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,6 +50,8 @@ class HostedSettings:
     log_salt: bytes = field(repr=False)
     providers: Mapping[str, OAuthClient] = field(default_factory=dict)
     trust_proxy_headers: bool = False
+    # A header that the platform's proxy always overwrites with the client address (Fly: Fly-Client-IP).
+    client_ip_header: str | None = None
     abuse_contact: str | None = None
 
 
@@ -103,6 +106,17 @@ def _providers(env: Mapping[str, str]) -> dict[str, OAuthClient]:
     return providers
 
 
+def _client_ip_header(env: Mapping[str, str]) -> str | None:
+    value = env.get("KESTRIX_CLIENT_IP_HEADER", "").strip()
+    if not value:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9-]{1,64}", value):
+        raise SettingsError("KESTRIX_CLIENT_IP_HEADER must be a header name such as Fly-Client-IP")
+    if _flag(env, "KESTRIX_TRUST_PROXY_HEADERS"):
+        raise SettingsError("set KESTRIX_CLIENT_IP_HEADER or KESTRIX_TRUST_PROXY_HEADERS, not both")
+    return value.lower()
+
+
 def _abuse_contact(env: Mapping[str, str]) -> str | None:
     value = env.get("KESTRIX_ABUSE_CONTACT", "").strip()
     if not value:
@@ -144,6 +158,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
             log_salt=log_salt,
             providers=_providers(env),
             trust_proxy_headers=_flag(env, "KESTRIX_TRUST_PROXY_HEADERS"),
+            client_ip_header=_client_ip_header(env),
             abuse_contact=_abuse_contact(env),
         ),
     )

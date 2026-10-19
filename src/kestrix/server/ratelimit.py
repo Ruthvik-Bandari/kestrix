@@ -56,13 +56,24 @@ class RateLimiter:
             del self._hits[key]
 
 
-def client_ip(request: Request, *, trust_proxy_headers: bool) -> str:
-    """The socket peer, or with ``trust_proxy_headers`` the right-most ``X-Forwarded-For`` entry.
+def client_ip(request: Request, *, trust_proxy_headers: bool, client_ip_header: str | None = None) -> str:
+    """The socket peer; or the value of ``client_ip_header``; or, with ``trust_proxy_headers``,
+    the right-most ``X-Forwarded-For`` entry.
 
-    Only the right-most entry is used because it is the one appended by the proxy directly in
-    front of the server; entries further left are whatever the client chose to send.
+    ``client_ip_header`` is for platforms whose proxy always overwrites one header with the
+    address it accepted the connection from (Fly: ``Fly-Client-IP``); trust it only after checking
+    that a header sent by the client is replaced. Only the right-most ``X-Forwarded-For`` entry is
+    used because it is the one appended by the proxy directly in front of the server; entries
+    further left are whatever the client chose to send.
     """
-    if trust_proxy_headers:
+    if client_ip_header:
+        values = request.headers.getlist(client_ip_header)
+        if len(values) == 1:
+            try:
+                return str(ipaddress.ip_address(values[0].strip()))
+            except ValueError:
+                pass
+    elif trust_proxy_headers:
         forwarded = ",".join(request.headers.getlist("x-forwarded-for")).split(",")[-1].strip()
         try:
             return str(ipaddress.ip_address(forwarded))

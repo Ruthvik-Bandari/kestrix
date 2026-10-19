@@ -81,7 +81,11 @@ class HostedGate(BaseHTTPMiddleware):
             return _deny("not_found", "this route is not available on the hosted service", 404)
         for prefix, (bucket, limit, window) in IP_LIMITS.items():
             if path.startswith(prefix):
-                ip = client_ip(request, trust_proxy_headers=self.auth.settings.trust_proxy_headers)
+                ip = client_ip(
+                    request,
+                    trust_proxy_headers=self.auth.settings.trust_proxy_headers,
+                    client_ip_header=self.auth.settings.client_ip_header,
+                )
                 retry = self.limiter.hit(f"{bucket}:{ip}", limit, window)
                 if retry is not None:
                     return _rate_limited(retry)

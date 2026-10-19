@@ -176,6 +176,23 @@ def test_client_ip_uses_the_socket_unless_proxy_headers_are_trusted():
     assert client_ip(_request("10.0.0.5", ["not-an-ip"]), trust_proxy_headers=True) == "10.0.0.5"
 
 
+def test_client_ip_header_is_read_only_when_configured_and_well_formed():
+    """Behind Fly every request comes from the proxy; Fly-Client-IP carries the real client."""
+
+    def req(*values: str) -> Request:
+        headers = [(b"fly-client-ip", value.encode()) for value in values]
+        return Request({"type": "http", "headers": headers, "client": ("172.16.0.2", 1234)})
+
+    assert client_ip(req("198.51.100.7"), trust_proxy_headers=False, client_ip_header="fly-client-ip") == "198.51.100.7"
+    assert client_ip(req("198.51.100.7"), trust_proxy_headers=False) == "172.16.0.2"  # not configured: ignored
+    assert client_ip(req("not-an-ip"), trust_proxy_headers=False, client_ip_header="fly-client-ip") == "172.16.0.2"
+    # Two copies means something upstream did not overwrite it: fall back to the socket peer.
+    assert (
+        client_ip(req("1.1.1.1", "2.2.2.2"), trust_proxy_headers=False, client_ip_header="fly-client-ip")
+        == "172.16.0.2"
+    )
+
+
 # Website check
 
 

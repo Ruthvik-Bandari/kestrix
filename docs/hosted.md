@@ -1,6 +1,6 @@
 # Hosted mode (preview)
 
-Hosted mode runs Kestrix as a public website where people sign in with Google or GitHub and use the website check, file and URL forensics, and the email check in the browser. It is the H2 slice of [ADR 0004](adr/0004-hosted-mode.md): the backend only. The container image and deploy configuration (H3) and the privacy notice and terms (H4) are not done yet, so do not launch a public service on this alone.
+Hosted mode runs Kestrix as a public website where people sign in with Google or GitHub and use the website check, file and URL forensics, and the email check in the browser. It is the H2 slice of [ADR 0004](adr/0004-hosted-mode.md): the backend. The container image and Fly.io configuration (H3) are described in [deploy.md](deploy.md). The privacy notice and terms (H4) are not done yet, so do not launch a public service on this alone.
 
 The local install is unchanged. Hosted mode is on only when `KESTRIX_MODE=hosted` is set or the server is started with `kestrix serve-hosted`.
 
@@ -41,6 +41,7 @@ All settings come from environment variables, which on a hosting platform should
 | `KESTRIX_DB` | No | SQLite file. Default: `hosted.sqlite3` in the config directory (`$KESTRIX_HOME`, else `~/.config/kestrix`). Put it on a persistent volume. |
 | `KESTRIX_LOG_SALT` | No | At least 16 bytes. Salt for the user-id hash in logs. Default: derived from the pepper. |
 | `KESTRIX_ABUSE_CONTACT` | No | Printable ASCII, at most 200 characters, such as `abuse@kestrix.example.org`. Added to the website check's `User-Agent`. |
+| `KESTRIX_CLIENT_IP_HEADER` | No | A header your platform's proxy always overwrites with the client address, such as `Fly-Client-IP`; used for per-IP sign-in limits. Cannot be combined with `KESTRIX_TRUST_PROXY_HEADERS`. See [deploy.md](deploy.md#client-ips-and-rate-limits). |
 | `KESTRIX_TRUST_PROXY_HEADERS` | No | `1` to take the client IP for rate limits from the right-most `X-Forwarded-For` entry. See [Limitations](#limitations). |
 | `PORT` | No | Listening port for `kestrix serve-hosted` (default 8000). |
 
@@ -131,6 +132,6 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   | `GET /api/auth/callback/{provider}` | 10 per 10 minutes | Client IP |
 
 - **Client IP behind a proxy.** By default the client IP is the socket peer, which behind a platform proxy is the proxy itself, so every visitor shares one sign-in limit. Set `KESTRIX_TRUST_PROXY_HEADERS=1` only when a proxy you control always appends the real client address to `X-Forwarded-For`. Kestrix then uses the right-most entry. Without such a proxy the header is attacker-controlled.
-- **Not yet in this slice.** Per-user caps on concurrent analyses, the container image, the privacy notice and terms, and the dashboard's sign-in screens belong to later slices of ADR 0004.
+- **Not yet in this slice.** Per-user caps on concurrent analyses, the privacy notice and terms, and the dashboard's sign-in screens belong to later slices of ADR 0004. The container image is in [deploy.md](deploy.md).
 - **Session rows are purged opportunistically.** An expired session is refused and deleted when its cookie is next presented; otherwise its row stays until the next sign-in purges it.
 - **`GET` routes with side effects.** `login` stores a pending attempt and `callback` creates a session. Both are needed for OAuth and both are rate-limited.

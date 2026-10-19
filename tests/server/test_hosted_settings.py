@@ -33,6 +33,9 @@ def test_a_complete_hosted_configuration_loads():
     assert list(hosted.providers) == ["google"]
     assert hosted.db_path == config.config_dir() / "hosted.sqlite3"
     assert not hosted.trust_proxy_headers
+    assert hosted.client_ip_header is None
+    fly = load_settings({**BASE, "KESTRIX_CLIENT_IP_HEADER": "Fly-Client-IP"}).hosted
+    assert fly is not None and fly.client_ip_header == "fly-client-ip"
     assert PEPPER not in repr(hosted) and GOOGLE_SECRET not in repr(hosted)
 
 
@@ -40,6 +43,8 @@ def test_a_complete_hosted_configuration_loads():
     ("change", "message"),
     [
         ({"KESTRIX_MODE": "public"}, "KESTRIX_MODE"),
+        ({"KESTRIX_CLIENT_IP_HEADER": "Fly Client IP"}, "header name"),
+        ({"KESTRIX_CLIENT_IP_HEADER": "Fly-Client-IP", "KESTRIX_TRUST_PROXY_HEADERS": "1"}, "not both"),
         ({"KESTRIX_PUBLIC_ORIGIN": ""}, "KESTRIX_PUBLIC_ORIGIN"),
         ({"KESTRIX_PUBLIC_ORIGIN": "http://kestrix.example"}, "https"),
         ({"KESTRIX_PUBLIC_ORIGIN": "https://kestrix.example/app"}, "only a scheme and host"),
