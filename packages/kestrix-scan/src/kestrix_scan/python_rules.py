@@ -14,7 +14,8 @@ import ast
 import re
 from collections.abc import Iterator
 
-from .models import Severity, SkipReason, clip_snippet
+from . import taint
+from .models import Confidence, Severity, SkipReason, TraceStep, clip_snippet
 from .registry import Hit
 
 _MAX_DEPTH = 40  # bound on recursive expression inspection
@@ -40,6 +41,7 @@ _SQL = re.compile(
     r"(?is)\b(?:select\b.{0,500}?\bfrom|insert\s+into|update\b.{0,200}?\bset|delete\s+from"
     r"|(?:create|alter|drop)\s+(?:table|database|index|view)|where\b.{0,200}?(?:=|<|>|\blike\b|\bin\b))"
 )
+_HTTP_VERBS = ("get", "post", "put", "patch", "delete", "head", "options")
 _HTTP_METHODS = frozenset(
     {"get", "post", "put", "patch", "delete", "head", "options", "request", "send", "stream", "Client", "AsyncClient"}
 )
@@ -58,12 +60,45 @@ _XML_PARSE = frozenset(
     "xml.sax.parse",
     "xml.sax.parseString",
 }
-_PATH_SINKS = frozenset({"open", "io.open", "os.open", "os.path.join", "flask.send_file"})
-_SANITIZERS = frozenset({"werkzeug.utils.secure_filename", "os.path.basename"})
-_FLASK_SOURCES = frozenset(
-    {"args", "form", "files", "values", "json", "cookies", "headers", "data", "get_json", "get_data", "view_args"}
-)
-_DJANGO_SOURCES = frozenset({"GET", "POST", "FILES", "COOKIES"})
+# Taint sinks: call -> (position, keyword) of the argument that must not carry tainted data.
+_PATH_SINKS: dict[str, tuple[int, str]] = {
+    "open": (0, "file"),
+    "io.open": (0, "file"),
+    "os.open": (0, "path"),
+    "flask.send_file": (0, "path_or_file"),
+    "starlette.responses.FileResponse": (0, "path"),
+    "fastapi.responses.FileResponse": (0, "path"),
+}
+_PATHLIB_FILE_METHODS = frozenset({"open", "read_text", "read_bytes", "write_text", "write_bytes"})
+_URL_SINKS: dict[str, tuple[int, str]] = {
+    **{f"{lib}.{verb}": (0, "url") for lib in ("requests", "httpx") for verb in _HTTP_VERBS},
+    "requests.request": (1, "url"),
+    "httpx.request": (1, "url"),
+    "httpx.stream": (1, "url"),
+    "urllib.request.urlopen": (0, "url"),
+    "urllib.request.Request": (0, "url"),
+}
+_REDIRECT_SINKS: dict[str, tuple[int, str]] = {
+    "flask.redirect": (0, "location"),
+    "django.shortcuts.redirect": (0, "to"),
+    "django.http.HttpResponseRedirect": (0, "redirect_to"),
+    "django.http.HttpResponsePermanentRedirect": (0, "redirect_to"),
+    "starlette.responses.RedirectResponse": (0, "url"),
+    "fastapi.responses.RedirectResponse": (0, "url"),
+}
+_MARKUP_SINKS: dict[str, tuple[int, str]] = {
+    "markupsafe.Markup": (0, "base"),
+    "flask.Markup": (0, "base"),
+    "django.utils.safestring.mark_safe": (0, "s"),
+}
+_TEMPLATE_SINKS: dict[str, tuple[int, str]] = {
+    "flask.render_template_string": (0, "source"),
+    "jinja2.Template": (0, "source"),
+}
+_LLM_CWE = {taint.CODE: "CWE-94", taint.SHELL: "CWE-78", taint.SQL: "CWE-89", taint.PATH: "CWE-22"}
+_LLM_WHAT = {taint.CODE: "code", taint.SHELL: "command", taint.SQL: "query", taint.PATH: "path"}
+_MODEL_EXTENSIONS = (".pkl", ".pickle", ".joblib", ".pt", ".pth", ".ckpt", ".bin", ".model", ".sav")
+_MODEL_WORDS = frozenset({"model", "models", "checkpoint", "ckpt", "weights", "estimator", "classifier", "regressor"})
 _SECRET_WORDS = frozenset(
     {"token", "secret", "password", "passwd", "pwd", "key", "apikey", "nonce", "salt", "otp", "csrf"}
 )
@@ -147,8 +182,8 @@ class _Checker:
         self.parents: dict[ast.AST, ast.AST] = {}
         self.bindings: dict[ast.AST, dict[str, list[ast.expr | None]]] = {}
         self.hits: list[Hit] = []
-        self._normalized: dict[ast.AST, bool] = {}
         self._index()
+        self.taint = taint.analyze(tree, self) if taint.might_be_tainted(text) else {}
 
     # ----- indexing
 
@@ -292,50 +327,6 @@ class _Checker:
         dynamic, text = self._sql_text(node, depth)
         return (True, text) if dynamic or not self.literal(node) else (False, text)
 
-    def _request_source(self, node: ast.AST) -> bool:
-        if not isinstance(node, ast.Attribute):
-            return False
-        name = self.qualname(node)
-        if name is not None and name.startswith("flask.request.") and name.split(".")[2] in _FLASK_SOURCES:
-            return True
-        if node.attr not in _DJANGO_SOURCES:
-            return False
-        holder = node.value
-        if isinstance(holder, ast.Name):
-            return holder.id == "request" and "request" not in self.aliases
-        return isinstance(holder, ast.Attribute) and holder.attr == "request"
-
-    def tainted(self, node: ast.AST, depth: int = 0) -> bool:
-        """True when ``node`` contains request data that did not pass through a sanitizer."""
-        stack = [node]
-        while stack:
-            current = stack.pop()
-            if isinstance(current, ast.Call) and self.qualname(current.func) in _SANITIZERS:
-                continue
-            if self._request_source(current):
-                return True
-            if (
-                isinstance(current, ast.Name)
-                and isinstance(current.ctx, ast.Load)
-                and depth < _NAME_HOPS
-                and any(v is not None and self.tainted(v, depth + 1) for v in self.lookup(current) or ())
-            ):
-                return True
-            stack.extend(ast.iter_child_nodes(current))
-        return False
-
-    def _normalizes_paths(self, scope: ast.AST) -> bool:
-        """True when the function resolves paths and checks containment, which the rule accepts as a guard."""
-        if scope not in self._normalized:
-            calls = [n for n in ast.walk(scope) if isinstance(n, ast.Call)]
-            names = {self.qualname(c.func) for c in calls}
-            attrs = {c.func.attr for c in calls if isinstance(c.func, ast.Attribute)}
-            resolves = bool(names & {"os.path.realpath", "os.path.abspath"}) or "resolve" in attrs
-            self._normalized[scope] = (
-                "is_relative_to" in attrs or "os.path.commonpath" in names or (resolves and "startswith" in attrs)
-            )
-        return self._normalized[scope]
-
     def _random_call(self, node: ast.AST) -> bool:
         for sub in ast.walk(node):
             if isinstance(sub, ast.Call):
@@ -355,7 +346,17 @@ class _Checker:
 
     # ----- reporting
 
-    def hit(self, rule_id: str, node: ast.AST, message: str, severity: Severity | None = None) -> None:
+    def hit(
+        self,
+        rule_id: str,
+        node: ast.AST,
+        message: str,
+        severity: Severity | None = None,
+        *,
+        confidence: Confidence | None = None,
+        cwe: str | None = None,
+        trace: tuple[TraceStep, ...] = (),
+    ) -> None:
         line = getattr(node, "lineno", 1)
         text = self.lines[line - 1] if 0 < line <= len(self.lines) else ""
         self.hits.append(
@@ -367,6 +368,9 @@ class _Checker:
                 message=message,
                 snippet=clip_snippet(text),
                 severity=severity,
+                confidence=confidence,
+                cwe=cwe,
+                trace=trace,
             )
         )
 
@@ -394,25 +398,34 @@ class _Checker:
         attr = node.func.attr if isinstance(node.func, ast.Attribute) else None
         first = node.args[0] if node.args and not isinstance(node.args[0], ast.Starred) else None
         if name in {"eval", "exec"} and first is not None and not self.literal(first):
-            self.hit(f"py.exec.{name}", node, f"{name}() runs a value that is not a literal as code.")
+            message = f"{name}() runs a value that is not a literal as code."
+            self._sink(f"py.exec.{name}", node, message, arg=first, sink_class=taint.CODE, sink=f"{name}()")
         elif name == "compile" and (source := _argument(node, 0, "source")) is not None and not self.literal(source):
             self.hit("py.exec.compile", node, "compile() builds code from a value that is not a literal.")
         elif name in _SUBPROCESS_SHELL_KW and _truthy_const(_keyword(node, "shell")):
             command = _argument(node, 0, "args")
             if command is not None:
                 fixed = self.literal(command)
-                self.hit(
+                self._sink(
                     "py.subprocess.shell_true",
                     node,
                     f"{name} runs {'a fixed' if fixed else 'a built'} command through the shell (shell=True).",
-                    "low" if fixed else None,
+                    arg=command,
+                    sink_class=taint.SHELL,
+                    sink=f"{name}(shell=True)",
+                    severity="low" if fixed else None,
                 )
         elif name in _ALWAYS_SHELL and first is not None and not self.literal(first):
-            self.hit("py.subprocess.shell_true", node, f"{name} always uses the shell, here with a built command.")
+            message = f"{name} always uses the shell, here with a built command."
+            self._sink("py.subprocess.shell_true", node, message, arg=first, sink_class=taint.SHELL, sink=f"{name}()")
         elif name in _OS_SHELL and first is not None and not self.literal(first):
-            self.hit("py.os.system", node, f"{name} runs a built command through the shell.")
+            message = f"{name} runs a built command through the shell."
+            self._sink("py.os.system", node, message, arg=first, sink_class=taint.SHELL, sink=f"{name}()")
         elif name in _PICKLE_LIKE:
-            self.hit("py.deserialize.pickle", node, f"{name} can run code embedded in the data it loads.")
+            if name.endswith((".load", ".loads")) and first is not None and self._model_file(first):
+                self.hit("py.ml.unsafe_model_load", node, f"{name} loads a model file, which can run code it contains.")
+            else:
+                self.hit("py.deserialize.pickle", node, f"{name} can run code embedded in the data it loads.")
         elif name in _YAML_ALWAYS_UNSAFE or (
             name in _YAML_LOAD and ((loader := _argument(node, 1, "Loader")) is None or self._unsafe_loader(loader))
         ):
@@ -420,7 +433,10 @@ class _Checker:
         elif (attr in _SQL_METHODS or name in _SQL_TEXT) and first is not None:
             dynamic, text = self._sql_text(first)
             if dynamic and _SQL.search(text):
-                self.hit("py.sql.string_built", node, "SQL text is built with string formatting or concatenation.")
+                message = "SQL text is built with string formatting or concatenation."
+                self._sink(
+                    "py.sql.string_built", node, message, arg=first, sink_class=taint.SQL, sink=f"{attr or name}()"
+                )
         if _is_const(_keyword(node, "verify"), False) and (
             (name is not None and name.startswith(("requests.", "httpx.")))
             or (attr in _HTTP_METHODS and self.imported & {"requests", "httpx"})
@@ -447,12 +463,145 @@ class _Checker:
             self._jwt(node)
         if name in _XML_PARSE and first is not None and not self.literal(first):
             self.hit("py.xml.unsafe_parser", node, f"{name} parses XML that is not a literal with the stdlib parser.")
-        if (
-            name in _PATH_SINKS
-            and any(self.tainted(a) for a in [*node.args, *(k.value for k in node.keywords)])
-            and not self._normalizes_paths(self.scope_of(node))
+        self._model_load(node, name)
+        if self.taint:
+            self._taint_sinks(node, name)
+
+    # ----- taint sinks
+
+    def _flow(self, arg: ast.AST | None, sink_class: str, *, remote: bool) -> taint.Origin | None:
+        if arg is None:
+            return None
+        return taint.best(self.taint.get(arg, ()), sink_class, taint.REMOTE_KINDS if remote else None)
+
+    @staticmethod
+    def _trace(origin: taint.Origin, node: ast.AST, sink: str) -> tuple[TraceStep, ...]:
+        return (*origin.trace, TraceStep(getattr(node, "lineno", 1), f"reaches {sink}"))
+
+    def _sink(
+        self,
+        rule_id: str,
+        node: ast.Call,
+        message: str,
+        *,
+        arg: ast.AST,
+        sink_class: str,
+        sink: str,
+        severity: Severity | None = None,
+    ) -> None:
+        """A pattern rule's hit, with a trace and the source's confidence when tainted data reaches it."""
+        origin = self._flow(arg, sink_class, remote=False)
+        if origin is None:
+            self.hit(rule_id, node, message, severity)
+        elif origin.kind == "llm":
+            self._llm_hit(node, origin, sink_class, sink)
+        else:
+            source_line = origin.trace[0].line
+            self.hit(
+                rule_id,
+                node,
+                f"{message} The value comes from {origin.label} (line {source_line}).",
+                severity,
+                confidence=taint.CONFIDENCE[origin.kind],
+                trace=self._trace(origin, node, sink),
+            )
+
+    def _llm_hit(self, node: ast.Call, origin: taint.Origin, sink_class: str, sink: str) -> None:
+        what = _LLM_WHAT[sink_class]
+        self.hit(
+            "py.llm.output_to_sink",
+            node,
+            f"{origin.label} (line {origin.trace[0].line}) reaches {sink}. A prompt injection in "
+            f"anything the model read can choose this {what}.",
+            confidence="high",
+            cwe=_LLM_CWE[sink_class],
+            trace=self._trace(origin, node, sink),
+        )
+
+    def _taint_sinks(self, node: ast.Call, name: str | None) -> None:
+        func = node.func
+        if name in _PATH_SINKS:
+            self._path_sink(node, _argument(node, *_PATH_SINKS[name]), name)
+        elif isinstance(func, ast.Attribute) and func.attr in _PATHLIB_FILE_METHODS and "pathlib" in self.imported:
+            self._path_sink(node, func.value, f"Path.{func.attr}()")
+        for table, rule_id, sink_class, verb in (
+            (_URL_SINKS, "py.ssrf.request", taint.URL, "fetches a URL taken from"),
+            (_REDIRECT_SINKS, "py.redirect.open", taint.REDIRECT, "redirects to a location taken from"),
+            (_MARKUP_SINKS, "py.xss.markup", taint.HTML, "marks as safe HTML a value taken from"),
+            (_TEMPLATE_SINKS, "py.xss.markup", taint.TEMPLATE, "uses as template source a value taken from"),
         ):
-            self.hit("py.path.traversal", node, f"{name} receives a path taken from request data.")
+            if name not in table:
+                continue
+            origin = self._flow(_argument(node, *table[name]), sink_class, remote=True)
+            if origin is not None:
+                self.hit(
+                    rule_id,
+                    node,
+                    f"{name} {verb} {origin.label} (line {origin.trace[0].line}).",
+                    confidence=taint.CONFIDENCE[origin.kind],
+                    cwe="CWE-1336" if sink_class == taint.TEMPLATE else None,
+                    trace=self._trace(origin, node, f"{name}()"),
+                )
+
+    def _path_sink(self, node: ast.Call, arg: ast.AST | None, sink: str) -> None:
+        origin = self._flow(arg, taint.PATH, remote=True)
+        if origin is None:
+            return
+        if origin.kind == "llm":
+            self._llm_hit(node, origin, taint.PATH, sink)
+            return
+        self.hit(
+            "py.path.traversal",
+            node,
+            f"{sink} receives a path taken from {origin.label} (line {origin.trace[0].line}).",
+            confidence=taint.CONFIDENCE[origin.kind],
+            trace=self._trace(origin, node, sink),
+        )
+
+    # ----- model loading
+
+    def _model_load(self, node: ast.Call, name: str | None) -> None:
+        if name == "torch.load":
+            weights_only = _keyword(node, "weights_only")
+            if weights_only is None:
+                self.hit(
+                    "py.ml.unsafe_model_load",
+                    node,
+                    "torch.load without weights_only=True. torch 2.6 and newer default to weights_only=True, but "
+                    "older versions unpickle the whole file; pass it explicitly so loading stays safe on any version.",
+                    "medium",
+                )
+            elif _is_const(weights_only, False):
+                self.hit("py.ml.unsafe_model_load", node, "torch.load with weights_only=False unpickles the file.")
+        elif name == "joblib.load":
+            self.hit("py.ml.unsafe_model_load", node, "joblib.load unpickles the file, which can run code it contains.")
+        elif name is not None and "keras" in name.split(".") and name.endswith(".load_model"):
+            if _is_const(_keyword(node, "safe_mode"), False):
+                self.hit(
+                    "py.ml.unsafe_model_load", node, "Keras load_model with safe_mode=False can run code in the file."
+                )
+        if _truthy_const(_keyword(node, "trust_remote_code")):
+            self.hit(
+                "py.ml.unsafe_model_load",
+                node,
+                "trust_remote_code=True runs Python code shipped with the downloaded model.",
+                "medium",
+                cwe="CWE-94",
+            )
+
+    def _model_file(self, node: ast.AST) -> bool:
+        """True when the expression names a model file: a model extension, or a name with 'model', 'weights' ..."""
+        for sub in ast.walk(node):
+            if (
+                isinstance(sub, ast.Constant)
+                and isinstance(sub.value, str)
+                and sub.value.lower().endswith(_MODEL_EXTENSIONS)
+            ):
+                return True
+            label = sub.id if isinstance(sub, ast.Name) else sub.attr if isinstance(sub, ast.Attribute) else None
+            if label is not None and _words(label) & _MODEL_WORDS:
+                return True
+        return False
 
     def _jwt(self, node: ast.Call) -> None:
         options = _keyword(node, "options")

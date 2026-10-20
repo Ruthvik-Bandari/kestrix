@@ -487,6 +487,158 @@ def download():
     return send_from_directory("/srv/files", request.args["name"])
 ```
 
+### `py.ssrf.request`: HTTP request to a URL taken from request data or model output
+
+CWE-918 · default severity medium · confidence medium
+
+**Why:** When a user (or a model's output) chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf.
+
+**Fix:** Fix the scheme and host in code and let the input choose only a path or query value, or check the parsed host against an allowlist before the request. Do not follow redirects to other hosts.
+
+Before:
+
+```python
+import requests
+from flask import request
+
+
+def preview():
+    url = request.args["url"]
+    return requests.get(url, timeout=10).text
+```
+
+After:
+
+```python
+import requests
+from flask import request
+
+
+def preview():
+    page = request.args["page"]
+    return requests.get(f"https://docs.example.com/{page}", timeout=10).text
+```
+
+### `py.redirect.open`: Redirect to a location taken from request data
+
+CWE-601 · default severity medium · confidence medium
+
+**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.
+
+**Fix:** Redirect to a path you build (url_for, reverse) or check the target first: allow only relative paths on your own host, for example with Django's url_has_allowed_host_and_scheme.
+
+Before:
+
+```python
+from flask import redirect, request
+
+
+def after_login():
+    return redirect(request.args.get("next"))
+```
+
+After:
+
+```python
+from flask import redirect, request
+
+PAGES = {"dashboard": "/dashboard", "settings": "/settings"}
+
+
+def after_login():
+    return redirect(PAGES.get(request.args.get("next"), "/dashboard"))
+```
+
+### `py.xss.markup`: Request data marked as safe HTML or used as a template
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336).
+
+**Fix:** Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. Never build a template's source from input; use render_template with a fixed template file.
+
+Before:
+
+```python
+from flask import request
+from markupsafe import Markup
+
+
+def greeting():
+    return Markup(f"<p>Hello {request.args['name']}</p>")
+```
+
+After:
+
+```python
+from flask import request
+from markupsafe import Markup, escape
+
+
+def greeting():
+    return Markup(f"<p>Hello {escape(request.args['name'])}</p>")
+```
+
+### `py.llm.output_to_sink`: LLM output used as code, a shell command, SQL or a file path
+
+CWE-94 · default severity high · confidence medium
+
+**Why:** A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command, SQL or a path, and this sink runs it with your program's permissions.
+
+**Fix:** Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than code or command text, and use bound SQL parameters and basename-checked paths.
+
+Before:
+
+```python
+import anthropic
+
+client = anthropic.Anthropic()
+
+
+def calculate(question, model):
+    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])
+    return eval(reply.content[0].text)
+```
+
+After:
+
+```python
+import ast
+
+import anthropic
+
+client = anthropic.Anthropic()
+
+
+def calculate(question, model):
+    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])
+    return ast.literal_eval(reply.content[0].text)
+```
+
+### `py.ml.unsafe_model_load`: Model loaded in a way that can run code from the file
+
+CWE-502 · default severity high · confidence medium
+
+**Why:** Pickle-based model files (torch.load without weights_only, joblib, pickle) and Keras files with safe_mode=False can run arbitrary code when loaded, and trust_remote_code=True runs Python shipped with a downloaded model. A tampered or malicious model file is enough.
+
+**Fix:** Load weights only: torch.load(path, weights_only=True), or safetensors. Keep Keras safe_mode on. Load joblib or pickle models only from files you produced and verify their hash. Leave trust_remote_code off, or pin the model revision you reviewed.
+
+Before:
+
+```python
+import torch
+
+model = torch.load("model.pt", weights_only=False)
+```
+
+After:
+
+```python
+import torch
+
+model = torch.load("model.pt", weights_only=True)
+```
+
 ## Secret rules
 
 Every secret rule has the same code fix: delete the value from the file and read it at run time from the environment or a secrets manager. A value that was ever real must also be rotated or revoked by its owner, because it stays in version-control history; tell the user, and never print the value.

@@ -115,6 +115,7 @@ modules = [
     "kestrix_scan.sarif",
     "kestrix_scan.secrets",
     "kestrix_scan.skill",
+    "kestrix_scan.taint",
     "kestrix_scan.walk",
 ]
 strict = true

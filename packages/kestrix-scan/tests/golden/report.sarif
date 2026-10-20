@@ -452,6 +452,136 @@
               }
             },
             {
+              "id": "py.ssrf.request",
+              "name": "PySsrfRequest",
+              "shortDescription": {
+                "text": "HTTP request to a URL taken from request data or model output"
+              },
+              "fullDescription": {
+                "text": "When a user (or a model's output) chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf."
+              },
+              "help": {
+                "text": "Fix the scheme and host in code and let the input choose only a path or query value, or check the parsed host against an allowlist before the request. Do not follow redirects to other hosts.",
+                "markdown": "**Why:** When a user (or a model's output) chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf.\n\n**Fix:** Fix the scheme and host in code and let the input choose only a path or query value, or check the parsed host against an allowlist before the request. Do not follow redirects to other hosts."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-918"
+                ]
+              }
+            },
+            {
+              "id": "py.redirect.open",
+              "name": "PyRedirectOpen",
+              "shortDescription": {
+                "text": "Redirect to a location taken from request data"
+              },
+              "fullDescription": {
+                "text": "A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted."
+              },
+              "help": {
+                "text": "Redirect to a path you build (url_for, reverse) or check the target first: allow only relative paths on your own host, for example with Django's url_has_allowed_host_and_scheme.",
+                "markdown": "**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.\n\n**Fix:** Redirect to a path you build (url_for, reverse) or check the target first: allow only relative paths on your own host, for example with Django's url_has_allowed_host_and_scheme."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-601"
+                ]
+              }
+            },
+            {
+              "id": "py.xss.markup",
+              "name": "PyXssMarkup",
+              "shortDescription": {
+                "text": "Request data marked as safe HTML or used as a template"
+              },
+              "fullDescription": {
+                "text": "Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336)."
+              },
+              "help": {
+                "text": "Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. Never build a template's source from input; use render_template with a fixed template file.",
+                "markdown": "**Why:** Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336).\n\n**Fix:** Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. Never build a template's source from input; use render_template with a fixed template file."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "py.llm.output_to_sink",
+              "name": "PyLlmOutputToSink",
+              "shortDescription": {
+                "text": "LLM output used as code, a shell command, SQL or a file path"
+              },
+              "fullDescription": {
+                "text": "A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command, SQL or a path, and this sink runs it with your program's permissions."
+              },
+              "help": {
+                "text": "Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than code or command text, and use bound SQL parameters and basename-checked paths.",
+                "markdown": "**Why:** A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command, SQL or a path, and this sink runs it with your program's permissions.\n\n**Fix:** Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than code or command text, and use bound SQL parameters and basename-checked paths."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-94"
+                ]
+              }
+            },
+            {
+              "id": "py.ml.unsafe_model_load",
+              "name": "PyMlUnsafeModelLoad",
+              "shortDescription": {
+                "text": "Model loaded in a way that can run code from the file"
+              },
+              "fullDescription": {
+                "text": "Pickle-based model files (torch.load without weights_only, joblib, pickle) and Keras files with safe_mode=False can run arbitrary code when loaded, and trust_remote_code=True runs Python shipped with a downloaded model. A tampered or malicious model file is enough."
+              },
+              "help": {
+                "text": "Load weights only: torch.load(path, weights_only=True), or safetensors. Keep Keras safe_mode on. Load joblib or pickle models only from files you produced and verify their hash. Leave trust_remote_code off, or pin the model revision you reviewed.",
+                "markdown": "**Why:** Pickle-based model files (torch.load without weights_only, joblib, pickle) and Keras files with safe_mode=False can run arbitrary code when loaded, and trust_remote_code=True runs Python shipped with a downloaded model. A tampered or malicious model file is enough.\n\n**Fix:** Load weights only: torch.load(path, weights_only=True), or safetensors. Keep Keras safe_mode on. Load joblib or pickle models only from files you produced and verify their hash. Leave trust_remote_code off, or pin the model revision you reviewed."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ]
+              }
+            },
+            {
               "id": "secret.aws_access_key_id",
               "name": "SecretAwsAccessKeyId",
               "shortDescription": {
@@ -748,7 +878,7 @@
       "results": [
         {
           "ruleId": "secret.github_token",
-          "ruleIndex": 19,
+          "ruleIndex": 24,
           "level": "error",
           "message": {
             "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."

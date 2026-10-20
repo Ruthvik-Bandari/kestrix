@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import Confidence, Severity
+from .models import Confidence, Severity, TraceStep
 
 
 @dataclass(frozen=True)
@@ -272,6 +272,89 @@ _RULES = (
             "https://docs.djangoproject.com/en/stable/ref/request-response/",
         ),
     ),
+    # ----- taint rules (request, FastAPI and LLM data reaching a sink) and AI-era rules
+    Rule(
+        "py.ssrf.request",
+        "CWE-918",
+        "medium",
+        "medium",
+        "HTTP request to a URL taken from request data or model output",
+        "When a user (or a model's output) chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf.",
+        "Fix the scheme and host in code and let the input choose only a path or query value, or check the parsed host against an allowlist before the request. Do not follow redirects to other hosts.",
+        "python",
+        sources=(
+            "https://requests.readthedocs.io/en/latest/api/",
+            "https://www.python-httpx.org/api/",
+            "https://docs.python.org/3/library/urllib.request.html",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+        ),
+    ),
+    Rule(
+        "py.redirect.open",
+        "CWE-601",
+        "medium",
+        "medium",
+        "Redirect to a location taken from request data",
+        "A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.",
+        "Redirect to a path you build (url_for, reverse) or check the target first: allow only relative paths on your own host, for example with Django's url_has_allowed_host_and_scheme.",
+        "python",
+        sources=(
+            "https://flask.palletsprojects.com/en/stable/api/",
+            "https://docs.djangoproject.com/en/stable/ref/request-response/",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html",
+        ),
+    ),
+    Rule(
+        "py.xss.markup",
+        "CWE-79",
+        "high",
+        "medium",
+        "Request data marked as safe HTML or used as a template",
+        "Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336).",
+        "Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. Never build a template's source from input; use render_template with a fixed template file.",
+        "python",
+        sources=(
+            "https://markupsafe.palletsprojects.com/en/stable/escaping/",
+            "https://docs.djangoproject.com/en/stable/ref/utils/",
+            "https://flask.palletsprojects.com/en/stable/api/",
+            "https://docs.python.org/3/library/html.html",
+            "https://cwe.mitre.org/data/definitions/1336.html",
+        ),
+    ),
+    Rule(
+        "py.llm.output_to_sink",
+        "CWE-94",
+        "high",
+        "medium",
+        "LLM output used as code, a shell command, SQL or a file path",
+        "A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command, SQL or a path, and this sink runs it with your program's permissions.",
+        "Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than code or command text, and use bound SQL parameters and basename-checked paths.",
+        "python",
+        sources=(
+            "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
+            "https://docs.claude.com/en/api/messages",
+            "https://platform.openai.com/docs/api-reference/chat/create",
+            "https://docs.python.org/3/library/functions.html#eval",
+            "https://docs.python.org/3/library/subprocess.html#security-considerations",
+        ),
+    ),
+    Rule(
+        "py.ml.unsafe_model_load",
+        "CWE-502",
+        "high",
+        "medium",
+        "Model loaded in a way that can run code from the file",
+        "Pickle-based model files (torch.load without weights_only, joblib, pickle) and Keras files with safe_mode=False can run arbitrary code when loaded, and trust_remote_code=True runs Python shipped with a downloaded model. A tampered or malicious model file is enough.",
+        "Load weights only: torch.load(path, weights_only=True), or safetensors. Keep Keras safe_mode on. Load joblib or pickle models only from files you produced and verify their hash. Leave trust_remote_code off, or pin the model revision you reviewed.",
+        "python",
+        sources=(
+            "https://docs.pytorch.org/docs/stable/generated/torch.load.html",
+            "https://joblib.readthedocs.io/en/stable/generated/joblib.load.html",
+            "https://keras.io/api/models/model_saving_apis/model_saving_and_loading/",
+            "https://huggingface.co/docs/transformers/en/custom_models",
+            "https://cwe.mitre.org/data/definitions/94.html",
+        ),
+    ),
     Rule(
         "secret.aws_access_key_id",
         "CWE-798",
@@ -422,3 +505,6 @@ class Hit:
     message: str
     snippet: str
     severity: Severity | None = None  # lower than the rule default when the context makes it less likely
+    confidence: Confidence | None = None  # replaces the rule default, for example from where tainted data came from
+    cwe: str | None = None  # replaces the rule's CWE when the sink decides it (py.llm.output_to_sink, SSTI)
+    trace: tuple[TraceStep, ...] = ()  # source-to-sink steps of a taint finding

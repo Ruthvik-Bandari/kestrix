@@ -208,9 +208,13 @@ def render_context(new: list[Finding], existing: int) -> str:
 
 
 def describe(finding: Finding) -> str:
-    """``path:line [SEVERITY] rule_id (CWE): message — Fix: …``, cut to ``MAX_LINE_CHARS``."""
+    """``path:line [SEVERITY] rule_id (CWE): message [trace: L3→L5] — Fix: …``, cut to ``MAX_LINE_CHARS``.
+
+    The trace part appears only for taint findings: the lines from the source to the sink.
+    """
+    flow = f" [trace: {'→'.join(f'L{step.line}' for step in finding.trace)}]" if finding.trace else ""
     line = (
         f"- {finding.path}:{finding.line} [{finding.severity.upper()}] {finding.rule_id} ({finding.cwe}): "
-        f"{finding.message} — Fix: {finding.fix}"
+        f"{finding.message}{flow} — Fix: {finding.fix}"
     )
     return line if len(line) <= MAX_LINE_CHARS else line[: MAX_LINE_CHARS - 1] + "…"

@@ -105,6 +105,73 @@ POSITIVE = [
         "import os\nfrom flask import request\ndef f():\n    name = request.args.get('n')\n    p = os.path.join('/data', name)\n    return open(p).read()\n",
     ),
     ("py.path.traversal", "def view(request):\n    return open('/srv/' + request.GET['file']).read()\n"),
+    (
+        "py.path.traversal",
+        "from pathlib import Path\nfrom flask import request\ndef f():\n    return (Path('/d') / request.args['n']).read_text()\n",
+    ),
+    (
+        "py.path.traversal",
+        "from fastapi import FastAPI\nfrom fastapi.responses import FileResponse\napp = FastAPI()\n@app.get('/f')\ndef f(name: str):\n    return FileResponse('/srv/' + name)\n",
+    ),
+    (
+        "py.ssrf.request",
+        "import requests\nfrom flask import request\ndef f():\n    return requests.get(request.args['u'])\n",
+    ),
+    (
+        "py.ssrf.request",
+        "import httpx\ndef view(request):\n    url = request.POST['u']\n    return httpx.request('GET', url)\n",
+    ),
+    (
+        "py.ssrf.request",
+        "from urllib.request import urlopen\nfrom flask import request\ndef f():\n    return urlopen(request.form.get('u')).read()\n",
+    ),
+    (
+        "py.redirect.open",
+        "from flask import redirect, request\ndef f():\n    return redirect(request.args.get('next'))\n",
+    ),
+    (
+        "py.redirect.open",
+        "from django.http import HttpResponseRedirect\ndef view(request):\n    return HttpResponseRedirect(request.GET['next'])\n",
+    ),
+    (
+        "py.redirect.open",
+        "from flask import redirect, request\ndef f():\n    return redirect('/' + request.args['p'])\n",
+    ),
+    (
+        "py.xss.markup",
+        "from markupsafe import Markup\nfrom flask import request\ndef f():\n    return Markup(request.args['m'])\n",
+    ),
+    (
+        "py.xss.markup",
+        "from django.utils.safestring import mark_safe\ndef view(request):\n    return mark_safe('<b>%s</b>' % request.GET['n'])\n",
+    ),
+    (
+        "py.xss.markup",
+        "from flask import render_template_string, request\ndef f():\n    return render_template_string('Hi ' + request.args['n'])\n",
+    ),
+    (
+        "py.llm.output_to_sink",
+        "import anthropic\nc = anthropic.Anthropic()\ndef f(p):\n    r = c.messages.create(model='m', max_tokens=9, messages=p)\n    return eval(r.content[0].text)\n",
+    ),
+    (
+        "py.llm.output_to_sink",
+        "import os\nfrom openai import OpenAI\nclient = OpenAI()\ndef f(p):\n    out = client.chat.completions.create(model='m', messages=p)\n    os.system(out.choices[0].message.content)\n",
+    ),
+    ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt')\n"),
+    ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt', weights_only=False)\n"),
+    ("py.ml.unsafe_model_load", "import joblib\nclf = joblib.load('clf.joblib')\n"),
+    (
+        "py.ml.unsafe_model_load",
+        "import pickle\nwith open('model.pkl', 'rb') as fh:\n    model = pickle.load(open('model.pkl', 'rb'))\n",
+    ),
+    (
+        "py.ml.unsafe_model_load",
+        "from tensorflow import keras\nm = keras.models.load_model('m.keras', safe_mode=False)\n",
+    ),
+    (
+        "py.ml.unsafe_model_load",
+        "from transformers import AutoModel\nm = AutoModel.from_pretrained('org/m', trust_remote_code=True)\n",
+    ),
 ]
 
 NEGATIVE = [
@@ -177,6 +244,53 @@ NEGATIVE = [
         "py.path.traversal",
         "from flask import request, send_from_directory\ndef f():\n    return send_from_directory('/d', request.args['n'])\n",
     ),
+    ("py.path.traversal", "import sys\ndef main():\n    return open(sys.argv[1]).read()\n"),
+    ("py.path.traversal", "def f():\n    return open(input('file? ')).read()\n"),
+    (
+        "py.path.traversal",
+        "from pathlib import Path\nfrom flask import request\ndef f():\n    p = (Path('/d') / request.args['n']).resolve()\n    if not p.is_relative_to('/d'):\n        raise ValueError\n    return p.read_text()\n",
+    ),
+    (
+        "py.path.traversal",
+        "import os\nfrom flask import request\ndef f():\n    name = os.path.basename(request.args['n'])\n    return open(os.path.join('/d', name))\n",
+    ),
+    ("py.ssrf.request", "import os, requests\ndef f():\n    return requests.get(os.environ.get('API_URL'))\n"),
+    (
+        "py.ssrf.request",
+        "import requests\nfrom flask import request\ndef f():\n    return requests.get(f'https://api.example.com/items/{request.args[\"id\"]}')\n",
+    ),
+    ("py.ssrf.request", "import requests\ndef f(url):\n    return requests.get(url, timeout=5)\n"),
+    (
+        "py.ssrf.request",
+        "import requests\nfrom flask import request\ndef f():\n    return requests.post('https://api.example.com', json=request.json)\n",
+    ),
+    ("py.redirect.open", "from flask import redirect, url_for\ndef f():\n    return redirect(url_for('index'))\n"),
+    (
+        "py.redirect.open",
+        "from flask import redirect, request\ndef f():\n    return redirect('/profile/' + request.args['user'])\n",
+    ),
+    (
+        "py.xss.markup",
+        "from markupsafe import Markup, escape\nfrom flask import request\ndef f():\n    return Markup(escape(request.args['m']))\n",
+    ),
+    ("py.xss.markup", "from markupsafe import Markup\ndef f(name):\n    return Markup('<b>%s</b>' % name)\n"),
+    (
+        "py.xss.markup",
+        "from flask import render_template, request\ndef f():\n    return render_template('p.html', name=request.args['n'])\n",
+    ),
+    ("py.llm.output_to_sink", "import anthropic\ndef f(r):\n    return eval(r)\n"),
+    (
+        "py.llm.output_to_sink",
+        "import json\nimport anthropic\nc = anthropic.Anthropic()\ndef f(p):\n    r = c.messages.create(model='m', max_tokens=9, messages=p)\n    return json.loads(r.content[0].text)\n",
+    ),
+    (
+        "py.llm.output_to_sink",
+        "def f(client, p):\n    r = client.messages.create(messages=p)\n    return eval(r.content[0].text)\n",
+    ),
+    ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt', weights_only=True)\n"),
+    ("py.ml.unsafe_model_load", "import tensorflow as tf\nm = tf.keras.models.load_model('m.keras')\n"),
+    ("py.ml.unsafe_model_load", "from transformers import AutoModel\nm = AutoModel.from_pretrained('org/m')\n"),
+    ("py.ml.unsafe_model_load", "import pickle\ndef f(fh):\n    return pickle.load(fh)\n"),
 ]
 
 

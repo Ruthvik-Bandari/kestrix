@@ -164,6 +164,8 @@ def render_text(report: ScanReport, *, color: bool = False) -> str:
             label = _style(severity, _COLORS[finding.severity]) if color else severity
             lines.append(f"  {finding.line}:{finding.column}  {label}  {finding.rule_id}  {finding.cwe}")
             lines.append(f"      {finding.message}")
+            if finding.trace:
+                lines.append("      trace: " + " → ".join(f"{step.line} {step.note}" for step in finding.trace))
             lines.append(f"      fix: {finding.fix}")
         lines.append("")
     for note in report.notes:

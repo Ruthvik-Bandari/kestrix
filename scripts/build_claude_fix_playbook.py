@@ -94,6 +94,26 @@ EXAMPLES: dict[str, tuple[str, str]] = {
         'import os\nfrom flask import request\n\n\ndef download():\n    name = request.args.get("name")\n    return open(os.path.join("/srv/files", name), "rb").read()\n',
         'from flask import request, send_from_directory\n\n\ndef download():\n    return send_from_directory("/srv/files", request.args["name"])\n',
     ),
+    "py.ssrf.request": (
+        'import requests\nfrom flask import request\n\n\ndef preview():\n    url = request.args["url"]\n    return requests.get(url, timeout=10).text\n',
+        'import requests\nfrom flask import request\n\n\ndef preview():\n    page = request.args["page"]\n    return requests.get(f"https://docs.example.com/{page}", timeout=10).text\n',
+    ),
+    "py.redirect.open": (
+        'from flask import redirect, request\n\n\ndef after_login():\n    return redirect(request.args.get("next"))\n',
+        'from flask import redirect, request\n\nPAGES = {"dashboard": "/dashboard", "settings": "/settings"}\n\n\ndef after_login():\n    return redirect(PAGES.get(request.args.get("next"), "/dashboard"))\n',
+    ),
+    "py.xss.markup": (
+        "from flask import request\nfrom markupsafe import Markup\n\n\ndef greeting():\n    return Markup(f\"<p>Hello {request.args['name']}</p>\")\n",
+        "from flask import request\nfrom markupsafe import Markup, escape\n\n\ndef greeting():\n    return Markup(f\"<p>Hello {escape(request.args['name'])}</p>\")\n",
+    ),
+    "py.llm.output_to_sink": (
+        'import anthropic\n\nclient = anthropic.Anthropic()\n\n\ndef calculate(question, model):\n    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])\n    return eval(reply.content[0].text)\n',
+        'import ast\n\nimport anthropic\n\nclient = anthropic.Anthropic()\n\n\ndef calculate(question, model):\n    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])\n    return ast.literal_eval(reply.content[0].text)\n',
+    ),
+    "py.ml.unsafe_model_load": (
+        'import torch\n\nmodel = torch.load("model.pt", weights_only=False)\n',
+        'import torch\n\nmodel = torch.load("model.pt", weights_only=True)\n',
+    ),
 }
 
 CREDENTIAL_EXAMPLE_BEFORE = 'API_KEY = "<the literal key value>"\n'
@@ -159,10 +179,11 @@ def _secret_section(rule: Rule) -> str:
 
 
 def render() -> str:
-    python_ids = [rule.id for rule in RULES.values() if rule.language == "python"]
-    if set(EXAMPLES) != set(python_ids):
-        missing, extra = sorted(set(python_ids) - set(EXAMPLES)), sorted(set(EXAMPLES) - set(python_ids))
-        raise SystemExit(f"EXAMPLES out of sync with the registry: missing {missing}, unknown {extra}")
+    for language, examples in (("python", set(EXAMPLES)),):
+        ids = {rule.id for rule in RULES.values() if rule.language == language}
+        if examples != ids:
+            missing, extra = sorted(ids - examples), sorted(examples - ids)
+            raise SystemExit(f"{language} examples out of sync with the registry: missing {missing}, unknown {extra}")
     parts = [HEADER, "## Python rules\n"]
     parts += [_python_section(rule) for rule in RULES.values() if rule.language == "python"]
     parts += [
@@ -179,7 +200,7 @@ def render() -> str:
         CREDENTIAL_EXAMPLE_AFTER.rstrip("\n"),
         "```\n",
     ]
-    parts += [_secret_section(rule) for rule in RULES.values() if rule.language != "python"]
+    parts += [_secret_section(rule) for rule in RULES.values() if rule.language == "any"]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

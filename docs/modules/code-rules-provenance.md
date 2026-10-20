@@ -126,6 +126,53 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://docs.djangoproject.com/en/stable/ref/request-response/>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `py.ssrf.request`
+
+- CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
+- Documentation: <https://requests.readthedocs.io/en/latest/api/>
+- Documentation: <https://www.python-httpx.org/api/>
+- Documentation: <https://docs.python.org/3/library/urllib.request.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.redirect.open`
+
+- CWE: [CWE-601](https://cwe.mitre.org/data/definitions/601.html)
+- Documentation: <https://flask.palletsprojects.com/en/stable/api/>
+- Documentation: <https://docs.djangoproject.com/en/stable/ref/request-response/>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.xss.markup`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://markupsafe.palletsprojects.com/en/stable/escaping/>
+- Documentation: <https://docs.djangoproject.com/en/stable/ref/utils/>
+- Documentation: <https://flask.palletsprojects.com/en/stable/api/>
+- Documentation: <https://docs.python.org/3/library/html.html>
+- Documentation: <https://cwe.mitre.org/data/definitions/1336.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.llm.output_to_sink`
+
+- CWE: [CWE-94](https://cwe.mitre.org/data/definitions/94.html)
+- Documentation: <https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/>
+- Documentation: <https://docs.claude.com/en/api/messages>
+- Documentation: <https://platform.openai.com/docs/api-reference/chat/create>
+- Documentation: <https://docs.python.org/3/library/functions.html#eval>
+- Documentation: <https://docs.python.org/3/library/subprocess.html#security-considerations>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.ml.unsafe_model_load`
+
+- CWE: [CWE-502](https://cwe.mitre.org/data/definitions/502.html)
+- Documentation: <https://docs.pytorch.org/docs/stable/generated/torch.load.html>
+- Documentation: <https://joblib.readthedocs.io/en/stable/generated/joblib.load.html>
+- Documentation: <https://keras.io/api/models/model_saving_apis/model_saving_and_loading/>
+- Documentation: <https://huggingface.co/docs/transformers/en/custom_models>
+- Documentation: <https://cwe.mitre.org/data/definitions/94.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `secret.aws_access_key_id`
 
 - CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)

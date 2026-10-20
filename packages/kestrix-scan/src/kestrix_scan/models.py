@@ -50,6 +50,17 @@ def clip_snippet(text: str) -> str:
     return text if len(text) <= MAX_SNIPPET_CHARS else text[: MAX_SNIPPET_CHARS - 1] + "…"
 
 
+@dataclass(frozen=True, slots=True)
+class TraceStep:
+    """One step of a data-flow trace: where tainted data was read, passed on or used."""
+
+    line: int  # 1-based line
+    note: str  # what happens on that line, for example 'flask request.args (source)'
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"line": self.line, "note": self.note}
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Finding:
     rule_id: str  # stable rule id, for example 'py.subprocess.shell_true'
@@ -65,9 +76,10 @@ class Finding:
     fix: str  # how to fix it
     snippet: str  # the source line, cut to 200 characters; secrets redacted to their kind and first four characters
     fingerprint: str  # SHA-256 of rule id, path and whitespace-free snippet; used by baselines
+    trace: tuple[TraceStep, ...] = ()  # source-to-sink steps for taint findings; empty for pattern findings
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "rule_id": self.rule_id,
             "cwe": self.cwe,
             "severity": self.severity,
@@ -82,6 +94,9 @@ class Finding:
             "snippet": self.snippet,
             "fingerprint": self.fingerprint,
         }
+        if self.trace:  # optional key: reports without taint findings are unchanged
+            data["trace"] = [step.to_dict() for step in self.trace]
+        return data
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

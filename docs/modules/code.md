@@ -104,6 +104,11 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `py.xml.unsafe_parser` | Python | CWE-776 | low | low | Standard-library XML parser on data that is not a literal |
 | `py.assert.security` | Python | CWE-617 | low | medium | assert used for an access check |
 | `py.path.traversal` | Python | CWE-22 | medium | medium | File path built from request data |
+| `py.ssrf.request` | Python | CWE-918 | medium | medium | HTTP request to a URL taken from request data or model output |
+| `py.redirect.open` | Python | CWE-601 | medium | medium | Redirect to a location taken from request data |
+| `py.xss.markup` | Python | CWE-79 | high | medium | Request data marked as safe HTML or used as a template |
+| `py.llm.output_to_sink` | Python | CWE-94 | high | medium | LLM output used as code, a shell command, SQL or a file path |
+| `py.ml.unsafe_model_load` | Python | CWE-502 | high | medium | Model loaded in a way that can run code from the file |
 | `secret.aws_access_key_id` | any text file | CWE-798 | high | high | AWS access key id |
 | `secret.aws_secret_access_key` | any text file | CWE-798 | critical | medium | AWS secret access key |
 | `secret.github_token` | any text file | CWE-798 | critical | high | GitHub token |

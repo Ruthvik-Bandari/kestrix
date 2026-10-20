@@ -53,6 +53,8 @@ the code is secure.
    | Crypto and randomness | `py.crypto.weak_hash`, `py.crypto.insecure_random`, `py.jwt.no_verify` | `hashlib.sha256`, `secrets.token_urlsafe`, `jwt.decode(..., algorithms=[...])`. |
    | Files | `py.tempfile.mktemp`, `py.path.traversal` | `tempfile.mkstemp`; `secure_filename` or resolve-and-contain. |
    | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser` | Debug from the environment; explicit `if not ...: raise`; `defusedxml`. |
+   | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source from input. |
+   | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |
    | Secrets | `secret.*` | Remove the value, read it from the environment or a secrets manager, and tell the user to rotate it. |
 
    For a secret, removing it from the file is not enough: it stays in version-control history. Tell the

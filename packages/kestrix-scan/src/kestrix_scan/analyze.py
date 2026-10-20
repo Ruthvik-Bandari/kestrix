@@ -149,9 +149,9 @@ def _finding(item: Hit, rel: str) -> Finding:
     snippet = item.snippet if item.rule_id.startswith("secret.") else redact(item.snippet)
     return Finding(
         rule_id=rule.id,
-        cwe=rule.cwe,
+        cwe=item.cwe or rule.cwe,
         severity=item.severity or rule.severity,
-        confidence=rule.confidence,
+        confidence=item.confidence or rule.confidence,
         path=rel,
         line=item.line,
         column=item.column,
@@ -161,6 +161,7 @@ def _finding(item: Hit, rel: str) -> Finding:
         fix=rule.fix,
         snippet=snippet[:200],
         fingerprint=fingerprint(rule.id, rel, snippet),
+        trace=item.trace,
     )
 
 
