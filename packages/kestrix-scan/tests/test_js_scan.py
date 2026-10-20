@@ -180,21 +180,36 @@ def test_a_5000_line_typescript_file_is_fast() -> None:
     assert len(source.splitlines()) >= 5000
     started = time.perf_counter()
     assert check_js(source, "big.ts") == []
-    assert time.perf_counter() - started < 2.0  # generous: measured p50 is about 0.16 s on an M4 Pro
+    assert (
+        time.perf_counter() - started < 6.0
+    )  # generous for slow CI runners: measured p50 is about 0.16 s on an M4 Pro
 
 
-@pytest.mark.parametrize(
-    "source",
-    [
-        "a =\n" * 100_000 + "1",
-        "token =\n" * 60_000 + "Math.random()",
-        "x = {\n" + "a: b,\n" * 60_000 + "}",
-        "f(\n" * 40_000 + ")\n" * 40_000,
-        "(\n" * 80_000 + ")\n" * 80_000,
-    ],
-    ids=["chained-assignments", "chained-secret-names", "huge-object", "nested-calls", "nested-parens"],
-)
-def test_pathological_input_stays_linear(source: str) -> None:
-    started = time.perf_counter()
-    assert isinstance(check_js(source, "p.js"), list)
-    assert time.perf_counter() - started < 3.0
+PATHOLOGICAL: dict[str, Callable[[int], str]] = {
+    "chained-assignments": lambda n: "a =\n" * n + "1",
+    "chained-secret-names": lambda n: "token =\n" * n + "Math.random()",
+    "huge-object": lambda n: "x = {\n" + "a: b,\n" * n + "}",
+    "nested-calls": lambda n: "f(\n" * n + ")\n" * n,
+    "nested-parens": lambda n: "(\n" * n + ")\n" * n,
+}
+
+
+def _best_of_three(source: str) -> float:
+    times = []
+    for _ in range(3):
+        started = time.perf_counter()
+        assert isinstance(check_js(source, "p.js"), list)
+        times.append(time.perf_counter() - started)
+    return min(times)
+
+
+@pytest.mark.parametrize("shape", sorted(PATHOLOGICAL))
+def test_pathological_input_stays_linear(shape: str) -> None:
+    """Doubling the input must roughly double the time, not quadruple it.
+
+    A wall-clock limit failed on slower CI runners (4-6 s against 0.8 s locally), so the guard is the growth
+    rate instead: a quadratic matcher would take about 4x as long at twice the size.
+    """
+    build = PATHOLOGICAL[shape]
+    small, large = _best_of_three(build(10_000)), _best_of_three(build(20_000))
+    assert large < 3.0 * small + 0.05, f"{shape}: {small:.3f}s at n, {large:.3f}s at 2n"
