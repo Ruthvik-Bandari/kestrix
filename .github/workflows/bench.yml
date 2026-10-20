@@ -1,0 +1,45 @@
+name: Benchmark
+
+# Scores kestrix-scan, Bandit and the security-guidance regex layer on OWASP BenchmarkPython (downloaded at a
+# pinned commit, never committed) and on the owned cases in bench/cases. Not a pull-request check.
+# Method and published results: docs/benchmarks/benchmarkpython.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tools:
+        description: "Comma-separated tools (kestrix, bandit, semgrep, security-guidance). Semgrep results are for internal review only; see the scorecard."
+        required: false
+        default: "kestrix,bandit,security-guidance"
+  schedule:
+    - cron: "17 6 * * 1"  # Mondays 06:17 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmark scanners
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-extras
+      - name: Run the harness
+        env:
+          TOOLS: ${{ inputs.tools || 'kestrix,bandit,security-guidance' }}
+        run: uv run python -m bench.run --suite all --tools "$TOOLS" --out bench-results
+      # Only scored results (names, categories, counts, rates, versions, timings). The raw tool reports in
+      # bench/.cache quote benchmark code (GPL-3.0) and are not uploaded.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bench-results
+          path: bench-results/
+          retention-days: 30
