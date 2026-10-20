@@ -59,7 +59,7 @@ def _clean(path: str) -> str:
     return path[2:] if path.startswith("./") else path
 
 
-def _hits(findings: list[Finding]) -> dict[str, int]:
+def count_rule_hits(findings: list[Finding]) -> dict[str, int]:
     return dict(sorted(Counter(f.rule for f in findings if f.categories).items()))
 
 
@@ -73,7 +73,7 @@ def kestrix(root: Path, report: Path) -> ToolRun:
     for item in _load(report)["findings"]:
         cwes = frozenset(int(c) for c in _CWE.findall(item.get("cwe") or ""))
         findings.append(Finding(item["path"], item["rule_id"], cwes, kestrix_categories(item["rule_id"], cwes)))
-    return ToolRun("kestrix", __version__, seconds, findings, True, _hits(findings))
+    return ToolRun("kestrix", __version__, seconds, findings, True, count_rule_hits(findings))
 
 
 def bandit(venv: Path, root: Path, report: Path) -> ToolRun:
@@ -90,7 +90,7 @@ def bandit(venv: Path, root: Path, report: Path) -> ToolRun:
         findings.append(
             Finding(_clean(item["filename"]), item["test_id"], cwes, bandit_categories(item["test_id"], cwes))
         )
-    return ToolRun("bandit", version, seconds, findings, True, _hits(findings))
+    return ToolRun("bandit", version, seconds, findings, True, count_rule_hits(findings))
 
 
 def semgrep(venv: Path, rules: Path, root: Path, report: Path) -> ToolRun:
@@ -107,7 +107,7 @@ def semgrep(venv: Path, rules: Path, root: Path, report: Path) -> ToolRun:
         raw = meta.get("cwe") or []
         cwes = frozenset(int(c) for c in _CWE.findall(" ".join(raw) if isinstance(raw, list) else str(raw)))
         findings.append(Finding(_clean(item["path"]), item["check_id"], cwes, categories_for_cwes(cwes)))
-    return ToolRun("semgrep", version, seconds, findings, True, _hits(findings))
+    return ToolRun("semgrep", version, seconds, findings, True, count_rule_hits(findings))
 
 
 def security_guidance(patterns: Path, version: str, root: Path, report: Path) -> ToolRun:
@@ -118,4 +118,4 @@ def security_guidance(patterns: Path, version: str, root: Path, report: Path) ->
         Finding(item["path"], item["rule"], frozenset(), security_guidance_categories(item["rule"]))
         for item in _load(report)
     ]
-    return ToolRun("security-guidance", version, seconds, findings, False, _hits(findings))
+    return ToolRun("security-guidance", version, seconds, findings, False, count_rule_hits(findings))

@@ -132,3 +132,16 @@ def test_owned_cases_have_a_file_each_and_balanced_labels():
         assert any(f.split("/")[1] in (case.name, f"{case.name}.py") for f in files if f.count("/") >= 1), case.name
         assert case.category in mapping.CATEGORIES
     assert {c.category for c in cases if c.real} == {c.category for c in cases if not c.real}
+
+
+def test_heldout_cases_are_pairs_with_a_file_each_and_no_owned_names():
+    cases = parse_expected((run.HELDOUT_CASES / "expected.csv").read_text())
+    owned = {c.name for c in parse_expected((run.OWNED_CASES / "expected.csv").read_text())}
+    stems = {p.stem for p in run.HELDOUT_CASES.glob("*.py")}
+    assert {c.name for c in cases} == stems
+    assert not stems & owned
+    assert all(c.category in mapping.CATEGORIES for c in cases)
+    real = {c.name.removesuffix("_vuln") for c in cases if c.real}
+    safe = {c.name.removesuffix("_safe") for c in cases if not c.real}
+    assert real == safe and len(real) >= 30
+

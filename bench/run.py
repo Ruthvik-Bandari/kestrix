@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Benchmark kestrix-scan, Bandit, Semgrep CE and the security-guidance regex layer.
 
-``uv run python -m bench.run [--suite benchmarkpython|owned|all] [--tools LIST] [--cache DIR] [--out DIR]
+``uv run python -m bench.run [--suite benchmarkpython|owned|heldout|all] [--tools LIST] [--cache DIR] [--out DIR]
 [--publish DIR]`` and ``uv run python -m bench.run --print-mapping``.
 
 Everything third-party is downloaded into the cache (default ``bench/.cache/``, git-ignored), never into the repo:
@@ -21,6 +21,7 @@ Results hold only test-case names, categories, CWEs, booleans, counts, rates, ve
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import os
@@ -37,11 +38,12 @@ from typing import Any
 
 from . import tools
 from .mapping import CATEGORIES, markdown_tables
-from .scoring import Case, Scorecard, parse_expected, score
+from .scoring import Case, Scorecard, case_of, parse_expected, score
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE = REPO / "bench" / ".cache"
 OWNED_CASES = REPO / "bench" / "cases"
+HELDOUT_CASES = OWNED_CASES / "heldout"  # written before the gap-analysis rule changes were measured
 
 BENCHMARK_PYTHON = {
     "repository": "https://github.com/OWASP-Benchmark/BenchmarkPython",
@@ -171,6 +173,12 @@ def owned_suite() -> Suite:
     return Suite("owned", OWNED_CASES, cases, source)
 
 
+def heldout_suite() -> Suite:
+    cases = parse_expected((HELDOUT_CASES / "expected.csv").read_text(encoding="utf-8"))
+    source = {"path": "bench/cases/heldout", "license": "Apache-2.0", "expected": "bench/cases/heldout/expected.csv"}
+    return Suite("heldout", HELDOUT_CASES, cases, source)
+
+
 def _git_head() -> dict[str, Any]:
     git = shutil.which("git") or "git"
     try:
@@ -296,9 +304,13 @@ def run_suite(suite: Suite, selected: list[str], cache: Path) -> dict[str, Any]:
         ),
     }
     runs = []
+    names = {case.name: case for case in suite.cases}
     for name in selected:
         print(f"[{suite.name}] running {name} ...", file=sys.stderr, flush=True)
-        runs.append(runners[name]())
+        run = runners[name]()
+        # The owned suite's directory also holds the held-out cases; count only findings in this suite's cases.
+        kept = [f for f in run.findings if case_of(f.path, names) is not None]
+        runs.append(dataclasses.replace(run, findings=kept, rule_hits=tools.count_rule_hits(kept)))
     per_cat: dict[str, dict[str, int]] = {}
     for case in suite.cases:
         entry = per_cat.setdefault(case.category, {"vulnerable": 0, "safe": 0})
@@ -354,7 +366,7 @@ def publishable(result: dict[str, Any]) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.run", description=__doc__.split("\n\n")[0])
-    parser.add_argument("--suite", choices=["benchmarkpython", "owned", "all"], default="all")
+    parser.add_argument("--suite", choices=["benchmarkpython", "owned", "heldout", "all"], default="all")
     parser.add_argument("--tools", default=",".join(ALL_TOOLS), help=f"comma-separated subset of {ALL_TOOLS}")
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--out", type=Path, default=None, help="default: <cache>/results")
@@ -375,6 +387,8 @@ def main(argv: list[str] | None = None) -> int:
         suites.append(benchmark_python_suite(cache))
     if args.suite in ("owned", "all"):
         suites.append(owned_suite())
+    if args.suite in ("heldout", "all"):
+        suites.append(heldout_suite())
     for suite in suites:
         result = run_suite(suite, selected, cache)
         _write(out_dir / f"{suite.name}.json", json.dumps(result, indent=2) + "\n")
