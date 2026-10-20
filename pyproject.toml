@@ -74,6 +74,8 @@ line-length = 120
 target-version = "py310"
 # First-party sources of both workspace packages, for import sorting.
 src = ["src", "packages/kestrix-scan/src"]
+# Deliberately vulnerable benchmark cases (bench/cases) are test data, not project code.
+extend-exclude = ["bench/cases"]
 
 [tool.ruff.format]
 # Prose examples in docs/ are written for readers; `ruff format` would reflow their code blocks.
@@ -125,7 +127,9 @@ modules = [
     "kestrix_scan.walk",
 ]
 strict = true
-packages = ["kestrix", "kestrixbench"]
+packages = ["kestrix", "kestrixbench", "bench"]
+# The deliberately vulnerable benchmark cases are data for the scanners, not project code.
+exclude = ["^bench/cases/"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]

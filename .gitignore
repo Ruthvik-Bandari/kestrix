@@ -41,3 +41,6 @@ mlruns/
 .vscode/
 .claude/settings.local.json
 .worktrees/
+
+# Benchmark downloads, tool environments and raw reports (third-party licences; never commit)
+bench/.cache/

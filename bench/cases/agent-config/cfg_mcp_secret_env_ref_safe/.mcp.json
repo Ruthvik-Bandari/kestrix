@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tickets": {
+      "command": "node",
+      "args": [
+        "./mcp/tickets.js"
+      ],
+      "env": {
+        "TICKETS_API_TOKEN": "${TICKETS_API_TOKEN}"
+      }
+    }
+  }
+}

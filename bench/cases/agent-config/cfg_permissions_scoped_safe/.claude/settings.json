@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Bash(npm run test:*)",
+      "Bash(git status)"
+    ],
+    "deny": [
+      "Read(./.env)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "docs"
+  ]
+}
