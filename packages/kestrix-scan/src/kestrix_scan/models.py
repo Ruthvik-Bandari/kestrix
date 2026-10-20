@@ -23,7 +23,9 @@ MAX_SNIPPET_CHARS = 200
 
 Severity = Literal["low", "medium", "high", "critical"]
 Confidence = Literal["low", "medium", "high"]
-SkipReason = Literal["binary", "too_large", "unreadable", "syntax_error", "too_complex", "symlink_outside_root"]
+SkipReason = Literal[
+    "binary", "too_large", "unreadable", "syntax_error", "too_complex", "symlink_outside_root", "minified"
+]
 
 SEVERITY_RANK: dict[str, int] = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 

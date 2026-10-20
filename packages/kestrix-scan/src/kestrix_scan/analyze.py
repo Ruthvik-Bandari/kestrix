@@ -7,6 +7,9 @@ files) and the secret rules (every text file), drop findings covered by an inlin
 that gives a reason, then, across the scan, drop findings outside the ``--diff`` lines and
 findings whose fingerprint is in the baseline.
 
+JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
+A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
+
 Suppression: ``# kestrix: ignore[rule-id] reason`` (or ``// kestrix: ignore[...] reason``) on the
 finding's line or the line above; several ids may be separated by commas. A suppression without
 a reason suppresses nothing and adds a ``kestrix.suppression.missing_reason`` note to the report.
@@ -28,6 +31,7 @@ from . import deps
 from .agent_config import check_config, config_kind
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
+from .js_rules import JS_SUFFIXES, check_js
 from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, count, fingerprint, ordered
 from .python_rules import check_python
 from .registry import RULES, Hit
@@ -39,7 +43,7 @@ MAX_BASELINE_BYTES = 10 * 1024 * 1024
 PYTHON_SUFFIXES = frozenset({".py", ".pyw"})
 MISSING_REASON = "kestrix.suppression.missing_reason"
 
-_SUPPRESSION = re.compile(r"(?:#|//)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
+_SUPPRESSION = re.compile(r"(?:#|//|/\*)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
@@ -139,6 +143,12 @@ def scan_text(
     skip = None
     if candidate.path.suffix in PYTHON_SUFFIXES:
         result = check_python(text, candidate.rel)
+        if isinstance(result, list):
+            hits.extend(result)
+        else:
+            skip = SkippedFile(path=candidate.rel, reason=result)
+    elif candidate.path.suffix in JS_SUFFIXES:
+        result = check_js(text, candidate.rel)
         if isinstance(result, list):
             hits.extend(result)
         else:

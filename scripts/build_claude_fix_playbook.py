@@ -9,6 +9,7 @@ below, so each "before" fires its rule and each "after" does not.
 
 The CWE, severity, why and fix of each rule come from ``kestrix_scan.registry.RULES``. The before and
 after code is curated here: every Python rule needs one, and a new rule without one fails the build.
+JavaScript and TypeScript rules need one too, in ``JS_EXAMPLES``; those are checked with the ``js.*`` rules.
 """
 
 from __future__ import annotations
@@ -116,6 +117,66 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     ),
 }
 
+# js rule id -> (before, after), JavaScript as a file named app.js would hold it. The test runs the js.* rules on both.
+JS_EXAMPLES: dict[str, tuple[str, str]] = {
+    "js.exec.eval": (
+        "function parse(text) {\n  return eval(text);\n}\n",
+        "function parse(text) {\n  return JSON.parse(text);\n}\n",
+    ),
+    "js.child_process.shell": (
+        "const { exec } = require('node:child_process');\n\nfunction ping(host) {\n  exec(`ping -c 1 ${host}`);\n}\n",
+        "const { execFile } = require('node:child_process');\n\nfunction ping(host) {\n  execFile('ping', ['-c', '1', host]);\n}\n",
+    ),
+    "js.dom.xss_sink": (
+        "function greet(name) {\n  document.getElementById('greeting').innerHTML = `Hello ${name}`;\n}\n",
+        "function greet(name) {\n  document.getElementById('greeting').textContent = `Hello ${name}`;\n}\n",
+    ),
+    "js.sql.string_built": (
+        "async function findUser(pool, id) {\n  return pool.query(`SELECT * FROM users WHERE id = ${id}`);\n}\n",
+        "async function findUser(pool, id) {\n  return pool.query('SELECT * FROM users WHERE id = $1', [id]);\n}\n",
+    ),
+    "js.tls.reject_unauthorized": (
+        "const https = require('node:https');\n\nconst agent = new https.Agent({ rejectUnauthorized: false });\n",
+        "const fs = require('node:fs');\nconst https = require('node:https');\n\nconst agent = new https.Agent({ ca: fs.readFileSync('/etc/ssl/private-ca.pem') });\n",
+    ),
+    "js.crypto.weak_hash": (
+        "const crypto = require('node:crypto');\n\nfunction digest(data) {\n  return crypto.createHash('md5').update(data).digest('hex');\n}\n",
+        "const crypto = require('node:crypto');\n\nfunction digest(data) {\n  return crypto.createHash('sha256').update(data).digest('hex');\n}\n",
+    ),
+    "js.crypto.insecure_random": (
+        "function makeToken() {\n  return Math.random().toString(36).slice(2);\n}\n",
+        "const crypto = require('node:crypto');\n\nfunction makeToken() {\n  return crypto.randomBytes(32).toString('hex');\n}\n",
+    ),
+    "js.jwt.no_verify": (
+        "const jwt = require('jsonwebtoken');\n\nfunction claims(token, key) {\n  return jwt.verify(token, key, { algorithms: ['HS256', 'none'] });\n}\n",
+        "const jwt = require('jsonwebtoken');\n\nfunction claims(token, publicKey) {\n  return jwt.verify(token, publicKey, { algorithms: ['RS256'] });\n}\n",
+    ),
+    "js.path.traversal": (
+        "const fs = require('node:fs');\nconst path = require('node:path');\n\napp.get('/files/:name', (req, res) => {\n  fs.createReadStream(path.join('/srv/files', req.params.name)).pipe(res);\n});\n",
+        "app.get('/files/:name', (req, res) => {\n  res.sendFile(req.params.name, { root: '/srv/files' });\n});\n",
+    ),
+    "js.ssrf.request": (
+        "app.get('/preview', async (req, res) => {\n  const page = await fetch(req.query.url);\n  res.send(await page.text());\n});\n",
+        "app.get('/preview', async (req, res) => {\n  const page = await fetch(`https://docs.example.com/${encodeURIComponent(req.query.page)}`);\n  res.send(await page.text());\n});\n",
+    ),
+    "js.redirect.open": (
+        "app.get('/after-login', (req, res) => {\n  res.redirect(req.query.next);\n});\n",
+        "const PAGES = { dashboard: '/dashboard', settings: '/settings' };\n\napp.get('/after-login', (req, res) => {\n  res.redirect(PAGES[req.query.next] ?? '/dashboard');\n});\n",
+    ),
+    "js.proto.pollution": (
+        "app.post('/settings', (req, res) => {\n  for (const key in req.body) {\n    settings[key] = req.body[key];\n  }\n});\n",
+        "const ALLOWED = new Set(['theme', 'language']);\n\napp.post('/settings', (req, res) => {\n  for (const key in req.body) {\n    if (ALLOWED.has(key)) settings[key] = req.body[key];\n  }\n});\n",
+    ),
+    "js.cors.wildcard_credentials": (
+        "const cors = require('cors');\n\napp.use(cors({ origin: true, credentials: true }));\n",
+        "const cors = require('cors');\n\napp.use(cors({ origin: ['https://app.example.com'], credentials: true }));\n",
+    ),
+    "js.llm.output_to_sink": (
+        "import Anthropic from '@anthropic-ai/sdk';\n\nconst client = new Anthropic();\n\nexport async function calculate(question, model) {\n  const reply = await client.messages.create({ model, max_tokens: 100, messages: [{ role: 'user', content: question }] });\n  return eval(reply.content[0].text);\n}\n",
+        "import Anthropic from '@anthropic-ai/sdk';\n\nconst client = new Anthropic();\n\nexport async function calculate(question, model) {\n  const reply = await client.messages.create({ model, max_tokens: 100, messages: [{ role: 'user', content: question }] });\n  const value = Number(reply.content[0].text);\n  if (!Number.isFinite(value)) throw new Error('the model did not return a number');\n  return value;\n}\n",
+    ),
+}
+
 # The literal a credential example shows. It is not secret-shaped, so the playbook itself stays clean; the
 # test replaces it with a synthetic token assembled at run time.
 SECRET_PLACEHOLDER = "<the literal token>"  # noqa: S105 - a placeholder, not a credential
@@ -156,7 +217,7 @@ CREDENTIAL_EXAMPLE_AFTER = (
 
 HEADER = """---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -205,6 +266,34 @@ def _python_section(rule: Rule) -> str:
     )
 
 
+def _js_section(rule: Rule) -> str:
+    before, after = JS_EXAMPLES[rule.id]
+    return "\n".join(
+        [
+            f"### `{rule.id}`: {rule.title}",
+            "",
+            _meta(rule),
+            "",
+            f"**Why:** {rule.why}",
+            "",
+            f"**Fix:** {rule.fix}",
+            "",
+            "Before:",
+            "",
+            "```javascript",
+            before.rstrip("\n"),
+            "```",
+            "",
+            "After:",
+            "",
+            "```javascript",
+            after.rstrip("\n"),
+            "```",
+            "",
+        ]
+    )
+
+
 def _config_section(rule: Rule) -> str:
     name, before, after = CONFIG_EXAMPLES[rule.id]
     return "\n".join(
@@ -240,7 +329,11 @@ def _secret_section(rule: Rule) -> str:
 
 
 def render() -> str:
-    for language, examples in (("python", set(EXAMPLES)), ("config", set(CONFIG_EXAMPLES))):
+    for language, examples in (
+        ("python", set(EXAMPLES)),
+        ("config", set(CONFIG_EXAMPLES)),
+        ("javascript", set(JS_EXAMPLES)),
+    ):
         ids = {rule.id for rule in RULES.values() if rule.language == language}
         if examples != ids:
             missing, extra = sorted(ids - examples), sorted(examples - ids)
@@ -278,6 +371,12 @@ def render() -> str:
         "apply, add its id with a reason to `[tool.kestrix] ignore-advisories`.\n",
     ]
     parts += [_secret_section(rule) for rule in RULES.values() if rule.language == "dependency"]
+    parts += [
+        "## JavaScript and TypeScript rules\n",
+        "These rules read `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts` files. Suppress a confirmed "
+        "false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.\n",
+    ]
+    parts += [_js_section(rule) for rule in RULES.values() if rule.language == "javascript"]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

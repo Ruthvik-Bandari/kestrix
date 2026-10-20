@@ -1048,6 +1048,370 @@
                   "CWE-506"
                 ]
               }
+            },
+            {
+              "id": "js.exec.eval",
+              "name": "JsExecEval",
+              "shortDescription": {
+                "text": "eval, new Function or a string timer with code that is not a literal"
+              },
+              "fullDescription": {
+                "text": "eval, the Function constructor and setTimeout or setInterval with a string all run text as JavaScript. If any part of that text comes from a user, a URL or the network, an attacker runs code in your page or server."
+              },
+              "help": {
+                "text": "Parse data instead of running it (JSON.parse), dispatch to known functions through an object or a Map, and pass setTimeout a function: setTimeout(() => refresh(id), 1000).",
+                "markdown": "**Why:** eval, the Function constructor and setTimeout or setInterval with a string all run text as JavaScript. If any part of that text comes from a user, a URL or the network, an attacker runs code in your page or server.\n\n**Fix:** Parse data instead of running it (JSON.parse), dispatch to known functions through an object or a Map, and pass setTimeout a function: setTimeout(() => refresh(id), 1000)."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-95"
+                ]
+              }
+            },
+            {
+              "id": "js.child_process.shell",
+              "name": "JsChildProcessShell",
+              "shortDescription": {
+                "text": "child_process command built from strings and run through a shell"
+              },
+              "fullDescription": {
+                "text": "exec and execSync, and spawn or execFile with shell: true, hand the command line to /bin/sh (cmd.exe on Windows). An interpolated value can add ';', '&&' or '$(...)' and run other commands."
+              },
+              "help": {
+                "text": "Run the program without a shell and pass values as separate arguments: execFile('git', ['log', ref]) or spawn('git', ['log', ref]). Do not set shell: true.",
+                "markdown": "**Why:** exec and execSync, and spawn or execFile with shell: true, hand the command line to /bin/sh (cmd.exe on Windows). An interpolated value can add ';', '&&' or '$(...)' and run other commands.\n\n**Fix:** Run the program without a shell and pass values as separate arguments: execFile('git', ['log', ref]) or spawn('git', ['log', ref]). Do not set shell: true."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "js.dom.xss_sink",
+              "name": "JsDomXssSink",
+              "shortDescription": {
+                "text": "HTML sink given a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "innerHTML, outerHTML, insertAdjacentHTML, document.write, React's dangerouslySetInnerHTML and jQuery .html() parse their value as HTML, so markup in it runs as script in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function."
+              },
+              "help": {
+                "text": "Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.",
+                "markdown": "**Why:** innerHTML, outerHTML, insertAdjacentHTML, document.write, React's dangerouslySetInnerHTML and jQuery .html() parse their value as HTML, so markup in it runs as script in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.\n\n**Fix:** Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "js.sql.string_built",
+              "name": "JsSqlStringBuilt",
+              "shortDescription": {
+                "text": "SQL text built with a template literal or concatenation"
+              },
+              "fullDescription": {
+                "text": "A value interpolated into SQL text can close the string and change the query (SQL injection)."
+              },
+              "help": {
+                "text": "Pass values as parameters: pool.query('SELECT * FROM users WHERE id = $1', [id]) (pg), connection.query('... WHERE id = ?', [id]) (mysql), knex.raw('... = ?', [id]), or a tagged template that binds values, such as sql`... ${id}` from postgres.js or slonik.",
+                "markdown": "**Why:** A value interpolated into SQL text can close the string and change the query (SQL injection).\n\n**Fix:** Pass values as parameters: pool.query('SELECT * FROM users WHERE id = $1', [id]) (pg), connection.query('... WHERE id = ?', [id]) (mysql), knex.raw('... = ?', [id]), or a tagged template that binds values, such as sql`... ${id}` from postgres.js or slonik."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "js.tls.reject_unauthorized",
+              "name": "JsTlsRejectUnauthorized",
+              "shortDescription": {
+                "text": "TLS certificate verification disabled"
+              },
+              "fullDescription": {
+                "text": "With rejectUnauthorized: false, or NODE_TLS_REJECT_UNAUTHORIZED=0 for the whole process, anyone on the network path can impersonate the server and read or change the traffic."
+              },
+              "help": {
+                "text": "Keep verification on. For a private CA pass its certificate (ca: fs.readFileSync('ca.pem')) or set NODE_EXTRA_CA_CERTS.",
+                "markdown": "**Why:** With rejectUnauthorized: false, or NODE_TLS_REJECT_UNAUTHORIZED=0 for the whole process, anyone on the network path can impersonate the server and read or change the traffic.\n\n**Fix:** Keep verification on. For a private CA pass its certificate (ca: fs.readFileSync('ca.pem')) or set NODE_EXTRA_CA_CERTS."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-295"
+                ]
+              }
+            },
+            {
+              "id": "js.crypto.weak_hash",
+              "name": "JsCryptoWeakHash",
+              "shortDescription": {
+                "text": "MD5 or SHA-1 hash"
+              },
+              "fullDescription": {
+                "text": "MD5 and SHA-1 have practical collision attacks and must not protect integrity, signatures or passwords."
+              },
+              "help": {
+                "text": "Use crypto.createHash('sha256'). For passwords use crypto.scrypt or a password hashing library.",
+                "markdown": "**Why:** MD5 and SHA-1 have practical collision attacks and must not protect integrity, signatures or passwords.\n\n**Fix:** Use crypto.createHash('sha256'). For passwords use crypto.scrypt or a password hashing library."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-328"
+                ]
+              }
+            },
+            {
+              "id": "js.crypto.insecure_random",
+              "name": "JsCryptoInsecureRandom",
+              "shortDescription": {
+                "text": "Math.random() used for a secret value"
+              },
+              "fullDescription": {
+                "text": "Math.random() is not a cryptographic generator; tokens, passwords, keys and nonces made with it can be predicted."
+              },
+              "help": {
+                "text": "Use crypto.randomBytes(32).toString('hex') or crypto.randomUUID() in Node, and crypto.getRandomValues or crypto.randomUUID() in the browser.",
+                "markdown": "**Why:** Math.random() is not a cryptographic generator; tokens, passwords, keys and nonces made with it can be predicted.\n\n**Fix:** Use crypto.randomBytes(32).toString('hex') or crypto.randomUUID() in Node, and crypto.getRandomValues or crypto.randomUUID() in the browser."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-330"
+                ]
+              }
+            },
+            {
+              "id": "js.jwt.no_verify",
+              "name": "JsJwtNoVerify",
+              "shortDescription": {
+                "text": "JWT verified with the 'none' algorithm allowed or expiry ignored"
+              },
+              "fullDescription": {
+                "text": "A token accepted with algorithm 'none' carries no signature, so anyone can forge it. ignoreExpiration: true keeps stolen or revoked tokens valid forever."
+              },
+              "help": {
+                "text": "Pass an explicit list of real algorithms, for example jwt.verify(token, publicKey, { algorithms: ['RS256'] }), and leave expiry checks on.",
+                "markdown": "**Why:** A token accepted with algorithm 'none' carries no signature, so anyone can forge it. ignoreExpiration: true keeps stolen or revoked tokens valid forever.\n\n**Fix:** Pass an explicit list of real algorithms, for example jwt.verify(token, publicKey, { algorithms: ['RS256'] }), and leave expiry checks on."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-347"
+                ]
+              }
+            },
+            {
+              "id": "js.path.traversal",
+              "name": "JsPathTraversal",
+              "shortDescription": {
+                "text": "File path built from Express request data"
+              },
+              "fullDescription": {
+                "text": "A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files."
+              },
+              "help": {
+                "text": "Reduce the name with path.basename, or resolve the path and check it stays under the base directory (path.resolve(base, name).startsWith(base + path.sep)). res.sendFile(name, { root: base }) does that check for you.",
+                "markdown": "**Why:** A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files.\n\n**Fix:** Reduce the name with path.basename, or resolve the path and check it stays under the base directory (path.resolve(base, name).startsWith(base + path.sep)). res.sendFile(name, { root: base }) does that check for you."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ]
+              }
+            },
+            {
+              "id": "js.ssrf.request",
+              "name": "JsSsrfRequest",
+              "shortDescription": {
+                "text": "HTTP request to a URL taken from Express request data"
+              },
+              "fullDescription": {
+                "text": "When a user chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf."
+              },
+              "help": {
+                "text": "Fix the scheme and host in code and let the input choose only a path or query value, or parse it with new URL() and check the host against an allowlist before the request.",
+                "markdown": "**Why:** When a user chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf.\n\n**Fix:** Fix the scheme and host in code and let the input choose only a path or query value, or parse it with new URL() and check the host against an allowlist before the request."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-918"
+                ]
+              }
+            },
+            {
+              "id": "js.redirect.open",
+              "name": "JsRedirectOpen",
+              "shortDescription": {
+                "text": "Redirect to a location taken from request data"
+              },
+              "fullDescription": {
+                "text": "A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted."
+              },
+              "help": {
+                "text": "Redirect to a path you build, or accept only known targets: look the value up in an allowlist, or allow only paths that start with a single '/'.",
+                "markdown": "**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.\n\n**Fix:** Redirect to a path you build, or accept only known targets: look the value up in an allowlist, or allow only paths that start with a single '/'."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-601"
+                ]
+              }
+            },
+            {
+              "id": "js.proto.pollution",
+              "name": "JsProtoPollution",
+              "shortDescription": {
+                "text": "Object keys from request data written without a __proto__ guard"
+              },
+              "fullDescription": {
+                "text": "A key of '__proto__' or 'constructor' from the request changes Object.prototype, which every object inherits from: an attacker can add properties such as isAdmin to all objects or break the application."
+              },
+              "help": {
+                "text": "Reject the keys __proto__, constructor and prototype before writing, write into Object.create(null) or a Map, or validate the body against a schema that lists the allowed keys.",
+                "markdown": "**Why:** A key of '__proto__' or 'constructor' from the request changes Object.prototype, which every object inherits from: an attacker can add properties such as isAdmin to all objects or break the application.\n\n**Fix:** Reject the keys __proto__, constructor and prototype before writing, write into Object.create(null) or a Map, or validate the body against a schema that lists the allowed keys."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-1321"
+                ]
+              }
+            },
+            {
+              "id": "js.cors.wildcard_credentials",
+              "name": "JsCorsWildcardCredentials",
+              "shortDescription": {
+                "text": "CORS allows any origin together with credentials"
+              },
+              "fullDescription": {
+                "text": "Allowing every origin (origin: true, '*', or echoing the request's Origin) with credentials lets any web site send requests with the user's cookies and read the responses."
+              },
+              "help": {
+                "text": "List the trusted origins explicitly, for example cors({ origin: ['https://app.example.com'], credentials: true }), and compare the Origin header against that list before echoing it.",
+                "markdown": "**Why:** Allowing every origin (origin: true, '*', or echoing the request's Origin) with credentials lets any web site send requests with the user's cookies and read the responses.\n\n**Fix:** List the trusted origins explicitly, for example cors({ origin: ['https://app.example.com'], credentials: true }), and compare the Origin header against that list before echoing it."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-942"
+                ]
+              }
+            },
+            {
+              "id": "js.llm.output_to_sink",
+              "name": "JsLlmOutputToSink",
+              "shortDescription": {
+                "text": "LLM output used as code, a shell command or HTML"
+              },
+              "fullDescription": {
+                "text": "A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command or markup, and this sink runs or renders it."
+              },
+              "help": {
+                "text": "Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than command text, and render it as text or through DOMPurify.",
+                "markdown": "**Why:** A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command or markup, and this sink runs or renders it.\n\n**Fix:** Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than command text, and render it as text or through DOMPurify."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-94"
+                ]
+              }
             }
           ]
         }

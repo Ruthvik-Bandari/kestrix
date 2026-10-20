@@ -20,6 +20,7 @@ from kestrix_scan import plugin
 from kestrix_scan.analyze import scan_text
 from kestrix_scan.cli import COMMANDS as CLI_COMMANDS
 from kestrix_scan.cli import _scan_parser
+from kestrix_scan.js_rules import check_js
 from kestrix_scan.python_rules import check_python
 from kestrix_scan.registry import RULES
 from kestrix_scan.walk import Candidate
@@ -172,6 +173,8 @@ def test_secure_code_review_covers_every_rule() -> None:
     text = FILES["skills/secure-code-review/SKILL.md"].decode()
     python_ids = {rule.id for rule in RULES.values() if rule.language == "python"}
     assert python_ids <= set(re.findall(r"`(py\.[a-z_.]+)`", text))
+    js_ids = {rule.id for rule in RULES.values() if rule.language == "javascript"}
+    assert js_ids <= set(re.findall(r"`(js\.[a-z_.]+)`", text))
     assert "`secret.*`" in text
     assert "fixing-security-findings" in text
 
@@ -259,6 +262,24 @@ def test_fix_playbook_config_examples_fire_before_and_not_after(
     assert before_skip is None and after_skip is None
     assert rule_id in {finding.rule_id for finding in before_findings}
     assert after_findings == []
+
+
+@pytest.mark.parametrize("rule_id", [rule.id for rule in RULES.values() if rule.language == "javascript"])
+def test_fix_playbook_js_examples_fire_before_and_not_after(generator: ModuleType, rule_id: str) -> None:
+    before, after = generator.JS_EXAMPLES[rule_id]
+    before_hits = check_js(before, "app.js")
+    after_hits = check_js(after, "app.js")
+    assert isinstance(before_hits, list) and isinstance(after_hits, list)
+    assert rule_id in {hit.rule_id for hit in before_hits}
+    assert after_hits == []
+
+
+def test_fix_playbook_refuses_a_js_rule_without_an_example(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delitem(generator.JS_EXAMPLES, "js.exec.eval")
+    with pytest.raises(SystemExit, match=r"missing \['js.exec.eval'\]"):
+        generator.render()
 
 
 def test_fix_playbook_refuses_a_config_rule_without_an_example(

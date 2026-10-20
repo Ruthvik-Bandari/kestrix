@@ -1,6 +1,6 @@
 ---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -923,3 +923,383 @@ CWE-506 · default severity critical · confidence high
 **Why:** The OpenSSF malicious-packages feed reports this package version as malware, typically code that steals credentials or opens a backdoor when it is installed or imported.
 
 **Fix:** Remove the package and its lockfile entry, then rotate every credential, token and key on machines where it was installed.
+
+## JavaScript and TypeScript rules
+
+These rules read `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts` files. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.
+
+### `js.exec.eval`: eval, new Function or a string timer with code that is not a literal
+
+CWE-95 · default severity high · confidence medium
+
+**Why:** eval, the Function constructor and setTimeout or setInterval with a string all run text as JavaScript. If any part of that text comes from a user, a URL or the network, an attacker runs code in your page or server.
+
+**Fix:** Parse data instead of running it (JSON.parse), dispatch to known functions through an object or a Map, and pass setTimeout a function: setTimeout(() => refresh(id), 1000).
+
+Before:
+
+```javascript
+function parse(text) {
+  return eval(text);
+}
+```
+
+After:
+
+```javascript
+function parse(text) {
+  return JSON.parse(text);
+}
+```
+
+### `js.child_process.shell`: child_process command built from strings and run through a shell
+
+CWE-78 · default severity high · confidence high
+
+**Why:** exec and execSync, and spawn or execFile with shell: true, hand the command line to /bin/sh (cmd.exe on Windows). An interpolated value can add ';', '&&' or '$(...)' and run other commands.
+
+**Fix:** Run the program without a shell and pass values as separate arguments: execFile('git', ['log', ref]) or spawn('git', ['log', ref]). Do not set shell: true.
+
+Before:
+
+```javascript
+const { exec } = require('node:child_process');
+
+function ping(host) {
+  exec(`ping -c 1 ${host}`);
+}
+```
+
+After:
+
+```javascript
+const { execFile } = require('node:child_process');
+
+function ping(host) {
+  execFile('ping', ['-c', '1', host]);
+}
+```
+
+### `js.dom.xss_sink`: HTML sink given a value that is not a literal
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** innerHTML, outerHTML, insertAdjacentHTML, document.write, React's dangerouslySetInnerHTML and jQuery .html() parse their value as HTML, so markup in it runs as script in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.
+
+**Fix:** Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.
+
+Before:
+
+```javascript
+function greet(name) {
+  document.getElementById('greeting').innerHTML = `Hello ${name}`;
+}
+```
+
+After:
+
+```javascript
+function greet(name) {
+  document.getElementById('greeting').textContent = `Hello ${name}`;
+}
+```
+
+### `js.sql.string_built`: SQL text built with a template literal or concatenation
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** A value interpolated into SQL text can close the string and change the query (SQL injection).
+
+**Fix:** Pass values as parameters: pool.query('SELECT * FROM users WHERE id = $1', [id]) (pg), connection.query('... WHERE id = ?', [id]) (mysql), knex.raw('... = ?', [id]), or a tagged template that binds values, such as sql`... ${id}` from postgres.js or slonik.
+
+Before:
+
+```javascript
+async function findUser(pool, id) {
+  return pool.query(`SELECT * FROM users WHERE id = ${id}`);
+}
+```
+
+After:
+
+```javascript
+async function findUser(pool, id) {
+  return pool.query('SELECT * FROM users WHERE id = $1', [id]);
+}
+```
+
+### `js.tls.reject_unauthorized`: TLS certificate verification disabled
+
+CWE-295 · default severity high · confidence high
+
+**Why:** With rejectUnauthorized: false, or NODE_TLS_REJECT_UNAUTHORIZED=0 for the whole process, anyone on the network path can impersonate the server and read or change the traffic.
+
+**Fix:** Keep verification on. For a private CA pass its certificate (ca: fs.readFileSync('ca.pem')) or set NODE_EXTRA_CA_CERTS.
+
+Before:
+
+```javascript
+const https = require('node:https');
+
+const agent = new https.Agent({ rejectUnauthorized: false });
+```
+
+After:
+
+```javascript
+const fs = require('node:fs');
+const https = require('node:https');
+
+const agent = new https.Agent({ ca: fs.readFileSync('/etc/ssl/private-ca.pem') });
+```
+
+### `js.crypto.weak_hash`: MD5 or SHA-1 hash
+
+CWE-328 · default severity medium · confidence medium
+
+**Why:** MD5 and SHA-1 have practical collision attacks and must not protect integrity, signatures or passwords.
+
+**Fix:** Use crypto.createHash('sha256'). For passwords use crypto.scrypt or a password hashing library.
+
+Before:
+
+```javascript
+const crypto = require('node:crypto');
+
+function digest(data) {
+  return crypto.createHash('md5').update(data).digest('hex');
+}
+```
+
+After:
+
+```javascript
+const crypto = require('node:crypto');
+
+function digest(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+```
+
+### `js.crypto.insecure_random`: Math.random() used for a secret value
+
+CWE-330 · default severity medium · confidence medium
+
+**Why:** Math.random() is not a cryptographic generator; tokens, passwords, keys and nonces made with it can be predicted.
+
+**Fix:** Use crypto.randomBytes(32).toString('hex') or crypto.randomUUID() in Node, and crypto.getRandomValues or crypto.randomUUID() in the browser.
+
+Before:
+
+```javascript
+function makeToken() {
+  return Math.random().toString(36).slice(2);
+}
+```
+
+After:
+
+```javascript
+const crypto = require('node:crypto');
+
+function makeToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+```
+
+### `js.jwt.no_verify`: JWT verified with the 'none' algorithm allowed or expiry ignored
+
+CWE-347 · default severity high · confidence high
+
+**Why:** A token accepted with algorithm 'none' carries no signature, so anyone can forge it. ignoreExpiration: true keeps stolen or revoked tokens valid forever.
+
+**Fix:** Pass an explicit list of real algorithms, for example jwt.verify(token, publicKey, { algorithms: ['RS256'] }), and leave expiry checks on.
+
+Before:
+
+```javascript
+const jwt = require('jsonwebtoken');
+
+function claims(token, key) {
+  return jwt.verify(token, key, { algorithms: ['HS256', 'none'] });
+}
+```
+
+After:
+
+```javascript
+const jwt = require('jsonwebtoken');
+
+function claims(token, publicKey) {
+  return jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+}
+```
+
+### `js.path.traversal`: File path built from Express request data
+
+CWE-22 · default severity medium · confidence medium
+
+**Why:** A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files.
+
+**Fix:** Reduce the name with path.basename, or resolve the path and check it stays under the base directory (path.resolve(base, name).startsWith(base + path.sep)). res.sendFile(name, { root: base }) does that check for you.
+
+Before:
+
+```javascript
+const fs = require('node:fs');
+const path = require('node:path');
+
+app.get('/files/:name', (req, res) => {
+  fs.createReadStream(path.join('/srv/files', req.params.name)).pipe(res);
+});
+```
+
+After:
+
+```javascript
+app.get('/files/:name', (req, res) => {
+  res.sendFile(req.params.name, { root: '/srv/files' });
+});
+```
+
+### `js.ssrf.request`: HTTP request to a URL taken from Express request data
+
+CWE-918 · default severity medium · confidence medium
+
+**Why:** When a user chooses the URL, the server can be made to call internal services, cloud metadata endpoints or other hosts on the attacker's behalf.
+
+**Fix:** Fix the scheme and host in code and let the input choose only a path or query value, or parse it with new URL() and check the host against an allowlist before the request.
+
+Before:
+
+```javascript
+app.get('/preview', async (req, res) => {
+  const page = await fetch(req.query.url);
+  res.send(await page.text());
+});
+```
+
+After:
+
+```javascript
+app.get('/preview', async (req, res) => {
+  const page = await fetch(`https://docs.example.com/${encodeURIComponent(req.query.page)}`);
+  res.send(await page.text());
+});
+```
+
+### `js.redirect.open`: Redirect to a location taken from request data
+
+CWE-601 · default severity medium · confidence medium
+
+**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.
+
+**Fix:** Redirect to a path you build, or accept only known targets: look the value up in an allowlist, or allow only paths that start with a single '/'.
+
+Before:
+
+```javascript
+app.get('/after-login', (req, res) => {
+  res.redirect(req.query.next);
+});
+```
+
+After:
+
+```javascript
+const PAGES = { dashboard: '/dashboard', settings: '/settings' };
+
+app.get('/after-login', (req, res) => {
+  res.redirect(PAGES[req.query.next] ?? '/dashboard');
+});
+```
+
+### `js.proto.pollution`: Object keys from request data written without a __proto__ guard
+
+CWE-1321 · default severity medium · confidence medium
+
+**Why:** A key of '__proto__' or 'constructor' from the request changes Object.prototype, which every object inherits from: an attacker can add properties such as isAdmin to all objects or break the application.
+
+**Fix:** Reject the keys __proto__, constructor and prototype before writing, write into Object.create(null) or a Map, or validate the body against a schema that lists the allowed keys.
+
+Before:
+
+```javascript
+app.post('/settings', (req, res) => {
+  for (const key in req.body) {
+    settings[key] = req.body[key];
+  }
+});
+```
+
+After:
+
+```javascript
+const ALLOWED = new Set(['theme', 'language']);
+
+app.post('/settings', (req, res) => {
+  for (const key in req.body) {
+    if (ALLOWED.has(key)) settings[key] = req.body[key];
+  }
+});
+```
+
+### `js.cors.wildcard_credentials`: CORS allows any origin together with credentials
+
+CWE-942 · default severity medium · confidence high
+
+**Why:** Allowing every origin (origin: true, '*', or echoing the request's Origin) with credentials lets any web site send requests with the user's cookies and read the responses.
+
+**Fix:** List the trusted origins explicitly, for example cors({ origin: ['https://app.example.com'], credentials: true }), and compare the Origin header against that list before echoing it.
+
+Before:
+
+```javascript
+const cors = require('cors');
+
+app.use(cors({ origin: true, credentials: true }));
+```
+
+After:
+
+```javascript
+const cors = require('cors');
+
+app.use(cors({ origin: ['https://app.example.com'], credentials: true }));
+```
+
+### `js.llm.output_to_sink`: LLM output used as code, a shell command or HTML
+
+CWE-94 · default severity high · confidence medium
+
+**Why:** A model's output follows whatever text reached its prompt. A prompt injection hidden in a web page, a document or a user message can make the model emit code, a command or markup, and this sink runs or renders it.
+
+**Fix:** Treat model output as untrusted input. Parse it into a fixed structure (JSON validated against a schema, or a choice from an allowlist), pass values as arguments rather than command text, and render it as text or through DOMPurify.
+
+Before:
+
+```javascript
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic();
+
+export async function calculate(question, model) {
+  const reply = await client.messages.create({ model, max_tokens: 100, messages: [{ role: 'user', content: question }] });
+  return eval(reply.content[0].text);
+}
+```
+
+After:
+
+```javascript
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic();
+
+export async function calculate(question, model) {
+  const reply = await client.messages.create({ model, max_tokens: 100, messages: [{ role: 'user', content: question }] });
+  const value = Number(reply.content[0].text);
+  if (!Number.isFinite(value)) throw new Error('the model did not return a number');
+  return value;
+}
+```
