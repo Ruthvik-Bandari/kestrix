@@ -105,7 +105,7 @@ def test_audit_filter_lists_excluded_and_confirmed_ids(tmp_path: Path, monkeypat
     (root / "work" / "audit_verdicts.jsonl").write_text(
         json.dumps({"id": "tr1", "final": "vulnerable", "final_by": "ai-consensus"}) + "\n"
     )
-    (root / "reports" / "audit.json").write_text(json.dumps({"filter": {"dropped_strata": ["python/nvd_name"]}}))
+    (root / "reports" / "audit.json").write_text(json.dumps({"filter": {"dropped_strata": ["ghsa/python/nvd_name"]}}))
     manifest = run(root)
     assert manifest["filters"]["excluded_ids"]["train"] == ["n1"]
     assert manifest["filters"]["audit_confirmed_ids"]["train"] == ["tr1"]

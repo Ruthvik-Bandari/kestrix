@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """AI-assisted label audit of the vulnerable-labelled functions (``docs/data/policy.md``, section 6).
 
-1. ``audit-sample`` (Slurm): a seeded random sample, stratified by language and label rule, of the
-   train and dev records of ``work/split-v2.jsonl``. Test and test-extension records are never
+1. ``audit-sample`` (Slurm): a seeded random sample, stratified by source family (CVEfixes and
+   MoreFixes, SVEN, GHSA), language and label rule, of the train and dev records of
+   ``work/split-v2.jsonl`` (``work/split.jsonl`` before the extension: v1 records keep their split).
+   Each stratum is drawn on its own, so a later run only adds the strata that are new (the mined
+   GHSA records) and never redraws one already reviewed. Test and test-extension records are never
    sampled: they are locked test inputs, which an AI assistant session must not receive. Each
    packet (``audit/packets.jsonl``, 0600) holds the advisory text, the CWEs, the function before and
    after the fix and their diff, plus its SHA-256.
@@ -36,8 +39,8 @@ from pathlib import Path
 from typing import Any
 
 SEED = "kestrixvul-audit-v1"
-PER_STRATUM = 25
-TARGET = 240
+PER_STRATUM = 15  # at least this many per stratum (all of a smaller one) ...
+FRACTION = 0.06  # ... or this share of the stratum, whichever is larger
 MIN_ACCURACY = 0.80
 MIN_STRATUM_N = 5
 VERDICTS = ("vulnerable", "not_vulnerable", "unclear")
@@ -64,28 +67,20 @@ def write_private(path: Path, text: str) -> None:
     tmp.replace(path)
 
 
+def family(source: str) -> str:
+    return "dumps" if source in {"cvefixes", "morefixes"} else source
+
+
 def stratum(record: dict[str, Any]) -> str:
-    return f"{record['language']}/{record['label_rule']}"
+    return f"{family(record['source'])}/{record['language']}/{record['label_rule']}"
 
 
 def rank(rid: str, seed: str = SEED) -> str:
     return hashlib.sha256(f"{seed}\x1f{rid}".encode()).hexdigest()
 
 
-def allocate(population: dict[str, int], per_stratum: int = PER_STRATUM, target: int = TARGET) -> dict[str, int]:
-    """``per_stratum`` from every stratum (all of a smaller one), then the rest up to ``target``
-    in proportion to the records each stratum still has."""
-    take = {s: min(per_stratum, n) for s, n in population.items()}
-    left = {s: n - take[s] for s, n in population.items()}
-    room, pool = target - sum(take.values()), sum(left.values())
-    if room <= 0 or pool == 0:
-        return take
-    room = min(room, pool)
-    share = {s: room * left[s] / pool for s in left}
-    extra = {s: math.floor(share[s]) for s in left}
-    for s in sorted(left, key=lambda k: (extra[k] - share[k], k))[: room - sum(extra.values())]:
-        extra[s] += 1  # largest remainders first
-    return {s: take[s] + extra[s] for s in take}
+def quota(n: int) -> int:
+    return min(n, max(PER_STRATUM, math.ceil(FRACTION * n)))
 
 
 def draw(records: list[dict[str, Any]], seed: str = SEED) -> tuple[list[dict[str, Any]], dict[str, int]]:
@@ -95,10 +90,9 @@ def draw(records: list[dict[str, Any]], seed: str = SEED) -> tuple[list[dict[str
     for r in eligible:
         by_stratum[stratum(r)].append(r)
     population = {s: len(v) for s, v in sorted(by_stratum.items())}
-    quota = allocate(population)
     chosen: list[dict[str, Any]] = []
-    for s, recs in sorted(by_stratum.items()):
-        chosen += sorted(recs, key=lambda r: rank(r["id"], seed))[: quota[s]]
+    for _, recs in sorted(by_stratum.items()):
+        chosen += sorted(recs, key=lambda r: rank(r["id"], seed))[: quota(len(recs))]
     return sorted(chosen, key=lambda r: rank(r["id"], seed)), population
 
 
@@ -136,8 +130,16 @@ def _advisory_texts(root: Path, ids: set[str]) -> dict[str, str]:
 
 
 def sample(root: Path) -> dict[str, Any]:
-    records = read_jsonl(root / "work" / "split-v2.jsonl")
-    chosen, population = draw(records)
+    """Draw the sample and write the packets; strata already in ``audit/packets.jsonl`` are kept as is."""
+    v2 = root / "work" / "split-v2.jsonl"
+    records = read_jsonl(v2 if v2.exists() else root / "work" / "split.jsonl")
+    drawn, population = draw(records)
+    existing = read_jsonl(root / "audit" / "packets.jsonl")
+    done = {p["stratum"] for p in existing}
+    for s in done & set(population):
+        if {r["id"] for r in drawn if stratum(r) == s} != {p["id"] for p in existing if p["stratum"] == s}:
+            raise AuditError(f"stratum {s} would be redrawn differently; its population changed")
+    chosen = [r for r in drawn if stratum(r) not in done]
     texts = _advisory_texts(root, {a for r in chosen for a in r["advisory_ids"]})
     packets = []
     for r in chosen:
@@ -160,16 +162,18 @@ def sample(root: Path) -> dict[str, Any]:
         }
         packet["packet_sha256"] = packet_sha256(packet)
         packets.append(packet)
+    packets = existing + packets
     write_private(root / "audit" / "packets.jsonl", "".join(json.dumps(p, sort_keys=True) + "\n" for p in packets))
-    sampled = Counter(stratum(r) for r in chosen)
+    sampled = Counter(p["stratum"] for p in packets)
     return {
         "schema_version": 1,
         "seed": SEED,
         "audited_splits": list(AUDITED_SPLITS),
         "population_by_stratum": population,
         "sample_by_stratum": dict(sorted(sampled.items())),
-        "sample_by_source": dict(sorted(Counter(r["source"] for r in chosen).items())),
-        "sample_size": len(chosen),
+        "sample_by_source": dict(sorted(Counter(p["source"] for p in packets).items())),
+        "sample_size": len(packets),
+        "added_in_this_run": len(chosen),
         "with_advisory_text": sum(1 for p in packets if p["advisories"]),
         "ids_sha256": hashlib.sha256("".join(sorted(p["id"] + "\n" for p in packets)).encode()).hexdigest(),
     }
