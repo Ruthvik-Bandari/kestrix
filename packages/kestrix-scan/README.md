@@ -1,8 +1,8 @@
 # kestrix-scan
 
-**Local security checks for Python code, hard-coded secrets and dependencies.** `kestrix-scan` finds shell and SQL
-injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, leaked API keys, and lockfile
-dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
+**Local security checks for Python, JavaScript and TypeScript code, hard-coded secrets and dependencies.**
+`kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
+randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
 
 - **No dependencies** on Python 3.11 and newer (only `tomli` on 3.10). Python 3.10 to 3.13.
@@ -216,7 +216,8 @@ settings. The package is typed (`py.typed`).
 
 ## Privacy
 
-`kestrix-scan` reads files as bytes, decodes them as text and parses Python with the standard-library `ast`.
+`kestrix-scan` reads files as bytes, decodes them as text, parses Python with the standard-library `ast` and
+splits JavaScript and TypeScript with its own bounded tokenizer.
 It never imports or runs the code it scans, never follows symbolic links out of the scan root, and caps
 file size and count. Scans, the plugin hooks and the install guard make no network requests; the test suite
 proves they work with every socket call refused. The one exception is `kestrix-scan db update`, which you run
@@ -224,11 +225,16 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 40 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 54 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask, Django, FastAPI and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
-LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), Claude Code and MCP configuration
+LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), JavaScript and TypeScript (14 `js.*`
+rules for `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts`: `eval` and `new Function`,
+`child_process` shells, DOM and React HTML sinks, SQL built from strings, `rejectUnauthorized: false`, MD5/SHA-1,
+`Math.random()` for secrets, JWT `none` and `ignoreExpiration`, Express request data reaching files, URLs and
+redirects, prototype pollution, wildcard CORS with credentials, and LLM output reaching `eval`, a shell or HTML),
+Claude Code and MCP configuration
 (5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and
 literal credentials), secrets in any text file (11 `secret.*` rules: AWS, GitHub, Slack, Stripe, Google, Anthropic
 and OpenAI-style keys, private keys, JWTs and high-entropy credentials), and dependencies in lockfiles (2 `dep.*`
@@ -236,6 +242,14 @@ rules: `dep.vulnerable`, `dep.malicious`). The full table with CWEs and severiti
 [docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules), and
 each rule's sources are in
 [docs/modules/code-rules-provenance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code-rules-provenance.md).
+
+**JavaScript and TypeScript: precision first, no full parser.** The scanner stays dependency-free, so it does not
+ship a JavaScript parser. A bounded tokenizer (strings, nested templates, comments, regex versus division, JSX and
+TypeScript annotations) feeds a structural matcher that knows calls, member chains, assignments, object keys, JSX
+attributes, function scopes and `import`/`require` aliases, plus a light same-function taint for Express request
+data, the URL and LLM output. Every rule matches a precise shape and stays quiet when the code is ambiguous, so it
+misses more than a parser-based tool would, by design. Minified files (a `.min.` name or an average line over 500
+characters) are skipped as `minified`. Vue and Svelte files are not analyzed.
 
 Rules are pattern analysis: they miss things and can be wrong in context. No detection rate is claimed, and
 no findings means no rule fired, not that the code is secure. Rule ids are stable; renaming one is a breaking
