@@ -5,6 +5,24 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **JavaScript and TypeScript rules (ADR 0005 slice C3):** 14 `js.*` rules for `.js`, `.mjs`, `.cjs`, `.jsx`,
+  `.ts`, `.tsx`, `.mts` and `.cts`, with no new dependency: a bounded tokenizer (strings, nested templates,
+  comments, regex versus division, JSX, TypeScript) and a structural matcher (calls, member chains, assignments,
+  object keys, JSX attributes, function scopes, `import`/`require`/`promisify` aliases) with a light same-function
+  taint from Express/Koa request data, the URL and `postMessage` (`location`, `URLSearchParams`, React Router
+  hooks) and OpenAI/Anthropic SDK output. Rules: `js.exec.eval` (CWE-95), `js.child_process.shell` (CWE-78),
+  `js.dom.xss_sink` (CWE-79; high with a URL source, medium otherwise), `js.sql.string_built` (CWE-89; binding
+  tagged templates are fine), `js.tls.reject_unauthorized` (CWE-295), `js.crypto.weak_hash` (CWE-328),
+  `js.crypto.insecure_random` (CWE-330), `js.jwt.no_verify` (CWE-347), `js.path.traversal` (CWE-22),
+  `js.ssrf.request` (CWE-918), `js.redirect.open` (CWE-601), `js.proto.pollution` (CWE-1321),
+  `js.cors.wildcard_credentials` (CWE-942) and `js.llm.output_to_sink` (CWE-94/78/79 by sink). They are appended
+  to the registry, so earlier SARIF `ruleIndex` values are unchanged.
+- **New skip reason `minified`** in `files_skipped` for `.min.` files and files whose average line is longer than
+  500 characters; the secret rules still run on them.
+- **Suppressions** may also be written as `/* kestrix: ignore[rule-id] reason */`, the form JSX needs.
+- **Secrets:** `secret.generic` also reads values in backtick template literals without `${...}`.
+- The `fixing-security-findings` playbook and the `secure-code-review` skill cover the `js.*` rules.
+
 - **Taint analysis (Python):** an intraprocedural forward data flow from Flask, Django and FastAPI request
   data, LLM client output (Anthropic, OpenAI, LiteLLM, Ollama, Google GenAI, LangChain), `input()`/`sys.argv`
   and environment variables, with per-sink sanitizers (`shlex.quote`, `basename`/`secure_filename`,

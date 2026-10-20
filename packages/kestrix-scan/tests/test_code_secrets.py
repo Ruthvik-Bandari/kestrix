@@ -22,6 +22,7 @@ PROVIDER_LINES = [
     ("generic", lambda: f"export SERVICE_API_KEY={fake('generic')}\n"),
     ("generic", lambda: f'{{"client_secret": "{fake("generic")}"}}\n'),
     ("generic", lambda: f'password: str = "{fake("generic")}"\n'),
+    ("generic", lambda: f"const password = `{fake('generic')}`;\n"),
 ]
 
 
@@ -31,6 +32,10 @@ def test_secret_detected(kind: str, make) -> None:
     found = check_secrets(text)
     assert [hit.rule_id for hit in found] == [f"secret.{kind}"]
     assert found[0].line == 1
+
+
+def test_a_template_literal_with_a_substitution_is_not_a_generic_secret() -> None:
+    assert check_secrets("const password = `${process.env.PW}abcdefghijklmnop`;\n") == []
 
 
 def test_every_secret_rule_is_covered() -> None:

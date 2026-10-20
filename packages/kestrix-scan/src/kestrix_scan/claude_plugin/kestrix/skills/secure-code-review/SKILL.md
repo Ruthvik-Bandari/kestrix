@@ -7,8 +7,8 @@ description: Review code for security problems with the local Kestrix scanner an
 
 Kestrix by Ruthvik Bandari — https://github.com/Ruthvik-Bandari/kestrix
 
-`kestrix-scan` is a local, rule-based scanner: Python rules (`py.*`), Claude Code and MCP configuration
-rules (`config.*`) and secret rules (`secret.*`) for any text file. It never runs or imports the code and sends nothing off the machine. It is pattern
+`kestrix-scan` is a local, rule-based scanner: Python rules (`py.*`), JavaScript and TypeScript rules
+(`js.*`), Claude Code and MCP configuration rules (`config.*`) and secret rules (`secret.*`) for any text file. It never runs or imports the code and sends nothing off the machine. It is pattern
 analysis: it misses things and can be wrong in context, so "no findings" means no rule fired, not that
 the code is secure.
 
@@ -55,6 +55,8 @@ the code is secure.
    | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser` | Debug from the environment; explicit `if not ...: raise`; `defusedxml`. |
    | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source from input. |
    | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |
+   | JavaScript and TypeScript | `js.exec.eval`, `js.child_process.shell`, `js.sql.string_built`, `js.dom.xss_sink`, `js.llm.output_to_sink` | `JSON.parse` or a lookup instead of `eval`; `execFile`/`spawn` with an argument array and no `shell: true`; `$1`/`?` parameters or a binding tagged template; `textContent` or `DOMPurify.sanitize` instead of HTML sinks; validate model output before it reaches code, a command or HTML. |
+   | JavaScript data flow and config | `js.path.traversal`, `js.ssrf.request`, `js.redirect.open`, `js.proto.pollution`, `js.cors.wildcard_credentials`, `js.tls.reject_unauthorized`, `js.crypto.weak_hash`, `js.crypto.insecure_random`, `js.jwt.no_verify` | `path.basename` or `res.sendFile(name, { root })`; fixed scheme and host; allowlisted redirects; reject `__proto__`/`constructor` keys; list CORS origins; keep TLS checks on; `sha256`; `crypto.randomBytes`; explicit JWT `algorithms`. |
    | Agent configuration | `config.*` | No downloaded scripts in hooks, no `bypassPermissions` or `Bash(*)` in project settings, pinned MCP package versions, and `${VAR}` references instead of literal credentials. |
    | Secrets | `secret.*` | Remove the value, read it from the environment or a secrets manager, and tell the user to rotate it. |
 
@@ -76,7 +78,7 @@ the code is secure.
 
 6. **Report.** Say what you fixed (rule id, file and line), what you suppressed and why, and the remaining
    risk: low findings left as is, anything the rules do not cover (authorization logic, business rules,
-   JavaScript until its rules ship), and that a clean scan is not proof of security.
+   data flow across functions or files), and that a clean scan is not proof of security.
 
 ## Hooks
 

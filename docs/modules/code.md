@@ -1,8 +1,8 @@
 # Code security scanning
 
-The code module looks for common security mistakes in source code before they ship: shell and SQL injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, hard-coded secrets, and [dependencies](#dependencies) with known vulnerabilities or reported as malware. Run it on a checkout, in CI, or from a Claude Code hook on every file the assistant writes. Each finding names a rule, a CWE, why it matters and how to fix it. It is available from the CLI, pre-commit, pytest and as a Python function; there is no API route or dashboard page yet.
+The code module looks for common security mistakes in Python, JavaScript and TypeScript source code before they ship: shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and randomness, hard-coded secrets, and [dependencies](#dependencies) with known vulnerabilities or reported as malware. Run it on a checkout, in CI, or from a Claude Code hook on every file the assistant writes. Each finding names a rule, a CWE, why it matters and how to fix it. It is available from the CLI, pre-commit, pytest and as a Python function; there is no API route or dashboard page yet.
 
-It is pattern analysis, not a proof. Rules miss things, and a finding can be wrong in context. No real-world detection or false-positive rate is claimed, and "no findings" means no rule fired, not that the code is secure. Category coverage has been measured on synthetic code only: the [benchmark scorecard](../benchmarks/benchmarkpython.md) compares `kestrix-scan` with Bandit and the security-guidance regex layer on OWASP BenchmarkPython v0.1 and on the project's own labelled cases, with the method, mapping and caveats. The design is recorded in [ADR 0005](../adr/0005-code-security.md); this page describes slice C1: the Python rules, the secret rules, the CLI, the output formats, exit codes, suppression and baselines. Since [ADR 0006](../adr/0006-two-packages.md) the scanner is its own package, `kestrix-scan` (import name `kestrix_scan`), with no runtime dependencies on Python 3.11+ (`tomli` on 3.10); its source is under [`packages/kestrix-scan/src/kestrix_scan/`](../../packages/kestrix-scan/src/kestrix_scan/) and its user guide is [packages/kestrix-scan/README.md](../../packages/kestrix-scan/README.md). The workbench depends on it: `kestrix code scan` runs `kestrix-scan scan` with the same options, output and exit codes, and `kestrix.code` re-exports its Python API.
+It is pattern analysis, not a proof. Rules miss things, and a finding can be wrong in context. No real-world detection or false-positive rate is claimed, and "no findings" means no rule fired, not that the code is secure. Category coverage has been measured on synthetic code only: the [benchmark scorecard](../benchmarks/benchmarkpython.md) compares `kestrix-scan` with Bandit and the security-guidance regex layer on OWASP BenchmarkPython v0.1 and on the project's own labelled cases, with the method, mapping and caveats. The design is recorded in [ADR 0005](../adr/0005-code-security.md); this page describes slices C1 and C3: the Python rules, the JavaScript and TypeScript rules, the secret rules, the CLI, the output formats, exit codes, suppression and baselines. Since [ADR 0006](../adr/0006-two-packages.md) the scanner is its own package, `kestrix-scan` (import name `kestrix_scan`), with no runtime dependencies on Python 3.11+ (`tomli` on 3.10); its source is under [`packages/kestrix-scan/src/kestrix_scan/`](../../packages/kestrix-scan/src/kestrix_scan/) and its user guide is [packages/kestrix-scan/README.md](../../packages/kestrix-scan/README.md). The workbench depends on it: `kestrix code scan` runs `kestrix-scan scan` with the same options, output and exit codes, and `kestrix.code` re-exports its Python API.
 
 ## Privacy and safety
 
@@ -84,6 +84,7 @@ The repository root has a `.pre-commit-hooks.yaml` with the hook `kestrix-scan` 
 - **A file named on the command line** is scanned even if it is ignored, so a hook can check a file such as `.env`.
 - **Limits:** files over 1 MiB are skipped as `too_large`; files with a NUL byte in their first 8 KiB as `binary`; at most 20,000 files per scan, after which `truncated` is true. A symbolic link whose target is outside the scan root is skipped as `symlink_outside_root`; a link inside the root is scanned once, under its target's path.
 - **Python rules** run on `.py` and `.pyw` files. A file that does not parse is listed as `syntax_error` (or `too_complex` for pathological nesting); the secret rules still run on it.
+- **JavaScript and TypeScript rules** run on `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts` files (see [JavaScript and TypeScript](#javascript-and-typescript)). A minified file (a `.min.` name, a name ending in `-min.js`, or an average line longer than 500 characters) is listed as `minified`, and one beyond the tokenizer's bounds as `too_complex`; the secret rules still run on both. Vue and Svelte files get only the secret rules.
 - **Configuration rules** run on `.claude/settings.json`, `.claude/settings.local.json`, `hooks/hooks.json` and `.mcp.json` (see [Claude Code and MCP configuration](#claude-code-and-mcp-configuration)). A walk inside a git work tree only sees files git does not ignore, so name an ignored `settings.local.json` explicitly to check it.
 - **Secret rules** run on every text file.
 - **Dependency files** (below) are checked against the local vulnerability index. They may be up to 64 MiB; one over 1 MiB gets only the dependency check, not the secret rules.
@@ -137,6 +138,20 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `secret.generic` | any text file | CWE-798 | high | medium | Hard-coded credential |
 | `dep.vulnerable` | lockfiles | CWE-1395 | critical | high | Dependency version with a known vulnerability (OSV) |
 | `dep.malicious` | lockfiles | CWE-506 | critical | high | Dependency reported as a malicious package (OSV MAL-) |
+| `js.exec.eval` | JavaScript, TypeScript | CWE-95 | high | medium | eval, new Function or a string timer with code that is not a literal |
+| `js.child_process.shell` | JavaScript, TypeScript | CWE-78 | high | high | child_process command built from strings and run through a shell |
+| `js.dom.xss_sink` | JavaScript, TypeScript | CWE-79 | high | medium | HTML sink given a value that is not a literal |
+| `js.sql.string_built` | JavaScript, TypeScript | CWE-89 | high | medium | SQL text built with a template literal or concatenation |
+| `js.tls.reject_unauthorized` | JavaScript, TypeScript | CWE-295 | high | high | TLS certificate verification disabled |
+| `js.crypto.weak_hash` | JavaScript, TypeScript | CWE-328 | medium | medium | MD5 or SHA-1 hash |
+| `js.crypto.insecure_random` | JavaScript, TypeScript | CWE-330 | medium | medium | Math.random() used for a secret value |
+| `js.jwt.no_verify` | JavaScript, TypeScript | CWE-347 | high | high | JWT verified with the 'none' algorithm allowed or expiry ignored |
+| `js.path.traversal` | JavaScript, TypeScript | CWE-22 | medium | medium | File path built from Express request data |
+| `js.ssrf.request` | JavaScript, TypeScript | CWE-918 | medium | medium | HTTP request to a URL taken from Express request data |
+| `js.redirect.open` | JavaScript, TypeScript | CWE-601 | medium | medium | Redirect to a location taken from request data |
+| `js.proto.pollution` | JavaScript, TypeScript | CWE-1321 | medium | medium | Object keys from request data written without a __proto__ guard |
+| `js.cors.wildcard_credentials` | JavaScript, TypeScript | CWE-942 | medium | high | CORS allows any origin together with credentials |
+| `js.llm.output_to_sink` | JavaScript, TypeScript | CWE-94 | high | medium | LLM output used as code, a shell command or HTML |
 <!-- rules:end -->
 
 **How the Python rules decide.** Calls are resolved through imports and aliases (`import subprocess as sp`, `from os import system`). A name counts as a literal when every assignment to it in its function, or in the module, is a literal; a fixed command or query is not reported. When an argument cannot be classified, the rule stays quiet: the rules prefer missing a case to flagging safe code.
@@ -182,6 +197,45 @@ The Python rules include an intraprocedural taint analysis ([`taint.py`](../../p
 **Sinks.** For `py.exec.eval`, `py.exec.exec`, `py.subprocess.shell_true`, `py.os.system` and `py.sql.string_built`, the pattern rule decides whether to report as before; when tainted data reaches the sink the finding gets the source's confidence, a sentence naming the source and a `trace`. When that data is LLM output, `py.llm.output_to_sink` is reported on that line instead, with CWE-94 (code), CWE-78 (shell), CWE-89 (SQL) or CWE-22 (path). `py.path.traversal`, `py.ssrf.request` (requests, httpx and `urllib.request`), `py.redirect.open` (Flask `redirect`, Django `redirect`/`HttpResponseRedirect`, Starlette `RedirectResponse`) and `py.xss.markup` (`Markup`, `mark_safe`; `render_template_string` and `jinja2.Template` source as CWE-1336) fire only on taint, and only from request or LLM sources: a URL from an environment variable or a path from `sys.argv` is not reported.
 
 **Traces.** A taint finding carries `trace`, a list of `{line, note}` from the source to the sink. It appears in the JSON report (only on findings that have one), as SARIF `codeFlows`, as a `trace:` line in the text report, and as `[trace: L4→L5→L7]` in the hook context. The fingerprint does not include it.
+
+## JavaScript and TypeScript
+
+The `js.*` rules ([`js_rules.py`](../../packages/kestrix-scan/src/kestrix_scan/js_rules.py)) work without a JavaScript parser, because `kestrix-scan` has no dependencies. They are **precision first**: each rule matches one precise shape and stays quiet when the code is ambiguous, so they miss more than a parser-based tool would. The source is read as text and never run.
+
+**Tokenizer** ([`js_tokens.py`](../../packages/kestrix-scan/src/kestrix_scan/js_tokens.py)). Strings in `'` and `"`; template literals, split around each `${...}`, which may nest further templates; `//`, `/* */`, `#!` and `<!--` comments, which are dropped; numbers and names. A `/` starts a regular expression after an operator, an opening bracket, `}`, a keyword such as `return` or `typeof`, or at the start, and divides after a name, a number, a string, `)` or `]`; a regex that does not close on its line is read as division. In `.js`, `.mjs`, `.cjs`, `.jsx` and `.tsx` files a `<` where an expression may start, followed by a tag name or `>`, opens a JSX element: text between tags is dropped (so `Don't` is not a string), attributes become their own tokens, and `{...}` holds code. In `.tsx`, `<T,>` and `<T extends U>` stay type parameters, and in `.ts` files `<T>x` is a type assertion. TypeScript annotations, generics, `as` and `!` are ordinary tokens the matcher steps over. Unterminated strings, templates, comments and elements end at the line or the file. More than 500,000 tokens or 512 open braces, templates and elements make the file `too_complex`.
+
+**Structural matcher** ([`js_index.py`](../../packages/kestrix-scan/src/kestrix_scan/js_index.py)). It pairs every bracket and template, so a call's arguments are split at top-level commas; reads member chains (`a.b?.c`, `require('x').y`, `f(...).g`, `a[0]`, `f<T>(...)`); finds function bodies (after `=>`, or after `(...)` that follows a name that is not `if`, `for`, `while`, `switch` or `catch`, also with a TypeScript return type) and their parameters; and records bindings per function: `const`/`let`/`var` with destructuring, assignments, `for (... of|in ...)` variables and the first parameter of a `forEach`/`map`/`filter` callback. Module aliases follow `import` (default, `* as`, named, `as`), `require` (whole, destructured, `require('m').x`), `await import(...)`, `util.promisify(x)` and copies such as `const run = cp.exec`, with `node:` prefixes and `fs/promises` folded in. `eval`, `document`, `fetch`, `Math` and the other globals resolve only when the file does not declare the name. A value is a literal when it is a string, number, template without non-literal parts, array of literals, or a name whose every binding is one; a string is built when it is a template with a non-literal `${}` or a `+` concatenation with a non-literal part.
+
+**Taint** is lightweight. It follows a value inside its function and the functions around it (closures), never into a called function, and only through bindings, `+`, templates, `||`/`??`/`&&`, ternary branches, `await`, array and object literals, member access and indexing, string and array methods on tainted data, and `path.join`/`resolve`/`normalize`, `String`, `decodeURIComponent`, `JSON.parse`, `Buffer.from`, `Object.keys`/`values`/`entries`, `Array.from`, `new URL` and `new URLSearchParams`. Every other call returns clean data; comparisons, `!`, `typeof` and `Number`/`parseInt`/`parseFloat` give clean values.
+
+| Source | Kind | Confidence |
+| --- | --- | --- |
+| Express `req`/`request` `.params`, `.query`, `.body`, `.headers`, `.cookies`, `.signedCookies`, `.files`, `req.param()`, `req.get()`, `req.header()`; Koa `ctx.query`, `ctx.params`, `ctx.querystring`, `ctx.request.query`/`body`. The name must be a parameter of some function in the file. | request | high |
+| `location` and `window.location`, `document.location`, `document.URL`, `document.documentURI`, `window.name`, the `data` of the first parameter of a `message` listener (`addEventListener('message', ...)`, `onmessage = ...`), and `useSearchParams()`, `useParams()`, `useLocation()` imported from `react-router` or `react-router-dom` | dom | high |
+| `....chat.completions.create(...)`, `....messages.create(...)`, `....responses.create(...)`, `....completions.create(...)` in a file that imports `openai` or `@anthropic-ai/sdk` | llm | high |
+
+| Sink class | Sanitizers |
+| --- | --- |
+| Path | `path.basename`; a name built with `path.resolve`/`normalize`/`fs.realpath` and then checked with `name.startsWith(...)` before the sink; `rel = path.relative(base, name)` checked with `rel.startsWith(...)`; `res.sendFile(name, { root })` |
+| HTML | `DOMPurify.sanitize` and any call named `sanitize`, `sanitizeHtml`, `escapeHtml`, `escape` or `encode`; `encodeURIComponent` |
+| URL and redirect | a literal start that fixes the scheme and host (`` `https://api.example.com/${x}` ``); for redirects also one that starts with `/` and a path character |
+| Object keys | a file that names `__proto__`, `constructor` or `prototype` in a string; `.has(key)`, `.includes(key)` or `.hasOwnProperty(key)` earlier in the function; a target made with `Object.create(null)` or a `Map` |
+
+**Rules in detail.**
+
+- `js.exec.eval`: `eval(x)` (also `window.eval`) and `new Function(...)`/`Function(...)` when an argument is not a literal; `setTimeout`/`setInterval`/`setImmediate` with a built string (high) or a fixed string (**low**). A function or a name bound to one is fine.
+- `js.child_process.shell`: `exec`/`execSync` with a built command, and `spawn`/`spawnSync`/`execFile`/`execFileSync` with `shell: true` (in an object literal or a name bound to one) and a command or argument array that is not literal. Request data reaching `exec` is reported even as a plain name, with a trace.
+- `js.dom.xss_sink`: `.innerHTML`/`.outerHTML` `=` or `+=`, `insertAdjacentHTML`'s second argument, `document.write`/`writeln`, React `dangerouslySetInnerHTML` (JSX attribute or a `createElement` props key) with a non-literal `__html`, and jQuery `.html(x)` on `$(...)`, `jQuery(...)` or a `$name`. **Medium** by default, **high** when a `dom` source reaches the value.
+- `js.sql.string_built`: `.query`, `.execute`, `.raw`, `.unsafe`, `$queryRawUnsafe` and `$executeRawUnsafe` whose first argument is built and whose literal text looks like SQL (`SELECT ... FROM`, `INSERT INTO`, `WHERE ... =` ...). Tagged templates such as `` sql`...${id}` `` (postgres.js, slonik) bind their values and are not reported.
+- `js.tls.reject_unauthorized`: `rejectUnauthorized: false` as an object key, `x.rejectUnauthorized = false`, and `NODE_TLS_REJECT_UNAUTHORIZED` set to `'0'`/`0` through `process.env` or an `env` object.
+- `js.crypto.weak_hash`: `crypto.createHash` with `'md5'`, `'md4'`, `'sha1'` or `'sha-1'` (any case).
+- `js.crypto.insecure_random`: `Math.random()` in the value of a binding, member or object key whose name has token, secret, password, nonce, salt, otp, csrf or apikey in it, or key with api, secret, private, access, auth, signing, encryption, session or hmac; and in the return value of a function named that way. A bare `key` (React list keys), `cacheKey` and `queryKey` are not secrets.
+- `js.jwt.no_verify`: `jsonwebtoken` `verify` with `algorithms` containing `'none'` (high) or `ignoreExpiration: true` (**low**). `jwt.decode` is not reported: it has legitimate uses (reading the header before verifying) that a token matcher cannot tell apart.
+- `js.path.traversal`, `js.ssrf.request` (`fetch`, `node-fetch`, `undici`, `axios` and its verbs or `{ url }` config, `got`, `superagent`, `http`/`https.get`/`request`), `js.redirect.open` (`res`/`response`/`ctx`/`reply` `.redirect`, last argument) and the `obj[key] = v` form of `js.proto.pollution` fire only on `request` data. `js.proto.pollution` needs a nested key (`obj[a][b] = v`) or a request-controlled value, so counters such as `counts[req.query.c] += 1` stay quiet; it also reports lodash `merge`, `mergeWith` and `defaultsDeep` of request data.
+- `js.cors.wildcard_credentials`: `cors({ origin: true | '*', credentials: true })`, and, in one function, `Access-Control-Allow-Origin` set to `*` or to the request's Origin (through `setHeader`/`header`/`set`/`append` or a headers object) together with `Access-Control-Allow-Credentials: true`.
+- `js.llm.output_to_sink`: `llm` data reaching `eval`/`Function`/a string timer (CWE-94), any `child_process` function (CWE-78) or an HTML sink (CWE-79), reported instead of the pattern rule on that line.
+
+Tests check that a 5,000-line TypeScript file scans in under 2 s in-process (about 0.16 s measured on an M4 Pro) and that pathological input (100,000 chained assignments, 80,000 nested parentheses) stays linear.
 
 ## Claude Code and MCP configuration
 
@@ -247,7 +301,7 @@ requirements.txt
 
 ## Suppression
 
-Add `# kestrix: ignore[rule-id] reason` on the finding's line or the line above. Several ids may be given, separated by commas. `// kestrix: ignore[...] reason` works the same way, for files with `//` comments.
+Add `# kestrix: ignore[rule-id] reason` on the finding's line or the line above. Several ids may be given, separated by commas. `// kestrix: ignore[...] reason` works the same way, for files with `//` comments, and so does `/* kestrix: ignore[...] reason */`, which is the only form JSX accepts (`{/* kestrix: ignore[js.dom.xss_sink] reason */}`).
 
 ```python
 subprocess.run(BUILD_COMMAND, shell=True)  # kestrix: ignore[py.subprocess.shell_true] fixed command from this file
@@ -271,7 +325,7 @@ To adopt the scanner on existing code: `kestrix-scan --write-baseline .kestrix-b
 | `root` | absolute scan root; finding paths are relative to it |
 | `diff_base`, `fail_on` | the `--diff` ref (or null) and the failure threshold |
 | `files_scanned` | files read and checked |
-| `files_skipped` | `{path, reason}` with reason `binary`, `too_large`, `unreadable`, `syntax_error`, `too_complex` or `symlink_outside_root` |
+| `files_skipped` | `{path, reason}` with reason `binary`, `too_large`, `unreadable`, `syntax_error`, `too_complex`, `symlink_outside_root` or `minified` |
 | `truncated` | true when the 20,000-file limit stopped the scan |
 | `findings` | most severe first, then by path, line and column |
 | `counts` | findings per severity |
@@ -316,7 +370,7 @@ raise SystemExit(kestrix_scan.exit_code(report))
 
 ## Limits
 
-- Only Python has code rules in this slice, plus the Claude Code and MCP configuration rules. JavaScript and TypeScript rules are slice C3.
+- Code rules cover Python, JavaScript and TypeScript, plus the Claude Code and MCP configuration rules. The JavaScript and TypeScript rules use a tokenizer, not a parser: they match fixed shapes, follow names only through simple bindings, and do not analyze Vue or Svelte files.
 - Dependency checks cover PyPI and npm lockfiles only, and need `kestrix-scan db update` first.
 - Data flow is local: taint is followed within one function, class body or module top level, never across functions or files, and through only the calls listed under [Taint analysis](#taint-analysis); `json.loads(request.data)` and a helper that builds a command are not followed. Literal propagation for the pattern rules follows names a few hops deep in the same scope.
 - The secret rules are high-precision on purpose and miss credentials with no recognizable shape or name.

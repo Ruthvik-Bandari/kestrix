@@ -16,6 +16,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   [docs/benchmarks/benchmarkpython.md](docs/benchmarks/benchmarkpython.md); on BenchmarkPython v0.1, Bandit scores
   higher overall than `kestrix-scan` (17.5 against 15.8). Semgrep's numbers are not published (Semgrep Rules
   License). A weekly and manual workflow, `bench.yml`, uploads the results as an artifact.
+- **JavaScript and TypeScript rules in `kestrix-scan` (ADR 0005 slice C3, roadmap item 9).** 14 `js.*` rules
+  (eval, `child_process` shells, DOM and React HTML sinks, SQL built from strings, disabled TLS checks, weak hashes,
+  `Math.random()` secrets, JWT `none`/`ignoreExpiration`, Express path traversal, SSRF and open redirects,
+  prototype pollution, wildcard CORS with credentials, and LLM output reaching code, a shell or HTML) on a
+  dependency-free tokenizer and structural matcher, precision first. Minified files are skipped as `minified`.
+  Details in [packages/kestrix-scan/CHANGELOG.md](packages/kestrix-scan/CHANGELOG.md) and
+  [docs/modules/code.md](docs/modules/code.md#javascript-and-typescript).
 - **`kestrix-scan` taint analysis and AI-era rules.** Intraprocedural taint tracking for the Python injection
   rules with traces in JSON (`trace`), SARIF (`codeFlows`), text and hook output; new rules for SSRF, open
   redirects, XSS/SSTI, LLM output reaching code, shell, SQL or paths, unsafe model loading, and risky Claude Code

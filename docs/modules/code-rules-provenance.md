@@ -295,3 +295,119 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://github.com/ossf/malicious-packages>
 - Documentation: <https://ossf.github.io/osv-schema/>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.exec.eval`
+
+- CWE: [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.child_process.shell`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback>
+- Documentation: <https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback>
+- Documentation: <https://nodejs.org/api/child_process.html#child_processspawncommand-args-options>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.dom.xss_sink`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentHTML>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Document/write>
+- Documentation: <https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html>
+- Documentation: <https://api.jquery.com/html/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.sql.string_built`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://node-postgres.com/features/queries>
+- Documentation: <https://github.com/mysqljs/mysql#escaping-query-values>
+- Documentation: <https://knexjs.org/guide/raw.html>
+- Documentation: <https://sequelize.org/docs/v6/core-concepts/raw-queries/>
+- Documentation: <https://github.com/porsager/postgres#queries>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.tls.reject_unauthorized`
+
+- CWE: [CWE-295](https://cwe.mitre.org/data/definitions/295.html)
+- Documentation: <https://nodejs.org/api/tls.html#tlsconnectoptions-callback>
+- Documentation: <https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue>
+- Documentation: <https://nodejs.org/api/cli.html#node_extra_ca_certsfile>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.crypto.weak_hash`
+
+- CWE: [CWE-328](https://cwe.mitre.org/data/definitions/328.html)
+- Documentation: <https://nodejs.org/api/crypto.html#cryptocreatehashalgorithm-options>
+- Documentation: <https://nodejs.org/api/crypto.html#cryptoscryptpassword-salt-keylen-options-callback>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.crypto.insecure_random`
+
+- CWE: [CWE-330](https://cwe.mitre.org/data/definitions/330.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues>
+- Documentation: <https://nodejs.org/api/crypto.html#cryptorandombytessize-callback>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.jwt.no_verify`
+
+- CWE: [CWE-347](https://cwe.mitre.org/data/definitions/347.html)
+- Documentation: <https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback>
+- Documentation: <https://datatracker.ietf.org/doc/html/rfc8725>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.path.traversal`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://expressjs.com/en/api.html#res.sendFile>
+- Documentation: <https://nodejs.org/api/path.html#pathbasenamepath-suffix>
+- Documentation: <https://nodejs.org/api/path.html#pathresolvepaths>
+- Documentation: <https://nodejs.org/api/fs.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.ssrf.request`
+
+- CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch>
+- Documentation: <https://axios-http.com/docs/req_config>
+- Documentation: <https://nodejs.org/api/http.html#httprequesturl-options-callback>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.redirect.open`
+
+- CWE: [CWE-601](https://cwe.mitre.org/data/definitions/601.html)
+- Documentation: <https://expressjs.com/en/api.html#res.redirect>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.proto.pollution`
+
+- CWE: [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/proto>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create>
+- Documentation: <https://lodash.com/docs/4.17.15#merge>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.cors.wildcard_credentials`
+
+- CWE: [CWE-942](https://cwe.mitre.org/data/definitions/942.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS>
+- Documentation: <https://github.com/expressjs/cors#configuration-options>
+- Documentation: <https://fetch.spec.whatwg.org/#http-cors-protocol>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.llm.output_to_sink`
+
+- CWE: [CWE-94](https://cwe.mitre.org/data/definitions/94.html)
+- Documentation: <https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/>
+- Documentation: <https://platform.openai.com/docs/api-reference/chat/create>
+- Documentation: <https://docs.claude.com/en/api/messages>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

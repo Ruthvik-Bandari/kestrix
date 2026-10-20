@@ -8,7 +8,7 @@
 
 ### Scan your code: `kestrix-scan`
 
-A small, fast scanner for insecure Python code, hard-coded secrets and vulnerable or malicious dependencies, with **no dependencies** on Python
+A small, fast scanner for insecure Python, JavaScript and TypeScript code, hard-coded secrets and vulnerable or malicious dependencies, with **no dependencies** on Python
 3.11 and newer (only `tomli` on 3.10). It works in the terminal, CI, pre-commit and pytest, and inside Claude
 Code, where it has Claude fix what it finds as it writes code.
 
