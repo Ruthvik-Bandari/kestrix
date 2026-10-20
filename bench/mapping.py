@@ -79,6 +79,7 @@ CWE_CATEGORY: dict[int, str] = {
     611: "xxe",
     776: "xxe",
     614: "securecookie",
+    1004: "securecookie",
     643: "xpathi",
     918: "ssrf",
 }
@@ -106,6 +107,11 @@ KESTRIX_RULES: dict[str, str] = {
     "py.ssrf.request": "ssrf",
     "py.redirect.open": "redirect",
     "py.xss.markup": "xss",
+    "py.xss.reflected": "xss",
+    "py.ldap.injection": "ldapi",
+    "py.xpath.injection": "xpathi",
+    "py.cookie.insecure": "securecookie",
+    "py.trust_boundary.session": "trustbound",
 }
 KESTRIX_BY_CWE = frozenset({"py.llm.output_to_sink"})
 KESTRIX_PREFIXES: dict[str, str] = {"config.": "agentconfig", "secret.": "secrets"}

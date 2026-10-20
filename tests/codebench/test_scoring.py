@@ -144,4 +144,3 @@ def test_heldout_cases_are_pairs_with_a_file_each_and_no_owned_names():
     real = {c.name.removesuffix("_vuln") for c in cases if c.real}
     safe = {c.name.removesuffix("_safe") for c in cases if not c.real}
     assert real == safe and len(real) >= 30
-
