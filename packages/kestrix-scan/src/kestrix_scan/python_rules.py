@@ -131,7 +131,34 @@ _LDAP3 = frozenset({"search", "paged_search"})
 _XPATH_PATH_METHODS = frozenset({"find", "findall", "findtext", "iterfind"})
 _XPATH_SYNTAX = re.compile(r"[\[@]|//|::|^\.?/")
 _WEB_FRAMEWORKS = frozenset({"flask", "django", "starlette", "fastapi", "werkzeug"})
-_MUTATORS = frozenset({"update", "setdefault", "append", "extend", "insert", "pop", "clear", "remove", "__setitem__"})
+_MUTATORS = frozenset(
+    {
+        "update",
+        "setdefault",
+        "append",
+        "appendleft",
+        "extend",
+        "extendleft",
+        "insert",
+        "add",
+        "discard",
+        "pop",
+        "popitem",
+        "clear",
+        "remove",
+        "sort",
+        "reverse",
+        "__setitem__",
+    }
+)
+# Builtins that read a container without changing it; passing a list to any other call may change it.
+_READERS = frozenset(
+    {
+        "str", "repr", "len", "sorted", "list", "tuple", "set", "frozenset", "dict", "any", "all", "min", "max",
+        "sum", "print", "isinstance", "enumerate", "zip", "reversed", "iter", "bool", "int", "float", "format",
+    }
+)  # fmt: skip
+_MUTABLE_DISPLAYS = (ast.List, ast.Set, ast.Dict, ast.ListComp, ast.SetComp, ast.DictComp)
 _MAX_CONST_TEXT = 10_000  # longest string the constant evaluator builds
 _LLM_CWE = {taint.CODE: "CWE-94", taint.SHELL: "CWE-78", taint.SQL: "CWE-89", taint.PATH: "CWE-22"}
 _LLM_WHAT = {taint.CODE: "code", taint.SHELL: "command", taint.SQL: "query", taint.PATH: "path"}
@@ -212,6 +239,13 @@ def _falsy_const(node: ast.expr | None) -> bool:
     return isinstance(node, ast.Constant) and node.value in (False, 0, None) and not isinstance(node.value, str)
 
 
+def _mutable(node: ast.expr | None) -> bool:
+    """A list, set or dict display, comprehension or constructor call."""
+    return isinstance(node, _MUTABLE_DISPLAYS) or (
+        isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in ("list", "set", "dict")
+    )
+
+
 class _Unknown(Exception):
     """The constant evaluator met something it does not evaluate."""
 
@@ -248,6 +282,8 @@ class _Checker:
         self.bindings: dict[ast.AST, dict[str, list[ast.expr | None]]] = {}
         self.dead: set[ast.AST] = set()  # nodes in a branch whose condition is a constant that skips it
         self.mutated: set[str] = set()  # names whose items or contents the file changes
+        self.escaped: set[str] = set()  # names passed to a call that may change their contents
+        self.unstable: set[str] = set()  # names declared global or nonlocal: any call may rebind them
         self.hits: list[Hit] = []
         self.consts: set[ast.AST] = set()
         self._index()
@@ -290,6 +326,13 @@ class _Checker:
                 and isinstance(node.func.value, ast.Name)
             ):
                 self.mutated.add(node.func.value.id)
+            if isinstance(node, ast.Call) and not self._reader(node.func):
+                for value in [*node.args, *(kw.value for kw in node.keywords)]:
+                    inner = value.value if isinstance(value, ast.Starred) else value
+                    if isinstance(inner, ast.Name):
+                        self.escaped.add(inner.id)
+            elif isinstance(node, ast.Global | ast.Nonlocal):
+                self.unstable.update(node.names)
         for node in nodes:
             self._bind(node)
         # A branch that cannot run: drop its assignments, then bind again, so names it assigns stay literal.
@@ -306,7 +349,25 @@ class _Checker:
                 if node not in self.dead:
                     self._bind(node)
 
+    def _reader(self, func: ast.expr) -> bool:
+        if isinstance(func, ast.Name):
+            return func.id in _READERS and func.id not in self.defined
+        return (
+            isinstance(func, ast.Attribute) and func.attr in ("join", "format") and isinstance(func.value, ast.Constant)
+        )
+
     def _bind(self, node: ast.AST) -> None:
+        if isinstance(node, ast.Import | ast.ImportFrom):
+            for alias in node.names:
+                self._add_binding(node, alias.asname or alias.name.split(".")[0], None)
+        elif isinstance(node, ast.Delete):
+            for target in node.targets:
+                for name in self._target_names(target):
+                    self._add_binding(node, name, None)
+        elif isinstance(node, ast.ExceptHandler | ast.MatchAs | ast.MatchStar) and node.name:
+            self._add_binding(node, node.name, None)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            self._add_binding(node, node.rest, None)
         if isinstance(node, ast.Assign):
             single = len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
             for target in node.targets:
@@ -380,12 +441,16 @@ class _Checker:
         if isinstance(node, ast.IfExp):
             return self.literal(node.body, d, hops) and self.literal(node.orelse, d, hops)
         if isinstance(node, ast.Name):
+            if node.id in self.unstable:
+                return False
             if node in self.consts:
                 return True
             if hops >= _NAME_HOPS:
                 return False
-            values = self.lookup(node)
-            return bool(values) and all(v is not None and self.literal(v, d, hops + 1) for v in values or ())
+            values = self.lookup(node) or []
+            if (node.id in self.mutated or node.id in self.escaped) and any(_mutable(v) for v in values):
+                return False  # a list, set or dict whose contents change after the assignment
+            return bool(values) and all(v is not None and self.literal(v, d, hops + 1) for v in values)
         if isinstance(node, ast.Subscript):
             return self._lookup_literal(node.value, node.slice, d, hops)
         if isinstance(node, ast.ListComp | ast.SetComp | ast.GeneratorExp):
@@ -430,7 +495,11 @@ class _Checker:
         """The dict, list or tuple display ``node`` names, when it is assigned once and its items never change."""
         if isinstance(node, ast.Dict | ast.List | ast.Tuple):
             return node
-        if isinstance(node, ast.Name) and node.id not in self.mutated and hops < _NAME_HOPS:
+        if (
+            isinstance(node, ast.Name)
+            and node.id not in self.mutated | self.escaped | self.unstable
+            and hops < _NAME_HOPS
+        ):
             values = self.lookup(node)
             if values is not None and len(values) == 1 and values[0] is not None:
                 return self._display(values[0], hops + 1)
@@ -469,7 +538,7 @@ class _Checker:
         target: ast.AST | None = node
         hops = 0
         while isinstance(target, ast.Name) and hops < _NAME_HOPS:
-            if target.id in self.mutated:
+            if target.id in self.mutated | self.escaped | self.unstable:
                 return False
             values = self.lookup(target)
             target = values[0] if values is not None and len(values) == 1 else None
@@ -503,7 +572,7 @@ class _Checker:
                 return node.value
             raise _Unknown
         if isinstance(node, ast.Name):
-            values = self.lookup(node) if node.id not in self.mutated else None
+            values = self.lookup(node) if node.id not in self.mutated | self.unstable else None
             if values is None or len(values) != 1 or values[0] is None:
                 raise _Unknown
             return self._evaluate(values[0], d)

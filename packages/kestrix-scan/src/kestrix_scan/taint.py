@@ -246,6 +246,7 @@ class Resolver(Protocol):
     imported: set[str]
     aliases: dict[str, str]
     defined: set[str]
+    unstable: set[str]  # names declared global or nonlocal somewhere: never provably constant
 
     def qualname(self, node: ast.AST) -> str | None: ...
 
@@ -362,6 +363,8 @@ class _Flow:
         self.const_seen: set[ast.AST] = set()
         self.nonconst_seen: set[ast.AST] = set()
         self.splits: dict[str, str] = {}  # name -> the name it is urlsplit/urlparse of
+        self.breaks: list[list[State]] = []  # per enclosing loop: states at each `break` (they reach the loop exit)
+        self.continues: list[list[State]] = []  # per enclosing loop: states at each `continue` (the loop head)
         self.pending: list[ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef] = []
         self._queued: set[int] = set()
         self.fastapi = "fastapi" in resolver.imported
@@ -433,6 +436,11 @@ class _Flow:
 
     def block(self, body: list[ast.stmt], state: State) -> State:
         for stmt in body:
+            if isinstance(stmt, ast.Break | ast.Continue):
+                jumps = self.breaks if isinstance(stmt, ast.Break) else self.continues
+                if jumps:
+                    jumps[-1].append(dict(state))
+                return state  # the rest of the block cannot run
             state = self.stmt(stmt, state)
         return state
 
@@ -477,9 +485,9 @@ class _Flow:
                     self.bind(item.optional_vars, taint, state, node.lineno)
             return self.block(node.body, state)
         elif isinstance(node, ast.Match):
-            self.expr(node.subject, state)
-            branches = [self.block(case.body, dict(state)) for case in node.cases]
-            return _join(state, *branches)
+            return self._match(node, state)
+        elif isinstance(node, ast.Delete | ast.Import | ast.ImportFrom):
+            _unbind(state, node)
         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
             state.pop(node.name, None)  # a scope of its own, analyzed separately
             if id(node) not in self._queued:
@@ -490,6 +498,17 @@ class _Flow:
                 if isinstance(child, ast.expr):
                     self.expr(child, state)
         return state
+
+    def _match(self, node: ast.Match, state: State) -> State:
+        self.expr(node.subject, state)
+        branches = []
+        for case in node.cases:
+            entry = dict(state)
+            for name in _pattern_names(case.pattern):
+                entry.pop(name, None)
+                entry.pop(_CONST + name, None)
+            branches.append(self.block(case.body, entry))
+        return _join(state, *branches)
 
     def _if(self, node: ast.If, state: State) -> State:
         truth = self.r.truth(node.test)
@@ -605,19 +624,25 @@ class _Flow:
     def _for(self, node: ast.For | ast.AsyncFor, state: State) -> State:
         iterated = self.expr(node.iter, state)
         loop = state
+        self.breaks.append([])
+        self.continues.append([])
         for _ in range(_LOOP_PASSES):
-            entry = _join(state, loop)
+            entry = _join(state, loop, *self.continues[-1])
             self.bind(node.target, iterated, entry, node.lineno)
             loop = self.block(node.body, entry)
-        return self.block(node.orelse, _join(state, loop))
+        breaks, continues = self.breaks.pop(), self.continues.pop()
+        return _join(self.block(node.orelse, _join(state, loop, *continues)), *breaks)
 
     def _while(self, node: ast.While, state: State) -> State:
         loop = state
+        self.breaks.append([])
+        self.continues.append([])
         for _ in range(_LOOP_PASSES):
-            entry = _join(state, loop)
+            entry = _join(state, loop, *self.continues[-1])
             self.expr(node.test, entry)
             loop = self.block(node.body, entry)
-        return self.block(node.orelse, _join(state, loop))
+        breaks, continues = self.breaks.pop(), self.continues.pop()
+        return _join(self.block(node.orelse, _join(state, loop, *continues)), *breaks)
 
     def _try(self, node: ast.Try | ast.stmt, state: State) -> State:
         body: list[ast.stmt] = getattr(node, "body", [])
@@ -629,6 +654,7 @@ class _Flow:
             entry = _join(state, after_body)
             if handler.name:
                 entry.pop(handler.name, None)
+                entry.pop(_CONST + handler.name, None)
             outs.append(self.block(handler.body, entry))
         return self.block(getattr(node, "finalbody", []), _join(*outs))
 
@@ -640,7 +666,7 @@ class _Flow:
                 state[target.id] = _step(taint, line, f"assigned to `{target.id}`")
             else:
                 state.pop(target.id, None)
-            if const:
+            if const and target.id not in self.r.unstable:
                 state[_CONST + target.id] = ()
             else:
                 state.pop(_CONST + target.id, None)
@@ -753,7 +779,7 @@ class _Flow:
             return True
         if isinstance(node, ast.Name):
             return _CONST + node.id in state or self.r.literal(node)
-        if isinstance(node, ast.JoinedStr | ast.FormattedValue | ast.BinOp | ast.Tuple | ast.List | ast.Set):
+        if isinstance(node, ast.JoinedStr | ast.FormattedValue | ast.BinOp | ast.Tuple):  # not lists: they change
             children = [c for c in ast.iter_child_nodes(node) if isinstance(c, ast.expr)]
             return all(self.const(c, state, d) for c in children)
         if isinstance(node, ast.IfExp):
@@ -885,6 +911,28 @@ def _apply(state: State, key: str, effect: str) -> None:
     else:
         classes = {"path": frozenset({PATH}), "host": frozenset({URL, REDIRECT}), "allow": _ALL_CLASSES}[effect]
         state[key] = _clear(state[key], classes)
+
+
+def _unbind(state: State, node: ast.Delete | ast.Import | ast.ImportFrom) -> None:
+    """``del x`` and ``import y as x`` rebind ``x``: neither its taint nor its constant value survive."""
+    if isinstance(node, ast.Delete):
+        names = [n.id for target in node.targets for n in ast.walk(target) if isinstance(n, ast.Name)]
+    else:
+        names = [alias.asname or alias.name.split(".")[0] for alias in node.names]
+    for name in names:
+        state.pop(name, None)
+        state.pop(_CONST + name, None)
+
+
+def _pattern_names(pattern: ast.pattern) -> list[str]:
+    """Names a ``case`` pattern binds."""
+    names = []
+    for node in ast.walk(pattern):
+        if isinstance(node, ast.MatchAs | ast.MatchStar) and node.name:
+            names.append(node.name)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            names.append(node.rest)
+    return names
 
 
 def _is_empty_text(node: ast.expr) -> bool:

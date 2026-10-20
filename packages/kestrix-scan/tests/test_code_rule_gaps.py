@@ -428,3 +428,57 @@ def test_session_storage_of_request_data() -> None:
     assert "py.trust_boundary.session" not in ids(derived)
     local_dict = "from flask import request\ndef f():\n    session = {}\n    session['x'] = request.args['x']\n"
     assert "py.trust_boundary.session" not in ids(local_dict)
+
+
+# ----- soundness: what stops a value from being constant
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "c = []\n    c.append(request.args['x'])\n    subprocess.run(' '.join(c), shell=True)",
+        "c = ['ls']\n    c.append(request.args['x'])\n    subprocess.run(c, shell=True)",
+        "c = set()\n    c.add(request.args['x'])\n    subprocess.run(str(c), shell=True)",
+        "c = []\n    fill(c)\n    subprocess.run(' '.join(c), shell=True)",
+        "c = 'ls'\n    del c\n    subprocess.run(c, shell=True)",
+        "c = 'ls'\n    import shutil as c\n    subprocess.run(c, shell=True)",
+        "c = 'ls'\n    try:\n        pass\n    except Exception as c:\n        pass\n    subprocess.run(str(c), shell=True)",
+        "c = 'ls'\n    match request.args.getlist('x'):\n        case [c]:\n            pass\n    subprocess.run(c, shell=True)",
+        "c = 'ls'\n    def g():\n        nonlocal c\n        c = request.args['x']\n    g()\n    subprocess.run(c, shell=True)",
+    ],
+)
+def test_changed_or_rebound_names_are_not_constant(body: str) -> None:
+    source = FLASK + f"def f():\n    {body}\n"
+    assert "py.subprocess.shell_true" in ids(source)
+
+
+def test_a_global_rebound_in_a_function_is_not_constant() -> None:
+    source = FLASK + (
+        "CMD = 'ls'\ndef configure():\n    global CMD\n    CMD = request.args['c']\n"
+        "def run():\n    subprocess.run(CMD, shell=True)\n"
+    )
+    assert "py.subprocess.shell_true" in ids(source)
+
+
+def test_comprehension_variables_do_not_leak() -> None:
+    source = FLASK + "def f(items):\n    c = 'ls'\n    names = [c for c in items]\n    subprocess.run(c, shell=True)\n"
+    assert hits(source) == []
+
+
+@pytest.mark.parametrize("loop", ["for i in items:", "while items:"])
+@pytest.mark.parametrize("jump", ["break", "continue"])
+def test_break_and_continue_carry_their_state_out_of_the_branch(loop: str, jump: str) -> None:
+    source = FLASK + (
+        f"def f(items):\n    c = 'ls'\n    {loop}\n        if items:\n            c = request.args['x']\n"
+        f"            {jump}\n        c = 'ls'\n    subprocess.run(c, shell=True)\n"
+    )
+    hit = only(source, "py.subprocess.shell_true")
+    assert hit.trace[0].note == "flask request.args (source)"
+
+
+def test_guard_with_continue_still_cleans_the_rest_of_the_loop_body() -> None:
+    source = FLASK + (
+        "def f():\n    for n in request.args.getlist('n'):\n        p = os.path.realpath(os.path.join('/d', n))\n"
+        "        if not p.startswith('/d/'):\n            continue\n        open(p)\n"
+    )
+    assert hits(source) == []
