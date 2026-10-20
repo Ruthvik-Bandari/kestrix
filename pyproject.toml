@@ -108,6 +108,7 @@ modules = [
     "kestrix_scan.errors",
     "kestrix_scan.hook",
     "kestrix_scan.init",
+    "kestrix_scan.install_guard",
     "kestrix_scan.lockfiles",
     "kestrix_scan.models",
     "kestrix_scan.osvdb",

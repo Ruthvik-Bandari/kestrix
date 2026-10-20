@@ -72,7 +72,7 @@ def test_scan_and_hook_work_without_sockets(tmp_path: Path, no_network: list[str
     assert no_network == []
 
 
-def test_dependency_scan_works_without_sockets(
+def test_dependency_scan_and_install_guard_work_without_sockets(
     tmp_path: Path, isolated_osv_index: Path, no_network: list[str]
 ) -> None:
     """Only `kestrix-scan db update` uses the network; checking lockfiles against the local index does not."""
@@ -83,6 +83,8 @@ def test_dependency_scan_works_without_sockets(
     )
     report = scan([tmp_path], root=tmp_path)
     assert {f.rule_id for f in report.findings} == {"dep.vulnerable", "dep.malicious"}
+    bash = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "npm i @evil/stealer"}}
+    assert '"deny"' in (hook.hook_response(json.dumps(bash)) or "")
     assert run("db", "status").exit_code == 0
     assert no_network == []
 

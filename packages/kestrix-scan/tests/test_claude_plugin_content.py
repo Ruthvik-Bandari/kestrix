@@ -116,10 +116,13 @@ def _hook_commands() -> list[tuple[str, dict[str, Any], dict[str, Any]]]:
 def test_hooks_cover_the_documented_events_and_tools() -> None:
     commands = _hook_commands()
     assert {event for event, _, _ in commands} == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
-    for name in ("PreToolUse", "PostToolUse"):
-        (group,) = [group for event, group, _ in commands if event == name]
-        assert set(group["matcher"].split("|")) == {"Write", "Edit", "MultiEdit", "NotebookEdit"}
-    timeouts = {event: hook["timeout"] for event, _, hook in commands}
+    file_tools = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
+    pre = {group["matcher"]: hook for event, group, hook in commands if event == "PreToolUse"}
+    assert {frozenset(matcher.split("|")) for matcher in pre} == {frozenset(file_tools), frozenset({"Bash"})}
+    (post,) = [group for event, group, _ in commands if event == "PostToolUse"]
+    assert set(post["matcher"].split("|")) == file_tools
+    assert pre["Bash"]["command"].endswith(" install-guard") and pre["Bash"]["timeout"] <= 10
+    timeouts = {event: hook["timeout"] for event, group, hook in commands if group.get("matcher") != "Bash"}
     assert timeouts["PreToolUse"] <= 5 and timeouts["PostToolUse"] <= 10
     assert timeouts["SessionStart"] <= 10 and timeouts["Stop"] <= 60
 
