@@ -40,3 +40,4 @@ mlruns/
 .idea/
 .vscode/
 .claude/settings.local.json
+.worktrees/
