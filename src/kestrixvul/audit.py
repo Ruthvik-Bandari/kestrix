@@ -284,7 +284,15 @@ def aggregate(
     packets: list[dict[str, Any]], verdicts: list[dict[str, Any]], population: dict[str, int]
 ) -> dict[str, Any]:
     by_id = {p["id"]: p for p in packets}
-    rows = [v | {"stratum": by_id[v["id"]]["stratum"], "source": by_id[v["id"]]["source"]} for v in verdicts]
+    rows = [
+        v
+        | {
+            "stratum": by_id[v["id"]]["stratum"],
+            "source": by_id[v["id"]]["source"],
+            "source_rule": f"source:{by_id[v['id']]['source']}/{by_id[v['id']]['stratum'].split('/')[-1]}",
+        }
+        for v in verdicts
+    ]
     per_stratum = {s: _accuracy([r for r in rows if r["stratum"] == s]) for s in sorted({r["stratum"] for r in rows})}
     for s, block in per_stratum.items():
         block["population"] = population.get(s, 0)
@@ -292,9 +300,12 @@ def aggregate(
     total = sum(weights.values())
     weighted = sum((per_stratum[s]["label_accuracy"] or 0) * w for s, w in weights.items()) / total if total else None
     pairs = [(r["verdict_a"], r["verdict_b"]) for r in rows]
+    per_source_rule = {
+        k: _accuracy([r for r in rows if r["source_rule"] == k]) for k in sorted({r["source_rule"] for r in rows})
+    }
     dropped = sorted(
         s
-        for s, b in per_stratum.items()
+        for s, b in (per_stratum | per_source_rule).items()
         if b["n"] >= MIN_STRATUM_N and b["label_accuracy"] is not None and b["label_accuracy"] < MIN_ACCURACY
     )
     return {
@@ -316,6 +327,7 @@ def aggregate(
         "per_source": {
             s: _accuracy([r for r in rows if r["source"] == s]) for s in sorted({r["source"] for r in rows})
         },
+        "per_source_rule": per_source_rule,
         "filter": {
             "min_accuracy": MIN_ACCURACY,
             "min_stratum_n": MIN_STRATUM_N,

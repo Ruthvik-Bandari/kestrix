@@ -92,7 +92,8 @@ def test_aggregate_flags_strata_below_the_threshold():
     report = aggregate(packets, verdicts, {"python/nvd_name": 300, "python/onefunc": 100})
     assert report["per_stratum"]["python/nvd_name"]["label_accuracy"] == 0.5
     assert report["per_stratum"]["python/onefunc"]["label_accuracy"] == 1.0
-    assert report["filter"]["dropped_strata"] == ["python/nvd_name"]  # onefunc has n=4 < 5, kept anyway
+    # onefunc has n=4 < 5 and is kept anyway; the same records also form the source group
+    assert report["filter"]["dropped_strata"] == ["python/nvd_name", "source:cvefixes/nvd_name"]
     assert report["overall_weighted_by_population"] == 0.625
     assert report["agreement"]["cohen_kappa"] == 1.0
     assert "reason" not in json.dumps(report)

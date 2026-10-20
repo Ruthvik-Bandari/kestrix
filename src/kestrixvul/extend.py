@@ -131,13 +131,13 @@ def _audit_sections(
         split = assignment.get(r["id"])
         if split is None:
             continue
-        if f"{r['language']}/{r['label_rule']}" in drop:
+        if {f"{r['language']}/{r['label_rule']}", f"source:{r['source']}/{r['label_rule']}"} & drop:
             filtered[split].append(r["id"])
         if verdicts.get(r["id"], {}).get("final") == "vulnerable":
             confirmed[split].append(r["id"])
     filters = {
         "dropped_strata": sorted(drop),
-        "rule": "strata (language/label rule) whose audited label accuracy is below 0.80 are excluded in the "
+        "rule": "strata (language/label rule, or source:<source>/<rule>) whose audited label accuracy is below 0.80 are excluded in the "
         "filtered view; the full view keeps them. Test ids stay frozen in both views.",
         "excluded_ids": {s: sorted(v) for s, v in filtered.items()},
         "excluded_ids_sha256": {s: ids_sha256(v) for s, v in filtered.items()},

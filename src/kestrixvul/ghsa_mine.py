@@ -70,6 +70,7 @@ PERMANENT = (
     "couldn't find remote ref",
     "unknown revision",
 )
+REPO_FATAL = ("repository not found", "could not read username", "authentication failed")  # whole repository gone
 SCHEMA_VERSION = 1
 
 
@@ -339,11 +340,15 @@ class Git:
             raise GitError("too_large", f"object store over {self.config.max_bytes} bytes")
         return out
 
-    def init(self, url: str) -> None:
+    def init(self, url: str, *, partial: bool = True) -> None:
+        """A bare repository; ``partial``: a blob:none promisor of ``url`` (else a plain object store)."""
         if (self.gitdir / "config").exists():
             return
         self.gitdir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.run("init", "-q", "--bare")
+        if not partial:
+            self.run("config", "gc.auto", "0")
+            return
         for key, value in (
             ("core.repositoryformatversion", "1"),
             ("extensions.partialclone", "origin"),
@@ -414,7 +419,7 @@ def read_blobs(git: Git, oids: list[str]) -> dict[str, str | None]:
         nl = out.index(b"\n", pos)
         header = out[pos:nl].decode().split()
         pos = nl + 1
-        if len(header) < 3 or header[1] != "blob":
+        if len(header) < 3 or header[1] != "blob":  # "<oid> missing": never lazily fetched here
             texts[oid] = None
             continue
         size = int(header[2])
@@ -427,7 +432,15 @@ def read_blobs(git: Git, oids: list[str]) -> dict[str, str | None]:
 ZERO = "0" * 40
 
 
-def fetch_commit(git: Git, limiter: Limiter, config: FetchConfig, repo: str, sha: str) -> dict[str, Any]:
+def fetch_commit(
+    git: Git, blobs: Git, *, limiter: Limiter, config: FetchConfig, repo: str, sha: str, url: str
+) -> dict[str, Any]:
+    """Commit and trees into the partial ``git``; the needed blobs into the plain ``blobs`` store.
+
+    The blobs go to a separate repository with no commits: fetched into the shallow one, the server
+    may leave out blobs reachable from the commit the client already has, and git then fetches them
+    one by one (git 2.19 on the transfer node fails there with "shallow file has changed").
+    """
     _retry(limiter, config, git, "fetch", "-q", "--no-tags", "--filter=blob:none", "--depth=2", "origin", sha)
     try:
         parent = git.run("rev-parse", "--verify", "-q", f"{sha}^1").decode().strip()
@@ -452,8 +465,8 @@ def fetch_commit(git: Git, limiter: Limiter, config: FetchConfig, repo: str, sha
     sampled = rng.sample(candidates, min(config.sampled_files, len(candidates)))
     oids = sorted({o for _, _, a, b in changed for o in (a, b) if o} | {o for _, o in sampled})
     for i in range(0, len(oids), BLOB_CHUNK):
-        _retry(limiter, config, git, "fetch", "-q", "--no-tags", "origin", *oids[i : i + BLOB_CHUNK])
-    texts = read_blobs(git, oids)
+        _retry(limiter, config, blobs, "fetch", "-q", "--no-tags", url, *oids[i : i + BLOB_CHUNK])
+    texts = read_blobs(blobs, oids)
     return {
         "schema_version": SCHEMA_VERSION,
         "repo": repo,
@@ -512,15 +525,18 @@ def mine_repo(
         return counts
     gitdir = mine / "repos" / (repo.replace("/", "__") + ".git")
     git = Git(gitdir, mine / "home", config)
+    blobs = Git(gitdir / "blobs.git", mine / "home", config)
     try:
-        git.init(remote_url(repo))
+        url = remote_url(repo)
+        git.init(url)
+        blobs.init(url, partial=False)
         for sha in todo:
             try:
-                record = fetch_commit(git, limiter, config, repo, sha)
+                record = fetch_commit(git, blobs, limiter=limiter, config=config, repo=repo, sha=sha, url=url)
             except GitError as exc:
                 status.record(repo, sha, exc.status, exc.detail)
                 counts[f"failed:{exc.status}"] += 1
-                if exc.status in {"too_large", "unavailable"} and "remote ref" not in exc.detail.lower():
+                if exc.status == "too_large" or any(p in exc.detail.lower() for p in REPO_FATAL):
                     for rest in todo[todo.index(sha) + 1 :]:
                         status.record(repo, rest, exc.status, "same repository")
                         counts[f"failed:{exc.status}"] += 1
@@ -597,10 +613,26 @@ def _advisory_meta(root: Path) -> dict[str, dict[str, Any]]:
     return {r["id"]: r for r in read_jsonl(root / "work" / "ghsa_text.jsonl")}
 
 
+FENCED = re.compile(r"^[ \t]*(```|~~~).*?^[ \t]*\1[^\n]*$", re.MULTILINE | re.DOTALL)
+INDENTED = re.compile(r"^(?: {4,}|\t).*$", re.MULTILINE)
+URL = re.compile(r"https?://\S+")
+
+
+def prose(details: str) -> str:
+    """Advisory details without fenced or indented code blocks and URLs.
+
+    PrimeVul's NVDCheck reads the short NVD description. GHSA details often add proof-of-concept and
+    patch code, which names many functions that are not the vulnerable one; inline mentions such as
+    "the `render` function" stay.
+    """
+    return URL.sub(" ", INDENTED.sub("", FENCED.sub("", details)))
+
+
 def descriptions(advisories: list[dict[str, Any]]) -> list[str]:
+    """NVDCheck texts: the advisory summary, its details as prose, and the linked CVE descriptions."""
     out: list[str] = []
     for adv in advisories:
-        out += [t for t in (adv["summary"], adv["details"], *adv["cve_descriptions"]) if t]
+        out += [t for t in (adv["summary"], prose(adv["details"]), *adv["cve_descriptions"]) if t.strip()]
     return out
 
 

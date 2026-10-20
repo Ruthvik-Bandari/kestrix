@@ -19,6 +19,7 @@ from kestrixvul.ghsa_mine import (
     extract,
     extract_commit,
     fetch_commit,
+    prose,
     remote_url,
 )
 
@@ -84,8 +85,10 @@ def _fetch(tmp_path: Path, upstream: tuple[Path, str], **kw: object) -> dict:
     repo, sha = upstream
     (tmp_path / "home").mkdir(parents=True, exist_ok=True)
     git = Git(tmp_path / "clone.git", tmp_path / "home", FetchConfig(**kw))  # type: ignore[arg-type]
+    blobs = Git(tmp_path / "blobs.git", tmp_path / "home", git.config)
     git.init(f"file://{repo}")
-    return fetch_commit(git, Limiter(0.0), git.config, "o/p", sha)
+    blobs.init(f"file://{repo}", partial=False)
+    return fetch_commit(git, blobs, limiter=Limiter(0.0), config=git.config, repo="o/p", sha=sha, url=f"file://{repo}")
 
 
 def test_fetch_gets_only_the_changed_target_files_and_a_parent_sample(tmp_path: Path, upstream):
@@ -193,3 +196,10 @@ def test_diff_pairs_by_name_and_counts_changed_shadow_units():
     diff = diff_functions(before, after)
     assert [(c.name, c.kind) for c in diff.changes] == [("a", "paired"), ("b", "added")]
     assert diff.shadow_changed == 1 and diff.unchanged == []
+
+
+def test_advisory_prose_drops_code_blocks_but_keeps_inline_names():
+    details = "The `render` function lacks escaping.\n\n```js\nfunction helper() { exploit(); }\n```\n    indented()\nSee https://x.y/a_b"
+    text = prose(details)
+    assert "`render` function" in text
+    assert "helper" not in text and "indented" not in text and "a_b" not in text
