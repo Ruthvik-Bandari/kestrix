@@ -10,7 +10,7 @@ are size-capped and schema-validated, and any failure is ``Rejected(UPSTREAM_ERR
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Literal, Self
+from typing import Literal
 
 import httpx
 from pydantic import BaseModel, Field, ValidationError
@@ -59,7 +59,7 @@ class MempoolClient:
             headers={"Accept": "application/json"},
         )
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> MempoolClient:
         return self
 
     def __exit__(

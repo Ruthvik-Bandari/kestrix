@@ -30,7 +30,8 @@ def b64(data: bytes) -> str:
 
 
 def unsigned_jwt(claims: dict[str, Any]) -> str:
-    return f"{b64(b'{"alg":"RS256","typ":"JWT"}')}.{b64(json.dumps(claims).encode())}.{b64(b'signature')}"
+    header = b64(b'{"alg":"RS256","typ":"JWT"}')
+    return f"{header}.{b64(json.dumps(claims).encode())}.{b64(b'signature')}"
 
 
 class Clock:

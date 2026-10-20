@@ -11,7 +11,7 @@ import platform
 import subprocess
 import sys
 import tempfile
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .. import ATTRIBUTION, __version__
@@ -52,7 +52,7 @@ def _git_sha() -> str | None:
 
 
 def now() -> str:
-    return datetime.now(UTC).isoformat(timespec="milliseconds")
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
 
 
 def run_manifest(started: str, **extra: object) -> dict[str, object]:

@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Reason codes and the single rejection exception shared by every module."""
 
-from enum import StrEnum
+from .enums import TextEnum
 
 
-class Reason(StrEnum):
+class Reason(TextEnum):
     # Input safety
     INPUT_TOO_LARGE = "input_too_large"
     MALFORMED_YAML = "malformed_yaml"

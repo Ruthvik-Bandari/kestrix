@@ -19,7 +19,7 @@ import ssl
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -285,12 +285,16 @@ def tls_probe(host: str, ip: str, port: int, timeout: float = TIMEOUT_S) -> TlsI
     except OSError as exc:
         return TlsInfo(host=host, status="handshake_failed", detail=type(exc).__name__)
     not_after = cert.get("notAfter")
-    expires = datetime.fromtimestamp(ssl.cert_time_to_seconds(not_after), UTC) if isinstance(not_after, str) else None
+    expires = (
+        datetime.fromtimestamp(ssl.cert_time_to_seconds(not_after), timezone.utc)
+        if isinstance(not_after, str)
+        else None
+    )
     return TlsInfo(
         host=host,
         status="ok",
         protocol=protocol,
         issuer=_issuer(cert),
         not_after=expires.isoformat() if expires else None,
-        days_remaining=(expires - datetime.now(UTC)).days if expires else None,
+        days_remaining=(expires - datetime.now(timezone.utc)).days if expires else None,
     )

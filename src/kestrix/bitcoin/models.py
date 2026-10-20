@@ -4,15 +4,15 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from .. import ATTRIBUTION
+from ..core.enums import TextEnum
 
 
-class AddressType(StrEnum):
+class AddressType(TextEnum):
     P2PK = "P2PK"
     P2PKH = "P2PKH"
     P2SH = "P2SH"
@@ -21,7 +21,7 @@ class AddressType(StrEnum):
     P2TR = "P2TR"
 
 
-class Network(StrEnum):
+class Network(TextEnum):
     """Network an address belongs to, as far as its encoding reveals.
 
     Testnet3, testnet4 and signet share the ``tb`` Bech32 prefix and the Base58 version
@@ -34,21 +34,21 @@ class Network(StrEnum):
     REGTEST = "regtest"
 
 
-class PublicTestnet(StrEnum):
+class PublicTestnet(TextEnum):
     """Public test chain to query on mempool.space for ``test`` network addresses."""
 
     TESTNET4 = "testnet4"
     SIGNET = "signet"
 
 
-class Risk(StrEnum):
+class Risk(TextEnum):
     CRITICAL = "critical"
     HIGH = "high"
     LOW = "low"
     UNKNOWN = "unknown"
 
 
-class KeyExposure(StrEnum):
+class KeyExposure(TextEnum):
     EXPOSED = "exposed"
     NOT_EXPOSED = "not_exposed"
     UNKNOWN = "unknown"
@@ -95,7 +95,7 @@ class MigrationPlan(BaseModel):
     cautions: list[str]
 
 
-class GuardianIntent(StrEnum):
+class GuardianIntent(TextEnum):
     SCAN_ADDRESSES = "scan_addresses"
     EXPLAIN_RISK = "explain_risk"
     MIGRATION_HELP = "migration_help"

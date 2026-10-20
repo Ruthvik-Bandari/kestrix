@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 import typer
 
+from ..core.enums import TextEnum
 from ..core.errors import Reason, Rejected
 from .models import NOTICE
 from .scan import scan
@@ -17,7 +16,7 @@ app = typer.Typer(no_args_is_help=True)
 _UNREACHABLE = frozenset({Reason.TARGET_UNREACHABLE, Reason.UPSTREAM_ERROR})
 
 
-class SiteType(StrEnum):
+class SiteType(TextEnum):
     static = "static"
     static_api = "static_api"
     dynamic = "dynamic"

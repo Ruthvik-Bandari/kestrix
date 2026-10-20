@@ -12,15 +12,15 @@ import difflib
 import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from enum import StrEnum
 
+from ..core.enums import TextEnum
 from .fixtures import Dataset, SchemaProfile, lookup, profile
 from .mapping import FieldMapping
 from .replay import ReplayResult
 from .rule import Predicate, Rule
 
 
-class Family(StrEnum):
+class Family(TextEnum):
     MAPPING = "mapping"
     MISSING_TELEMETRY = "missing_telemetry"
     NOISE = "noise"

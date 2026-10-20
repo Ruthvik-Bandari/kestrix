@@ -13,7 +13,6 @@ from __future__ import annotations
 import difflib
 import time
 from dataclasses import dataclass
-from enum import StrEnum
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -21,6 +20,7 @@ from typing import Any
 import yaml
 
 from .. import ATTRIBUTION
+from ..core.enums import TextEnum
 from ..core.errors import Reason, Rejected
 from ..core.evidence import now, run_manifest
 from .candidate import MAX_CANDIDATES, Candidate, apply
@@ -47,7 +47,7 @@ UNSUPPORTED_REASONS = frozenset(
 )
 
 
-class Outcome(StrEnum):
+class Outcome(TextEnum):
     REPAIRED = "repaired"
     UNCHANGED = "unchanged"
     ABSTAINED = "abstained"

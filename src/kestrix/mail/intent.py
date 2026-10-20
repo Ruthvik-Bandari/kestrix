@@ -26,7 +26,8 @@ _NOT = r"(?:n['\u2019]?t| not)"  # don't, dont, do not, and don't with a typogra
 
 def _cue(*patterns: str) -> re.Pattern[str]:
     """One case-insensitive regex; spaces in a pattern match any run of whitespace."""
-    return re.compile("|".join(rf"\b(?:{pattern.replace(' ', r'\s+')})\b" for pattern in patterns), _FLAGS)
+    whitespace = r"\s+"
+    return re.compile("|".join(rf"\b(?:{pattern.replace(' ', whitespace)})\b" for pattern in patterns), _FLAGS)
 
 
 @dataclass(frozen=True)
