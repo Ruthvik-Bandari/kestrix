@@ -21,7 +21,7 @@ KESTRIX = shutil.which("kestrix", path=str(Path(sys.executable).parent))
 VULNERABLE = "import subprocess\n\ndef run(cmd):\n    subprocess.run(cmd, shell=True)\n"
 SAFE = "import subprocess\n\ndef run(args):\n    subprocess.run(args, check=True)\n"
 
-EVENTS = {"SessionStart": "session-start", "PostToolUse": "post-tool-use", "Stop": "stop"}
+EVENTS = {"SessionStart": "session-start", "PreToolUse": "pre-tool-use", "PostToolUse": "post-tool-use", "Stop": "stop"}
 
 pytestmark = pytest.mark.skipif(KESTRIX is None, reason="needs the kestrix entry point next to the interpreter")
 
@@ -42,6 +42,7 @@ class Hooks:
             "CLAUDE_PLUGIN_DATA": str(self.data),
         }
         self.session = "session-1"
+        self.snapshots = True
 
     def run(self, event: str, payload: dict[str, Any], **env: str) -> subprocess.CompletedProcess[str]:
         body = {"session_id": self.session, "cwd": str(self.project), "hook_event_name": event, **payload}
@@ -57,15 +58,37 @@ class Hooks:
         )
 
     def write(self, name: str, source: str, tool: str = "Write") -> subprocess.CompletedProcess[str]:
+        """PreToolUse, the write itself, then PostToolUse, as Claude Code runs them."""
         path = self.project / name
+        existed = path.exists()
+        tool_input = {"file_path": str(path), "content": source}
+        pre = self.run("PreToolUse", {"tool_name": tool, "tool_input": tool_input, "tool_use_id": "toolu_1"})
+        assert (pre.returncode, pre.stdout) == (0, "")
         path.write_text(source)
         return self.run(
             "PostToolUse",
             {
                 "tool_name": tool,
-                "tool_input": {"file_path": str(path), "content": source},
-                "tool_response": {"filePath": str(path), "type": "create"},
+                "tool_input": tool_input,
+                "tool_response": {"filePath": str(path), "type": "update" if existed else "create"},
                 "tool_use_id": "toolu_1",
+            },
+        )
+
+    def edit(self, name: str, old: str, new: str) -> subprocess.CompletedProcess[str]:
+        """An Edit with or without the PreToolUse snapshot (``self.snapshots``)."""
+        path = self.project / name
+        tool_input = {"file_path": str(path), "old_string": old, "new_string": new, "replace_all": False}
+        if self.snapshots:
+            self.run("PreToolUse", {"tool_name": "Edit", "tool_input": tool_input, "tool_use_id": "toolu_2"})
+        path.write_text(path.read_text().replace(old, new, 1))
+        return self.run(
+            "PostToolUse",
+            {
+                "tool_name": "Edit",
+                "tool_input": tool_input,
+                "tool_response": {"filePath": str(path)},
+                "tool_use_id": "toolu_2",
             },
         )
 
@@ -88,7 +111,8 @@ def test_post_tool_use_reports_the_rule(hooks: Hooks) -> None:
     output = json.loads(result.stdout)["hookSpecificOutput"]
     assert output["hookEventName"] == "PostToolUse"
     assert "py.subprocess.shell_true" in output["additionalContext"]
-    assert "Fix these now" in output["additionalContext"]
+    assert "this edit introduced 1 security issue(s)" in output["additionalContext"]
+    assert output["additionalContext"].splitlines()[-1].startswith("Fix the new issues now")
     assert "confirmed false positive" in output["additionalContext"]
 
 
@@ -156,9 +180,10 @@ def test_stop_gate_blocks_with_the_findings(hooks: Hooks) -> None:
     assert result.returncode == 0, result.stderr
     reply = json.loads(result.stdout)
     assert reply["decision"] == "block"
-    assert f"{hooks.project / 'app.py'}:4 [HIGH] py.subprocess.shell_true (CWE-78)" in reply["reason"]
+    assert "- app.py:4 [HIGH] py.subprocess.shell_true (CWE-78)" in reply["reason"]
     assert "ok.py" not in reply["reason"]
     assert "block 1 of 3" in reply["reason"]
+    assert "1 new high or critical finding(s)" in reply["systemMessage"]
 
 
 def test_stop_gate_respects_stop_hook_active(hooks: Hooks) -> None:
@@ -190,11 +215,14 @@ def test_stop_gate_allows_stop_once_fixed(hooks: Hooks) -> None:
 
 
 def test_stop_gate_caps_blocks_per_session(hooks: Hooks) -> None:
-    hooks.write("app.py", VULNERABLE)
-    replies = [hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout for _ in range(5)]
+    replies = []
+    for number in range(5):  # different findings each time, so only the cap stops the blocks
+        hooks.write(f"app{number}.py", VULNERABLE)
+        replies.append(hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout)
     assert [json.loads(r).get("decision") for r in replies[:3]] == ["block"] * 3
     assert "block 3 of 3" in replies[2]
     assert "already blocked 3 times" in json.loads(replies[3])["systemMessage"]
+    assert "decision" not in json.loads(replies[3])
     assert replies[4] == ""
     hooks.session = "session-2"  # a new session starts with a fresh budget and file list
     hooks.write("app.py", VULNERABLE)
@@ -211,6 +239,92 @@ def test_session_state_falls_back_to_a_private_temp_dir(hooks: Hooks, tmp_path: 
     (session_dir,) = (base / "sessions").iterdir()
     assert len(session_dir.name) == 32 and (session_dir / "changed.txt").is_file()
     assert json.loads(hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout)["decision"] == "block"
+
+
+# ----- only what this session introduced
+
+MD5 = "import hashlib\n\ndef digest(data):\n    return hashlib.md5(data).hexdigest()\n"
+
+
+def _context(result: subprocess.CompletedProcess[str]) -> str:
+    assert result.returncode == 0, result.stderr
+    return str(json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"])
+
+
+def test_pre_tool_use_snapshots_silently(hooks: Hooks) -> None:
+    (hooks.project / "app.py").write_text(VULNERABLE)
+    tool_input = {"file_path": str(hooks.project / "app.py"), "content": SAFE}
+    result = hooks.run("PreToolUse", {"tool_name": "Write", "tool_input": tool_input})
+    assert (result.returncode, result.stdout) == (0, "")
+    state = hooks.data / "sessions" / hooks.session
+    (first,) = (state / "before-first").iterdir()
+    (prev,) = (state / "before-prev").iterdir()
+    assert first.read_text() == prev.read_text() == VULNERABLE
+    hooks.run("PreToolUse", {"tool_name": "Write", "tool_input": {**tool_input, "file_path": "new.py"}})
+    assert len(list((state / "before-first").glob("*.absent"))) == 1
+
+
+def test_edit_reports_only_new_findings(hooks: Hooks) -> None:
+    (hooks.project / "app.py").write_text(VULNERABLE + MD5)
+    unrelated = hooks.edit("app.py", "def digest(data):", "def digest(data: bytes):")
+    assert (unrelated.returncode, unrelated.stdout) == (0, "")
+    context = _context(
+        hooks.edit(
+            "app.py",
+            "def digest(data: bytes):",
+            "def digest(data: bytes, cmd=''):\n    os_cmd = cmd\n    import os; os.system(os_cmd)\n   ",
+        )
+    )
+    assert "py.os.system" in context
+    assert "py.subprocess.shell_true" not in context and "py.crypto.weak_hash" not in context
+    assert "2 existing issue(s) in this file were already there (run /kestrix:scan)." in context
+    assert not list((hooks.data / "sessions" / hooks.session / "before-prev").iterdir())  # consumed
+
+
+def test_edit_without_a_snapshot_is_undone_from_the_tool_input(hooks: Hooks) -> None:
+    hooks.snapshots = False
+    (hooks.project / "app.py").write_text(VULNERABLE)
+    assert hooks.edit("app.py", "def run(cmd):", "def run(cmd, check=False):").stdout == ""
+    assert "py.crypto.weak_hash" in _context(
+        hooks.edit("app.py", "import subprocess", "import subprocess\nimport hashlib\nH = hashlib.md5(b'x')")
+    )
+
+
+def test_write_over_an_existing_file_compares_with_the_snapshot(hooks: Hooks) -> None:
+    (hooks.project / "app.py").write_text(VULNERABLE)
+    assert hooks.write("app.py", VULNERABLE + "\nVERSION = 2\n").stdout == ""
+    context = _context(hooks.write("app.py", VULNERABLE + MD5))
+    assert "py.crypto.weak_hash" in context and "1 existing issue(s)" in context
+
+
+def test_stop_gate_ignores_findings_that_were_there_before_the_session(hooks: Hooks) -> None:
+    (hooks.project / "legacy.py").write_text(VULNERABLE)
+    hooks.write("legacy.py", VULNERABLE + "\nVERSION = 2\n")
+    assert hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout == ""
+    hooks.write("legacy.py", VULNERABLE + "\nimport os\nos.system(input())\n")
+    reply = json.loads(hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout)
+    assert "py.os.system" in reply["reason"] and "py.subprocess.shell_true" not in reply["reason"]
+
+
+def test_stop_gate_warns_instead_when_the_same_findings_persist(hooks: Hooks) -> None:
+    hooks.write("app.py", VULNERABLE)
+    first, second, third, fourth = (hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout for _ in range(4))
+    assert json.loads(first)["decision"] == json.loads(second)["decision"] == "block"
+    reply = json.loads(third)
+    assert "decision" not in reply
+    assert "same 1 high or critical finding(s) remain after 2 blocks" in reply["systemMessage"]
+    assert fourth == ""
+    hooks.write("other.py", VULNERABLE)  # new findings may still use the last block
+    assert "block 3 of 3" in json.loads(hooks.stop(KESTRIX_BLOCK_ON_STOP="1").stdout)["reason"]
+
+
+def test_stop_gate_fails_open_on_an_internal_error(hooks: Hooks) -> None:
+    hooks.write("app.py", VULNERABLE)
+    state = hooks.data / "sessions" / hooks.session
+    (state / "stop-blocks").mkdir()  # reading and writing the block count now fails
+    result = hooks.stop(KESTRIX_BLOCK_ON_STOP="1")
+    assert (result.returncode, result.stdout) == (0, "")
+    assert "kestrix hook stop: skipped" in result.stderr
 
 
 # ----- in-process checks of the timeout and scanner-error paths

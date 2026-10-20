@@ -74,12 +74,17 @@ def collect(paths: Sequence[Path], root: Path) -> Walk:
     """Files under ``paths`` (absolute, inside ``root``), with skipped files and the file-limit flag."""
     walk = Walk()
     seen: set[Path] = set()
-    allowed = _git_files(root)
-    ignore = None if allowed is not None else _GitIgnore.from_root(root)
+    listed = False  # git and .gitignore are consulted only when a directory is walked
+    allowed: frozenset[str] | None = None
+    ignore: _GitIgnore | None = None
     for start in paths:
         if walk.truncated:
             break
         if start.is_dir() and not start.is_symlink():
+            if not listed:
+                listed = True
+                allowed = _git_files(root)
+                ignore = None if allowed is not None else _GitIgnore.from_root(root)
             files: Iterable[Path] = _walk_dir(start, root, allowed, ignore, walk)
         else:
             files = [start]

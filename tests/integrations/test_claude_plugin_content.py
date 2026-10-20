@@ -101,11 +101,13 @@ def _hook_commands() -> list[tuple[str, dict[str, Any], dict[str, Any]]]:
 
 def test_hooks_cover_the_documented_events_and_tools() -> None:
     commands = _hook_commands()
-    assert {event for event, _, _ in commands} == {"SessionStart", "PostToolUse", "Stop"}
-    (post,) = [group for event, group, _ in commands if event == "PostToolUse"]
-    assert set(post["matcher"].split("|")) == {"Write", "Edit", "MultiEdit", "NotebookEdit"}
+    assert {event for event, _, _ in commands} == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    for name in ("PreToolUse", "PostToolUse"):
+        (group,) = [group for event, group, _ in commands if event == name]
+        assert set(group["matcher"].split("|")) == {"Write", "Edit", "MultiEdit", "NotebookEdit"}
     timeouts = {event: hook["timeout"] for event, _, hook in commands}
-    assert timeouts["PostToolUse"] <= 10 and timeouts["SessionStart"] <= 10 and timeouts["Stop"] <= 60
+    assert timeouts["PreToolUse"] <= 5 and timeouts["PostToolUse"] <= 10
+    assert timeouts["SessionStart"] <= 10 and timeouts["Stop"] <= 60
 
 
 def test_hooks_run_only_files_inside_the_plugin() -> None:

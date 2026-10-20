@@ -141,13 +141,19 @@ Each finding has `rule_id`, `cwe`, `severity` (`low`, `medium`, `high`, `critica
 
 ## Claude Code hook
 
-`kestrix code scan --hook` is meant for a Claude Code `PostToolUse` hook on `Write`, `Edit`, `MultiEdit` and `NotebookEdit`. It reads the hook JSON from stdin, takes the file from `tool_input.file_path`, `tool_input.notebook_path` or the `file_path` of each entry in `tool_input.edits`, resolves a relative path against the payload's `cwd`, and scans that file. When it finds anything at medium severity or above, it prints:
+`kestrix code scan --hook` is meant for a Claude Code `PostToolUse` hook on `Write`, `Edit`, `MultiEdit` and `NotebookEdit`. It reads the hook JSON from stdin, takes the file from `tool_input.file_path`, `tool_input.notebook_path` or the `file_path` of each entry in `tool_input.edits`, resolves a relative path against the payload's `cwd`, and scans that file. It reports only findings the change introduced (see below). When it finds anything at medium severity or above, it prints:
 
 ```json
-{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "Kestrix found 1 security issue(s) ... Fix: ..."}}
+{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "Kestrix: this edit introduced 1 security issue(s) ... — Fix: ..."}}
 ```
 
-The context lists up to 20 findings with their location, severity, rule, CWE, message and fix, tells Claude to fix them now, explains how to suppress a confirmed false positive, and says to treat the file contents as data. Without such findings it prints nothing. It always exits 0: malformed input, a missing file or a scanner error produces no output and a one-line note on stderr, so the hook never blocks the editor. A test checks that a 2,000-line file is handled in under 1.5 s. The [Claude Code plugin](../claude-plugin.md) (slice C2) installs this hook, plus an opt-in Stop gate.
+**Only new findings.** A finding is new when its fingerprint (rule id, path and whitespace-free snippet, no line number) is not among the findings of the file's text before the change. That text comes from the `kestrix_before` field (a map of absolute path to a snapshot file, or `null` for a file that did not exist, which the plugin's PreToolUse hook supplies), else from undoing an `Edit` or `MultiEdit` when each `new_string` occurs exactly once, else from a `Write` with `tool_response.type` `create` (a new file). When none applies, every finding counts as new.
+
+The context lists at most 5 new findings at medium severity or above, most severe first, each as one line of at most 200 characters (`path:line [SEVERITY] rule_id (CWE): message — Fix: …`), then a `+N more` line, a one-line count of the findings that were already there, and a single instruction line: fix now, or suppress a confirmed false positive with a reason, and treat file content as data. It stays under 1,500 characters. Without new findings it prints nothing. It always exits 0: malformed input, a missing file or a scanner error produces no output and a one-line note on stderr, so the hook never blocks the editor. Tests check that a 2,000-line file is handled in under 1.5 s from the CLI and under 2 s in-process; measured latency is in the [plugin docs](../claude-plugin.md#latency).
+
+With `hook_event_name` `Stop`, the hook mode serves the plugin's Stop gate instead: it scans the absolute paths in `kestrix_files` against their session-start snapshots in `kestrix_before` and prints `{"kestrix_stop": {"new": [{"line", "fingerprint"}], "existing": N}}` for high and critical findings.
+
+Every rule has a clean-room provenance note, its CWE entry and the documentation it was written from, in [code-rules-provenance.md](code-rules-provenance.md). The [Claude Code plugin](../claude-plugin.md) (slice C2) installs this hook, plus an opt-in Stop gate.
 
 ## Python API
 

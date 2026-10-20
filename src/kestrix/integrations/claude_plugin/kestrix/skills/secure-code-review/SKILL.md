@@ -78,5 +78,7 @@ the code is secure.
 ## Hooks
 
 When the Kestrix plugin's hooks are on, every file you write or edit is scanned and findings at medium or
-above come back as context right after the edit. Fix them in the same turn before moving on. If the Stop
-gate is enabled, you cannot finish while high or critical findings remain in files changed this session.
+above that the edit introduced come back as context right after the edit; findings that were already there
+are only counted (see them with `/kestrix:scan`). Fix them in the same turn before moving on. If the Stop
+gate is enabled, you cannot finish while high or critical findings that this session introduced remain in
+files changed this session.
