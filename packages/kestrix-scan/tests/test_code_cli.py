@@ -202,7 +202,8 @@ def test_hook_fails_open_on_scanner_error(tmp_path: Path, monkeypatch: pytest.Mo
 
     monkeypatch.setattr(hook, "scan", broken)
     result = invoke("--hook", stdin=hook_payload(path))
-    assert result.exit_code == 0 and result.stdout == ""
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == {"kestrix_error": "RuntimeError"}  # the plugin shows "scan unavailable"
     assert "skipped (RuntimeError)" in result.output
 
 

@@ -168,7 +168,7 @@ PLUGIN_INVOCATIONS = [args for text in PLUGIN_SKILLS.values() for args in _kestr
 
 def test_the_plugin_skills_reference_the_code_scanner():
     """The plugin skills run kestrix-scan (checked in its own tests); the workbench fallback is `kestrix code scan`."""
-    assert len(PLUGIN_SKILLS) == 5
+    assert len(PLUGIN_SKILLS) == 6
     assert all(args[:2] == ["code", "scan"] for args in PLUGIN_INVOCATIONS)
     assert len(PLUGIN_INVOCATIONS) >= 1
 

@@ -97,6 +97,15 @@ class HooksOpenNoSockets(unittest.TestCase):
         # The install guard reads only the local OSV index; with or without one it opens no socket.
         bash = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "npm install left-pad"}}
         self.hook("install-guard", bash)
+        # Files changed by a Bash command: git (run locally) lists them, then kestrix-scan scans them.
+        if shutil.which("git"):
+            subprocess.run(["git", "init", "-q"], cwd=self.project, env=self.env, check=True, timeout=30)
+            call = {"tool_name": "Bash", "tool_input": {"command": "make"}, "tool_use_id": "toolu_net"}
+            self.assertEqual(self.hook("install-guard", {**call, "hook_event_name": "PreToolUse"}), "")
+            (self.project / "built.py").write_text(VULNERABLE)
+            done = self.hook("bash-post", {**call, "hook_event_name": "PostToolUse"})
+            self.assertIn("this command introduced", done)
+            self.assertIn("py.subprocess.shell_true", done)
 
         self.assertFalse(self.marker.exists(), "a hook or kestrix-scan tried to open a socket")
 

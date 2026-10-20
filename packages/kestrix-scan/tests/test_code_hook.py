@@ -113,3 +113,39 @@ def test_hook_scan_of_a_2000_line_file_is_fast(tmp_path: Path) -> None:
     started = time.perf_counter()
     hook.hook_response(json.dumps({**payload, "cwd": str(tmp_path)}))
     assert time.perf_counter() - started < 2.0  # generous: measured p95 is far lower (docs/claude-plugin.md)
+
+
+def test_bash_command_reports_the_files_it_changed_against_their_text_before(tmp_path: Path) -> None:
+    old, fresh, same = tmp_path / "old.py", tmp_path / "fresh.py", tmp_path / "same.py"
+    old.write_text(SHELL + MD5)
+    fresh.write_text(SHELL)
+    same.write_text(SHELL)
+    before = tmp_path / "old.head"
+    before.write_text(SHELL)
+    kept = tmp_path / "same.head"
+    kept.write_text(SHELL)
+    payload = {
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": "make"},
+        "cwd": str(tmp_path),
+        "kestrix_files": [str(old), str(fresh), str(same), str(tmp_path / "gone.py")],
+        "kestrix_before": {str(old): str(before), str(fresh): None, str(same): str(kept)},
+    }
+    reply = json.loads(hook.hook_response(json.dumps(payload)) or "{}")
+    context = reply["hookSpecificOutput"]["additionalContext"]
+    assert context.startswith("Kestrix: this command introduced 2 security issue(s)")
+    assert "old.py" in context and "fresh.py" in context and "same.py" not in context
+    assert reply["kestrix"] == {"new": 2, "existing": 2}  # the plugin counts these and removes them
+    assert hook.hook_response(json.dumps({**payload, "kestrix_files": [str(same)]})) is None
+
+
+def test_bash_command_scans_at_most_twenty_files(tmp_path: Path) -> None:
+    names = []
+    for number in range(hook.MAX_BASH_FILES + 3):
+        path = tmp_path / f"m{number}.py"
+        path.write_text(SHELL)
+        names.append(str(path))
+    payload = {"hook_event_name": "PostToolUse", "tool_name": "Bash", "cwd": str(tmp_path), "kestrix_files": names}
+    reply = json.loads(hook.hook_response(json.dumps(payload)) or "{}")
+    assert reply["kestrix"]["new"] == hook.MAX_BASH_FILES

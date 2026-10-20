@@ -18,6 +18,15 @@ counts as new. The output is a ``hookSpecificOutput`` whose ``additionalContext`
 new findings at medium severity or above, most severe first, in about 1,500 characters, or nothing
 when the edit introduced none.
 
+``PostToolUse`` (or ``PostToolUseFailure``) for the ``Bash`` tool: the plugin lists the source-like files
+the command changed in ``kestrix_files`` (at most 20, absolute paths) with their text before in
+``kestrix_before`` (the ``HEAD`` version, or ``null`` for a new file). They are scanned like an edit's, and
+the context says "this command introduced".
+
+The reply also carries ``kestrix: {"new": N, "existing": M}`` so the plugin can count findings; the plugin
+removes it before printing. When the scan itself crashes, ``--hook`` still exits 0 (the editor is never
+blocked) and prints ``{"kestrix_error": "<ExceptionType>"}`` so the plugin can tell a crash from a clean file.
+
 ``PreToolUse`` for the ``Bash`` tool: the install guard in ``install_guard.py`` checks the packages
 an install command names against the local vulnerability index.
 
@@ -46,6 +55,7 @@ MAX_SHOWN = 5
 MAX_CONTEXT_CHARS = 1500
 MAX_LINE_CHARS = 200
 MAX_STOP_FILES = 200
+MAX_BASH_FILES = 20
 BEFORE_KEY = "kestrix_before"
 FILES_KEY = "kestrix_files"
 INSTRUCTION = (
@@ -81,16 +91,28 @@ def hook_response(raw: str) -> str | None:
         from .install_guard import guard_response
 
         return guard_response(payload)
+    bash = payload.get("tool_name") == "Bash"
+    names = payload.get(FILES_KEY)
+    if bash:
+        paths = [Path(n) for n in names[:MAX_BASH_FILES] if isinstance(n, str) and n] if isinstance(names, list) else []
+    else:
+        paths = hook_paths(payload)
     new: list[Finding] = []
     existing = 0
-    for target, root in _targets(payload, hook_paths(payload)):
-        added, kept = introduced(target, root, before_text(payload, target))
+    for target, root in _targets(payload, paths):
+        before = snapshot_text(payload, target) if bash else before_text(payload, target)
+        added, kept = introduced(target, root, before)
         new.extend(f for f in added if SEVERITY_RANK[f.severity] >= _POST_MIN_RANK)
         existing += sum(1 for f in kept if SEVERITY_RANK[f.severity] >= _POST_MIN_RANK)
     if not new:
         return None
-    context = render_context(ordered(new), existing)
-    return json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": context}})
+    context = render_context(ordered(new), existing, "command" if bash else "edit")
+    return json.dumps(
+        {
+            "hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": context},
+            "kestrix": {"new": len(new), "existing": existing},
+        }
+    )
 
 
 def stop_response(payload: dict[str, Any]) -> str:
@@ -203,10 +225,13 @@ def undo_edits(text: str, edits: list[Any]) -> str | None:
     return text
 
 
-def render_context(new: list[Finding], existing: int) -> str:
-    """At most ``MAX_SHOWN`` findings, a '+N more' line, the existing count and one instruction line."""
+def render_context(new: list[Finding], existing: int, origin: str = "edit") -> str:
+    """At most ``MAX_SHOWN`` findings, a '+N more' line, the existing count and one instruction line.
+
+    ``origin`` is what introduced them: ``"edit"`` or ``"command"`` (files a Bash command changed).
+    """
     shown = new[:MAX_SHOWN]
-    lines = [f"Kestrix: this edit introduced {len(new)} security issue(s) at medium severity or above:"]
+    lines = [f"Kestrix: this {origin} introduced {len(new)} security issue(s) at medium severity or above:"]
     lines.extend(describe(f) for f in shown)
     if len(new) > len(shown):
         lines.append(f"+{len(new) - len(shown)} more (run /kestrix:scan to list them).")

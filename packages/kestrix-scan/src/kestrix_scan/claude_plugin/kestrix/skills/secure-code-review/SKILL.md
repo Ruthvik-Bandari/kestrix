@@ -1,6 +1,6 @@
 ---
 name: secure-code-review
-description: Review code for security problems with the local Kestrix scanner and fix them. Use when asked to review, audit or harden code, before finishing a feature that handles input, shells, SQL, files, tokens, TLS or secrets, and whenever a Kestrix hook reports findings.
+description: Reviews code for security vulnerabilities with the local Kestrix scanner, then fixes each finding and re-scans. Use when the user asks to review this for security, asks "is this code safe" or "is this secure", wants to check for vulnerabilities, audit, harden or security-test code, or asks about injection, XSS, SQL injection, command injection, path traversal, hard-coded secrets, unsafe deserialization or disabled TLS verification. Also use before finishing code that handles user input, shells, SQL, files, tokens or credentials, and whenever a Kestrix hook reports findings.
 ---
 
 # Secure code review with Kestrix

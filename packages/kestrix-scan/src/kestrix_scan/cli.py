@@ -144,6 +144,8 @@ def _run_hook(prog: str) -> None:
         response = hook_response(raw)
     except Exception as exc:  # fail open: never block the editor on a scanner problem
         _err(f"{prog} --hook: skipped ({type(exc).__name__})")
+        if not isinstance(exc, ValueError):  # input that is not JSON is no scan to report
+            _out(json.dumps({"kestrix_error": type(exc).__name__}))
         return
     if response is not None:
         _out(response)

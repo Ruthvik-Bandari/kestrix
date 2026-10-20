@@ -32,6 +32,7 @@ else:
 FILES = {str(path): data for path, data in plugin.plugin_files()}
 SKILLS = sorted({path.split("/")[1] for path in FILES if path.startswith("skills/")})
 COMMANDS = {"scan", "fix", "review"}
+STATUS = "status"  # a command without arguments: it reads the hooks' session record
 # Frontmatter keys documented for skills at https://code.claude.com/docs/en/skills
 SKILL_KEYS = {"name", "description", "argument-hint", "disable-model-invocation", "allowed-tools", "when_to_use"}
 
@@ -123,12 +124,22 @@ def _hook_commands() -> list[tuple[str, dict[str, Any], dict[str, Any]]]:
 
 def test_hooks_cover_the_documented_events_and_tools() -> None:
     commands = _hook_commands()
-    assert {event for event, _, _ in commands} == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    assert {event for event, _, _ in commands} == {
+        "SessionStart",
+        "PreToolUse",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "Stop",
+    }
     file_tools = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
     pre = {group["matcher"]: hook for event, group, hook in commands if event == "PreToolUse"}
     assert {frozenset(matcher.split("|")) for matcher in pre} == {frozenset(file_tools), frozenset({"Bash"})}
-    (post,) = [group for event, group, _ in commands if event == "PostToolUse"]
-    assert set(post["matcher"].split("|")) == file_tools
+    post = {group["matcher"]: hook for event, group, hook in commands if event == "PostToolUse"}
+    assert {frozenset(matcher.split("|")) for matcher in post} == {frozenset(file_tools), frozenset({"Bash"})}
+    # Bash: PostToolUse for a command that succeeded, PostToolUseFailure for one that failed after changing files
+    (failure,) = [hook for event, _, hook in commands if event == "PostToolUseFailure"]
+    assert post["Bash"]["command"] == failure["command"] and post["Bash"]["command"].endswith(" bash-post")
+    assert post["Bash"]["timeout"] <= 10 and failure["timeout"] <= 10
     assert pre["Bash"]["command"].endswith(" install-guard") and pre["Bash"]["timeout"] <= 10
     timeouts = {event: hook["timeout"] for event, group, hook in commands if group.get("matcher") != "Bash"}
     assert timeouts["PreToolUse"] <= 5 and timeouts["PostToolUse"] <= 10
@@ -154,7 +165,14 @@ def test_skill_frontmatter_is_valid(name: str) -> None:
     assert len(name) <= 64 and re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name)
     assert 0 < len(fields["description"]) <= 1024
     assert "<" not in fields["description"] and ">" not in fields["description"]
-    if name in COMMANDS:
+    if name == STATUS:
+        assert fields["disable-model-invocation"] == "true" and "argument-hint" not in fields
+        assert fields["allowed-tools"] == "Bash(python3 *kestrix_hook.py status *)"
+        assert (
+            '!`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" status "${CLAUDE_SESSION_ID}" "${CLAUDE_PLUGIN_DATA}"`'
+            in text
+        )
+    elif name in COMMANDS:
         assert fields["disable-model-invocation"] == "true"
         assert fields["argument-hint"].startswith('"[')
         assert "$ARGUMENTS" in text
@@ -163,7 +181,7 @@ def test_skill_frontmatter_is_valid(name: str) -> None:
 
 
 def test_the_plugin_ships_the_expected_skills() -> None:
-    assert set(SKILLS) == {"secure-code-review", "fixing-security-findings", "kestrix-security", *COMMANDS}
+    assert set(SKILLS) == {"secure-code-review", "fixing-security-findings", "kestrix-security", STATUS, *COMMANDS}
 
 
 @pytest.mark.parametrize("name", ["secure-code-review", "fix", "review", "scan"])

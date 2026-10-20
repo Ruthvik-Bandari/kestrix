@@ -44,6 +44,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py\" bash-post",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
@@ -53,6 +63,18 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py\" stop",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py\" bash-post",
+            "timeout": 10
           }
         ]
       }

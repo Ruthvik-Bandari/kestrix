@@ -1,4 +1,5 @@
 {
+  "systemMessage": "Kestrix: scanning files Claude writes (Stop gate on). /kestrix:status shows this session's results.",
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
     "additionalContext": "Kestrix security hooks are active: every file you write or edit is scanned with `kestrix-scan --hook` and findings come back as context to fix right away (Stop gate on)."

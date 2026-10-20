@@ -1,10 +1,11 @@
 # Claude Code plugin
 
 The `kestrix` plugin makes Claude Code check the code it writes. After every `Write`, `Edit`, `MultiEdit` or
-`NotebookEdit`, a hook runs the local Kestrix scanner on the changed file. Findings at medium severity or
+`NotebookEdit`, and after a Bash command that changes source files in a git repository, a hook runs the local Kestrix
+scanner on the changed files. Findings at medium severity or
 above that the edit introduced come back to Claude as context with the rule, the CWE and the fix, and Claude
 fixes them in the same turn. A false positive gets an inline suppression with a written reason. The plugin also adds review skills
-and three slash commands. It is slice C2 of [ADR 0005](adr/0005-code-security.md).
+and four slash commands. It is slice C2 of [ADR 0005](adr/0005-code-security.md).
 
 The scanner is rule-based pattern analysis ([code module](modules/code.md)). It misses things and can be
 wrong in context. A file with no findings means no rule fired, not that the code is secure.
@@ -20,16 +21,18 @@ depends on.
 | Hook | `PreToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Snapshots the file before the change, so the other hooks can tell new findings from old ones. It prints nothing and never blocks a tool. |
 | Hook | `PreToolUse` on `Bash` (install guard) | Checks the packages a `pip`, `uv`, `npm`, `pnpm` or `yarn` install names against the local OSV index. It denies a known malicious package and warns about a known-vulnerable pinned version. Silent without an index. |
 | Hook | `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Scans the changed file with `kestrix-scan scan --hook` (or `kestrix code scan --hook`) and returns the medium-or-worse findings the edit introduced as `additionalContext`. |
+| Hook | `PostToolUse` and `PostToolUseFailure` on `Bash` | Lists the files the command changed (`git status` plus modification times), scans the source-like ones (at most 20) like an edit, and returns the findings the command introduced. A command that failed is scanned too. See [PostToolUse on Bash](#posttooluse-on-bash-files-a-command-changed). |
 | Hook | `Stop` (opt-in) | Blocks Claude from finishing while files changed this session have high or critical findings that this session introduced. Off unless you enable it. |
-| Hook | `SessionStart` | Adds one line of context, "Kestrix security hooks are active ...", when `kestrix-scan` or `kestrix` is on PATH. It is silent otherwise. |
+| Hook | `SessionStart` | Adds one line of context, "Kestrix security hooks are active ...", when `kestrix-scan` or `kestrix` is on PATH, and shows the user one line, once per session, that scanning is on. It is silent otherwise. |
 | Skill | `secure-code-review` | How to review code with Kestrix: scan, triage by severity, fix by rule family, re-scan and explain the risk that remains. Claude uses it on its own when you ask for a security review. |
 | Skill | `fixing-security-findings` | A per-rule playbook with before and after code for every rule id. It is generated from the rule registry. |
 | Skill | `kestrix-security` | The existing skill for email, link, file, website, Sigma and Bitcoin questions ([docs/claude-skill.md](claude-skill.md)). |
 | Command | `/kestrix:scan [path]` | Scans a path (default `.`) and summarizes the findings. It changes no code. |
 | Command | `/kestrix:fix [path]` | Scans, fixes every finding at medium or above, and re-scans until the code is clean or each remaining finding is explained. It stops after 5 rounds. |
+| Command | `/kestrix:status` | Shows this session's record from the hooks: files scanned, findings reported, and the files that were not security-checked, with the reason. It scans nothing. |
 | Command | `/kestrix:review [base-ref]` | A secure review of the current diff. It runs `kestrix-scan . --diff <ref>` (default `HEAD`), then reviews the diff for what the rules cannot see. |
 
-The three commands are skills with `disable-model-invocation: true`, so they run only when you type them.
+The four commands are skills with `disable-model-invocation: true`, so they run only when you type them.
 The plugin docs recommend `skills/` over `commands/` for new plugins.
 
 ## Install
@@ -213,11 +216,100 @@ medium-or-worse finding produces no output.
 **Fail open.** The hook script always exits 0. When the scanner errors, prints something that is not
 JSON, or runs past its time limit, the script produces no output, so it never blocks an edit.
 
-When neither `kestrix-scan` nor `kestrix` is on PATH, the first edit of the session shows one warning
-(`systemMessage`) saying to install `kestrix-scan` from PyPI, without a command line, since the hooks never
-install anything. Claude also gets a note not to install Kestrix itself. Later edits
-in that session stay silent. A `kestrix-scan` or `kestrix` executable in the project directory itself is
-ignored, so a cloned repository cannot put its own scanner in place of yours.
+### Three scan states
+
+Fail-open used to make "the scan could not run" look the same as "no findings". Every scan now ends in one of three
+states:
+
+| State | User sees | Claude is told |
+| --- | --- | --- |
+| Clean | nothing | nothing |
+| Findings | nothing extra | `additionalContext` with the new findings, as above |
+| Unavailable | one `systemMessage`, once per session for each cause | one line of `additionalContext`, every time: this file was NOT security-checked |
+
+**Causes.** `missing` (neither `kestrix-scan` nor `kestrix` is on PATH), `timeout` (the scan ran past 8 seconds)
+and `error` (a nonzero exit, output that is not JSON, or a crash inside the scanner). `kestrix-scan --hook` still
+exits 0 on a crash, so the editor is never blocked, but it now prints `{"kestrix_error": "<ExceptionType>"}` so the
+script can tell a crash from a clean file. (Input that is not JSON prints nothing: it is no scan.) Bash adds two
+more, `limit` (more than 20 changed files) and `no-git`, below.
+
+**The messages.** The user's `systemMessage` names the cause and, for `missing`, the install hint (no command line:
+the hooks never install anything), for example `Kestrix plugin: the scan timed out after 8 s, so this edit was not
+security-checked.` Claude's line, for example `Kestrix could NOT security-check app.py (the scan timed out after 8
+s). Do not call it scanned or secure.`, names at most three files, with control characters removed and each name cut
+to 80 characters, because a file name is untrusted. For `missing` the line ends "Tell the user once; do not install
+it yourself." A scanner that is on PATH again starts working at the next edit; nothing needs a restart.
+
+**Counts.** Each scan appends one line to `events.tsv` in the session directory: `scan`, the number of files, the
+new findings and the older ones, or `unavailable`, the cause and the path. `/kestrix:status` prints the totals.
+
+**Claude Code behavior this relies on**, from the [hooks reference](https://code.claude.com/docs/en/hooks) (checked
+2026-10-20): `systemMessage` is a common output field, "Warning message shown to the user"; `PostToolUse` "runs
+immediately after a tool completes successfully" and returns `additionalContext`, "String added to Claude's context
+alongside the tool result"; plain output from a hook that exits 0 with JSON is the documented way to return
+structured fields. The reference does not say whether `PostToolUseFailure` shows a `systemMessage` to the user; it
+documents `additionalContext` there ("String added to Claude's context alongside the error"), which is what Claude
+gets either way.
+
+### PostToolUse on Bash: files a command changed
+
+Claude changes files through Bash too (`cat > app.py <<EOF`, `sed -i`, a code generator), which the file-tool hooks
+never see. The `Bash` matcher is registered for `PostToolUse` and for `PostToolUseFailure`: a command that wrote a
+file and then failed (a test run, for example) is still scanned. Both run `kestrix_hook.py bash-post`, and the
+`PreToolUse` Bash hook (`install-guard`) first records the time the command started under `bash-marks/<tool_use_id>`.
+Claude Code passes `tool_use_id` in the `PreToolUse` and `PostToolUse` payloads (hooks reference); the script uses it
+as a file name only when it is plain letters, digits, `-` and `_`.
+
+**Detection: `git status --porcelain=v1 -z -uall --no-renames`, filtered by modification time against the start mark.**
+The alternatives, and why this one:
+
+- `git diff --name-only` misses untracked files, which is the common case (a new file from a heredoc), and lists
+  files that were already modified before the command.
+- A `git status` snapshot before every command doubles the git work on every Bash call.
+- A walk of the current directory by modification time needs a cap and a depth limit to stay safe in a home
+  directory or a monorepo, and has no notion of ignored files.
+- `git status` once, after the command, lists tracked changes and untracked files and leaves out ignored ones
+  (`node_modules`, virtualenvs, build output); the start mark then drops what was already modified before the command.
+  The only added cost before a command is one small file write. The mark allows 2 seconds of slack for file systems
+  with coarse timestamps.
+
+**Which files.** Regular files up to 1 MiB with a source-like name: `.py`, `.pyi`, `.ipynb`, `.js`, `.jsx`, `.mjs`,
+`.cjs`, `.ts`, `.tsx`, `.mts`, `.cts`, `.json`, `.yml`, `.yaml`, `.toml`, `.ini`, `.cfg`, `.conf`, `.env`, `.sh`, and
+`.env*` names, without the npm lockfiles (`package-lock.json`, `npm-shrinkwrap.json`) and `composer.lock`. The 20
+most recently modified are scanned. More than 20 are an unavailable scan with the cause `limit` for the rest.
+
+**Same new-findings logic.** The text before is the `HEAD` version of a tracked file (`git show HEAD:<file>`) and
+"absent" for a file that is untracked or not in `HEAD`, so the scanner reports only what the command introduced, with
+the `kestrix: this command introduced N security issue(s)` header. The script sends the scanner a `PostToolUse`
+payload for the `Bash` tool with `kestrix_files` (absolute paths) and `kestrix_before` (snapshot files, or `null`).
+A file that was already modified and uncommitted before the command is compared with `HEAD`, so findings from that
+older change are reported again if the command touched the file; that errs toward telling Claude. The same
+before-states seed `before-first/`, so the Stop gate sees these files, with the `HEAD` version as the session's
+starting point.
+
+**Outside a git repository** nothing is scanned: a walk of the current tree by modification time would have to be
+capped and depth-limited, would read directories the user did not mean to share (a home directory is a common
+working directory), and cannot tell ignored build output from source. The user is told once per session,
+`this directory is not inside a git repository, so files changed by Bash commands are not scanned here`, and
+`/kestrix:status` counts it as `no-git`. Claude is not told, because most Bash commands change no file.
+
+**Bounds and failure.** At most 20 files; the git calls and the scan share a 9 second budget inside the hook's 10
+second `timeout` (the scan alone keeps its 8 second limit). `git` is found on PATH and never taken from the project
+directory, and runs with `-c core.fsmonitor=false -c core.hooksPath=/dev/null`, `GIT_OPTIONAL_LOCKS=0` and
+`GIT_TERMINAL_PROMPT=0`, so a cloned repository cannot make `git status` execute a program through its own
+configuration and the hook never takes an index lock Claude's own git use could wait on. A git failure, a scanner
+problem or a timeout is an unavailable scan (visible, never blocking). A command with no start mark (the
+`PreToolUse` hook did not run) is skipped silently.
+
+**Not covered.** A command that commits what it changed before the hook looks (`git commit -am` in the same
+command), because the file is then clean in `git status`; and any change outside a git repository.
+
+**Cost.** Measured 2026-10-20 on the Kestrix checkout (an Apple M4 Pro, 5 runs): a command that changed no source
+file took 60 to 63 ms in `bash-post`, which is the whole process including the two `git` calls. A command that changed
+files adds the scanner's time, as for an edit (see [Latency](#latency)).
+
+Both timestamps and `git` are local: the hook opens no network connection
+(`packages/kestrix-scan/tests/test_no_network.py` runs the Bash hooks with sockets refused).
 
 ### Stop: block finishing while serious findings remain (opt-in)
 
@@ -268,14 +360,31 @@ there before the session, a fix that clears the gate, and an internal error.
 ### SessionStart
 
 When `kestrix` is on PATH, the hook adds one line of context. That line says the hooks are active and
-whether the Stop gate is on. The hook also removes session records older than 14 days.
+whether the Stop gate is on. It also shows the user one `systemMessage` line the first time in a session
+(`Kestrix: scanning files Claude writes (Stop gate off). /kestrix:status shows this session's results.`); resume,
+clear and compact fire the hook again and only re-add the context, because the context does not survive them. The
+hook also removes session records older than 14 days.
+
+### /kestrix:status
+
+A skill with `disable-model-invocation: true` that runs
+`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" status "${CLAUDE_SESSION_ID}" "${CLAUDE_PLUGIN_DATA}"` through
+dynamic context injection and has Claude show the result: scans completed and files covered, findings reported to
+Claude, the files that were not security-checked with their causes, and the number of files changed this session. The
+command is pre-approved with `allowed-tools: Bash(python3 *kestrix_hook.py status *)`. `${CLAUDE_SESSION_ID}`,
+`${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are listed as string substitutions for skills in the [skills
+reference](https://code.claude.com/docs/en/skills), as is the `!` injection syntax. That reference does not carve out
+plugin skills, but it was not run in a live session here: if the block comes back empty, the skill tells Claude to run
+the same command itself. The summary needs only the standard library and reads only the session directory.
 
 ### Session state
 
 The script keeps a small amount of state for each session:
 
 - the list of changed file paths;
-- whether the missing-`kestrix` hint was shown;
+- `events.tsv`, the scan counts and unchecked files that `/kestrix:status` reads, and one empty marker file per
+  notice already shown (`unavailable-<cause>`, `session-start-notice`);
+- the start time of each running Bash command (`bash-marks/`);
 - the count of Stop blocks and the fingerprints found at the last block;
 - the PreToolUse snapshots: a copy of each changed file as it was when the session first touched it, and
   a short-lived copy from just before the current change.
@@ -303,11 +412,34 @@ directories older than 14 days are removed at the next session start.
   directory, or in the private temp directory, and are removed with the session record.
 - **Findings never include secret values.** For a secret, findings, hook context and Stop reasons show only
   the kind, the location and the first four characters.
-- **The hook output is part of your conversation.** It goes to Claude like any other tool result, under the
-  terms of your Claude plan. It holds rule ids, file paths, line numbers, messages and fixes. It holds no
+- **The hook output is part of your conversation.** It goes to Claude like any other tool result, so findings
+  are sent to Anthropic like any other conversation content, under the terms of your Claude plan. It holds rule ids, file paths, line numbers, messages and fixes. It holds no
   code beyond what Claude already wrote.
 - **The skills treat code as data.** They tell Claude to ignore instructions inside the code under review,
   such as comments or strings that say to skip a check, and to point them out to you.
+
+## Coverage
+
+- **Scanned:** files changed through `Write`, `Edit`, `MultiEdit` and `NotebookEdit`, and, in a git repository, the
+  source-like files (at most 20) that a Bash command created or modified.
+- **Not scanned:** edits made outside Claude Code; files a Bash command changed outside a git repository; a command
+  that commits what it changed in the same command; files over 1 MiB; anything before the plugin was loaded.
+- **Per file.** Analysis is per file, with taint tracked within one function. There is no whole-program or
+  cross-file analysis: a value that passes through another function or module is not followed.
+- **Rules.** 59 rules in all: 27 Python, 14 JS/TS, 11 secret, 2 dependency, 5 agent-config rules. They cover Python and JS/TS code, secrets in any text file, Claude Code and MCP
+  configuration, and dependency lockfiles after `kestrix-scan db update`. The per-family numbers are checked against the registry by
+  `tests/integrations/test_claude_plugin_repo.py`.
+- **No findings is not proof of security.**
+
+## Does it help?
+
+The effectiveness claim is not measured yet and none is made. The scanner's accuracy is in the
+[benchmark scorecard](benchmarks/benchmarkpython.md), whose disclosure matters: it is **not blind**, because rule
+changes after the first run were informed by that run's BenchmarkPython gap analysis. Whether Claude ships less
+vulnerable code with the plugin will be measured by a paired A/B eval (13 tasks, each with and without the plugin,
+graded by `kestrix-scan` and regex checks): design, metrics and a results page that reads "not yet run" in
+[benchmarks/plugin-ab.md](benchmarks/plugin-ab.md); how to run it and its expected cost in
+[`evals/README.md`](../packaging/claude-plugin-repo/evals/README.md#ab-effectiveness-eval).
 
 ## Latency
 
@@ -367,5 +499,11 @@ Stop gate. To adopt the scanner on existing code without fixing everything first
   `claude plugin eval` suite and a no-network test). The build checks the directory's pre-submission rules and
   keeps a `.git` directory in the destination. `tests/integrations/test_claude_plugin_repo.py` checks that two
   builds are identical and match the packaged plugin. Submission steps: [plugin-submission.md](plugin-submission.md).
+- **README numbers and the example:** in `packaging/claude-plugin-repo/README.md`, `{{RULE_TOTAL}}`, `{{RULE_COUNTS}}`
+  and `{{EXAMPLE}}` are filled in by `scripts/build_plugin_repo.py` from the rule registry and from the real hook
+  output (`scripts/build_demo_expected.py`, `readme_example()`), so they cannot drift.
+- **A/B eval:** `packaging/claude-plugin-repo/evals/ab/` (13 cases), `scripts/ab_eval.py` (run and report) and the
+  results template `docs/benchmarks/plugin-ab.md`; `tests/integrations/test_plugin_ab_eval.py` and
+  `test_plugin_ab_report.py` run for free.
 - **Demo:** [docs/demo/](demo/README.md); its expected output is generated by `scripts/build_demo_expected.py`.
 

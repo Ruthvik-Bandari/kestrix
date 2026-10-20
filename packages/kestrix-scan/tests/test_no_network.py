@@ -149,4 +149,10 @@ def test_hook_processes_open_no_sockets(tmp_path: Path) -> None:
     target.write_text(VULNERABLE)
     assert "py.subprocess.shell_true" in run("post-tool-use", {**tool, "tool_response": {"type": "create"}})
     assert json.loads(run("stop", {"stop_hook_active": False}))["decision"] == "block"
+    if shutil.which("git", path="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"):  # files changed by a Bash command
+        subprocess.run(["git", "init", "-q"], cwd=project, env=env, check=True, timeout=30)
+        call = {"tool_name": "Bash", "tool_input": {"command": "make"}, "tool_use_id": "toolu_net"}
+        assert run("install-guard", call) == ""
+        (project / "built.py").write_text(VULNERABLE)
+        assert "this command introduced" in run("bash-post", call)
     assert not marker.exists()
