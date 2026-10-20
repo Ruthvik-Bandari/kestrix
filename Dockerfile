@@ -31,16 +31,19 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never
 WORKDIR /build
 COPY pyproject.toml uv.lock README.md LICENSE NOTICE ./
-RUN uv export --frozen --no-dev --no-emit-project --format requirements-txt --output-file /build/requirements.txt \
+# The workspace member kestrix-scan (ADR 0006): its metadata for the export, its sources for the build.
+COPY packages/kestrix-scan/pyproject.toml packages/kestrix-scan/README.md packages/kestrix-scan/LICENSE packages/kestrix-scan/NOTICE ./packages/kestrix-scan/
+RUN uv export --frozen --no-dev --no-emit-workspace --format requirements-txt --output-file /build/requirements.txt \
  && uv venv /opt/kestrix --python /usr/local/bin/python3.12 \
  && uv pip install --python /opt/kestrix/bin/python --require-hashes --no-deps -r /build/requirements.txt
 COPY src/kestrix ./src/kestrix
+COPY packages/kestrix-scan/src ./packages/kestrix-scan/src
 COPY --from=dashboard /build/src/kestrix/server/static ./src/kestrix/server/static
 # The build backend is uv_build, which the pinned uv binary above implements itself, so nothing is
 # downloaded for the build; --offline makes the build fail rather than fetch a backend if that changes.
 RUN test -f src/kestrix/server/static/index.html \
- && uv build --offline --wheel --out-dir /build/dist \
- && uv pip install --python /opt/kestrix/bin/python --no-deps /build/dist/kestrix-*.whl
+ && uv build --offline --wheel --all-packages --out-dir /build/dist \
+ && uv pip install --python /opt/kestrix/bin/python --no-deps /build/dist/kestrix_scan-*.whl /build/dist/kestrix-*.whl
 
 # Final stage: the same Python base, the venv, and nothing else.
 FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1

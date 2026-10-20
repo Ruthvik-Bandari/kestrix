@@ -23,9 +23,10 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked --all-extras
-      - run: uv run ruff format --check src tests scripts
-      - run: uv run ruff check src tests scripts
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
       - run: uv run mypy
+      - run: uv run mypy --python-version 3.13
 
   python-tests:
     name: Python tests (${{ matrix.python }})
@@ -34,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.12", "3.13"]
+        python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
@@ -42,8 +43,26 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --all-extras
-      - name: Unit tests (engine tests skip without Elasticsearch)
-        run: uv run pytest -m "not engine" --cov=kestrix --cov-report=term-missing
+      - name: Unit tests of both packages (engine tests skip without Elasticsearch)
+        run: uv run pytest -m "not engine" --cov=kestrix --cov=kestrix_scan --cov-report=term-missing
+
+  scan-tests:
+    name: kestrix-scan tests alone (${{ matrix.python }})
+    needs: python-checks
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python }}
+      - name: Install only kestrix-scan and pytest (no workbench dependencies)
+        run: uv sync --locked --package kestrix-scan
+      - run: uv run --package kestrix-scan pytest packages/kestrix-scan/tests
 
   engine-tests:
     name: Replay tests on pinned Elasticsearch
@@ -90,8 +109,8 @@ jobs:
       - run: npm run build
 
   package:
-    name: Build and smoke-test the wheel
-    needs: [python-tests, frontend]
+    name: Build both wheels and smoke-test them
+    needs: [python-tests, scan-tests, frontend]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -102,15 +121,34 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - run: npm --prefix frontend ci && npm --prefix frontend run build
-      - run: uv build
-      - name: Install the wheel in a clean environment and run the CLI
+      - run: uv build --all-packages
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: kestrix-scan installs with zero dependencies into a clean venv
+        run: |
+          python -m venv /tmp/scan
+          /tmp/scan/bin/python -m pip install --dry-run --ignore-installed --report /tmp/scan-report.json dist/kestrix_scan-*.whl
+          python -c "import json; names = [i['metadata']['name'] for i in json.load(open('/tmp/scan-report.json'))['install']]; assert names == ['kestrix-scan'], names"
+          /tmp/scan/bin/python -m pip install --no-index dist/kestrix_scan-*.whl
+          test "$(/tmp/scan/bin/python -m pip list --format freeze | grep -v '^pip==')" = "kestrix-scan==0.1.0"
+          /tmp/scan/bin/kestrix-scan --version
+          /tmp/scan/bin/python -m kestrix_scan rules > /dev/null
+          printf 'import subprocess\nsubprocess.run(cmd, shell=True)\n' > /tmp/vulnerable.py
+          status=0
+          /tmp/scan/bin/kestrix-scan /tmp/vulnerable.py --format sarif --output /tmp/scan.sarif || status=$?
+          test "$status" -eq 1
+          /tmp/scan/bin/kestrix-scan install-claude-plugin --dest /tmp/kestrix-plugin
+          test -f /tmp/kestrix-plugin/.claude-plugin/plugin.json && test -f /tmp/kestrix-plugin/hooks/kestrix_hook.py
+      - name: Install the workbench wheel in a clean environment and run the CLI
         run: |
           uv venv /tmp/smoke
           uv pip install --python /tmp/smoke dist/*.whl
           /tmp/smoke/bin/kestrix version
+          /tmp/smoke/bin/kestrix code scan --help
           /tmp/smoke/bin/kestrix detect cases
           /tmp/smoke/bin/kestrix bitcoin scan bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq
-          /tmp/smoke/bin/python -c "import zipfile,glob; names=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); assert any(n.endswith('server/static/index.html') for n in names), 'dashboard missing from wheel'"
+          /tmp/smoke/bin/python -c "import zipfile,glob; names=zipfile.ZipFile(glob.glob('dist/kestrix-*.whl')[0]).namelist(); assert any(n.endswith('server/static/index.html') for n in names), 'dashboard missing from wheel'"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist

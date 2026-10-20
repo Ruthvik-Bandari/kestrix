@@ -12,6 +12,11 @@
 !LICENSE
 !NOTICE
 !src/kestrix/
+!packages/kestrix-scan/pyproject.toml
+!packages/kestrix-scan/README.md
+!packages/kestrix-scan/LICENSE
+!packages/kestrix-scan/NOTICE
+!packages/kestrix-scan/src/
 !frontend/
 
 # Generated or local-only files inside the allowed directories.

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
+#
+# pre-commit hook for kestrix-scan (packages/kestrix-scan). Use it from .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/Ruthvik-Bandari/kestrix
+#       rev: v0.1.0
+#       hooks:
+#         - id: kestrix-scan
+#
+# pre-commit installs this repository's root package (the kestrix workbench), which depends on
+# kestrix-scan and so provides the kestrix-scan command. The scanner reads [tool.kestrix] from the
+# project's pyproject.toml or .kestrix.toml; its excludes also apply to the file names passed here.
+- id: kestrix-scan
+  name: kestrix-scan
+  description: Local security checks for Python code and hard-coded secrets (nothing leaves the machine).
+  entry: kestrix-scan
+  language: python
+  types_or: [python, text]
+  pass_filenames: true
+  require_serial: false
+  minimum_pre_commit_version: "3.0.0"
