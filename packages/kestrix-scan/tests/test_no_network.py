@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import osv_support as osv
 import pytest
 from cli_support import PLUGIN, run
 
@@ -68,6 +69,21 @@ def test_scan_and_hook_work_without_sockets(tmp_path: Path, no_network: list[str
     assert json.loads(hook.hook_response(json.dumps(stop)) or "{}")["kestrix_stop"]["new"]
     result = run("scan", "--hook", stdin=json.dumps(payload))
     assert "py.subprocess.shell_true" in result.stdout
+    assert no_network == []
+
+
+def test_dependency_scan_works_without_sockets(
+    tmp_path: Path, isolated_osv_index: Path, no_network: list[str]
+) -> None:
+    """Only `kestrix-scan db update` uses the network; checking lockfiles against the local index does not."""
+    osv.build(isolated_osv_index)
+    (tmp_path / "requirements.txt").write_text("demo-pkg==2.0.0\n")
+    (tmp_path / "package-lock.json").write_text(
+        json.dumps({"lockfileVersion": 3, "packages": {"node_modules/@evil/stealer": {"version": "1.0.0"}}})
+    )
+    report = scan([tmp_path], root=tmp_path)
+    assert {f.rule_id for f in report.findings} == {"dep.vulnerable", "dep.malicious"}
+    assert run("db", "status").exit_code == 0
     assert no_network == []
 
 

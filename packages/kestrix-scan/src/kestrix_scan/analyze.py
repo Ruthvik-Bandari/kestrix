@@ -20,17 +20,18 @@ import re
 import subprocess
 import tempfile
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Literal
 
+from . import deps
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
 from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, count, fingerprint, ordered
 from .python_rules import check_python
 from .registry import RULES, Hit
 from .secrets import check_secrets, redact
-from .walk import Candidate, Unreadable, collect, git_executable, is_within, read_text
+from .walk import MAX_FILE_BYTES, Candidate, Unreadable, collect, file_limit, git_executable, is_within, read_text
 
 FailOn = Literal["low", "medium", "high", "critical", "none"]
 MAX_BASELINE_BYTES = 10 * 1024 * 1024
@@ -81,20 +82,26 @@ def scan(
     skipped = list(walk.skipped)
     suppressed = 0
     scanned = 0
+    ignored_advisories = dict(settings.ignore_advisories)
+    first_dependency_file: str | None = None
     for candidate in walk.candidates:
         try:
-            text = read_text(candidate)
+            text = read_text(candidate, file_limit(candidate.rel))
         except Unreadable as exc:
             skipped.append(SkippedFile(path=candidate.rel, reason=exc.reason))
             continue
         scanned += 1
-        file_findings, file_notes, file_suppressed, skip = scan_text(text, candidate, active)
+        if first_dependency_file is None and deps.is_dependency_file(candidate.rel):
+            first_dependency_file = candidate.rel
+        file_findings, file_notes, file_suppressed, skip = scan_text(text, candidate, active, ignored_advisories)
         findings.extend(file_findings)
         notes.extend(file_notes)
         suppressed += file_suppressed
         if skip is not None:
             skipped.append(skip)
 
+    if first_dependency_file is not None and (stale := deps.stale_note(first_dependency_file)) is not None:
+        notes.append(stale)
     if changes is not None:
         findings = [finding for finding in findings if _changed(finding, changes)]
     kept = [finding for finding in findings if finding.fingerprint not in known]
@@ -115,11 +122,16 @@ def scan(
 
 
 def scan_text(
-    text: str, candidate: Candidate, active: frozenset[str] | None = None
+    text: str,
+    candidate: Candidate,
+    active: frozenset[str] | None = None,
+    ignore_advisories: Mapping[str, str] | None = None,
 ) -> tuple[list[Finding], list[Note], int, SkippedFile | None]:
     """Findings, notes, suppressed count and an optional skip record for one decoded file.
 
     ``active``: the rule ids to report (``None``: every rule); hits of other rules are dropped first.
+    ``ignore_advisories``: advisory ids (or aliases) left out of dependency findings, with their reasons.
+    A dependency file is also checked against the local vulnerability index; one over 1 MiB gets only that check.
     """
     hits: list[Hit] = []
     skip = None
@@ -129,12 +141,20 @@ def scan_text(
             hits.extend(result)
         else:
             skip = SkippedFile(path=candidate.rel, reason=result)
-    hits.extend(check_secrets(text))
+    dependency_file = deps.is_dependency_file(candidate.rel)
+    if not dependency_file or len(text) <= MAX_FILE_BYTES:
+        hits.extend(check_secrets(text))
     if active is not None:
         hits = [item for item in hits if item.rule_id in active]
     suppressions, notes = _suppressions(text, candidate.rel)
-    findings = []
+    findings: list[Finding] = []
     suppressed = 0
+    if dependency_file:
+        dep_findings, dep_notes, suppressed = deps.check_file(
+            text, candidate.rel, suppressions, active, ignore_advisories or {}
+        )
+        findings.extend(dep_findings)
+        notes.extend(dep_notes)
     for item in hits:
         ids_here = suppressions.get(item.line, frozenset()) | suppressions.get(item.line - 1, frozenset())
         if item.rule_id in ids_here:

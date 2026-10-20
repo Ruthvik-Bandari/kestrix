@@ -398,6 +398,36 @@ _RULES = (
         "any",
         sources=("https://docs.python.org/3/library/os.html#os.environ",),
     ),
+    Rule(
+        "dep.vulnerable",
+        "CWE-1395",
+        "critical",
+        "high",
+        "Dependency version with a known vulnerability (OSV)",
+        "A pinned dependency version is listed as affected in an OSV advisory. Whether your code reaches the vulnerable function is not analyzed, so treat it as exploitable until you know otherwise.",
+        "Upgrade the package to a fixed version and update the lockfile. If no fix exists, replace the package or record why it is safe in [tool.kestrix] ignore-advisories.",
+        "dependency",
+        sources=(
+            "https://ossf.github.io/osv-schema/",
+            "https://google.github.io/osv.dev/data/",
+            "https://peps.python.org/pep-0440/",
+            "https://semver.org/spec/v2.0.0.html",
+        ),
+    ),
+    Rule(
+        "dep.malicious",
+        "CWE-506",
+        "critical",
+        "high",
+        "Dependency reported as a malicious package (OSV MAL-)",
+        "The OpenSSF malicious-packages feed reports this package version as malware, typically code that steals credentials or opens a backdoor when it is installed or imported.",
+        "Remove the package and its lockfile entry, then rotate every credential, token and key on machines where it was installed.",
+        "dependency",
+        sources=(
+            "https://github.com/ossf/malicious-packages",
+            "https://ossf.github.io/osv-schema/",
+        ),
+    ),
 )
 
 RULES: dict[str, Rule] = {rule.id: rule for rule in _RULES}

@@ -126,7 +126,9 @@ def introduced(target: Path, root: Path, before: str | None) -> tuple[list[Findi
         return findings, []
     real = target.resolve()
     active = settings.active_rules() if settings.enable or settings.disable else None
-    old, _, _, _ = scan_text(before, Candidate(path=real, rel=rel_path(real, root)), active)
+    old, _, _, _ = scan_text(
+        before, Candidate(path=real, rel=rel_path(real, root)), active, dict(settings.ignore_advisories)
+    )
     remaining = Counter(f.fingerprint for f in old)
     new: list[Finding] = []
     kept: list[Finding] = []

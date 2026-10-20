@@ -20,6 +20,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .lockfiles import MAX_LOCKFILE_BYTES, parser_for
 from .models import SkippedFile, SkipReason
 
 MAX_FILE_BYTES = 1024 * 1024
@@ -118,7 +119,7 @@ def _consider(path: Path, root: Path, seen: set[Path], walk: Walk) -> None:
     if not stat.S_ISREG(info.st_mode) or real in seen:
         return
     seen.add(real)
-    if info.st_size > MAX_FILE_BYTES:
+    if info.st_size > file_limit(rel):
         walk.skipped.append(SkippedFile(path=rel, reason="too_large"))
         return
     walk.candidates.append(Candidate(path=real, rel=rel))
@@ -189,20 +190,25 @@ def _git_files(root: Path) -> frozenset[str] | None:
     return frozenset(name for name in out.stdout.decode("utf-8", "replace").split("\0") if name)
 
 
+def file_limit(rel: str) -> int:
+    """The size cap for a file: lockfiles may be up to 64 MiB, everything else 1 MiB."""
+    return MAX_LOCKFILE_BYTES if parser_for(rel) is not None else MAX_FILE_BYTES
+
+
 class Unreadable(Exception):
     def __init__(self, reason: SkipReason) -> None:
         super().__init__(reason)
         self.reason: SkipReason = reason
 
 
-def read_text(candidate: Candidate) -> str:
+def read_text(candidate: Candidate, limit: int = MAX_FILE_BYTES) -> str:
     """Decoded text of the file (UTF-8, invalid bytes replaced). Raises ``Unreadable`` with the skip reason."""
     try:
         with candidate.path.open("rb") as stream:
-            data = stream.read(MAX_FILE_BYTES + 1)
+            data = stream.read(limit + 1)
     except OSError:
         raise Unreadable("unreadable") from None
-    if len(data) > MAX_FILE_BYTES:
+    if len(data) > limit:
         raise Unreadable("too_large")
     if b"\0" in data[:BINARY_PROBE_BYTES]:
         raise Unreadable("binary")

@@ -1,6 +1,6 @@
 ---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.* and secret.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -592,3 +592,23 @@ CWE-798 · default severity high · confidence medium
 **Why:** A password, token or key in source is visible to everyone with the code and stays in version-control history.
 
 **Fix:** Load it from the environment or a secrets manager. If it was ever real, rotate it.
+
+## Dependency rules
+
+These come from lockfiles checked against the local OSV index (`kestrix-scan db update`). The finding names the package, its version, the advisory ids and the version to upgrade to. Change the version constraint in the manifest (pyproject.toml, requirements*.txt or package.json), regenerate the lockfile with the project's own tool (uv lock, poetry lock, npm install), then re-run `kestrix-scan`. Only when the advisory does not apply, add its id with a reason to `[tool.kestrix] ignore-advisories`.
+
+### `dep.vulnerable`: Dependency version with a known vulnerability (OSV)
+
+CWE-1395 · default severity critical · confidence high
+
+**Why:** A pinned dependency version is listed as affected in an OSV advisory. Whether your code reaches the vulnerable function is not analyzed, so treat it as exploitable until you know otherwise.
+
+**Fix:** Upgrade the package to a fixed version and update the lockfile. If no fix exists, replace the package or record why it is safe in [tool.kestrix] ignore-advisories.
+
+### `dep.malicious`: Dependency reported as a malicious package (OSV MAL-)
+
+CWE-506 · default severity critical · confidence high
+
+**Why:** The OpenSSF malicious-packages feed reports this package version as malware, typically code that steals credentials or opens a backdoor when it is installed or imported.
+
+**Fix:** Remove the package and its lockfile entry, then rotate every credential, token and key on machines where it was installed.

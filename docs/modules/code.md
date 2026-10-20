@@ -115,6 +115,8 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `secret.anthropic_api_key` | any text file | CWE-798 | critical | high | Anthropic API key |
 | `secret.openai_api_key` | any text file | CWE-798 | critical | medium | OpenAI-style API key |
 | `secret.generic` | any text file | CWE-798 | high | medium | Hard-coded credential |
+| `dep.vulnerable` | lockfiles | CWE-1395 | critical | high | Dependency version with a known vulnerability (OSV) |
+| `dep.malicious` | lockfiles | CWE-506 | critical | high | Dependency reported as a malicious package (OSV MAL-) |
 <!-- rules:end -->
 
 **How the Python rules decide.** Calls are resolved through imports and aliases (`import subprocess as sp`, `from os import system`). A name counts as a literal when every assignment to it in its function, or in the module, is a literal; a fixed command or query is not reported. When an argument cannot be classified, the rule stays quiet: the rules prefer missing a case to flagging safe code.
