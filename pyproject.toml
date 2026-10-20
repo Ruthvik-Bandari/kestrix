@@ -107,6 +107,7 @@ modules = [
     "kestrix_scan.errors",
     "kestrix_scan.hook",
     "kestrix_scan.init",
+    "kestrix_scan.lockfiles",
     "kestrix_scan.models",
     "kestrix_scan.plugin",
     "kestrix_scan.pytest_plugin",
@@ -115,6 +116,7 @@ modules = [
     "kestrix_scan.sarif",
     "kestrix_scan.secrets",
     "kestrix_scan.skill",
+    "kestrix_scan.versions",
     "kestrix_scan.walk",
 ]
 strict = true
