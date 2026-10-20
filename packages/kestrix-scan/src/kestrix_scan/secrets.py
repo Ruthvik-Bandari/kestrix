@@ -83,7 +83,7 @@ _PROVIDERS = (
 _NAME_WORDS = r"password|passwd|pwd|secret|api[_-]?key|apikey|access[_-]?key|auth[_-]?token|token|private[_-]?key|client[_-]?secret"
 _GENERIC_QUOTED = re.compile(
     r"(?i)(?<![A-Za-z0-9_.-])([A-Za-z0-9_.-]{0,40}(?:" + _NAME_WORDS + r")[A-Za-z0-9_.-]{0,40})['\"]?"
-    r"(?:\s*:\s*[A-Za-z_][\w\[\]., |]{0,40}?)?\s*(?:=|:|:=|=>)\s*[rbu]?(['\"])([^'\"\s\\]{16,200})\2"
+    r"(?:\s*:\s*[A-Za-z_][\w\[\]., |]{0,40}?)?\s*(?:=|:|:=|=>)\s*[rbu]?(['\"`])([^'\"`\s\\]{16,200})\2"
 )
 _GENERIC_ENV = re.compile(
     r"(?m)^\s*(?:export\s+)?([A-Z0-9_]{0,40}(?:PASSWORD|PASSWD|SECRET|API_KEY|APIKEY|ACCESS_KEY|AUTH_TOKEN|TOKEN|PRIVATE_KEY)[A-Z0-9_]{0,40})"
