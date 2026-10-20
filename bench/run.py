@@ -344,8 +344,9 @@ def publishable(result: dict[str, Any]) -> dict[str, Any]:
     out["tools"] = {k: v for k, v in result["tools"].items() if k in PUBLISHABLE}
     env = dict(result["environment"])
     env.pop("semgrep_ruleset", None)
+    # The shared venv's full freeze would list Semgrep's dependencies too; publish only the published tools' pins.
     env["tool_environment"] = [
-        line for line in env.get("tool_environment", []) if not line.lower().startswith("semgrep")
+        line for line in env.get("tool_environment", []) if line.split("==")[0].lower() in PUBLISHABLE
     ]
     out["environment"] = env
     return out

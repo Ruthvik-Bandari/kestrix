@@ -114,7 +114,10 @@ def test_security_guidance_adapter_applies_filters_substrings_and_regexes():
 def test_published_results_leave_out_semgrep():
     result = {
         "tools": {"kestrix": {}, "semgrep": {}, "bandit": {}},
-        "environment": {"semgrep_ruleset": {"sha256": "x"}, "tool_environment": ["bandit==1.9.4", "semgrep==1.178.0"]},
+        "environment": {
+            "semgrep_ruleset": {"sha256": "x"},
+            "tool_environment": ["bandit==1.9.4", "mcp==1.29.0", "semgrep==1.178.0"],
+        },
     }
     public = run.publishable(result)
     assert list(public["tools"]) == ["kestrix", "bandit"]
