@@ -1,0 +1,896 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Kestrix",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/Ruthvik-Bandari/kestrix",
+          "rules": [
+            {
+              "id": "py.exec.eval",
+              "name": "PyExecEval",
+              "shortDescription": {
+                "text": "eval() of a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "eval runs its argument as Python code. If any part of it comes from a user, a file or the network, an attacker can run arbitrary code."
+              },
+              "help": {
+                "text": "Parse data instead of evaluating it: ast.literal_eval for Python literals, json.loads for JSON, or an explicit lookup table.",
+                "markdown": "**Why:** eval runs its argument as Python code. If any part of it comes from a user, a file or the network, an attacker can run arbitrary code.\n\n**Fix:** Parse data instead of evaluating it: ast.literal_eval for Python literals, json.loads for JSON, or an explicit lookup table."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-95"
+                ]
+              }
+            },
+            {
+              "id": "py.exec.exec",
+              "name": "PyExecExec",
+              "shortDescription": {
+                "text": "exec() of a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "exec runs its argument as Python statements, so attacker-influenced text becomes attacker-controlled code."
+              },
+              "help": {
+                "text": "Remove the dynamic code path. Dispatch to known functions with a dict, or load plugins from a fixed allowlist of modules.",
+                "markdown": "**Why:** exec runs its argument as Python statements, so attacker-influenced text becomes attacker-controlled code.\n\n**Fix:** Remove the dynamic code path. Dispatch to known functions with a dict, or load plugins from a fixed allowlist of modules."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-95"
+                ]
+              }
+            },
+            {
+              "id": "py.exec.compile",
+              "name": "PyExecCompile",
+              "shortDescription": {
+                "text": "compile() of a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "compile turns text into a code object that is usually executed next; building it from untrusted text allows code injection."
+              },
+              "help": {
+                "text": "Avoid compiling dynamic source. If you need an expression language, parse it with ast and evaluate only allowed node types.",
+                "markdown": "**Why:** compile turns text into a code object that is usually executed next; building it from untrusted text allows code injection.\n\n**Fix:** Avoid compiling dynamic source. If you need an expression language, parse it with ast and evaluate only allowed node types."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-95"
+                ]
+              }
+            },
+            {
+              "id": "py.subprocess.shell_true",
+              "name": "PySubprocessShellTrue",
+              "shortDescription": {
+                "text": "Command run through a shell"
+              },
+              "fullDescription": {
+                "text": "With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands."
+              },
+              "help": {
+                "text": "Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.",
+                "markdown": "**Why:** With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands.\n\n**Fix:** Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "py.os.system",
+              "name": "PyOsSystem",
+              "shortDescription": {
+                "text": "os.system or os.popen with a built command"
+              },
+              "fullDescription": {
+                "text": "os.system and os.popen always run the string through a shell, so interpolated values can inject commands."
+              },
+              "help": {
+                "text": "Use subprocess.run with a list of arguments and no shell, and check the return code.",
+                "markdown": "**Why:** os.system and os.popen always run the string through a shell, so interpolated values can inject commands.\n\n**Fix:** Use subprocess.run with a list of arguments and no shell, and check the return code."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "py.deserialize.pickle",
+              "name": "PyDeserializePickle",
+              "shortDescription": {
+                "text": "Unsafe deserialization (pickle, dill, shelve, marshal)"
+              },
+              "fullDescription": {
+                "text": "Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data."
+              },
+              "help": {
+                "text": "Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model.",
+                "markdown": "**Why:** Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data.\n\n**Fix:** Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ]
+              }
+            },
+            {
+              "id": "py.deserialize.yaml_unsafe",
+              "name": "PyDeserializeYamlUnsafe",
+              "shortDescription": {
+                "text": "YAML loaded with a loader that can build objects"
+              },
+              "fullDescription": {
+                "text": "The full and unsafe PyYAML loaders can construct arbitrary Python objects from tags in the document, which leads to code execution."
+              },
+              "help": {
+                "text": "Use yaml.safe_load, or yaml.load(data, Loader=yaml.SafeLoader).",
+                "markdown": "**Why:** The full and unsafe PyYAML loaders can construct arbitrary Python objects from tags in the document, which leads to code execution.\n\n**Fix:** Use yaml.safe_load, or yaml.load(data, Loader=yaml.SafeLoader)."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ]
+              }
+            },
+            {
+              "id": "py.sql.string_built",
+              "name": "PySqlStringBuilt",
+              "shortDescription": {
+                "text": "SQL statement built from strings"
+              },
+              "fullDescription": {
+                "text": "Formatting values into SQL text lets a value close the string and change the query (SQL injection)."
+              },
+              "help": {
+                "text": "Use bound parameters: cursor.execute('SELECT * FROM t WHERE id = ?', (item_id,)), or the placeholders of your driver or ORM.",
+                "markdown": "**Why:** Formatting values into SQL text lets a value close the string and change the query (SQL injection).\n\n**Fix:** Use bound parameters: cursor.execute('SELECT * FROM t WHERE id = ?', (item_id,)), or the placeholders of your driver or ORM."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "py.tls.verify_disabled",
+              "name": "PyTlsVerifyDisabled",
+              "shortDescription": {
+                "text": "TLS certificate or hostname verification disabled"
+              },
+              "fullDescription": {
+                "text": "Without verification anyone on the network path can impersonate the server and read or change the traffic."
+              },
+              "help": {
+                "text": "Keep verification on. For a private CA, pass its bundle (verify='/path/ca.pem' or ssl.create_default_context(cafile=...)).",
+                "markdown": "**Why:** Without verification anyone on the network path can impersonate the server and read or change the traffic.\n\n**Fix:** Keep verification on. For a private CA, pass its bundle (verify='/path/ca.pem' or ssl.create_default_context(cafile=...))."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-295"
+                ]
+              }
+            },
+            {
+              "id": "py.crypto.weak_hash",
+              "name": "PyCryptoWeakHash",
+              "shortDescription": {
+                "text": "MD5 or SHA-1 hash"
+              },
+              "fullDescription": {
+                "text": "MD5 and SHA-1 have practical collision attacks and must not protect integrity, signatures or passwords."
+              },
+              "help": {
+                "text": "Use hashlib.sha256 (or hashlib.blake2b). For passwords use a slow KDF such as hashlib.scrypt. If the hash is only a checksum or an identifier, pass usedforsecurity=False.",
+                "markdown": "**Why:** MD5 and SHA-1 have practical collision attacks and must not protect integrity, signatures or passwords.\n\n**Fix:** Use hashlib.sha256 (or hashlib.blake2b). For passwords use a slow KDF such as hashlib.scrypt. If the hash is only a checksum or an identifier, pass usedforsecurity=False."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-328"
+                ]
+              }
+            },
+            {
+              "id": "py.crypto.insecure_random",
+              "name": "PyCryptoInsecureRandom",
+              "shortDescription": {
+                "text": "random module used for a secret value"
+              },
+              "fullDescription": {
+                "text": "The random module is a predictable generator. Tokens, keys, salts and passwords made with it can be guessed."
+              },
+              "help": {
+                "text": "Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice.",
+                "markdown": "**Why:** The random module is a predictable generator. Tokens, keys, salts and passwords made with it can be guessed.\n\n**Fix:** Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-330"
+                ]
+              }
+            },
+            {
+              "id": "py.tempfile.mktemp",
+              "name": "PyTempfileMktemp",
+              "shortDescription": {
+                "text": "tempfile.mktemp returns a name, not a file"
+              },
+              "fullDescription": {
+                "text": "Another process can create the file between mktemp choosing the name and your code opening it, and redirect your writes."
+              },
+              "help": {
+                "text": "Use tempfile.mkstemp, tempfile.NamedTemporaryFile or tempfile.TemporaryDirectory, which create the file atomically.",
+                "markdown": "**Why:** Another process can create the file between mktemp choosing the name and your code opening it, and redirect your writes.\n\n**Fix:** Use tempfile.mkstemp, tempfile.NamedTemporaryFile or tempfile.TemporaryDirectory, which create the file atomically."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-377"
+                ]
+              }
+            },
+            {
+              "id": "py.flask.debug",
+              "name": "PyFlaskDebug",
+              "shortDescription": {
+                "text": "Debug mode enabled"
+              },
+              "fullDescription": {
+                "text": "Debug mode shows stack traces and, in Flask, an interactive console that runs code for anyone who can reach the page."
+              },
+              "help": {
+                "text": "Read the setting from the environment and keep it off in deployed code, for example app.run(debug=os.environ.get('FLASK_DEBUG') == '1').",
+                "markdown": "**Why:** Debug mode shows stack traces and, in Flask, an interactive console that runs code for anyone who can reach the page.\n\n**Fix:** Read the setting from the environment and keep it off in deployed code, for example app.run(debug=os.environ.get('FLASK_DEBUG') == '1')."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-489"
+                ]
+              }
+            },
+            {
+              "id": "py.jwt.no_verify",
+              "name": "PyJwtNoVerify",
+              "shortDescription": {
+                "text": "JWT decoded without verifying the signature"
+              },
+              "fullDescription": {
+                "text": "A token whose signature is not checked can be forged by anyone, so its claims (user, role, expiry) mean nothing."
+              },
+              "help": {
+                "text": "Verify the signature with an explicit algorithm list, for example jwt.decode(token, key, algorithms=['RS256']). Never allow 'none'.",
+                "markdown": "**Why:** A token whose signature is not checked can be forged by anyone, so its claims (user, role, expiry) mean nothing.\n\n**Fix:** Verify the signature with an explicit algorithm list, for example jwt.decode(token, key, algorithms=['RS256']). Never allow 'none'."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-347"
+                ]
+              }
+            },
+            {
+              "id": "py.xml.unsafe_parser",
+              "name": "PyXmlUnsafeParser",
+              "shortDescription": {
+                "text": "Standard-library XML parser on data that is not a literal"
+              },
+              "fullDescription": {
+                "text": "The standard-library XML parsers are not hardened against every hostile document (entity expansion, very large inputs)."
+              },
+              "help": {
+                "text": "For untrusted XML use defusedxml (defusedxml.ElementTree.fromstring), and bound the input size.",
+                "markdown": "**Why:** The standard-library XML parsers are not hardened against every hostile document (entity expansion, very large inputs).\n\n**Fix:** For untrusted XML use defusedxml (defusedxml.ElementTree.fromstring), and bound the input size."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-776"
+                ]
+              }
+            },
+            {
+              "id": "py.assert.security",
+              "name": "PyAssertSecurity",
+              "shortDescription": {
+                "text": "assert used for an access check"
+              },
+              "fullDescription": {
+                "text": "Python removes assert statements when run with -O, so the check silently disappears in optimized deployments."
+              },
+              "help": {
+                "text": "Use an explicit check: if not user.is_admin: raise PermissionError(...).",
+                "markdown": "**Why:** Python removes assert statements when run with -O, so the check silently disappears in optimized deployments.\n\n**Fix:** Use an explicit check: if not user.is_admin: raise PermissionError(...)."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-617"
+                ]
+              }
+            },
+            {
+              "id": "py.path.traversal",
+              "name": "PyPathTraversal",
+              "shortDescription": {
+                "text": "File path built from request data"
+              },
+              "fullDescription": {
+                "text": "A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files."
+              },
+              "help": {
+                "text": "Reduce the name with werkzeug.utils.secure_filename or os.path.basename, or resolve the path and check it stays under the base directory (Path.resolve().is_relative_to(base)). Flask's send_from_directory does this for you.",
+                "markdown": "**Why:** A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files.\n\n**Fix:** Reduce the name with werkzeug.utils.secure_filename or os.path.basename, or resolve the path and check it stays under the base directory (Path.resolve().is_relative_to(base)). Flask's send_from_directory does this for you."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ]
+              }
+            },
+            {
+              "id": "secret.aws_access_key_id",
+              "name": "SecretAwsAccessKeyId",
+              "shortDescription": {
+                "text": "AWS access key id"
+              },
+              "fullDescription": {
+                "text": "An access key id in source usually sits next to its secret key, and it identifies the account to attackers."
+              },
+              "help": {
+                "text": "Remove it, rotate the key pair in IAM, and load credentials from the environment, a credentials file or an IAM role.",
+                "markdown": "**Why:** An access key id in source usually sits next to its secret key, and it identifies the account to attackers.\n\n**Fix:** Remove it, rotate the key pair in IAM, and load credentials from the environment, a credentials file or an IAM role."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.aws_secret_access_key",
+              "name": "SecretAwsSecretAccessKey",
+              "shortDescription": {
+                "text": "AWS secret access key"
+              },
+              "fullDescription": {
+                "text": "Anyone with the repository can act as this AWS identity."
+              },
+              "help": {
+                "text": "Rotate the key in IAM now, then load it from the environment or a secrets manager. Removing it from the latest commit does not remove it from history.",
+                "markdown": "**Why:** Anyone with the repository can act as this AWS identity.\n\n**Fix:** Rotate the key in IAM now, then load it from the environment or a secrets manager. Removing it from the latest commit does not remove it from history."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.github_token",
+              "name": "SecretGithubToken",
+              "shortDescription": {
+                "text": "GitHub token"
+              },
+              "fullDescription": {
+                "text": "A GitHub token grants access to repositories and actions under its owner's account."
+              },
+              "help": {
+                "text": "Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets.",
+                "markdown": "**Why:** A GitHub token grants access to repositories and actions under its owner's account.\n\n**Fix:** Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.slack_token",
+              "name": "SecretSlackToken",
+              "shortDescription": {
+                "text": "Slack token"
+              },
+              "fullDescription": {
+                "text": "A Slack token can read and post messages in the workspace it belongs to."
+              },
+              "help": {
+                "text": "Revoke it in the Slack app settings and load a new one from the environment.",
+                "markdown": "**Why:** A Slack token can read and post messages in the workspace it belongs to.\n\n**Fix:** Revoke it in the Slack app settings and load a new one from the environment."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.stripe_live_key",
+              "name": "SecretStripeLiveKey",
+              "shortDescription": {
+                "text": "Stripe live secret or restricted key"
+              },
+              "fullDescription": {
+                "text": "A live Stripe key can create charges and refunds and read customer data."
+              },
+              "help": {
+                "text": "Roll the key in the Stripe dashboard and load it from the environment.",
+                "markdown": "**Why:** A live Stripe key can create charges and refunds and read customer data.\n\n**Fix:** Roll the key in the Stripe dashboard and load it from the environment."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.google_api_key",
+              "name": "SecretGoogleApiKey",
+              "shortDescription": {
+                "text": "Google API key"
+              },
+              "fullDescription": {
+                "text": "An unrestricted Google API key can be used by others at your expense."
+              },
+              "help": {
+                "text": "Restrict or regenerate the key in the Google Cloud console and load it from configuration outside the repository.",
+                "markdown": "**Why:** An unrestricted Google API key can be used by others at your expense.\n\n**Fix:** Restrict or regenerate the key in the Google Cloud console and load it from configuration outside the repository."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.private_key",
+              "name": "SecretPrivateKey",
+              "shortDescription": {
+                "text": "Private key block"
+              },
+              "fullDescription": {
+                "text": "A committed private key lets anyone impersonate its owner or decrypt its traffic."
+              },
+              "help": {
+                "text": "Treat the key as compromised: replace it, and keep keys in a secrets manager or a file outside the repository.",
+                "markdown": "**Why:** A committed private key lets anyone impersonate its owner or decrypt its traffic.\n\n**Fix:** Treat the key as compromised: replace it, and keep keys in a secrets manager or a file outside the repository."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.jwt",
+              "name": "SecretJwt",
+              "shortDescription": {
+                "text": "JSON Web Token"
+              },
+              "fullDescription": {
+                "text": "A hard-coded JWT is a bearer credential: whoever has it is treated as its subject until it expires."
+              },
+              "help": {
+                "text": "Remove it and obtain tokens at run time. If it was ever valid, revoke it or rotate the signing key.",
+                "markdown": "**Why:** A hard-coded JWT is a bearer credential: whoever has it is treated as its subject until it expires.\n\n**Fix:** Remove it and obtain tokens at run time. If it was ever valid, revoke it or rotate the signing key."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.anthropic_api_key",
+              "name": "SecretAnthropicApiKey",
+              "shortDescription": {
+                "text": "Anthropic API key"
+              },
+              "fullDescription": {
+                "text": "An Anthropic API key bills usage to its owner's account."
+              },
+              "help": {
+                "text": "Delete the key in the Anthropic console and read a new one from the ANTHROPIC_API_KEY environment variable.",
+                "markdown": "**Why:** An Anthropic API key bills usage to its owner's account.\n\n**Fix:** Delete the key in the Anthropic console and read a new one from the ANTHROPIC_API_KEY environment variable."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.openai_api_key",
+              "name": "SecretOpenaiApiKey",
+              "shortDescription": {
+                "text": "OpenAI-style API key"
+              },
+              "fullDescription": {
+                "text": "A model-provider API key bills usage to its owner's account."
+              },
+              "help": {
+                "text": "Revoke the key with the provider and read a new one from the environment.",
+                "markdown": "**Why:** A model-provider API key bills usage to its owner's account.\n\n**Fix:** Revoke the key with the provider and read a new one from the environment."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "secret.generic",
+              "name": "SecretGeneric",
+              "shortDescription": {
+                "text": "Hard-coded credential"
+              },
+              "fullDescription": {
+                "text": "A password, token or key in source is visible to everyone with the code and stays in version-control history."
+              },
+              "help": {
+                "text": "Load it from the environment or a secrets manager. If it was ever real, rotate it.",
+                "markdown": "**Why:** A password, token or key in source is visible to everyone with the code and stays in version-control history.\n\n**Fix:** Load it from the environment or a secrets manager. If it was ever real, rotate it."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "originalUriBaseIds": {
+        "SRCROOT": {
+          "uri": "<root>"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "secret.github_token",
+          "ruleIndex": 19,
+          "level": "error",
+          "message": {
+            "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "settings.env",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 14,
+                  "endLine": 1,
+                  "snippet": {
+                    "text": "github_token:ghp_\u2026"
+                  }
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "kestrixFingerprint/v1": "4cec87c5378ed6de9dcbcf37a71a9a62698e8c0582478b8e5d3ba48f09f83fe4"
+          },
+          "properties": {
+            "severity": "critical",
+            "confidence": "high",
+            "cwe": "CWE-798",
+            "security-severity": "9.5"
+          }
+        },
+        {
+          "ruleId": "py.subprocess.shell_true",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "subprocess.run runs a built command through the shell (shell=True). Fix: Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 5,
+                  "endLine": 5,
+                  "snippet": {
+                    "text": "subprocess.run(cmd, shell=True)"
+                  }
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "kestrixFingerprint/v1": "5413189d6508b6e24675ffd61b659c5096c516f5cebf5b6976af8dda4a28251f"
+          },
+          "properties": {
+            "severity": "high",
+            "confidence": "high",
+            "cwe": "CWE-78",
+            "security-severity": "8.0"
+          }
+        },
+        {
+          "ruleId": "py.exec.eval",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "eval() runs a value that is not a literal as code. Fix: Parse data instead of evaluating it: ast.literal_eval for Python literals, json.loads for JSON, or an explicit lookup table."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 12,
+                  "endLine": 11,
+                  "snippet": {
+                    "text": "return eval(text)  # kestrix: ignore[py.exec.eval]"
+                  }
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "kestrixFingerprint/v1": "317b18302f3515fa277dcc28eceb5f2f5738915b562c3c4cabf8ea9d9096aa5b"
+          },
+          "properties": {
+            "severity": "high",
+            "confidence": "medium",
+            "cwe": "CWE-95",
+            "security-severity": "8.0"
+          }
+        },
+        {
+          "ruleId": "py.crypto.weak_hash",
+          "ruleIndex": 9,
+          "level": "warning",
+          "message": {
+            "text": "MD5/SHA-1 hash created. Fix: Use hashlib.sha256 (or hashlib.blake2b). For passwords use a slow KDF such as hashlib.scrypt. If the hash is only a checksum or an identifier, pass usedforsecurity=False."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 12,
+                  "endLine": 8,
+                  "snippet": {
+                    "text": "return hashlib.md5(data).hexdigest()"
+                  }
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "kestrixFingerprint/v1": "fc3cbd370083185c235fa98195f55610c489bf2e9dea17bfefb28bd265fc2cb7"
+          },
+          "properties": {
+            "severity": "medium",
+            "confidence": "medium",
+            "cwe": "CWE-328",
+            "security-severity": "5.5"
+          }
+        }
+      ],
+      "properties": {
+        "generated_by": "Kestrix by Ruthvik Bandari",
+        "suppressed": 1
+      }
+    }
+  ]
+}

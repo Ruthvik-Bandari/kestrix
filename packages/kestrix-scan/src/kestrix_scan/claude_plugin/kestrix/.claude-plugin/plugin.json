@@ -1,0 +1,13 @@
+{
+  "name": "kestrix",
+  "version": "0.1.0",
+  "description": "Kestrix security for Claude Code: scans every file Claude writes with the local kestrix-scan scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Runs locally; needs the kestrix-scan (or kestrix) command on PATH.",
+  "author": {
+    "name": "Ruthvik Bandari",
+    "url": "https://github.com/Ruthvik-Bandari"
+  },
+  "homepage": "https://github.com/Ruthvik-Bandari/kestrix",
+  "repository": "https://github.com/Ruthvik-Bandari/kestrix",
+  "license": "Apache-2.0",
+  "keywords": ["security", "sast", "secrets", "code-review", "cwe", "hooks", "kestrix"]
+}

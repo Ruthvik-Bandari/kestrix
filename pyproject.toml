@@ -6,7 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Ruthvik Bandari", email = "bandari.ru@northeastern.edu" }]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 keywords = ["security", "sigma", "detection-engineering", "forensics", "bitcoin", "post-quantum"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -14,11 +14,15 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
 ]
 dependencies = [
+    # The code scanner and the Claude Code plugin (ADR 0006); versioned together with kestrix below 1.0.
+    "kestrix-scan==0.1.0",
     "fastapi>=0.115",
     "uvicorn>=0.32",
     "httpx>=0.28",
@@ -47,20 +51,33 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "kestrix"
 
+[tool.uv.workspace]
+members = ["packages/kestrix-scan"]
+
+[tool.uv.sources]
+kestrix-scan = { workspace = true }
+
 [dependency-groups]
-dev = ["pytest>=9", "pytest-cov>=6", "ruff>=0.14", "mypy>=1.18", "types-pyyaml"]
+# tomli: kestrix-scan's Python 3.10 TOML reader, installed everywhere so mypy can check that branch.
+dev = ["pytest>=9", "pytest-cov>=6", "ruff>=0.14", "mypy>=1.18", "types-pyyaml", "tomli>=2"]
 # Cluster-only research inference (B2/M1); never part of the published wheel.
 # torch 2.6 wheels target CUDA 12.4: they run on the cluster driver (545, CUDA 12.3) and still support V100 (sm_70).
 gpu = ["torch>=2.6,<2.7", "transformers>=4.46,<5", "accelerate>=1.0", "peft>=0.13"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "packages/kestrix-scan/tests"]
 addopts = "-ra --strict-markers"
 markers = ["engine: requires the pinned Elasticsearch at KESTRIX_ES_URL (default http://127.0.0.1:9200)"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py310"
+# First-party sources of both workspace packages, for import sorting.
+src = ["src", "packages/kestrix-scan/src"]
+
+[tool.ruff.format]
+# Prose examples in docs/ are written for readers; `ruff format` would reflow their code blocks.
+exclude = ["docs/**"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PL"]
@@ -71,11 +88,35 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "PLR0917"]
+"packages/*/tests/**" = ["S", "PLR0917"]
 "scripts/**" = ["PLR0915", "PLR0917"]
+".claude/hooks/**" = ["S603", "PLW1510"]  # the hook's own test runs the hook script with a fixed argument list
 "src/kestrix/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.10"
+# kestrix-scan is an installed workspace package: mypy reports its errors only for modules named here
+# (tests/test_mypy_config.py keeps this list complete).
+modules = [
+    "kestrix_scan",
+    "kestrix_scan.__main__",
+    "kestrix_scan.about",
+    "kestrix_scan.analyze",
+    "kestrix_scan.cli",
+    "kestrix_scan.config",
+    "kestrix_scan.errors",
+    "kestrix_scan.hook",
+    "kestrix_scan.init",
+    "kestrix_scan.models",
+    "kestrix_scan.plugin",
+    "kestrix_scan.pytest_plugin",
+    "kestrix_scan.python_rules",
+    "kestrix_scan.registry",
+    "kestrix_scan.sarif",
+    "kestrix_scan.secrets",
+    "kestrix_scan.skill",
+    "kestrix_scan.walk",
+]
 strict = true
 packages = ["kestrix", "kestrixbench"]
 mypy_path = "src"

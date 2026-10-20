@@ -10,6 +10,8 @@ PATTERNS = [
     "src/*.py",
     "tests/*.py",
     "scripts/*.py",
+    "packages/*.py",
+    "packages/*.toml",
     "hpc/*.sh",
     "hpc/*.sbatch",
     "frontend/src/*.ts",

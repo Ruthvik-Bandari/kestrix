@@ -1,0 +1,21 @@
+app.py
+  5:5  HIGH  py.subprocess.shell_true  CWE-78
+      subprocess.run runs a built command through the shell (shell=True).
+      fix: Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.
+  8:12  MEDIUM  py.crypto.weak_hash  CWE-328
+      MD5/SHA-1 hash created.
+      fix: Use hashlib.sha256 (or hashlib.blake2b). For passwords use a slow KDF such as hashlib.scrypt. If the hash is only a checksum or an identifier, pass usedforsecurity=False.
+  11:12  HIGH  py.exec.eval  CWE-95
+      eval() runs a value that is not a literal as code.
+      fix: Parse data instead of evaluating it: ast.literal_eval for Python literals, json.loads for JSON, or an explicit lookup table.
+
+settings.env
+  1:14  CRITICAL  secret.github_token  CWE-798
+      Possible github token hard-coded in the file (github_token:ghp_…).
+      fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets.
+
+note: app.py:11 kestrix.suppression.missing_reason: This kestrix: ignore[...] comment has no reason, so it suppresses nothing. Add why the finding is safe.
+skipped: blob.bin (binary)
+skipped: lib/broken.py (syntax_error)
+4 finding(s): 1 critical, 2 high, 1 medium, 0 low in 3 file(s); 1 suppressed, 0 in baseline, 2 skipped; fail-on medium.
+Rule-based pattern analysis on this machine. Rules miss things and can be wrong; no detection rate is claimed. No findings means no rule fired, not that the code is secure.

@@ -5,11 +5,11 @@
 Run from the repo root: ``uv run python scripts/bench_hook.py [--runs 30]``. For each size it reports
 p50 and p95 in milliseconds of:
 
-- ``in-process``: ``kestrix.code.hook.hook_response`` for an Edit (scan after the edit, plus the scan
+- ``in-process``: ``kestrix_scan.hook.hook_response`` for an Edit (scan after the edit, plus the scan
   of the text before it), in this interpreter;
 - ``pre-tool-use``: the plugin's ``kestrix_hook.py pre-tool-use`` process (the snapshot);
 - ``post-tool-use``: the plugin's ``kestrix_hook.py post-tool-use`` process, which starts
-  ``kestrix code scan --hook``; this is what the user waits for after each edit.
+  ``kestrix-scan scan --hook``; this is what the user waits for after each edit.
 
 The files are synthetic. Nothing is sent off the machine.
 """
@@ -28,10 +28,20 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from kestrix.code import hook
+from kestrix_scan import hook
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "src" / "kestrix" / "integrations" / "claude_plugin" / "kestrix" / "hooks" / "kestrix_hook.py"
+SCRIPT = (
+    ROOT
+    / "packages"
+    / "kestrix-scan"
+    / "src"
+    / "kestrix_scan"
+    / "claude_plugin"
+    / "kestrix"
+    / "hooks"
+    / "kestrix_hook.py"
+)
 SIZES = (100, 1000, 5000)
 EDIT_OLD = "def tail():"
 EDIT_NEW = "def tail(cmd):\n    os.system(cmd)"  # the edit introduces one high finding

@@ -11,13 +11,13 @@ import pytest
 import typer
 
 from kestrix.bitcoin.models import Risk
-from kestrix.cli import app
+from kestrix.cli import LAZY_GROUPS, app, load_group
 from kestrix.detect.diagnose import Family
 from kestrix.detect.workflow import Outcome
-from kestrix.integrations.plugin import plugin_files
-from kestrix.integrations.skill import SKILL_NAME, skill_files
 from kestrix.mail import intent
 from kestrix.webcheck import checks
+from kestrix_scan.plugin import plugin_files
+from kestrix_scan.skill import SKILL_NAME, skill_files
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "kestrix"
 FILES = {str(path): data.decode("utf-8") for path, data in skill_files()}
@@ -69,9 +69,14 @@ def _kestrix_invocations(text: str) -> list[list[str]]:
 
 
 def _resolve(argv: list[str]) -> tuple[Any, list[str]]:
-    """Walk the Typer command tree (Typer >= 0.20 vendors click, so groups are found by their ``commands``)."""
+    """Walk the Typer command tree (Typer >= 0.20 vendors click, so groups are found by their ``commands``).
+
+    The root's module groups load lazily (``kestrix.cli.LAZY_GROUPS``), so they are loaded here by name.
+    """
     command: Any = typer.main.get_command(app)
     rest = list(argv)
+    if rest and rest[0] in LAZY_GROUPS:
+        command = load_group(rest.pop(0))
     while hasattr(command, "commands") and rest and rest[0] in command.commands:
         command = command.commands[rest.pop(0)]
     return command, rest
@@ -162,9 +167,10 @@ PLUGIN_INVOCATIONS = [args for text in PLUGIN_SKILLS.values() for args in _kestr
 
 
 def test_the_plugin_skills_reference_the_code_scanner():
+    """The plugin skills run kestrix-scan (checked in its own tests); the workbench fallback is `kestrix code scan`."""
     assert len(PLUGIN_SKILLS) == 5
     assert all(args[:2] == ["code", "scan"] for args in PLUGIN_INVOCATIONS)
-    assert len(PLUGIN_INVOCATIONS) >= 6
+    assert len(PLUGIN_INVOCATIONS) >= 1
 
 
 @pytest.mark.parametrize("argv", PLUGIN_INVOCATIONS, ids=lambda argv: " ".join(argv)[:60])

@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "kestrix",
-      "source": "./src/kestrix/integrations/claude_plugin/kestrix",
-      "description": "Scans every file Claude writes with the local kestrix scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review.",
+      "source": "./packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix",
+      "description": "Scans every file Claude writes with the local kestrix-scan scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review.",
       "version": "0.1.0",
       "author": {
         "name": "Ruthvik Bandari"

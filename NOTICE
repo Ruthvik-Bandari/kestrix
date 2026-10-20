@@ -4,7 +4,7 @@ Copyright 2026 Ruthvik Bandari
 The Bitcoin quantum-risk module is adapted from BitShield (MIT Bitcoin Expo 2026, Team ACE).
 The forensics module is adapted from CyberSafeX Detection Suite (MIT License, Ruthvik Bandari).
 
-The code scanner's rules (src/kestrix/code/rules.py) were written for Kestrix from their CWE entries
+The code scanner's rules (packages/kestrix-scan/src/kestrix_scan/registry.py) were written for Kestrix from their CWE entries
 and the language, library and standard documentation cited per rule in
 docs/modules/code-rules-provenance.md. No rule text, pattern or code from other scanners is included.
 

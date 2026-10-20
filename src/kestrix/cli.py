@@ -1,36 +1,73 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""``kestrix`` command line entry point."""
+"""``kestrix`` command line entry point.
+
+The module command groups (``detect``, ``code`` and the others) are imported only when they run or
+when their own help is shown, so ``kestrix --help`` and ``kestrix code scan`` never import FastAPI,
+pySigma or the other modules' dependencies. ``LAZY_GROUPS`` lists them with their help text.
+"""
 
 from __future__ import annotations
 
 import getpass
+import importlib
 import logging
 import os
+from typing import Any
 
 import typer
+from typer.core import TyperGroup
 
 from . import ATTRIBUTION, __version__
-from .bitcoin.cli import app as bitcoin_app
-from .code.cli import app as code_app
 from .core import config
-from .detect.cli import app as detect_app
-from .forensics.cli import app as forensics_app
-from .integrations.cli import app as integrations_app
-from .mail.cli import app as mail_app
-from .server.cli import app as hosted_app
-from .webcheck.cli import app as webcheck_app
 
-app = typer.Typer(help="Kestrix: local-first security workbench.", no_args_is_help=True, add_completion=False)
-app.add_typer(detect_app, name="detect", help="Diagnose, repair and replay Sigma detections.")
-app.add_typer(forensics_app, name="forensics", help="Hash, entropy and metadata analysis of files and URLs.")
-app.add_typer(webcheck_app, name="webcheck", help="Passive security checks of a website you own.")
-app.add_typer(bitcoin_app, name="bitcoin", help="Bitcoin address quantum-exposure scanning.")
-app.add_typer(mail_app, name="mail", help="Explainable analysis of saved email messages (.eml).")
-app.add_typer(code_app, name="code", help="Find security issues in source code (exits non-zero on findings).")
-app.add_typer(integrations_app, name="integrations", help="Install the Kestrix skill for Claude.")
-app.add_typer(
-    hosted_app, name="hosted", help="Operator commands for the hosted service (disable accounts, hash hosts)."
+# name -> (module whose `app` is the group, help shown by `kestrix --help`), in help order.
+LAZY_GROUPS: dict[str, tuple[str, str]] = {
+    "detect": ("kestrix.detect.cli", "Diagnose, repair and replay Sigma detections."),
+    "forensics": ("kestrix.forensics.cli", "Hash, entropy and metadata analysis of files and URLs."),
+    "webcheck": ("kestrix.webcheck.cli", "Passive security checks of a website you own."),
+    "bitcoin": ("kestrix.bitcoin.cli", "Bitcoin address quantum-exposure scanning."),
+    "mail": ("kestrix.mail.cli", "Explainable analysis of saved email messages (.eml)."),
+    "code": ("kestrix.code.cli", "Find security issues in source code (exits non-zero on findings)."),
+    "integrations": ("kestrix.integrations.cli", "Install the Kestrix skill and Claude Code plugin."),
+    "hosted": ("kestrix.server.cli", "Operator commands for the hosted service (disable accounts, hash hosts)."),
+}
+
+
+def load_group(name: str) -> TyperGroup:
+    """Import a module's Typer app and return it as a command group named ``name``."""
+    module, help_text = LAZY_GROUPS[name]
+    group = typer.main.get_command(importlib.import_module(module).app)
+    assert isinstance(group, TyperGroup)
+    group.name, group.help = name, help_text
+    # Shell completion belongs to the root command only, as when the groups were added with add_typer.
+    group.params = [p for p in group.params if p.name not in {"install_completion", "show_completion"}]
+    return group
+
+
+class _Deferred(TyperGroup):
+    """Stands in for a module group in the root group's listing; becomes the real group when invoked."""
+
+    def load(self) -> TyperGroup:
+        assert self.name is not None
+        return load_group(self.name)
+
+    def make_context(self, info_name: str | None, args: list[str], parent: Any = None, **extra: Any) -> Any:
+        return self.load().make_context(info_name, args, parent=parent, **extra)
+
+
+class _LazyRoot(TyperGroup):
+    def list_commands(self, ctx: Any) -> list[str]:
+        return [*LAZY_GROUPS, *(name for name in super().list_commands(ctx) if name not in LAZY_GROUPS)]
+
+    def get_command(self, ctx: Any, cmd_name: str) -> Any:
+        if cmd_name in LAZY_GROUPS:
+            return _Deferred(name=cmd_name, help=LAZY_GROUPS[cmd_name][1])
+        return super().get_command(ctx, cmd_name)
+
+
+app = typer.Typer(
+    help="Kestrix: local-first security workbench.", no_args_is_help=True, add_completion=False, cls=_LazyRoot
 )
 config_app = typer.Typer(help="Manage local settings and API keys.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
