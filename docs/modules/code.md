@@ -76,6 +76,7 @@ The repository root has a `.pre-commit-hooks.yaml` with the hook `kestrix-scan` 
 - **A file named on the command line** is scanned even if it is ignored, so a hook can check a file such as `.env`.
 - **Limits:** files over 1 MiB are skipped as `too_large`; files with a NUL byte in their first 8 KiB as `binary`; at most 20,000 files per scan, after which `truncated` is true. A symbolic link whose target is outside the scan root is skipped as `symlink_outside_root`; a link inside the root is scanned once, under its target's path.
 - **Python rules** run on `.py` and `.pyw` files. A file that does not parse is listed as `syntax_error` (or `too_complex` for pathological nesting); the secret rules still run on it.
+- **Configuration rules** run on `.claude/settings.json`, `.claude/settings.local.json`, `hooks/hooks.json` and `.mcp.json` (see [Claude Code and MCP configuration](#claude-code-and-mcp-configuration)). A walk inside a git work tree only sees files git does not ignore, so name an ignored `settings.local.json` explicitly to check it.
 - **Secret rules** run on every text file.
 
 Finding paths are relative to the scan root: the current directory when every path is inside it, otherwise the paths' common parent.
@@ -136,8 +137,51 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 - `py.crypto.insecure_random` reports `random.*` calls in a value assigned to a name, attribute or key whose words include token, secret, password, key, nonce, salt, otp or csrf (not sort or cache keys), and in the return value of a function named that way. `random.SystemRandom` is fine.
 - `py.flask.debug` reports `app.run(debug=True)`, `app.debug = True` and `app.config["DEBUG"] = True` in files that import Flask, and a module-level `DEBUG = True` in `settings*.py` or a `settings/` package.
 - `py.assert.security` ignores test files (`tests/`, `test_*.py`, `*_test.py`, `conftest.py`).
-- `py.path.traversal` follows Flask `request.args`, `form`, `files` and similar, and Django `request.GET`, `POST`, `FILES` and `COOKIES`, into `open`, `os.path.join` and `flask.send_file`. `secure_filename` and `os.path.basename` clear the value, and a function that resolves the path and checks containment (`is_relative_to`, `commonpath`, or `realpath`/`abspath`/`resolve` with `startswith`) is not reported. FastAPI parameters are not tracked.
+- `py.path.traversal` is taint-based (see [Taint analysis](#taint-analysis)): request or LLM data reaching `open`, `io.open`, `os.open`, `flask.send_file`, Starlette/FastAPI `FileResponse`, or `Path.open`/`read_text`/`read_bytes`/`write_text`/`write_bytes` in a file that imports `pathlib`. `os.path.join` and `Path(...)` pass the taint on to the file operation, which is where the finding is reported. `sys.argv`, `input()` and environment variables do not fire it.
+- `py.ml.unsafe_model_load` reports `torch.load` without `weights_only` (**medium**: torch 2.6 and newer default to `weights_only=True`, older versions do not) or with `weights_only=False` (high); `joblib.load`; `pickle.load`/`loads` of a model file (a `.pkl`, `.joblib`, `.pt`, `.pth`, `.ckpt`, `.bin`, `.model` or `.sav` literal, or a name with model, weights, checkpoint, estimator or classifier in it), which then replaces `py.deserialize.pickle` on that line; Keras `load_model(..., safe_mode=False)`; and any call with `trust_remote_code=True` (medium, CWE-94).
+- `py.llm.secret_in_prompt` was considered and not written: telling a credential from any other string in a prompt needs the same guesswork as the generic secret rule, and the secret rules already report literal keys wherever they sit.
 - One finding per rule per line.
+
+## Taint analysis
+
+The Python rules include an intraprocedural taint analysis ([`taint.py`](../../packages/kestrix-scan/src/kestrix_scan/taint.py), standard-library `ast` only). It is a forward data flow over each function body, each class body and the module top level. Branches are joined and loops run twice. It stops at function boundaries: parameters start clean (except FastAPI route parameters), and nested functions and lambdas are analyzed as scopes of their own.
+
+| Source | Kind | Confidence |
+| --- | --- | --- |
+| Flask `request.args`, `form`, `values`, `json`, `get_json()`, `files`, `headers`, `cookies`, `data` | request | high |
+| Django `request.GET`, `POST`, `body`, `headers`, `COOKIES`, `FILES`, `META` (a name `request` that is not an import, or `self.request`) | request | high |
+| Parameters of FastAPI `@app.get/post/put/patch/delete/...` and `@router.*` handlers that are unannotated or annotated as text (`str`, `bytes`, `Optional[str]`, `str \| None`, `list[str]`, `Annotated[str, ...]`). Parameters with `Depends`/`Security`, and any other type, are skipped. | request | high |
+| Anthropic `...messages.create(...)`, OpenAI `...chat.completions.create(...)` and `...responses.create(...)`, `litellm.completion`, `ollama.chat`/`generate`, Google GenAI `generate_content`, LangChain `invoke`; each only when the file imports that library. Attributes and items of the result (`.content[0].text`) stay tainted. | llm | high |
+| `input()`, `sys.argv` | cli | medium |
+| `os.environ.get`, `os.getenv`, `os.environ[...]` | env | low |
+
+**Propagation:** assignment and augmented assignment (also tuple targets, `:=` and loop variables), f-strings, `%`, `+`, `str.format` and the other `str` methods, list/tuple/set/dict literals and comprehensions, subscripts, attribute access on tainted objects (`self.x = ...` is tracked within the function), `dict.get`-style methods, and the calls `str`, `bytes`, `"".join`, `os.path.join` and `pathlib.Path`. Any other call returns clean data. Assigning a clean value to a name clears it.
+
+**Sanitizers** apply only to their own sink class:
+
+| Sink class | Sanitizers |
+| --- | --- |
+| Every class | `int`, `float`, `uuid.UUID` (the result is a number or an id) |
+| Shell | `shlex.quote` |
+| Path | `os.path.basename`, `werkzeug.utils.secure_filename`; or `os.path.realpath`/`abspath`/`normpath`/`Path.resolve()` followed by a guard on the same name: `if not p.startswith(base)` or `if not p.is_relative_to(base)` whose body raises, returns or aborts, or the body of `if p.is_relative_to(base):`, also inside `and` / `or`. A guard without normalization does not count. |
+| HTML | `html.escape`, `markupsafe.escape` (not template source: escaping does not stop `{{ }}`) |
+| SQL | parameters: only the first argument of `execute` is checked, so values passed separately are fine |
+| SSRF and redirects | a literal start that fixes the scheme and host (`f"https://api.example.com/{x}"`); for redirects also a literal start of `/` plus a path character (`"/profile/" + x`, but not `"/" + x`) |
+
+**Sinks.** For `py.exec.eval`, `py.exec.exec`, `py.subprocess.shell_true`, `py.os.system` and `py.sql.string_built`, the pattern rule decides whether to report as before; when tainted data reaches the sink the finding gets the source's confidence, a sentence naming the source and a `trace`. When that data is LLM output, `py.llm.output_to_sink` is reported on that line instead, with CWE-94 (code), CWE-78 (shell), CWE-89 (SQL) or CWE-22 (path). `py.path.traversal`, `py.ssrf.request` (requests, httpx and `urllib.request`), `py.redirect.open` (Flask `redirect`, Django `redirect`/`HttpResponseRedirect`, Starlette `RedirectResponse`) and `py.xss.markup` (`Markup`, `mark_safe`; `render_template_string` and `jinja2.Template` source as CWE-1336) fire only on taint, and only from request or LLM sources: a URL from an environment variable or a path from `sys.argv` is not reported.
+
+**Traces.** A taint finding carries `trace`, a list of `{line, note}` from the source to the sink. It appears in the JSON report (only on findings that have one), as SARIF `codeFlows`, as a `trace:` line in the text report, and as `[trace: L4→L5→L7]` in the hook context. The fingerprint does not include it.
+
+## Claude Code and MCP configuration
+
+The `config.*` rules read `.claude/settings.json`, `.claude/settings.local.json`, a plugin's `hooks/hooks.json` and `.mcp.json` ([`agent_config.py`](../../packages/kestrix-scan/src/kestrix_scan/agent_config.py)), with the field names from the Claude Code [settings](https://code.claude.com/docs/en/settings), [hooks](https://code.claude.com/docs/en/hooks), [permissions](https://code.claude.com/docs/en/permissions) and [MCP](https://code.claude.com/docs/en/mcp) documentation. These files are untrusted input: they are parsed with `json` after a 256 KiB size check (`too_large`; invalid JSON is `syntax_error`, pathological nesting `too_complex`), only the fields below are read, and nothing is run or expanded.
+
+- `config.claude.hook_remote_exec`: a `command` hook that pipes `curl`, `wget`, `iwr` or `irm` into a shell or interpreter, runs `sh -c "$(curl ...)"` or `sh <(curl ...)`, or downloads a file with `-o`/`-O` and then runs it. The Check Point research on CVE-2025-59536 used repository hooks to run code when a project was opened.
+- `config.claude.permissions_bypass`: `permissions.defaultMode` `bypassPermissions` (Claude Code 2.1.257 and newer ignore it in project settings; older versions do not), an `allow` rule `Bash`, `Bash(*)`, `PowerShell` or `PowerShell(*)`, and `enableAllProjectMcpServers: true`.
+- `config.mcp.unpinned_launcher`: a server `command`/`args` of `npx -y` or `npx --yes` with a package that has no `@<version>`, or `uvx` / `uv tool run` with no `==<version>` or `@<version>` (also after `--from`). `npx` without `-y` is not reported.
+- `config.mcp.secret_inline`: a credential in a server's `env`, `args`, `headers` (after `Bearer `) or `url`; `config.claude.env_leak`: one in the settings `env` block. Both use the secret detectors, take the matching `secret.*` rule's severity, are redacted the same way, and replace the `secret.*` finding on that line (with `rules.disable` for the config rule, the `secret.*` finding comes back). `${VAR}` references are fine.
+
+JSON has no comments, so these findings cannot be suppressed inline; use `rules.disable` or a baseline.
 
 **How the secret rules decide.** Provider rules match the documented shape of each credential and need at least 3.0 bits of entropy per character, which drops runs such as `ghp_xxxx…`. Values that contain placeholder words (example, changeme, test, your, xxxx, a `${...}` or `<...>`) are ignored, which also drops the AWS documentation key. A private key needs its base64 body, not just the `BEGIN` line. `secret.generic` needs a credential-like name (password, secret, api_key, token, client_secret and similar, but not names ending in `_url`, `_path`, `_env`, `_hash`, `_id` and similar) assigned a quoted value, or an unquoted `NAME=value` line as in `.env` files, and the value must be at least 16 characters, have at least 3.5 bits of entropy per character, mix character classes and not look like a URL, path, dotted name or environment-variable name. A provider match wins over a generic match of the same value. Severities: critical for live provider credentials and private keys; high for AWS access key ids, Google API keys, JWTs and generic credentials.
 
@@ -175,11 +219,11 @@ To adopt the scanner on existing code: `kestrix-scan --write-baseline .kestrix-b
 | `notes` | scanner notes, such as suppressions without a reason |
 | `duration_ms` | wall-clock time of the scan |
 
-Each finding has `rule_id`, `cwe`, `severity` (`low`, `medium`, `high`, `critical`), `confidence` (`low`, `medium`, `high`), `path`, `line`, `column`, `end_line`, `message`, `why`, `fix`, `snippet` (at most 200 characters; redacted for secrets) and `fingerprint`.
+Each finding has `rule_id`, `cwe`, `severity` (`low`, `medium`, `high`, `critical`), `confidence` (`low`, `medium`, `high`), `path`, `line`, `column`, `end_line`, `message`, `why`, `fix`, `snippet` (at most 200 characters; redacted for secrets) and `fingerprint`. Taint findings also have `trace`, a list of `{line, note}` from source to sink; the key is left out when there is no trace, so `schema_version` stays 1 and reports without taint findings are byte-for-byte unchanged.
 
 ## SARIF
 
-`--format sarif` writes SARIF 2.1.0 ([`sarif.py`](../../packages/kestrix-scan/src/kestrix_scan/sarif.py)). The driver is named `Kestrix` with `informationUri` `https://github.com/Ruthvik-Bandari/kestrix`, and lists every rule with a short description (the title), a full description (why it matters), help (the fix), tags `security` and the CWE, a `precision` from the confidence and a `security-severity` of 9.5, 8.0, 5.5 or 3.0 for critical, high, medium and low. GitHub documents `security-severity` as a number written in a string, and Kestrix follows that. Each result carries its level (`error` for critical and high, `warning` for medium, `note` for low), the location relative to the `SRCROOT` base, the redacted snippet and the fingerprint as `partialFingerprints["kestrixFingerprint/v1"]`.
+`--format sarif` writes SARIF 2.1.0 ([`sarif.py`](../../packages/kestrix-scan/src/kestrix_scan/sarif.py)). The driver is named `Kestrix` with `informationUri` `https://github.com/Ruthvik-Bandari/kestrix`, and lists every rule with a short description (the title), a full description (why it matters), help (the fix), tags `security` and the CWE, a `precision` from the confidence and a `security-severity` of 9.5, 8.0, 5.5 or 3.0 for critical, high, medium and low. GitHub documents `security-severity` as a number written in a string, and Kestrix follows that. Each result carries its level (`error` for critical and high, `warning` for medium, `note` for low), the location relative to the `SRCROOT` base, the redacted snippet and the fingerprint as `partialFingerprints["kestrixFingerprint/v1"]`. A taint finding also has `codeFlows`: one thread flow whose locations are the trace steps, source first, each with its line and note.
 
 ## Claude Code hook
 
@@ -212,7 +256,7 @@ raise SystemExit(kestrix_scan.exit_code(report))
 
 ## Limits
 
-- Only Python has code rules in this slice. JavaScript and TypeScript rules are slice C3.
-- Data flow is local: names are followed through assignments in the same function or module, a few hops deep, and not across functions or files.
+- Only Python has code rules in this slice, plus the Claude Code and MCP configuration rules. JavaScript and TypeScript rules are slice C3.
+- Data flow is local: taint is followed within one function, class body or module top level, never across functions or files, and through only the calls listed under [Taint analysis](#taint-analysis); `json.loads(request.data)` and a helper that builds a command are not followed. Literal propagation for the pattern rules follows names a few hops deep in the same scope.
 - The secret rules are high-precision on purpose and miss credentials with no recognizable shape or name.
 - Column numbers come from the parser's offsets and can be off on lines with non-ASCII characters before the finding.

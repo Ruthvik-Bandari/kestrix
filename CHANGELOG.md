@@ -6,6 +6,12 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **`kestrix-scan` taint analysis and AI-era rules.** Intraprocedural taint tracking for the Python injection
+  rules with traces in JSON (`trace`), SARIF (`codeFlows`), text and hook output; new rules for SSRF, open
+  redirects, XSS/SSTI, LLM output reaching code, shell, SQL or paths, unsafe model loading, and risky Claude Code
+  and MCP configuration (`config.*`). Details in
+  [packages/kestrix-scan/CHANGELOG.md](packages/kestrix-scan/CHANGELOG.md) and
+  [docs/modules/code.md](docs/modules/code.md#taint-analysis).
 - **`kestrix-scan`, the code scanner as its own package (ADR 0006,
   [packages/kestrix-scan](packages/kestrix-scan/README.md)).** `pip install kestrix-scan` installs the scanner
   and the Claude Code plugin with no dependencies on Python 3.11+ (`tomli` on 3.10). Its own changelog is

@@ -177,10 +177,14 @@ work with every socket call refused. `--diff` and directory walks run the local 
 
 ## Rules
 
-The rules cover Python (`py.*`: `eval`/`exec`, `shell=True` and `os.system`, pickle and unsafe YAML, SQL built
-from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`, Flask debug, unverified
-JWTs, stdlib XML parsers, `assert` for access checks, paths from request data) and secrets in any text file
-(`secret.*`: AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys, JWTs and
+There are 38 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+unsafe YAML, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
+Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
+analysis from Flask, Django, FastAPI and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
+LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), Claude Code and MCP configuration
+(5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and
+literal credentials) and secrets in any text file (11 `secret.*`
+rules: AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys, JWTs and
 high-entropy credentials). The full table with CWEs and severities is in
 [docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules), and
 each rule's sources are in
