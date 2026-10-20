@@ -134,7 +134,8 @@ def test_missing_kestrix_fails_open_with_one_hint(tmp_path: Path) -> None:
     assert first.returncode == 0
     reply = json.loads(first.stdout)
     assert "neither kestrix-scan nor kestrix is on PATH" in reply["systemMessage"]
-    assert "subdirectory=packages/kestrix-scan" in reply["systemMessage"]
+    assert "install the kestrix-scan package from PyPI" in reply["systemMessage"]
+    assert "pip install" not in first.stdout  # the hint names no command line: the hooks never install
     assert "do not install it yourself" in reply["hookSpecificOutput"]["additionalContext"]
     second = hooks.write("other.py", VULNERABLE)
     assert (second.returncode, second.stdout) == (0, "")

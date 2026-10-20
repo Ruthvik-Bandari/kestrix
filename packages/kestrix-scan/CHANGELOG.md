@@ -5,6 +5,11 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Claude Code plugin, for the directory listing:** `plugin.json` adds `displayName`, `documentationUrl`,
+  `supportUrl` and `privacyPolicyUrl`, and its `homepage` and `repository` are now the plugin's own repository,
+  https://github.com/Ruthvik-Bandari/kestrix-claude-plugin. The missing-scanner message says to install
+  `kestrix-scan` from PyPI and names no command line, and the `kestrix-security` skill offers `uv tool install kestrix`
+  from PyPI instead of a git URL.
 - **Python rule gaps closed (informed by the BenchmarkPython gap analysis; see
   [the scorecard](../../docs/benchmarks/benchmarkpython.md)):**
   - New rules: `py.xss.reflected` (CWE-79), `py.ldap.injection` (CWE-90), `py.xpath.injection` (CWE-643),

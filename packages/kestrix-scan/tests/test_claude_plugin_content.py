@@ -56,7 +56,11 @@ def test_plugin_manifest_has_the_required_fields() -> None:
     assert manifest["name"] == plugin.PLUGIN_NAME
     assert manifest["version"] == kestrix.__version__
     assert manifest["author"]["name"] == "Ruthvik Bandari"
-    assert manifest["homepage"] == manifest["repository"] == "https://github.com/Ruthvik-Bandari/kestrix"
+    home = "https://github.com/Ruthvik-Bandari/kestrix-claude-plugin"  # the standalone plugin repository
+    assert manifest["homepage"] == manifest["repository"] == home
+    assert manifest["displayName"] == "Kestrix"
+    for field in ("documentationUrl", "supportUrl", "privacyPolicyUrl"):
+        assert manifest[field].startswith(home + "/") or manifest[field].startswith(home + "#")
     assert manifest["license"] == "Apache-2.0"
     assert manifest["description"] and manifest["keywords"]
     assert {path.split("/")[0] for path in FILES} == {".claude-plugin", "hooks", "skills"}

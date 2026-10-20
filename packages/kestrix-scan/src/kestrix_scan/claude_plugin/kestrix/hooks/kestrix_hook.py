@@ -66,7 +66,8 @@ _INSTALL_HINT = re.compile(r"\b(?:pip[0-9.]*|uv|npm|pnpm|yarn)\b.*\b(?:install|a
 STOP_SCAN_TIMEOUT_S = 25.0  # inside the 30 s Stop hook timeout
 SESSION_TTL_S = 14 * 24 * 3600
 CONFIG_FILE = ".kestrix.json"
-INSTALL_HINT = 'uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"'
+# Words only, no command line: the hooks never install anything, and the plugin README has the commands.
+INSTALL_HINT = "install the kestrix-scan package from PyPI with pip, uv tool or pipx (see the Kestrix plugin README)"
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
 
 
@@ -290,7 +291,7 @@ def post_tool_use(raw: bytes, payload: dict[str, Any]) -> None:
         if state is not None and _once(state, "missing-kestrix"):
             _emit(
                 {
-                    "systemMessage": f"Kestrix plugin: neither kestrix-scan nor kestrix is on PATH, so edits are not scanned. Install it with: {INSTALL_HINT}",
+                    "systemMessage": f"Kestrix plugin: neither kestrix-scan nor kestrix is on PATH, so edits are not scanned. To scan them, {INSTALL_HINT}.",
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
                         "additionalContext": "The Kestrix security hooks are installed but neither the kestrix-scan nor the kestrix command is on PATH, so files written in this session are not being scanned. Tell the user once; do not install it yourself.",

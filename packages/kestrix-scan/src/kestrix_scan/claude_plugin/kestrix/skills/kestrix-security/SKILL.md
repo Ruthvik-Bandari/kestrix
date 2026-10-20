@@ -30,15 +30,14 @@ which command to run, how to read its `--json` output, and how to explain the re
 Run `kestrix version` first. It prints `0.1.0 (Kestrix by Ruthvik Bandari)` or similar. Inside a Kestrix
 source checkout, use `uv run kestrix ...` instead.
 
-If the command is not found, tell the user and offer to install it. The PyPI release is pending, so
-install from the repository:
+If the command is not found, tell the user and offer to install it from PyPI. Install only after they agree:
 
 ```bash
-uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"
+uv tool install kestrix
 # or
-pipx install "git+https://github.com/Ruthvik-Bandari/kestrix"
+pipx install kestrix
 # photo metadata (EXIF) support:
-uv tool install "kestrix[exif] @ git+https://github.com/Ruthvik-Bandari/kestrix"
+uv tool install "kestrix[exif]"
 ```
 
 Detection repair also needs the pinned Elasticsearch in Docker. Start it once, wait about 30 seconds,
