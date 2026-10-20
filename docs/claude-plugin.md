@@ -337,7 +337,7 @@ Fix the code when you can. For a confirmed false positive, put a suppression wit
 finding's line or the line above:
 
 ```python
-subprocess.run(BUILD_COMMAND, shell=True)  # kestrix: ignore[py.subprocess.shell_true] fixed command defined in this file
+subprocess.run(deploy.command, shell=True)  # kestrix: ignore[py.subprocess.shell_true] command from the reviewed deploy config
 ```
 
 The reason is required. A suppression without one suppresses nothing, and the report shows a

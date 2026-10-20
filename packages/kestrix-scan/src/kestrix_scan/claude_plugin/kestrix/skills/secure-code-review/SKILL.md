@@ -37,8 +37,9 @@ the code is secure.
    example `kestrix-scan . --diff main --format json --fail-on none`.
 
 2. **Triage by severity.** Work critical, then high, then medium. Low findings (for example
-   `py.xml.unsafe_parser`, `py.assert.security`, or a shell call with a literal command) are worth a
-   look, but explain rather than force a change. Read each finding's `why` and `fix`.
+   `py.assert.security`, `py.trust_boundary.session`, or a cookie that leaves out a flag) and low-confidence
+   ones (a shell command whose values all pass through `shlex.quote`) are worth a look, but explain rather
+   than force a change. Read each finding's `why` and `fix`.
 
 3. **Fix by rule family.** The full per-rule playbook with before and after code is the
    `fixing-security-findings` skill. In short:
@@ -49,11 +50,12 @@ the code is secure.
    | Command injection | `py.subprocess.shell_true`, `py.os.system` | `subprocess.run([...], check=True)` with an argument list and no shell. |
    | Deserialization | `py.deserialize.pickle`, `py.deserialize.yaml_unsafe` | JSON plus validation; `yaml.safe_load`. |
    | SQL injection | `py.sql.string_built` | Bound parameters: `cur.execute("... WHERE id = ?", (item_id,))`. |
+   | LDAP and XPath injection | `py.ldap.injection`, `py.xpath.injection` | `escape_filter_chars` on each filter value; XPath variables: `tree.xpath("//u[name=$name]", name=name)`. |
    | Transport | `py.tls.verify_disabled` | Keep verification on; pass a CA bundle for private CAs. |
    | Crypto and randomness | `py.crypto.weak_hash`, `py.crypto.insecure_random`, `py.jwt.no_verify` | `hashlib.sha256`, `secrets.token_urlsafe`, `jwt.decode(..., algorithms=[...])`. |
    | Files | `py.tempfile.mktemp`, `py.path.traversal` | `tempfile.mkstemp`; `secure_filename` or resolve-and-contain. |
-   | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser` | Debug from the environment; explicit `if not ...: raise`; `defusedxml`. |
-   | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source from input. |
+   | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser`, `py.cookie.insecure` | Debug from the environment; explicit `if not ...: raise`; no external entities (`resolve_entities=False`) or `defusedxml`; `set_cookie(..., secure=True, httponly=True)`. |
+   | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup`, `py.xss.reflected`, `py.trust_boundary.session` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source or an HTML response from input; validate before storing in the session. |
    | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |
    | JavaScript and TypeScript | `js.exec.eval`, `js.child_process.shell`, `js.sql.string_built`, `js.dom.xss_sink`, `js.llm.output_to_sink` | `JSON.parse` or a lookup instead of `eval`; `execFile`/`spawn` with an argument array and no `shell: true`; `$1`/`?` parameters or a binding tagged template; `textContent` or `DOMPurify.sanitize` instead of HTML sinks; validate model output before it reaches code, a command or HTML. |
    | JavaScript data flow and config | `js.path.traversal`, `js.ssrf.request`, `js.redirect.open`, `js.proto.pollution`, `js.cors.wildcard_credentials`, `js.tls.reject_unauthorized`, `js.crypto.weak_hash`, `js.crypto.insecure_random`, `js.jwt.no_verify` | `path.basename` or `res.sendFile(name, { root })`; fixed scheme and host; allowlisted redirects; reject `__proto__`/`constructor` keys; list CORS origins; keep TLS checks on; `sha256`; `crypto.randomBytes`; explicit JWT `algorithms`. |
@@ -70,8 +72,8 @@ the code is secure.
 
    ```python
    subprocess.run(
-       BUILD_COMMAND, shell=True
-   )  # kestrix: ignore[py.subprocess.shell_true] fixed command defined in this file
+       deploy_config.command, shell=True
+   )  # kestrix: ignore[py.subprocess.shell_true] command from the reviewed deploy config
    ```
 
    A suppression without a reason suppresses nothing and shows up as a note.

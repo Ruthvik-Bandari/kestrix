@@ -81,6 +81,7 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - CWE: [CWE-330](https://cwe.mitre.org/data/definitions/330.html)
 - Documentation: <https://docs.python.org/3/library/random.html#module-random>
 - Documentation: <https://docs.python.org/3/library/secrets.html>
+- Documentation: <https://flask.palletsprojects.com/en/stable/api/#flask.Response.set_cookie>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
 ## `py.tempfile.mktemp`
@@ -105,8 +106,11 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 
 ## `py.xml.unsafe_parser`
 
-- CWE: [CWE-776](https://cwe.mitre.org/data/definitions/776.html)
+- CWE: [CWE-611](https://cwe.mitre.org/data/definitions/611.html)
 - Documentation: <https://docs.python.org/3/library/xml.html#xml-vulnerabilities>
+- Documentation: <https://docs.python.org/3/library/xml.sax.handler.html#xml.sax.handler.feature_external_ges>
+- Documentation: <https://lxml.de/api/lxml.etree.XMLParser-class.html>
+- Documentation: <https://lxml.de/FAQ.html#how-do-i-use-lxml-safely-as-a-web-service-endpoint>
 - Documentation: <https://pypi.org/project/defusedxml/>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
@@ -171,6 +175,52 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://keras.io/api/models/model_saving_apis/model_saving_and_loading/>
 - Documentation: <https://huggingface.co/docs/transformers/en/custom_models>
 - Documentation: <https://cwe.mitre.org/data/definitions/94.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.xss.reflected`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://flask.palletsprojects.com/en/stable/quickstart/#html-escaping>
+- Documentation: <https://docs.djangoproject.com/en/stable/ref/request-response/#httpresponse-objects>
+- Documentation: <https://fastapi.tiangolo.com/advanced/custom-response/#htmlresponse>
+- Documentation: <https://docs.python.org/3/library/html.html#html.escape>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.ldap.injection`
+
+- CWE: [CWE-90](https://cwe.mitre.org/data/definitions/90.html)
+- Documentation: <https://www.python-ldap.org/en/latest/reference/ldap-filter.html>
+- Documentation: <https://www.python-ldap.org/en/latest/reference/ldap.html#ldap.LDAPObject.search_s>
+- Documentation: <https://ldap3.readthedocs.io/en/latest/searches.html>
+- Documentation: <https://datatracker.ietf.org/doc/html/rfc4515#section-3>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.xpath.injection`
+
+- CWE: [CWE-643](https://cwe.mitre.org/data/definitions/643.html)
+- Documentation: <https://lxml.de/xpathxslt.html#xpath>
+- Documentation: <https://docs.python.org/3/library/xml.etree.elementtree.html#elementtree-xpath>
+- Documentation: <https://owasp.org/www-community/attacks/XPATH_Injection>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.cookie.insecure`
+
+- CWE: [CWE-614](https://cwe.mitre.org/data/definitions/614.html)
+- Documentation: <https://flask.palletsprojects.com/en/stable/api/#flask.Response.set_cookie>
+- Documentation: <https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.HttpResponse.set_cookie>
+- Documentation: <https://www.starlette.io/responses/#set-cookie>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies#security>
+- Documentation: <https://cwe.mitre.org/data/definitions/1004.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.trust_boundary.session`
+
+- CWE: [CWE-501](https://cwe.mitre.org/data/definitions/501.html)
+- Documentation: <https://flask.palletsprojects.com/en/stable/api/#flask.session>
+- Documentation: <https://docs.djangoproject.com/en/stable/topics/http/sessions/>
+- Documentation: <https://cwe.mitre.org/data/definitions/501.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
 ## `config.claude.hook_remote_exec`

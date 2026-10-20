@@ -94,11 +94,11 @@
                 "text": "Command run through a shell"
               },
               "fullDescription": {
-                "text": "With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands."
+                "text": "With shell=True, or a program list that starts a shell with its command-string option (['sh', '-c', script], ['cmd', '/c', ...], ['powershell', '-Command', ...]), the command is parsed by the shell. Any interpolated value can add ';', '&&' or '$(...)' and run other commands. A command whose values all pass through shlex.quote is reported at low confidence."
               },
               "help": {
                 "text": "Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.",
-                "markdown": "**Why:** With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands.\n\n**Fix:** Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable."
+                "markdown": "**Why:** With shell=True, or a program list that starts a shell with its command-string option (['sh', '-c', script], ['cmd', '/c', ...], ['powershell', '-Command', ...]), the command is parsed by the shell. Any interpolated value can add ';', '&&' or '$(...)' and run other commands. A command whose values all pass through shlex.quote is reported at low confidence.\n\n**Fix:** Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable."
               },
               "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
               "defaultConfiguration": {
@@ -273,14 +273,14 @@
               "id": "py.crypto.insecure_random",
               "name": "PyCryptoInsecureRandom",
               "shortDescription": {
-                "text": "random module used for a secret value"
+                "text": "random module used for a secret, cookie or session value"
               },
               "fullDescription": {
-                "text": "The random module is a predictable generator. Tokens, keys, salts and passwords made with it can be guessed."
+                "text": "The random module is a predictable generator. Tokens, keys, salts and passwords made with it, and values it produces that end up in a cookie, the session, a response header or a secret-named argument, can be guessed."
               },
               "help": {
                 "text": "Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice.",
-                "markdown": "**Why:** The random module is a predictable generator. Tokens, keys, salts and passwords made with it can be guessed.\n\n**Fix:** Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice."
+                "markdown": "**Why:** The random module is a predictable generator. Tokens, keys, salts and passwords made with it, and values it produces that end up in a cookie, the session, a response header or a secret-named argument, can be guessed.\n\n**Fix:** Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice."
               },
               "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
               "defaultConfiguration": {
@@ -377,25 +377,25 @@
               "id": "py.xml.unsafe_parser",
               "name": "PyXmlUnsafeParser",
               "shortDescription": {
-                "text": "Standard-library XML parser on data that is not a literal"
+                "text": "XML parser set to resolve external entities"
               },
               "fullDescription": {
-                "text": "The standard-library XML parsers are not hardened against every hostile document (entity expansion, very large inputs)."
+                "text": "An XML parser that resolves external entities lets a document read local files or make network requests (XXE): lxml with resolve_entities=True or no_network=False, or a SAX parser (also behind pulldom) with feature_external_ges or feature_external_pes on. The standard-library parsers with their defaults are not reported: xml.etree, minidom, pulldom and sax do not resolve external entities (sax and pulldom since Python 3.7.1), and Expat 2.4.1 or newer resists entity expansion. lxml with huge_tree=True is reported at low severity (CWE-776)."
               },
               "help": {
-                "text": "For untrusted XML use defusedxml (defusedxml.ElementTree.fromstring), and bound the input size.",
-                "markdown": "**Why:** The standard-library XML parsers are not hardened against every hostile document (entity expansion, very large inputs).\n\n**Fix:** For untrusted XML use defusedxml (defusedxml.ElementTree.fromstring), and bound the input size."
+                "text": "Leave external entities off: etree.XMLParser(resolve_entities=False, no_network=True), and do not turn on the SAX external-entity features. For untrusted XML prefer defusedxml (defusedxml.ElementTree.fromstring), which refuses entities and DTDs, and bound the input size.",
+                "markdown": "**Why:** An XML parser that resolves external entities lets a document read local files or make network requests (XXE): lxml with resolve_entities=True or no_network=False, or a SAX parser (also behind pulldom) with feature_external_ges or feature_external_pes on. The standard-library parsers with their defaults are not reported: xml.etree, minidom, pulldom and sax do not resolve external entities (sax and pulldom since Python 3.7.1), and Expat 2.4.1 or newer resists entity expansion. lxml with huge_tree=True is reported at low severity (CWE-776).\n\n**Fix:** Leave external entities off: etree.XMLParser(resolve_entities=False, no_network=True), and do not turn on the SAX external-entity features. For untrusted XML prefer defusedxml (defusedxml.ElementTree.fromstring), which refuses entities and DTDs, and bound the input size."
               },
               "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
               "defaultConfiguration": {
-                "level": "note"
+                "level": "warning"
               },
               "properties": {
-                "security-severity": "3.0",
-                "precision": "low",
+                "security-severity": "5.5",
+                "precision": "high",
                 "tags": [
                   "security",
-                  "CWE-776"
+                  "CWE-611"
                 ]
               }
             },
@@ -578,6 +578,136 @@
                 "tags": [
                   "security",
                   "CWE-502"
+                ]
+              }
+            },
+            {
+              "id": "py.xss.reflected",
+              "name": "PyXssReflected",
+              "shortDescription": {
+                "text": "HTML response built from request data without escaping"
+              },
+              "fullDescription": {
+                "text": "A view that returns an f-string or concatenation with markup and request data (a Flask view's str, Response, make_response, Django HttpResponse or FastAPI HTMLResponse) sends that data as HTML, so a script in it runs in the visitor's browser (reflected XSS)."
+              },
+              "help": {
+                "text": "Render a template with autoescaping (render_template, Django templates, Jinja2 with autoescape on), or escape each value first with markupsafe.escape, django.utils.html.escape or html.escape. Return JSON instead of HTML when the client does not need markup.",
+                "markdown": "**Why:** A view that returns an f-string or concatenation with markup and request data (a Flask view's str, Response, make_response, Django HttpResponse or FastAPI HTMLResponse) sends that data as HTML, so a script in it runs in the visitor's browser (reflected XSS).\n\n**Fix:** Render a template with autoescaping (render_template, Django templates, Jinja2 with autoescape on), or escape each value first with markupsafe.escape, django.utils.html.escape or html.escape. Return JSON instead of HTML when the client does not need markup."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "py.ldap.injection",
+              "name": "PyLdapInjection",
+              "shortDescription": {
+                "text": "LDAP search filter built from request data"
+              },
+              "fullDescription": {
+                "text": "Characters such as '*', '(', ')' and '\\' in a value formatted into an LDAP filter change the filter: '*)(uid=*' matches every entry, which can bypass a login check or list the directory."
+              },
+              "help": {
+                "text": "Escape each value with ldap.filter.escape_filter_chars (python-ldap) or ldap3.utils.conv.escape_filter_chars, or build the filter with ldap.filter.filter_format(template, [value]).",
+                "markdown": "**Why:** Characters such as '*', '(', ')' and '\\' in a value formatted into an LDAP filter change the filter: '*)(uid=*' matches every entry, which can bypass a login check or list the directory.\n\n**Fix:** Escape each value with ldap.filter.escape_filter_chars (python-ldap) or ldap3.utils.conv.escape_filter_chars, or build the filter with ldap.filter.filter_format(template, [value])."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-90"
+                ]
+              }
+            },
+            {
+              "id": "py.xpath.injection",
+              "name": "PyXpathInjection",
+              "shortDescription": {
+                "text": "XPath expression built from request data"
+              },
+              "fullDescription": {
+                "text": "A quote in a value formatted into an XPath expression ends the string literal, so the rest of the value becomes XPath: \"' or '1'='1\" selects every node. It applies to lxml xpath() and XPath(), and to ElementTree find/findall paths."
+              },
+              "help": {
+                "text": "Pass values as XPath variables instead of formatting them in: tree.xpath('//user[name=$name]', name=name), or etree.XPath('//user[name=$name]'). With ElementTree, iterate and compare in Python: [e for e in root.iter('user') if e.get('name') == name].",
+                "markdown": "**Why:** A quote in a value formatted into an XPath expression ends the string literal, so the rest of the value becomes XPath: \"' or '1'='1\" selects every node. It applies to lxml xpath() and XPath(), and to ElementTree find/findall paths.\n\n**Fix:** Pass values as XPath variables instead of formatting them in: tree.xpath('//user[name=$name]', name=name), or etree.XPath('//user[name=$name]'). With ElementTree, iterate and compare in Python: [e for e in root.iter('user') if e.get('name') == name]."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-643"
+                ]
+              }
+            },
+            {
+              "id": "py.cookie.insecure",
+              "name": "PyCookieInsecure",
+              "shortDescription": {
+                "text": "Cookie set without the Secure or HttpOnly flag"
+              },
+              "fullDescription": {
+                "text": "Without Secure the browser also sends the cookie over plain HTTP, where anyone on the network can read it. Without HttpOnly any script in the page, including an injected one, can read it. Flags set to False explicitly are medium severity; flags left out are reported at low severity. Only HttpOnly missing is reported as CWE-1004."
+              },
+              "help": {
+                "text": "Pass both flags: response.set_cookie('name', value, secure=True, httponly=True, samesite='Lax'). Leave httponly off only for a cookie that the page's own JavaScript must read and that holds nothing secret.",
+                "markdown": "**Why:** Without Secure the browser also sends the cookie over plain HTTP, where anyone on the network can read it. Without HttpOnly any script in the page, including an injected one, can read it. Flags set to False explicitly are medium severity; flags left out are reported at low severity. Only HttpOnly missing is reported as CWE-1004.\n\n**Fix:** Pass both flags: response.set_cookie('name', value, secure=True, httponly=True, samesite='Lax'). Leave httponly off only for a cookie that the page's own JavaScript must read and that holds nothing secret."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-614"
+                ]
+              }
+            },
+            {
+              "id": "py.trust_boundary.session",
+              "name": "PyTrustBoundarySession",
+              "shortDescription": {
+                "text": "Request data stored in the session without validation"
+              },
+              "fullDescription": {
+                "text": "Code that reads the session trusts it as data the server wrote. A request value copied into session[...] without a check (an allowlist, a type conversion) mixes untrusted and trusted data, and later code may treat it as verified, for example as the user's role."
+              },
+              "help": {
+                "text": "Validate the value before storing it: check it against an allowlist (if role not in ROLES: abort(400)), convert it (int(value)), or store only values the server derived itself.",
+                "markdown": "**Why:** Code that reads the session trusts it as data the server wrote. A request value copied into session[...] without a check (an allowlist, a type conversion) mixes untrusted and trusted data, and later code may treat it as verified, for example as the user's role.\n\n**Fix:** Validate the value before storing it: check it against an allowlist (if role not in ROLES: abort(400)), convert it (int(value)), or store only values the server derived itself."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-501"
                 ]
               }
             },
@@ -1424,7 +1554,7 @@
       "results": [
         {
           "ruleId": "secret.github_token",
-          "ruleIndex": 29,
+          "ruleIndex": 34,
           "level": "error",
           "message": {
             "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."

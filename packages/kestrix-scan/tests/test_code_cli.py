@@ -178,7 +178,9 @@ def test_hook_notebook_edit_uses_notebook_path(tmp_path: Path) -> None:
 
 def test_hook_is_silent_without_medium_findings(tmp_path: Path) -> None:
     path = tmp_path / "ok.py"
-    path.write_text("import hashlib\nh = hashlib.md5(b'', usedforsecurity=False)\n")  # low only
+    path.write_text(
+        "from flask import make_response\nr = make_response('ok')\nr.set_cookie('theme', 'dark')\n"
+    )  # low only
     result = invoke("--hook", stdin=hook_payload(path))
     assert result.exit_code == 0 and result.stdout == ""
 

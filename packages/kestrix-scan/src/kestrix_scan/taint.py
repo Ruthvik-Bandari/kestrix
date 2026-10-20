@@ -22,23 +22,51 @@ propagate list, and nested functions and lambdas are analyzed as scopes of their
   ``response.content[0].text`` is model output.
 - ``cli`` (medium): ``input()`` and ``sys.argv``.
 - ``env`` (low): ``os.environ.get``, ``os.getenv`` and ``os.environ[...]``.
+- ``weak_random`` (medium): values of the ``random`` module's functions (``random.random``,
+  ``randint``, ``choice``, ``getrandbits`` ...) and of a ``random.Random()`` instance. It is not
+  attacker input: only the weak-randomness checks (cookies, sessions, headers, secret-like names)
+  look at it, and ``int``/``float`` keep it, because a number made from ``random`` stays predictable.
 
 **Propagation:** assignment (also tuple targets, walrus and ``for`` targets), augmented assignment,
-f-strings, ``%``, ``+`` and other operators, ``str.format`` and the other ``str`` methods,
-containers, subscripts, attribute access on tainted objects, ``dict.get``-style methods, ``await``,
-comprehensions, and the calls ``str``, ``bytes``, ``"".join``, ``os.path.join`` and ``pathlib.Path``.
-Branches are joined; loops run twice. A plain ``x = clean`` removes the taint of ``x``.
+f-strings, ``%``, ``+`` and other operators, ``str.format`` and the other ``str`` methods (also
+called as ``str.join(sep, items)`` or ``bytes.decode(b)``), containers, subscripts, attribute access
+on tainted objects, ``dict.get``-style methods, ``await``, comprehensions, and the calls ``str``,
+``bytes``, ``"".join``, ``os.path.join``, ``os.fspath``, ``pathlib.Path``, ``json.loads``/``load``,
+``urllib.parse.unquote``/``unquote_plus``/``quote``/``quote_plus`` (decoding or re-encoding text
+does not make it safe), the ``base64`` encoders and decoders, ``codecs.encode``/``decode`` and
+``html.unescape``. Branches are joined; loops run twice. A plain ``x = clean`` removes the taint of
+``x``. A branch whose condition is a constant (``if False:``, ``if DEBUG:`` with ``DEBUG = False``
+assigned once) is not analyzed when it cannot run.
 
 **Sanitizers** clear one sink class each and nothing else: ``shlex.quote`` (shell),
 ``os.path.basename`` and ``werkzeug.utils.secure_filename`` (path), ``html.escape`` and
-``markupsafe.escape`` (html). ``int``, ``float`` and ``uuid.UUID`` return a number or an id, so their
-result is clean for every class. A string whose literal start fixes the scheme and host
-(``f"https://api.example.com/{x}"``) is clean for SSRF and redirects; one starting with a single
-``/`` and a path character is clean for redirects. A path is clean for path sinks after
-``os.path.realpath``/``abspath``/``normpath`` or ``Path.resolve()`` *and* a guard on the same
-name: ``if not p.startswith(base)`` or ``if not p.is_relative_to(base)`` whose body raises, returns
-or aborts, or the body of ``if p.is_relative_to(base):``, also as one operand of ``and`` (body) or
-``or`` (the negated form). Other guards are not recognized.
+``markupsafe.escape`` (html), ``ldap.filter.escape_filter_chars``, ``ldap.filter.filter_format`` and
+``ldap3.utils.conv.escape_filter_chars`` (LDAP filters). ``int``, ``float`` and ``uuid.UUID``
+return a number or an id, so their result is clean for every injection class. A string whose
+literal start fixes the scheme and host (``f"https://api.example.com/{x}"``) is clean for SSRF and
+redirects; one starting with a single ``/`` and a path character is clean for redirects.
+
+**Guards** clean a name inside the branch where the check holds (the body of ``if check:``, or the
+code after ``if not check: return/raise/abort()``), also as an operand of ``and`` (body) or ``or``
+(the negated form):
+
+- *path containment*: ``p.startswith(base)``, ``str(p).startswith(base)`` or
+  ``p.is_relative_to(base)`` after ``os.path.realpath``/``abspath``/``normpath`` or
+  ``Path.resolve()`` of ``p``, or with the normalization inline: ``os.path.realpath(x).startswith(base)``,
+  ``str(Path(x).resolve()).startswith(base)`` (clean for path sinks);
+- *allowlist membership*: ``x in ALLOWED`` where ``ALLOWED`` is a tuple, list, set, frozenset or
+  dict made only of literals (the name assigned once, or the display inline). ``x`` then equals one
+  of those literals, so it is clean for every class and counts as a constant for the pattern rules;
+- *local redirect target*: the ``netloc`` of ``urllib.parse.urlsplit(x)``/``urlparse(x)`` (inline
+  or through a name assigned from it) is empty (``not parts.netloc``, ``parts.netloc == ""``) or in
+  a literal allowlist (clean for redirects and SSRF). This does not reject a backslash such as
+  ``/\\evil.example``, which some browsers treat as ``//``; Django's ``url_has_allowed_host_and_scheme``
+  does.
+
+**Constants.** Besides taint, the analysis tracks which names hold a value that is provably
+constant at each point (assigned a constant, an ``int()`` cast, or an allowlisted value, on every
+path). The pattern rules treat such a name as a literal: ``cmd = request.args["c"]`` followed by
+``cmd = "ls"`` is a fixed command again.
 """
 
 from __future__ import annotations
@@ -56,7 +84,7 @@ MAX_TRACE = 8  # trace steps kept per source, the sink step not included
 _MAX_DEPTH = 60  # bound on recursive expression evaluation
 _LOOP_PASSES = 2
 
-SQL, SHELL, CODE, PATH, HTML, TEMPLATE, URL, REDIRECT = (
+SQL, SHELL, CODE, PATH, HTML, TEMPLATE, URL, REDIRECT, LDAP, XPATH, SESSION, SECRET = (
     "sql",
     "shell",
     "code",
@@ -65,12 +93,26 @@ SQL, SHELL, CODE, PATH, HTML, TEMPLATE, URL, REDIRECT = (
     "template",
     "url",
     "redirect",
+    "ldap",
+    "xpath",
+    "session",
+    "secret",
 )
+_ALL_CLASSES = frozenset({SQL, SHELL, CODE, PATH, HTML, TEMPLATE, URL, REDIRECT, LDAP, XPATH, SESSION, SECRET})
 _NORMALIZED = "normalized"  # marker: the path went through realpath/abspath/normpath/resolve
+_CONST = "#"  # state key prefix: "#name" is present when `name` holds a provable constant
 
+WEAK_RANDOM = "weak_random"
 REMOTE_KINDS = frozenset({"request", "llm"})  # kinds that may fire the taint-only rules
-CONFIDENCE: dict[str, Confidence] = {"request": "high", "llm": "high", "cli": "medium", "env": "low"}
-_KIND_ORDER = {"llm": 0, "request": 1, "cli": 2, "env": 3}
+INPUT_KINDS = frozenset({"request", "llm", "cli", "env"})  # attacker-influenced kinds (not weak_random)
+CONFIDENCE: dict[str, Confidence] = {
+    "request": "high",
+    "llm": "high",
+    "cli": "medium",
+    "env": "low",
+    WEAK_RANDOM: "medium",
+}
+_KIND_ORDER = {"llm": 0, "request": 1, "cli": 2, "env": 3, WEAK_RANDOM: 4}
 
 _FLASK_SOURCES = frozenset({"args", "form", "values", "json", "get_json", "files", "headers", "cookies", "data"})
 _DJANGO_SOURCES = frozenset({"GET", "POST", "body", "headers", "COOKIES", "FILES", "META"})
@@ -85,11 +127,54 @@ _CLEARING_CALLS: dict[str, frozenset[str]] = {
     "markupsafe.escape": frozenset({HTML}),
     "flask.escape": frozenset({HTML}),
     "django.utils.html.escape": frozenset({HTML}),
+    "ldap.filter.escape_filter_chars": frozenset({LDAP}),
+    "ldap3.utils.conv.escape_filter_chars": frozenset({LDAP}),
 }
-_NUMERIC = frozenset({"int", "float", "uuid.UUID"})
+_ALL_ARG_CLEARING = {"ldap.filter.filter_format": frozenset({LDAP})}  # every argument is escaped into the result
+NUMERIC = frozenset({"int", "float", "uuid.UUID"})
+_NUMBER_TEXT = frozenset({"hex", "oct", "abs", "round"})  # keep weak randomness, like int()
 _NORMALIZERS = frozenset({"os.path.realpath", "os.path.abspath", "os.path.normpath"})
+_PATH_TYPES = frozenset({"pathlib.Path", "pathlib.PurePath", "pathlib.PosixPath", "pathlib.WindowsPath"})
+SPLITTERS = frozenset({"urllib.parse.urlsplit", "urllib.parse.urlparse"})
+_BASE64 = ("b64decode", "b64encode", "urlsafe_b64decode", "urlsafe_b64encode", "standard_b64decode")
 _PROPAGATE_CALLS = frozenset(
-    {"str", "bytes", "os.path.join", "pathlib.Path", "pathlib.PurePath", "pathlib.PosixPath", "pathlib.WindowsPath"}
+    {
+        "str",
+        "bytes",
+        "os.path.join",
+        "os.fspath",
+        "pathlib.Path",
+        "pathlib.PurePath",
+        "pathlib.PosixPath",
+        "pathlib.WindowsPath",
+        "json.loads",
+        "json.load",
+        "urllib.parse.unquote",
+        "urllib.parse.unquote_plus",
+        "urllib.parse.unquote_to_bytes",
+        "urllib.parse.quote",
+        "urllib.parse.quote_plus",
+        "codecs.decode",
+        "codecs.encode",
+        "html.unescape",
+        *(f"base64.{name}" for name in (*_BASE64, "standard_b64encode", "b32decode", "b16decode", "decodebytes")),
+    }
+)
+_RANDOM_FUNCS = frozenset(
+    {
+        "random",
+        "randint",
+        "randrange",
+        "choice",
+        "choices",
+        "sample",
+        "getrandbits",
+        "randbytes",
+        "uniform",
+        "triangular",
+        "gauss",
+        "Random",
+    }
 )
 _STR_METHODS = frozenset(
     {
@@ -133,14 +218,16 @@ _DEPENDS = frozenset({"Depends", "Security"})
 _TERMINATORS = frozenset({"abort", "flask.abort", "sys.exit", "exit", "quit"})
 _FIXED_HOST = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^/?#{}\s]+[/?#]")
 _FIXED_PATH = re.compile(r"^/[^/\\]")
-_TAINT_HINTS = re.compile(r"request|input|argv|environ|getenv|fastapi|anthropic|openai|litellm|ollama|langchain|genai")
+_TAINT_HINTS = re.compile(
+    r"request|input|argv|environ|getenv|fastapi|anthropic|openai|litellm|ollama|langchain|genai|random"
+)
 
 
 @dataclass(frozen=True, slots=True)
 class Origin:
     """One source of tainted data and the way it travelled."""
 
-    kind: str  # 'request', 'llm', 'cli' or 'env'
+    kind: str  # 'request', 'llm', 'cli', 'env' or 'weak_random'
     label: str  # human-readable source, for example 'flask request.args'
     cleared: frozenset[str]  # sink classes a sanitizer made this value safe for (plus the 'normalized' marker)
     trace: tuple[TraceStep, ...]
@@ -154,7 +241,7 @@ State = dict[str, Taint]
 
 
 class Resolver(Protocol):
-    """What the analysis needs from the rule checker: import resolution and the names the file defines."""
+    """What the analysis needs from the rule checker: imports, defined names and literal resolution."""
 
     imported: set[str]
     aliases: dict[str, str]
@@ -162,16 +249,30 @@ class Resolver(Protocol):
 
     def qualname(self, node: ast.AST) -> str | None: ...
 
+    def literal(self, node: ast.AST | None) -> bool: ...
+
+    def literal_collection(self, node: ast.AST) -> bool: ...
+
+    def truth(self, node: ast.expr) -> bool | None: ...
+
+
+@dataclass
+class Result:
+    """Taint of call arguments, receivers, assigned and returned values, and the provably constant name loads."""
+
+    found: dict[ast.AST, Taint]
+    constants: set[ast.AST]
+
 
 def might_be_tainted(text: str) -> bool:
     """Cheap pre-check: a file that mentions no source at all needs no analysis."""
     return _TAINT_HINTS.search(text) is not None
 
 
-def best(taint: Taint, sink_class: str, kinds: Iterable[str] | None = None) -> Origin | None:
-    """The most relevant origin that reaches ``sink_class`` (LLM, then request, CLI, environment)."""
-    allowed = frozenset(kinds) if kinds is not None else None
-    candidates = [o for o in taint if o.reaches(sink_class) and (allowed is None or o.kind in allowed)]
+def best(taint: Taint, sink_class: str, kinds: Iterable[str] = INPUT_KINDS) -> Origin | None:
+    """The most relevant origin of ``kinds`` that reaches ``sink_class`` (LLM, then request, CLI, environment)."""
+    allowed = frozenset(kinds)
+    candidates = [o for o in taint if o.reaches(sink_class) and o.kind in allowed]
     return min(candidates, key=lambda o: _KIND_ORDER[o.kind]) if candidates else None
 
 
@@ -199,10 +300,16 @@ def _step(taint: Taint, line: int, note: str) -> Taint:
 
 
 def _join(*states: State) -> State:
+    """Taint is joined by union (may be tainted); constant markers by intersection (constant on every path)."""
     joined: State = {}
     for state in states:
         for key, taint in state.items():
-            joined[key] = _union(joined.get(key, ()), taint)
+            if not key.startswith(_CONST):
+                joined[key] = _union(joined.get(key, ()), taint)
+    if states:
+        for key in states[0]:
+            if key.startswith(_CONST) and all(key in state for state in states[1:]):
+                joined[key] = ()
     return joined
 
 
@@ -237,20 +344,24 @@ def _terminates(body: list[ast.stmt], resolver: Resolver) -> bool:
     )
 
 
-def analyze(tree: ast.Module, resolver: Resolver) -> dict[ast.AST, Taint]:
-    """Taint of every call argument, keyword value and method receiver that carries any."""
+def analyze(tree: ast.Module, resolver: Resolver) -> Result:
+    """Taint of every call argument, keyword value, method receiver, assigned and returned value that carries any."""
     flow = _Flow(resolver)
     flow.block(tree.body, {})
     while flow.pending:  # function and class bodies met on the way, each with a fresh state
         scope = flow.pending.pop()
+        flow.splits = {}
         flow.block(scope.body, flow.parameters(scope) if not isinstance(scope, ast.ClassDef) else {})
-    return flow.found
+    return Result(flow.found, flow.const_seen - flow.nonconst_seen)
 
 
 class _Flow:
     def __init__(self, resolver: Resolver) -> None:
         self.r = resolver
         self.found: dict[ast.AST, Taint] = {}
+        self.const_seen: set[ast.AST] = set()
+        self.nonconst_seen: set[ast.AST] = set()
+        self.splits: dict[str, str] = {}  # name -> the name it is urlsplit/urlparse of
         self.pending: list[ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef] = []
         self._queued: set[int] = set()
         self.fastapi = "fastapi" in resolver.imported
@@ -328,14 +439,24 @@ class _Flow:
     def stmt(self, node: ast.stmt, state: State) -> State:
         if isinstance(node, ast.Assign):
             taint = self.expr(node.value, state)
+            self._record(node.value, taint)
+            const = self.const(node.value, state)
             for target in node.targets:
-                self.bind(target, taint, state, node.lineno)
+                self.bind(target, taint, state, node.lineno, const=const)
+            self._split(node)
         elif isinstance(node, ast.AnnAssign):
             if node.value is not None:
-                self.bind(node.target, self.expr(node.value, state), state, node.lineno)
+                taint = self.expr(node.value, state)
+                self._record(node.value, taint)
+                self.bind(node.target, taint, state, node.lineno, const=self.const(node.value, state))
+        elif isinstance(node, ast.Return):
+            if node.value is not None:
+                self._record(node.value, self.expr(node.value, state))
         elif isinstance(node, ast.AugAssign):
             taint = self.expr(node.value, state)
             if isinstance(node.target, ast.Name):
+                if not self.const(node.value, state):
+                    state.pop(_CONST + node.target.id, None)
                 if taint:
                     combined = _union(state.get(node.target.id, ()), taint)
                     state[node.target.id] = _step(combined, node.lineno, f"appended to `{node.target.id}`")
@@ -371,42 +492,115 @@ class _Flow:
         return state
 
     def _if(self, node: ast.If, state: State) -> State:
+        truth = self.r.truth(node.test)
+        if truth is not None:  # a constant condition: only one branch can run
+            return self.block(node.body if truth else node.orelse, state)
         self.expr(node.test, state)
         body_in, else_in = dict(state), dict(state)
-        for key, positive in self._guards(node.test):
-            target = body_in if positive else else_in
-            if key in target:
-                target[key] = tuple(
-                    Origin(o.kind, o.label, o.cleared | {PATH}, o.trace) if _NORMALIZED in o.cleared else o
-                    for o in target[key]
-                )
+        for target, holds in ((body_in, True), (else_in, False)):
+            for key, effect in self._facts(node.test, holds):
+                _apply(target, key, effect)
         body_out = self.block(node.body, body_in)
         else_out = self.block(node.orelse, else_in)
         live = [s for s, b in ((body_out, node.body), (else_out, node.orelse)) if not _terminates(b, self.r)]
         return _join(*live) if live else else_out
 
-    def _guards(self, test: ast.expr) -> list[tuple[str, bool]]:
-        """(name, True when the body is the guarded branch) for each startswith/is_relative_to containment check.
+    def _facts(self, test: ast.expr, holds: bool) -> list[tuple[str, str]]:
+        """(name, effect) for each guard known to hold where ``test`` evaluates to ``holds``.
 
-        In ``a and b`` every operand holds in the body; in ``a or b`` every operand is false in the else
-        branch. Other combinations are not recognized.
+        ``a and b`` true means every operand is true; ``a or b`` false means every operand is false;
+        ``not a`` flips. ``a or b`` true (and ``a and b`` false) keeps only the facts every operand gives.
         """
-        if isinstance(test, ast.BoolOp):
-            want = isinstance(test.op, ast.And)
-            return [
-                (key, positive) for value in test.values for key, positive in self._guards(value) if positive == want
-            ]
-        positive = True
         if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
-            test, positive = test.operand, False
-        if (
-            isinstance(test, ast.Call)
-            and isinstance(test.func, ast.Attribute)
-            and test.func.attr in ("startswith", "is_relative_to")
-            and (key := _dotted(test.func.value)) is not None
+            return self._facts(test.operand, not holds)
+        if isinstance(test, ast.BoolOp):
+            if isinstance(test.op, ast.And) == holds:
+                return [fact for value in test.values for fact in self._facts(value, holds)]
+            # `a or b` true (or `a and b` false): one operand holds, so only a fact every operand gives is known.
+            common = set(self._facts(test.values[0], holds))
+            for value in test.values[1:]:
+                common &= set(self._facts(value, holds))
+            return sorted(common)
+        guard = self._guard(test)
+        if guard is None:
+            return []
+        key, effect, when = guard
+        return [(key, effect)] if when == holds else []
+
+    def _guard(self, test: ast.expr) -> tuple[str, str, bool] | None:
+        """(name, effect, the truth value of ``test`` at which the guard holds) for one recognized check."""
+        if isinstance(test, ast.Call) and isinstance(test.func, ast.Attribute):
+            if test.func.attr in ("startswith", "is_relative_to"):
+                return self._containment(test.func.value)
+            return None
+        if (key := self._netloc_of(test)) is not None:
+            return key, "host", False  # the netloc is empty where the test is false
+        if not (isinstance(test, ast.Compare) and len(test.ops) == 1):
+            return None
+        left, op, right = test.left, test.ops[0], test.comparators[0]
+        if isinstance(op, ast.In | ast.NotIn) and self.r.literal_collection(right):
+            within = isinstance(op, ast.In)
+            if (key := self._netloc_of(left)) is not None:
+                return key, "host", within
+            if (key := _dotted(left)) is not None:
+                return key, "allow", within
+        if isinstance(op, ast.Eq | ast.NotEq):
+            for side, other in ((left, right), (right, left)):
+                if (key := self._netloc_of(side)) is not None and _is_empty_text(other):
+                    return key, "host", isinstance(op, ast.Eq)
+        return None
+
+    def _containment(self, receiver: ast.expr) -> tuple[str, str, bool] | None:
+        while (
+            isinstance(receiver, ast.Call)
+            and len(receiver.args) == 1
+            and self._name(receiver.func) in ("str", "os.fspath")
         ):
-            return [(key, positive)]
-        return []
+            receiver = receiver.args[0]
+        if isinstance(receiver, ast.Call) and receiver.args and self.r.qualname(receiver.func) in _NORMALIZERS:
+            key = _dotted(receiver.args[0])
+            return (key, "path", True) if key is not None else None
+        if isinstance(receiver, ast.Call) and isinstance(receiver.func, ast.Attribute):
+            if receiver.func.attr == "resolve":
+                inner = receiver.func.value
+                if isinstance(inner, ast.Call) and inner.args and self.r.qualname(inner.func) in _PATH_TYPES:
+                    inner = inner.args[0]
+                key = _dotted(inner)
+                return (key, "path", True) if key is not None else None
+            return None
+        key = _dotted(receiver)
+        return (key, "contain", True) if key is not None else None
+
+    def _netloc_of(self, node: ast.expr) -> str | None:
+        """The name ``x`` when ``node`` is ``urlsplit(x).netloc``/``urlparse(x).netloc`` or ``parts.netloc``."""
+        if not (isinstance(node, ast.Attribute) and node.attr == "netloc"):
+            return None
+        holder = node.value
+        if isinstance(holder, ast.Call) and holder.args and self.r.qualname(holder.func) in SPLITTERS:
+            return _dotted(holder.args[0])
+        if isinstance(holder, ast.Name):
+            return self.splits.get(holder.id)
+        return None
+
+    def _split(self, node: ast.Assign) -> None:
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                value = node.value
+                split = (
+                    _dotted(value.args[0])
+                    if isinstance(value, ast.Call) and value.args and self.r.qualname(value.func) in SPLITTERS
+                    else None
+                )
+                if split is not None:
+                    self.splits[target.id] = split
+                else:
+                    self.splits.pop(target.id, None)
+
+    def _name(self, func: ast.expr) -> str | None:
+        name = self.r.qualname(func)
+        if name is None and isinstance(func, ast.Name) and func.id not in self.r.defined:
+            return func.id
+        return name
 
     def _for(self, node: ast.For | ast.AsyncFor, state: State) -> State:
         iterated = self.expr(node.iter, state)
@@ -438,12 +632,18 @@ class _Flow:
             outs.append(self.block(handler.body, entry))
         return self.block(getattr(node, "finalbody", []), _join(*outs))
 
-    def bind(self, target: ast.AST, taint: Taint, state: State, line: int, *, weak: bool = False) -> None:
+    def bind(
+        self, target: ast.AST, taint: Taint, state: State, line: int, *, weak: bool = False, const: bool = False
+    ) -> None:
         if isinstance(target, ast.Name):
             if taint:
                 state[target.id] = _step(taint, line, f"assigned to `{target.id}`")
             else:
                 state.pop(target.id, None)
+            if const:
+                state[_CONST + target.id] = ()
+            else:
+                state.pop(_CONST + target.id, None)
         elif isinstance(target, ast.Tuple | ast.List):
             for element in target.elts:
                 self.bind(element, taint, state, line, weak=weak)
@@ -469,6 +669,7 @@ class _Flow:
             return ()
         d = depth + 1
         if isinstance(node, ast.Name):
+            (self.const_seen if _CONST + node.id in state else self.nonconst_seen).add(node)
             return state.get(node.id, ())
         if isinstance(node, ast.Constant):
             return ()
@@ -484,7 +685,8 @@ class _Flow:
             self.expr(node.slice, state, d)
             if self.r.qualname(node.value) == "os.environ":
                 return self._origin("env", "environment variable (os.environ)", node)
-            return self.expr(node.value, state, d)
+            taint = self.expr(node.value, state, d)
+            return () if taint and self.r.literal(node) else taint  # a literal entry of a literal-keyed display
         if isinstance(node, ast.Call):
             return self._call(node, state, d)
         if isinstance(node, ast.JoinedStr):
@@ -542,6 +744,33 @@ class _Flow:
         if taint:
             self.found[node] = _union(self.found.get(node, ()), taint)
 
+    def const(self, node: ast.expr | None, state: State, depth: int = 0) -> bool:
+        """True when ``node`` provably evaluates to a constant (or a number) here. When in doubt, False."""
+        if node is None or depth > _MAX_DEPTH:
+            return False
+        d = depth + 1
+        if isinstance(node, ast.Constant):
+            return True
+        if isinstance(node, ast.Name):
+            return _CONST + node.id in state or self.r.literal(node)
+        if isinstance(node, ast.JoinedStr | ast.FormattedValue | ast.BinOp | ast.Tuple | ast.List | ast.Set):
+            children = [c for c in ast.iter_child_nodes(node) if isinstance(c, ast.expr)]
+            return all(self.const(c, state, d) for c in children)
+        if isinstance(node, ast.IfExp):
+            return self.const(node.body, state, d) and self.const(node.orelse, state, d)
+        if isinstance(node, ast.Subscript):
+            return self.r.literal(node)
+        if isinstance(node, ast.Call):
+            name = self._name(node.func)
+            if name in NUMERIC:
+                return True
+            values = [*node.args, *(kw.value for kw in node.keywords)]
+            if name == "str":
+                return all(self.const(v, state, d) for v in values)
+            if isinstance(node.func, ast.Attribute) and node.func.attr in ("format", "join", "lower", "upper", "strip"):
+                return self.const(node.func.value, state, d) and all(self.const(v, state, d) for v in values)
+        return False
+
     def _call(self, node: ast.Call, state: State, depth: int) -> Taint:
         func = node.func
         receiver: Taint = ()
@@ -555,9 +784,15 @@ class _Flow:
             taint = self.expr(keyword.value, state, depth)
             self._record(keyword.value, taint)
             args.append(taint)
-        name = self.r.qualname(func)
-        if name is None and isinstance(func, ast.Name) and func.id not in self.r.defined:
-            name = func.id  # a builtin such as str, int or input, unless the file defines that name
+        for display in [*node.args, *(kw.value for kw in node.keywords)]:
+            if isinstance(display, ast.List | ast.Tuple):  # argument vectors: each element on its own
+                for element in display.elts:
+                    self._record(element, self.expr(element, state, depth))
+        name = self._name(func)  # a builtin such as str, int or input counts unless the file defines that name
+        if name is None and isinstance(func, ast.Attribute) and (dotted := _dotted(func)) is not None:
+            base, _, method = dotted.partition(".")
+            if base in ("str", "bytes") and base not in self.r.defined and method in _STR_METHODS:
+                name = "str.method"  # str.join(sep, items), bytes.decode(b): the arguments are the receiver
         everything = _union(*args)
         if isinstance(func, ast.Attribute) and (source := self._source_attribute(func)) is not None:
             return source
@@ -568,16 +803,22 @@ class _Flow:
         llm = self._llm_call(node, name)
         if llm is not None:
             return self._origin("llm", f"LLM output of {llm}", node)
-        if name in _NUMERIC:
-            return ()
+        if name is not None and name.startswith("random.") and name.split(".")[1] in _RANDOM_FUNCS:
+            return self._origin(WEAK_RANDOM, f"{name}()", node)
+        if name in NUMERIC or name in _NUMBER_TEXT:  # a number: no injection, but still predictable if random
+            return tuple(o for o in everything if o.kind == WEAK_RANDOM)
         if name in _CLEARING_CALLS:
             return _clear(args[0] if args else (), _CLEARING_CALLS[name])
+        if name in _ALL_ARG_CLEARING:
+            return _clear(everything, _ALL_ARG_CLEARING[name])
         if name in _NORMALIZERS:
             return _clear(args[0] if args else (), frozenset({_NORMALIZED}))
-        if name in _PROPAGATE_CALLS:
+        if name in _PROPAGATE_CALLS or name == "str.method":
             return everything
         if isinstance(func, ast.Attribute):
             method = func.attr
+            if method in _RANDOM_FUNCS and any(o.kind == WEAK_RANDOM for o in receiver):
+                return tuple(o for o in receiver if o.kind == WEAK_RANDOM)  # rng = random.Random(); rng.randint()
             if method == "resolve" and receiver:
                 return _clear(receiver, frozenset({_NORMALIZED}))
             if method in _STR_METHODS:
@@ -629,6 +870,25 @@ class _Flow:
     def _origin(kind: str, label: str, node: ast.AST) -> Taint:
         line = getattr(node, "lineno", 1)
         return (Origin(kind, label, frozenset(), (TraceStep(line, f"{label} (source)"),)),)
+
+
+def _apply(state: State, key: str, effect: str) -> None:
+    """Record a guard on ``key`` in ``state`` (see the module docstring for each effect)."""
+    if effect == "allow":
+        state[_CONST + key] = ()
+    if key not in state:
+        return
+    if effect == "contain":
+        state[key] = tuple(
+            Origin(o.kind, o.label, o.cleared | {PATH}, o.trace) if _NORMALIZED in o.cleared else o for o in state[key]
+        )
+    else:
+        classes = {"path": frozenset({PATH}), "host": frozenset({URL, REDIRECT}), "allow": _ALL_CLASSES}[effect]
+        state[key] = _clear(state[key], classes)
+
+
+def _is_empty_text(node: ast.expr) -> bool:
+    return isinstance(node, ast.Constant) and node.value in ("", b"", None)
 
 
 def _prefix_clears(prefix: str) -> frozenset[str]:

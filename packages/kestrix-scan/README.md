@@ -51,7 +51,7 @@ Rule-based pattern analysis on this machine. Rules miss things and can be wrong;
 Silence a confirmed false positive on its line, or the line above, with a reason (required):
 
 ```python
-subprocess.run(BUILD, shell=True)  # kestrix: ignore[py.subprocess.shell_true] fixed command defined above
+subprocess.run(deploy.command, shell=True)  # kestrix: ignore[py.subprocess.shell_true] command from the reviewed deploy config
 ```
 
 ## Dependency scanning

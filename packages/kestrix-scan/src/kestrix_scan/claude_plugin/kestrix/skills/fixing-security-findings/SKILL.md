@@ -101,7 +101,7 @@ def build(src):
 
 CWE-78 · default severity high · confidence high
 
-**Why:** With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands.
+**Why:** With shell=True, or a program list that starts a shell with its command-string option (['sh', '-c', script], ['cmd', '/c', ...], ['powershell', '-Command', ...]), the command is parsed by the shell. Any interpolated value can add ';', '&&' or '$(...)' and run other commands. A command whose values all pass through shlex.quote is reported at low confidence.
 
 **Fix:** Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.
 
@@ -290,11 +290,11 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 ```
 
-### `py.crypto.insecure_random`: random module used for a secret value
+### `py.crypto.insecure_random`: random module used for a secret, cookie or session value
 
 CWE-330 · default severity medium · confidence medium
 
-**Why:** The random module is a predictable generator. Tokens, keys, salts and passwords made with it can be guessed.
+**Why:** The random module is a predictable generator. Tokens, keys, salts and passwords made with it, and values it produces that end up in a cookie, the session, a response header or a secret-named argument, can be guessed.
 
 **Fix:** Use the secrets module: secrets.token_urlsafe(32), secrets.token_hex(16) or secrets.choice.
 
@@ -400,22 +400,23 @@ def claims(token, public_key):
     return jwt.decode(token, public_key, algorithms=["RS256"])
 ```
 
-### `py.xml.unsafe_parser`: Standard-library XML parser on data that is not a literal
+### `py.xml.unsafe_parser`: XML parser set to resolve external entities
 
-CWE-776 · default severity low · confidence low
+CWE-611 · default severity medium · confidence high
 
-**Why:** The standard-library XML parsers are not hardened against every hostile document (entity expansion, very large inputs).
+**Why:** An XML parser that resolves external entities lets a document read local files or make network requests (XXE): lxml with resolve_entities=True or no_network=False, or a SAX parser (also behind pulldom) with feature_external_ges or feature_external_pes on. The standard-library parsers with their defaults are not reported: xml.etree, minidom, pulldom and sax do not resolve external entities (sax and pulldom since Python 3.7.1), and Expat 2.4.1 or newer resists entity expansion. lxml with huge_tree=True is reported at low severity (CWE-776).
 
-**Fix:** For untrusted XML use defusedxml (defusedxml.ElementTree.fromstring), and bound the input size.
+**Fix:** Leave external entities off: etree.XMLParser(resolve_entities=False, no_network=True), and do not turn on the SAX external-entity features. For untrusted XML prefer defusedxml (defusedxml.ElementTree.fromstring), which refuses entities and DTDs, and bound the input size.
 
 Before:
 
 ```python
-import xml.etree.ElementTree as ET
+from lxml import etree
 
 
 def parse(data):
-    return ET.fromstring(data)
+    parser = etree.XMLParser(resolve_entities=True)
+    return etree.fromstring(data, parser)
 ```
 
 After:
@@ -637,6 +638,166 @@ After:
 import torch
 
 model = torch.load("model.pt", weights_only=True)
+```
+
+### `py.xss.reflected`: HTML response built from request data without escaping
+
+CWE-79 · default severity medium · confidence medium
+
+**Why:** A view that returns an f-string or concatenation with markup and request data (a Flask view's str, Response, make_response, Django HttpResponse or FastAPI HTMLResponse) sends that data as HTML, so a script in it runs in the visitor's browser (reflected XSS).
+
+**Fix:** Render a template with autoescaping (render_template, Django templates, Jinja2 with autoescape on), or escape each value first with markupsafe.escape, django.utils.html.escape or html.escape. Return JSON instead of HTML when the client does not need markup.
+
+Before:
+
+```python
+from flask import request
+
+
+def search():
+    q = request.args.get("q", "")
+    return f"<h1>Results for {q}</h1>"
+```
+
+After:
+
+```python
+from flask import request
+from markupsafe import escape
+
+
+def search():
+    q = request.args.get("q", "")
+    return f"<h1>Results for {escape(q)}</h1>"
+```
+
+### `py.ldap.injection`: LDAP search filter built from request data
+
+CWE-90 · default severity high · confidence medium
+
+**Why:** Characters such as '*', '(', ')' and '\' in a value formatted into an LDAP filter change the filter: '*)(uid=*' matches every entry, which can bypass a login check or list the directory.
+
+**Fix:** Escape each value with ldap.filter.escape_filter_chars (python-ldap) or ldap3.utils.conv.escape_filter_chars, or build the filter with ldap.filter.filter_format(template, [value]).
+
+Before:
+
+```python
+import ldap
+from flask import request
+
+
+def lookup(conn):
+    user = request.form["user"]
+    return conn.search_s("dc=example,dc=org", ldap.SCOPE_SUBTREE, f"(uid={user})")
+```
+
+After:
+
+```python
+import ldap
+from flask import request
+from ldap.filter import escape_filter_chars
+
+
+def lookup(conn):
+    user = escape_filter_chars(request.form["user"])
+    return conn.search_s("dc=example,dc=org", ldap.SCOPE_SUBTREE, f"(uid={user})")
+```
+
+### `py.xpath.injection`: XPath expression built from request data
+
+CWE-643 · default severity high · confidence medium
+
+**Why:** A quote in a value formatted into an XPath expression ends the string literal, so the rest of the value becomes XPath: "' or '1'='1" selects every node. It applies to lxml xpath() and XPath(), and to ElementTree find/findall paths.
+
+**Fix:** Pass values as XPath variables instead of formatting them in: tree.xpath('//user[name=$name]', name=name), or etree.XPath('//user[name=$name]'). With ElementTree, iterate and compare in Python: [e for e in root.iter('user') if e.get('name') == name].
+
+Before:
+
+```python
+from flask import request
+from lxml import etree
+
+
+def find(tree):
+    name = request.args["name"]
+    return tree.xpath(f"//user[name='{name}']")
+```
+
+After:
+
+```python
+from flask import request
+from lxml import etree
+
+
+def find(tree):
+    return tree.xpath("//user[name=$name]", name=request.args["name"])
+```
+
+### `py.cookie.insecure`: Cookie set without the Secure or HttpOnly flag
+
+CWE-614 · default severity medium · confidence medium
+
+**Why:** Without Secure the browser also sends the cookie over plain HTTP, where anyone on the network can read it. Without HttpOnly any script in the page, including an injected one, can read it. Flags set to False explicitly are medium severity; flags left out are reported at low severity. Only HttpOnly missing is reported as CWE-1004.
+
+**Fix:** Pass both flags: response.set_cookie('name', value, secure=True, httponly=True, samesite='Lax'). Leave httponly off only for a cookie that the page's own JavaScript must read and that holds nothing secret.
+
+Before:
+
+```python
+from flask import make_response
+
+
+def login(session_id):
+    response = make_response("ok")
+    response.set_cookie("sid", session_id)
+    return response
+```
+
+After:
+
+```python
+from flask import make_response
+
+
+def login(session_id):
+    response = make_response("ok")
+    response.set_cookie("sid", session_id, secure=True, httponly=True, samesite="Lax")
+    return response
+```
+
+### `py.trust_boundary.session`: Request data stored in the session without validation
+
+CWE-501 · default severity low · confidence medium
+
+**Why:** Code that reads the session trusts it as data the server wrote. A request value copied into session[...] without a check (an allowlist, a type conversion) mixes untrusted and trusted data, and later code may treat it as verified, for example as the user's role.
+
+**Fix:** Validate the value before storing it: check it against an allowlist (if role not in ROLES: abort(400)), convert it (int(value)), or store only values the server derived itself.
+
+Before:
+
+```python
+from flask import request, session
+
+
+def choose_role():
+    session["role"] = request.form["role"]
+```
+
+After:
+
+```python
+from flask import abort, request, session
+
+ROLES = ("viewer", "editor")
+
+
+def choose_role():
+    role = request.form["role"]
+    if role not in ROLES:
+        abort(400)
+    session["role"] = role
 ```
 
 ## Claude Code and MCP configuration rules

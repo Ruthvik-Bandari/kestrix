@@ -43,7 +43,7 @@
       "column": 5,
       "end_line": 5,
       "message": "subprocess.run runs a built command through the shell (shell=True).",
-      "why": "With shell=True the command is parsed by /bin/sh. Any interpolated value can add ';', '&&' or '$(...)' and run other commands.",
+      "why": "With shell=True, or a program list that starts a shell with its command-string option (['sh', '-c', script], ['cmd', '/c', ...], ['powershell', '-Command', ...]), the command is parsed by the shell. Any interpolated value can add ';', '&&' or '$(...)' and run other commands. A command whose values all pass through shlex.quote is reported at low confidence.",
       "fix": "Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.",
       "snippet": "subprocess.run(cmd, shell=True)",
       "fingerprint": "5413189d6508b6e24675ffd61b659c5096c516f5cebf5b6976af8dda4a28251f"

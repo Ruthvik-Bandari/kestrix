@@ -84,7 +84,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
         'import jwt\n\n\ndef claims(token, public_key):\n    return jwt.decode(token, public_key, algorithms=["RS256"])\n',
     ),
     "py.xml.unsafe_parser": (
-        "import xml.etree.ElementTree as ET\n\n\ndef parse(data):\n    return ET.fromstring(data)\n",
+        "from lxml import etree\n\n\ndef parse(data):\n    parser = etree.XMLParser(resolve_entities=True)\n    return etree.fromstring(data, parser)\n",
         'import defusedxml.ElementTree as ET\n\nMAX_XML_BYTES = 1_000_000\n\n\ndef parse(data):\n    if len(data) > MAX_XML_BYTES:\n        raise ValueError("document too large")\n    return ET.fromstring(data)\n',
     ),
     "py.assert.security": (
@@ -110,6 +110,26 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "py.llm.output_to_sink": (
         'import anthropic\n\nclient = anthropic.Anthropic()\n\n\ndef calculate(question, model):\n    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])\n    return eval(reply.content[0].text)\n',
         'import ast\n\nimport anthropic\n\nclient = anthropic.Anthropic()\n\n\ndef calculate(question, model):\n    reply = client.messages.create(model=model, max_tokens=100, messages=[{"role": "user", "content": question}])\n    return ast.literal_eval(reply.content[0].text)\n',
+    ),
+    "py.xss.reflected": (
+        'from flask import request\n\n\ndef search():\n    q = request.args.get("q", "")\n    return f"<h1>Results for {q}</h1>"\n',
+        'from flask import request\nfrom markupsafe import escape\n\n\ndef search():\n    q = request.args.get("q", "")\n    return f"<h1>Results for {escape(q)}</h1>"\n',
+    ),
+    "py.ldap.injection": (
+        'import ldap\nfrom flask import request\n\n\ndef lookup(conn):\n    user = request.form["user"]\n    return conn.search_s("dc=example,dc=org", ldap.SCOPE_SUBTREE, f"(uid={user})")\n',
+        'import ldap\nfrom flask import request\nfrom ldap.filter import escape_filter_chars\n\n\ndef lookup(conn):\n    user = escape_filter_chars(request.form["user"])\n    return conn.search_s("dc=example,dc=org", ldap.SCOPE_SUBTREE, f"(uid={user})")\n',
+    ),
+    "py.xpath.injection": (
+        'from flask import request\nfrom lxml import etree\n\n\ndef find(tree):\n    name = request.args["name"]\n    return tree.xpath(f"//user[name=\'{name}\']")\n',
+        'from flask import request\nfrom lxml import etree\n\n\ndef find(tree):\n    return tree.xpath("//user[name=$name]", name=request.args["name"])\n',
+    ),
+    "py.cookie.insecure": (
+        'from flask import make_response\n\n\ndef login(session_id):\n    response = make_response("ok")\n    response.set_cookie("sid", session_id)\n    return response\n',
+        'from flask import make_response\n\n\ndef login(session_id):\n    response = make_response("ok")\n    response.set_cookie("sid", session_id, secure=True, httponly=True, samesite="Lax")\n    return response\n',
+    ),
+    "py.trust_boundary.session": (
+        'from flask import request, session\n\n\ndef choose_role():\n    session["role"] = request.form["role"]\n',
+        'from flask import abort, request, session\n\nROLES = ("viewer", "editor")\n\n\ndef choose_role():\n    role = request.form["role"]\n    if role not in ROLES:\n        abort(400)\n    session["role"] = role\n',
     ),
     "py.ml.unsafe_model_load": (
         'import torch\n\nmodel = torch.load("model.pt", weights_only=False)\n',

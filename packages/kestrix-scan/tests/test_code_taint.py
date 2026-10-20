@@ -226,7 +226,8 @@ def test_shlex_quote_clears_only_the_shell() -> None:
         "    cur.execute(f\"SELECT * FROM t WHERE a = '{q}'\")\n"
     )
     shell = only(source, "py.subprocess.shell_true")
-    assert shell.trace == () and shell.confidence is None  # the pattern finding stays, without taint
+    assert shell.trace == () and shell.confidence == "low"  # the shell stays; quoting makes it low confidence
+    assert "shlex.quote" in shell.message
     assert only(source, "py.sql.string_built").trace
 
 
@@ -236,8 +237,7 @@ def test_numeric_conversion_clears_every_class(wrap: str) -> None:
         FLASK
         + f"import uuid\ndef f(cur):\n    i = {wrap}(request.args['id'])\n    cur.execute(f'SELECT a FROM t WHERE id = {{i}}')\n    open(str(i))\n"
     )
-    assert only(source, "py.sql.string_built").trace == ()
-    assert "py.path.traversal" not in {hit.rule_id for hit in hits(source)}
+    assert hits(source) == []  # the number is clean for every class and inert for the SQL pattern rule
 
 
 def test_path_sanitizers_do_not_clear_the_shell() -> None:

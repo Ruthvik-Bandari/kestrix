@@ -91,9 +91,17 @@ POSITIVE = [
         "py.jwt.no_verify",
         "from jose import jwt\ndef f(t):\n    return jwt.decode(t, None, options={'verify_signature': False})\n",
     ),
-    ("py.xml.unsafe_parser", "import xml.etree.ElementTree as ET\ndef f(data):\n    return ET.fromstring(data)\n"),
-    ("py.xml.unsafe_parser", "from xml.dom import minidom\ndef f(data):\n    return minidom.parseString(data)\n"),
-    ("py.xml.unsafe_parser", "import xml.sax\ndef f(fh, h):\n    xml.sax.parse(fh, h)\n"),
+    ("py.xml.unsafe_parser", "from lxml import etree\np = etree.XMLParser(resolve_entities=True)\n"),
+    ("py.xml.unsafe_parser", "import lxml.etree\np = lxml.etree.XMLParser(no_network=False)\n"),
+    ("py.xml.unsafe_parser", "from lxml import etree\ndef f(fh):\n    return etree.iterparse(fh, huge_tree=True)\n"),
+    (
+        "py.xml.unsafe_parser",
+        "import xml.sax\nfrom xml.sax.handler import feature_external_ges\np = xml.sax.make_parser()\np.setFeature(feature_external_ges, True)\n",
+    ),
+    (
+        "py.xml.unsafe_parser",
+        "import xml.sax\np = xml.sax.make_parser()\np.setFeature('http://xml.org/sax/features/external-parameter-entities', 1)\n",
+    ),
     ("py.assert.security", "def view(user):\n    assert user.is_admin\n    return 1\n"),
     ("py.assert.security", "def view(user):\n    assert has_permission(user, 'x'), 'denied'\n"),
     (
@@ -156,6 +164,43 @@ POSITIVE = [
     (
         "py.llm.output_to_sink",
         "import os\nfrom openai import OpenAI\nclient = OpenAI()\ndef f(p):\n    out = client.chat.completions.create(model='m', messages=p)\n    os.system(out.choices[0].message.content)\n",
+    ),
+    (
+        "py.xss.reflected",
+        "from flask import request\ndef f():\n    return f\"<p>{request.args['q']}</p>\"\n",
+    ),
+    (
+        "py.xss.reflected",
+        "from django.http import HttpResponse\ndef view(request):\n    return HttpResponse('<b>' + request.GET['n'] + '</b>')\n",
+    ),
+    (
+        "py.ldap.injection",
+        "import ldap\nfrom flask import request\ndef f(c):\n    c.search_s('dc=x', ldap.SCOPE_SUBTREE, '(cn=%s)' % request.args['n'])\n",
+    ),
+    (
+        "py.ldap.injection",
+        "import ldap3\nfrom flask import request\ndef f(c):\n    c.search('dc=x', search_filter=f\"(mail={request.form['m']})\")\n",
+    ),
+    (
+        "py.xpath.injection",
+        "from lxml import etree\nfrom flask import request\ndef f(t):\n    return t.xpath(\"//a[@id='\" + request.args['i'] + \"']\")\n",
+    ),
+    (
+        "py.xpath.injection",
+        "import xml.etree.ElementTree as ET\ndef view(request, root):\n    return root.findall(f\".//item[@sku='{request.GET['s']}']\")\n",
+    ),
+    ("py.cookie.insecure", "from flask import make_response\nr = make_response('')\nr.set_cookie('sid', 'v')\n"),
+    (
+        "py.cookie.insecure",
+        "from django.http import HttpResponse\nr = HttpResponse()\nr.set_cookie('sid', 'v', secure=False, httponly=True)\n",
+    ),
+    (
+        "py.trust_boundary.session",
+        "from flask import request, session\ndef f():\n    session['plan'] = request.form['plan']\n",
+    ),
+    (
+        "py.trust_boundary.session",
+        "def view(request):\n    request.session['owner'] = request.GET.get('owner')\n",
     ),
     ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt')\n"),
     ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt', weights_only=False)\n"),
@@ -230,6 +275,23 @@ NEGATIVE = [
     ),
     ("py.xml.unsafe_parser", "import xml.etree.ElementTree as ET\nroot = ET.fromstring('<a/>')\n"),
     ("py.xml.unsafe_parser", "import defusedxml.ElementTree as ET\ndef f(d):\n    return ET.fromstring(d)\n"),
+    # The standard-library parsers do not resolve external entities by default (Python docs, XML vulnerabilities).
+    ("py.xml.unsafe_parser", "import xml.etree.ElementTree as ET\ndef f(data):\n    return ET.fromstring(data)\n"),
+    (
+        "py.xml.unsafe_parser",
+        "from xml.dom import minidom, pulldom\ndef f(d):\n    return minidom.parseString(d), pulldom.parseString(d)\n",
+    ),
+    ("py.xml.unsafe_parser", "import xml.sax\ndef f(fh, h):\n    xml.sax.parse(fh, h)\n"),
+    ("py.xml.unsafe_parser", "from lxml import etree\np = etree.XMLParser(resolve_entities=False, no_network=True)\n"),
+    ("py.xml.unsafe_parser", "from lxml import etree\ndef f(d):\n    return etree.fromstring(d)\n"),
+    (
+        "py.xml.unsafe_parser",
+        "import xml.sax\nfrom xml.sax.handler import feature_external_ges\np = xml.sax.make_parser()\np.setFeature(feature_external_ges, False)\n",
+    ),
+    (
+        "py.xml.unsafe_parser",
+        "import xml.sax\np = xml.sax.make_parser()\np.setFeature('http://xml.org/sax/features/namespaces', True)\n",
+    ),
     ("py.assert.security", "def f(x):\n    assert x is not None\n"),
     ("py.path.traversal", "def f(name):\n    return open(name).read()\n"),
     (
@@ -287,6 +349,48 @@ NEGATIVE = [
         "py.llm.output_to_sink",
         "def f(client, p):\n    r = client.messages.create(messages=p)\n    return eval(r.content[0].text)\n",
     ),
+    (
+        "py.xss.reflected",
+        "from flask import request\nfrom markupsafe import escape\ndef f():\n    return f\"<p>{escape(request.args['q'])}</p>\"\n",
+    ),
+    ("py.xss.reflected", "from flask import request\ndef f():\n    return f\"Hello {request.args['q']}\"\n"),
+    (
+        "py.xss.reflected",
+        "from fastapi import FastAPI\napp = FastAPI()\n@app.get('/h')\ndef h(name: str):\n    return f'<p>{name}</p>'\n",
+    ),
+    (
+        "py.ldap.injection",
+        "import ldap\nfrom ldap.filter import escape_filter_chars\nfrom flask import request\ndef f(c):\n    c.search_s('dc=x', ldap.SCOPE_SUBTREE, '(cn=%s)' % escape_filter_chars(request.args['n']))\n",
+    ),
+    (
+        "py.ldap.injection",
+        "import ldap\nfrom ldap.filter import filter_format\nfrom flask import request\ndef f(c):\n    c.search_s('dc=x', ldap.SCOPE_SUBTREE, filter_format('(cn=%s)', [request.args['n']]))\n",
+    ),
+    (
+        "py.xpath.injection",
+        "from lxml import etree\nfrom flask import request\ndef f(t):\n    return t.xpath('//a[@id=$i]', i=request.args['i'])\n",
+    ),
+    (
+        "py.xpath.injection",
+        "import xml.etree.ElementTree as ET\nfrom flask import request\ndef f(text):\n    return text.find(request.args['needle'])\n",
+    ),
+    (
+        "py.cookie.insecure",
+        "from flask import make_response\nr = make_response('')\nr.set_cookie('sid', 'v', secure=True, httponly=True)\n",
+    ),
+    (
+        "py.cookie.insecure",
+        "from flask import make_response\nr = make_response('')\nr.set_cookie('sid', '', expires=0)\n",
+    ),
+    ("py.cookie.insecure", "from flask import make_response\ndef f(r, opts):\n    r.set_cookie('sid', 'v', **opts)\n"),
+    (
+        "py.trust_boundary.session",
+        "from flask import request, session\ndef f():\n    session['uid'] = int(request.form['uid'])\n",
+    ),
+    (
+        "py.trust_boundary.session",
+        "from flask import abort, request, session\nPLANS = {'free', 'pro'}\ndef f():\n    plan = request.form['plan']\n    if plan not in PLANS:\n        abort(400)\n    session['plan'] = plan\n",
+    ),
     ("py.ml.unsafe_model_load", "import torch\nm = torch.load('model.pt', weights_only=True)\n"),
     ("py.ml.unsafe_model_load", "import tensorflow as tf\nm = tf.keras.models.load_model('m.keras')\n"),
     ("py.ml.unsafe_model_load", "from transformers import AutoModel\nm = AutoModel.from_pretrained('org/m')\n"),
@@ -315,17 +419,19 @@ def severity_of(source: str, rule_id: str) -> str | None:
     return hit.severity
 
 
-def test_literal_shell_command_is_low() -> None:
-    assert severity_of("import subprocess\nsubprocess.run('ls -l', shell=True)\n", "py.subprocess.shell_true") == "low"
+def test_fixed_shell_command_is_not_reported() -> None:
+    # A command that is provably constant cannot be injected into, as for os.system and eval.
+    assert "py.subprocess.shell_true" not in ids("import subprocess\nsubprocess.run('ls -l', shell=True)\n")
     assert (
         severity_of("import subprocess\ndef f(c):\n    subprocess.run(c, shell=True)\n", "py.subprocess.shell_true")
         is None
     )
 
 
-def test_weak_hash_for_checksum_is_low() -> None:
-    source = "import hashlib\nh = hashlib.md5(b'x', usedforsecurity=False)\n"
-    assert severity_of(source, "py.crypto.weak_hash") == "low"
+def test_weak_hash_declared_as_checksum_is_not_reported() -> None:
+    assert ids("import hashlib\nh = hashlib.md5(b'x', usedforsecurity=False)\n") == set()
+    assert ids("import hashlib\nh = hashlib.new('sha1', b'x', usedforsecurity=False)\n") == set()
+    assert "py.crypto.weak_hash" in ids("import hashlib\nh = hashlib.md5(b'x', usedforsecurity=True)\n")
 
 
 def test_settings_module_debug_flag() -> None:
