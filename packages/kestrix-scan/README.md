@@ -237,6 +237,9 @@ rules: `dep.vulnerable`, `dep.malicious`). The full table with CWEs and severiti
 each rule's sources are in
 [docs/modules/code-rules-provenance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code-rules-provenance.md).
 
-Rules are pattern analysis: they miss things and can be wrong in context. No detection rate is claimed, and
-no findings means no rule fired, not that the code is secure. Rule ids are stable; renaming one is a breaking
+Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is
+claimed, and no findings means no rule fired, not that the code is secure. A
+[benchmark scorecard](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/benchmarkpython.md)
+measures category coverage on synthetic code (OWASP BenchmarkPython v0.1 and the project's own labelled cases)
+against Bandit and the security-guidance regex layer, including the categories where Kestrix loses. Rule ids are stable; renaming one is a breaking
 change recorded in the [CHANGELOG](CHANGELOG.md).

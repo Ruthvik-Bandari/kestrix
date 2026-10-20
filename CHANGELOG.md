@@ -6,6 +6,16 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Code scanner benchmark and scorecard (roadmap item 3 of
+  [docs/research/competitive-landscape-2026-10.md](docs/research/competitive-landscape-2026-10.md)).**
+  `uv run python -m bench.run` downloads OWASP BenchmarkPython at a pinned commit into the git-ignored
+  `bench/.cache/` (never committed), installs Bandit and Semgrep CE into an isolated environment there, and scores
+  them, `kestrix-scan` and the security-guidance regex layer per category (TP/FP/TN/FN, TPR, FPR, Youden index,
+  plus a strict-CWE mode as in BenchmarkUtils). `bench/cases/` adds 87 owned, labelled cases (AI-written-style Python
+  pairs with taint and LLM-output cases, and Claude Code / MCP configuration). The scorecard is
+  [docs/benchmarks/benchmarkpython.md](docs/benchmarks/benchmarkpython.md); on BenchmarkPython v0.1, Bandit scores
+  higher overall than `kestrix-scan` (17.5 against 15.8). Semgrep's numbers are not published (Semgrep Rules
+  License). A weekly and manual workflow, `bench.yml`, uploads the results as an artifact.
 - **`kestrix-scan` taint analysis and AI-era rules.** Intraprocedural taint tracking for the Python injection
   rules with traces in JSON (`trace`), SARIF (`codeFlows`), text and hook output; new rules for SSRF, open
   redirects, XSS/SSTI, LLM output reaching code, shell, SQL or paths, unsafe model loading, and risky Claude Code

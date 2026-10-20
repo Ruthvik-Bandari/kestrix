@@ -1,0 +1,1104 @@
+{
+  "schema_version": 1,
+  "generated_by": "Kestrix by Ruthvik Bandari",
+  "suite": "owned",
+  "source": {
+    "path": "bench/cases",
+    "license": "Apache-2.0",
+    "expected": "bench/cases/expected.csv"
+  },
+  "cases": 87,
+  "cases_per_category": {
+    "agentconfig": {
+      "vulnerable": 10,
+      "safe": 6
+    },
+    "cmdi": {
+      "vulnerable": 4,
+      "safe": 6
+    },
+    "codeinj": {
+      "vulnerable": 3,
+      "safe": 3
+    },
+    "debug": {
+      "vulnerable": 1,
+      "safe": 1
+    },
+    "deserialization": {
+      "vulnerable": 4,
+      "safe": 4
+    },
+    "hash": {
+      "vulnerable": 2,
+      "safe": 2
+    },
+    "jwt": {
+      "vulnerable": 1,
+      "safe": 1
+    },
+    "pathtraver": {
+      "vulnerable": 4,
+      "safe": 3
+    },
+    "redirect": {
+      "vulnerable": 1,
+      "safe": 1
+    },
+    "secrets": {
+      "vulnerable": 2,
+      "safe": 1
+    },
+    "sqli": {
+      "vulnerable": 3,
+      "safe": 4
+    },
+    "ssrf": {
+      "vulnerable": 2,
+      "safe": 1
+    },
+    "tempfile": {
+      "vulnerable": 1,
+      "safe": 1
+    },
+    "tls": {
+      "vulnerable": 2,
+      "safe": 1
+    },
+    "weakrand": {
+      "vulnerable": 2,
+      "safe": 2
+    },
+    "xss": {
+      "vulnerable": 3,
+      "safe": 3
+    },
+    "xxe": {
+      "vulnerable": 1,
+      "safe": 1
+    }
+  },
+  "modes": {
+    "category": "primary: findings map to categories through bench/mapping.py",
+    "strict_cwe": "BenchmarkUtils rule: a reported CWE must equal the case CWE; null if the tool reports none"
+  },
+  "environment": {
+    "date": "2026-10-20T06:10:03+00:00",
+    "machine": {
+      "platform": "macOS-27.0.1-arm64-arm-64bit",
+      "machine": "arm64",
+      "processor": "Apple M4 Pro",
+      "cpus": 12,
+      "python": "3.12.13"
+    },
+    "kestrix": {
+      "commit": "3b74fd087c4e97a780d7111e85d5a3b1459daec4",
+      "scanner_dirty": false
+    },
+    "tool_environment": [
+      "bandit==1.9.4"
+    ],
+    "security_guidance": {
+      "repository": "https://github.com/anthropics/claude-plugins-official",
+      "commit": "a0b04d9ddccaabe1976645f68b0eda50f74e7022",
+      "path": "plugins/security-guidance/hooks/patterns.py",
+      "sha256": "8cd874aa113801f869679045e0b38b669988b6a7d33b611b10ef01f474ca1eef"
+    }
+  },
+  "tools": {
+    "kestrix": {
+      "version": "0.1.0",
+      "seconds": 0.1,
+      "findings": 45,
+      "rule_hits": {
+        "config.claude.env_leak": 1,
+        "config.claude.hook_remote_exec": 3,
+        "config.claude.permissions_bypass": 3,
+        "config.mcp.secret_inline": 1,
+        "config.mcp.unpinned_launcher": 2,
+        "py.crypto.insecure_random": 1,
+        "py.crypto.weak_hash": 3,
+        "py.deserialize.pickle": 1,
+        "py.deserialize.yaml_unsafe": 1,
+        "py.exec.eval": 1,
+        "py.exec.exec": 1,
+        "py.flask.debug": 1,
+        "py.jwt.no_verify": 1,
+        "py.llm.output_to_sink": 2,
+        "py.ml.unsafe_model_load": 2,
+        "py.os.system": 1,
+        "py.path.traversal": 2,
+        "py.redirect.open": 2,
+        "py.sql.string_built": 4,
+        "py.ssrf.request": 1,
+        "py.subprocess.shell_true": 3,
+        "py.tempfile.mktemp": 1,
+        "py.tls.verify_disabled": 2,
+        "py.xml.unsafe_parser": 1,
+        "py.xss.markup": 2,
+        "secret.generic": 2
+      },
+      "category": {
+        "overall": {
+          "tpr": 0.8578,
+          "fpr": 0.1373,
+          "score": 0.7206,
+          "precision": 0.8667
+        },
+        "categories": {
+          "agentconfig": {
+            "tp": 10,
+            "fn": 0,
+            "fp": 0,
+            "tn": 6,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "cmdi": {
+            "tp": 3,
+            "fn": 1,
+            "fp": 2,
+            "tn": 4,
+            "tpr": 0.75,
+            "fpr": 0.3333,
+            "score": 0.4167
+          },
+          "codeinj": {
+            "tp": 3,
+            "fn": 0,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "debug": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "deserialization": {
+            "tp": 4,
+            "fn": 0,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "hash": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 1,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.5,
+            "score": 0.5
+          },
+          "jwt": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "pathtraver": {
+            "tp": 2,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "redirect": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 1,
+            "tn": 0,
+            "tpr": 1.0,
+            "fpr": 1.0,
+            "score": 0.0
+          },
+          "secrets": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "sqli": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 2,
+            "tn": 2,
+            "tpr": 0.6667,
+            "fpr": 0.5,
+            "score": 0.1667
+          },
+          "ssrf": {
+            "tp": 1,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "tempfile": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "tls": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "weakrand": {
+            "tp": 1,
+            "fn": 1,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "xss": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.6667,
+            "fpr": 0.0,
+            "score": 0.6667
+          },
+          "xxe": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          }
+        }
+      },
+      "strict_cwe": {
+        "overall": {
+          "tpr": 0.7402,
+          "fpr": 0.1373,
+          "score": 0.6029,
+          "precision": 0.8537
+        },
+        "categories": {
+          "agentconfig": {
+            "tp": 10,
+            "fn": 0,
+            "fp": 0,
+            "tn": 6,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "cmdi": {
+            "tp": 3,
+            "fn": 1,
+            "fp": 2,
+            "tn": 4,
+            "tpr": 0.75,
+            "fpr": 0.3333,
+            "score": 0.4167
+          },
+          "codeinj": {
+            "tp": 1,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.3333,
+            "fpr": 0.0,
+            "score": 0.3333
+          },
+          "debug": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "deserialization": {
+            "tp": 4,
+            "fn": 0,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "hash": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 1,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.5,
+            "score": 0.5
+          },
+          "jwt": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "pathtraver": {
+            "tp": 2,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "redirect": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 1,
+            "tn": 0,
+            "tpr": 1.0,
+            "fpr": 1.0,
+            "score": 0.0
+          },
+          "secrets": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "sqli": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 2,
+            "tn": 2,
+            "tpr": 0.6667,
+            "fpr": 0.5,
+            "score": 0.1667
+          },
+          "ssrf": {
+            "tp": 1,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "tempfile": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "tls": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "weakrand": {
+            "tp": 1,
+            "fn": 1,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "xss": {
+            "tp": 1,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.3333,
+            "fpr": 0.0,
+            "score": 0.3333
+          },
+          "xxe": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          }
+        }
+      },
+      "flagged": [
+        "cfg_allow_all_bash_vuln",
+        "cfg_bypass_permissions_vuln",
+        "cfg_enable_all_mcp_vuln",
+        "cfg_hook_curl_pipe_vuln",
+        "cfg_hook_download_then_run_vuln",
+        "cfg_mcp_npx_unpinned_vuln",
+        "cfg_mcp_secret_inline_vuln",
+        "cfg_mcp_uvx_unpinned_vuln",
+        "cfg_plugin_hook_pipe_vuln",
+        "cfg_settings_env_secret_vuln",
+        "cmdi_constant_overwrite_safe",
+        "cmdi_os_system_backup_vuln",
+        "cmdi_ping_fstring_vuln",
+        "cmdi_shlex_quote_safe",
+        "codeinj_eval_calculator_vuln",
+        "codeinj_exec_plugin_vuln",
+        "debug_flask_run_vuln",
+        "deser_pickle_cookie_vuln",
+        "deser_yaml_upload_vuln",
+        "hash_md5_cache_key_safe",
+        "hash_md5_password_vuln",
+        "hash_sha1_signature_vuln",
+        "jwt_no_verify_vuln",
+        "llm_eval_tool_call_vuln",
+        "llm_shell_agent_vuln",
+        "ml_joblib_model_vuln",
+        "ml_torch_load_vuln",
+        "path_download_join_vuln",
+        "path_fastapi_fileresponse_vuln",
+        "rand_reset_token_vuln",
+        "redirect_next_param_safe",
+        "redirect_next_param_vuln",
+        "secret_api_token_vuln",
+        "secret_db_password_vuln",
+        "sqli_fstring_lookup_vuln",
+        "sqli_int_cast_safe",
+        "sqli_orderby_allowlist_safe",
+        "sqli_orderby_format_vuln",
+        "ssrf_webhook_test_vuln",
+        "tempfile_mktemp_vuln",
+        "tls_unverified_context_vuln",
+        "tls_verify_false_vuln",
+        "xss_markup_greeting_vuln",
+        "xss_template_string_vuln",
+        "xxe_etree_upload_vuln"
+      ]
+    },
+    "bandit": {
+      "version": "1.9.4",
+      "seconds": 0.14,
+      "findings": 51,
+      "rule_hits": {
+        "B102": 1,
+        "B105": 3,
+        "B201": 1,
+        "B301": 1,
+        "B306": 1,
+        "B307": 2,
+        "B310": 1,
+        "B311": 3,
+        "B314": 1,
+        "B323": 1,
+        "B324": 2,
+        "B403": 1,
+        "B404": 9,
+        "B405": 1,
+        "B501": 1,
+        "B506": 1,
+        "B602": 4,
+        "B603": 5,
+        "B605": 1,
+        "B607": 4,
+        "B608": 4,
+        "B614": 1,
+        "B704": 1
+      },
+      "category": {
+        "overall": {
+          "tpr": 0.6324,
+          "fpr": 0.1176,
+          "score": 0.5147,
+          "precision": 0.7273
+        },
+        "categories": {
+          "agentconfig": {
+            "tp": 0,
+            "fn": 10,
+            "fp": 0,
+            "tn": 6,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "cmdi": {
+            "tp": 4,
+            "fn": 0,
+            "fp": 6,
+            "tn": 0,
+            "tpr": 1.0,
+            "fpr": 1.0,
+            "score": 0.0
+          },
+          "codeinj": {
+            "tp": 3,
+            "fn": 0,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "debug": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "deserialization": {
+            "tp": 3,
+            "fn": 1,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 0.75,
+            "fpr": 0.0,
+            "score": 0.75
+          },
+          "hash": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "jwt": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "pathtraver": {
+            "tp": 0,
+            "fn": 4,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "redirect": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "secrets": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "sqli": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 2,
+            "tn": 2,
+            "tpr": 0.6667,
+            "fpr": 0.5,
+            "score": 0.1667
+          },
+          "ssrf": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "tempfile": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "tls": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "weakrand": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 1,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.5,
+            "score": 0.5
+          },
+          "xss": {
+            "tp": 1,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.3333,
+            "fpr": 0.0,
+            "score": 0.3333
+          },
+          "xxe": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          }
+        }
+      },
+      "strict_cwe": {
+        "overall": {
+          "tpr": 0.3235,
+          "fpr": 0.1176,
+          "score": 0.2059,
+          "precision": 0.6087
+        },
+        "categories": {
+          "agentconfig": {
+            "tp": 0,
+            "fn": 10,
+            "fp": 0,
+            "tn": 6,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "cmdi": {
+            "tp": 4,
+            "fn": 0,
+            "fp": 6,
+            "tn": 0,
+            "tpr": 1.0,
+            "fpr": 1.0,
+            "score": 0.0
+          },
+          "codeinj": {
+            "tp": 0,
+            "fn": 3,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "debug": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "deserialization": {
+            "tp": 2,
+            "fn": 2,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 0.5,
+            "fpr": 0.0,
+            "score": 0.5
+          },
+          "hash": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "jwt": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "pathtraver": {
+            "tp": 0,
+            "fn": 4,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "redirect": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "secrets": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "sqli": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 2,
+            "tn": 2,
+            "tpr": 0.6667,
+            "fpr": 0.5,
+            "score": 0.1667
+          },
+          "ssrf": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "tempfile": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "tls": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "weakrand": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 1,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.5,
+            "score": 0.5
+          },
+          "xss": {
+            "tp": 1,
+            "fn": 2,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.3333,
+            "fpr": 0.0,
+            "score": 0.3333
+          },
+          "xxe": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          }
+        }
+      },
+      "flagged": [
+        "cmdi_constant_overwrite_safe",
+        "cmdi_os_system_backup_safe",
+        "cmdi_os_system_backup_vuln",
+        "cmdi_ping_fstring_safe",
+        "cmdi_ping_fstring_vuln",
+        "cmdi_sh_c_list_safe",
+        "cmdi_sh_c_list_vuln",
+        "cmdi_shlex_quote_safe",
+        "codeinj_eval_calculator_vuln",
+        "codeinj_exec_plugin_vuln",
+        "debug_flask_run_vuln",
+        "deser_pickle_cookie_vuln",
+        "deser_yaml_upload_vuln",
+        "hash_md5_password_vuln",
+        "hash_sha1_signature_vuln",
+        "llm_eval_tool_call_vuln",
+        "llm_shell_agent_safe",
+        "llm_shell_agent_vuln",
+        "ml_torch_load_vuln",
+        "rand_remember_cookie_vuln",
+        "rand_reset_token_vuln",
+        "rand_shuffle_quiz_safe",
+        "secret_api_token_vuln",
+        "secret_db_password_vuln",
+        "sqli_fstring_lookup_vuln",
+        "sqli_int_cast_safe",
+        "sqli_orderby_allowlist_safe",
+        "sqli_orderby_format_vuln",
+        "tempfile_mktemp_vuln",
+        "tls_unverified_context_vuln",
+        "tls_verify_false_vuln",
+        "xss_markup_greeting_vuln",
+        "xxe_etree_upload_vuln"
+      ]
+    },
+    "security-guidance": {
+      "version": "2.0.14",
+      "seconds": 0.04,
+      "findings": 15,
+      "rule_hits": {
+        "eval_injection": 2,
+        "os_system_injection": 1,
+        "pickle_deserialization": 1,
+        "pickle_wrapper_load": 1,
+        "python_subprocess_shell": 4,
+        "tls_verification_disabled": 2,
+        "torch_unsafe_load": 1,
+        "unsafe_yaml_load": 1,
+        "xml_unsafe_parse": 2
+      },
+      "category": {
+        "overall": {
+          "tpr": 0.2598,
+          "fpr": 0.0784,
+          "score": 0.1814,
+          "precision": 0.8
+        },
+        "categories": {
+          "agentconfig": {
+            "tp": 0,
+            "fn": 10,
+            "fp": 0,
+            "tn": 6,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "cmdi": {
+            "tp": 3,
+            "fn": 1,
+            "fp": 2,
+            "tn": 4,
+            "tpr": 0.75,
+            "fpr": 0.3333,
+            "score": 0.4167
+          },
+          "codeinj": {
+            "tp": 2,
+            "fn": 1,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.6667,
+            "fpr": 0.0,
+            "score": 0.6667
+          },
+          "debug": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "deserialization": {
+            "tp": 4,
+            "fn": 0,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "hash": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "jwt": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "pathtraver": {
+            "tp": 0,
+            "fn": 4,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "redirect": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "secrets": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "sqli": {
+            "tp": 0,
+            "fn": 3,
+            "fp": 0,
+            "tn": 4,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "ssrf": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "tempfile": {
+            "tp": 0,
+            "fn": 1,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "tls": {
+            "tp": 2,
+            "fn": 0,
+            "fp": 0,
+            "tn": 1,
+            "tpr": 1.0,
+            "fpr": 0.0,
+            "score": 1.0
+          },
+          "weakrand": {
+            "tp": 0,
+            "fn": 2,
+            "fp": 0,
+            "tn": 2,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "xss": {
+            "tp": 0,
+            "fn": 3,
+            "fp": 0,
+            "tn": 3,
+            "tpr": 0.0,
+            "fpr": 0.0,
+            "score": 0.0
+          },
+          "xxe": {
+            "tp": 1,
+            "fn": 0,
+            "fp": 1,
+            "tn": 0,
+            "tpr": 1.0,
+            "fpr": 1.0,
+            "score": 0.0
+          }
+        }
+      },
+      "strict_cwe": null,
+      "flagged": [
+        "cmdi_constant_overwrite_safe",
+        "cmdi_os_system_backup_vuln",
+        "cmdi_ping_fstring_vuln",
+        "cmdi_shlex_quote_safe",
+        "codeinj_eval_calculator_vuln",
+        "deser_pickle_cookie_vuln",
+        "deser_yaml_upload_vuln",
+        "llm_eval_tool_call_vuln",
+        "llm_shell_agent_vuln",
+        "ml_joblib_model_vuln",
+        "ml_torch_load_vuln",
+        "tls_unverified_context_vuln",
+        "tls_verify_false_vuln",
+        "xxe_defusedxml_upload_safe",
+        "xxe_etree_upload_vuln"
+      ]
+    }
+  }
+}
