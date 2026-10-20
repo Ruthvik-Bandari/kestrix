@@ -32,6 +32,8 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | `hpc/vul_acquire.sh` | transfer node | n/a | C5 code-vulnerability data: download CVEfixes, MoreFixes, the reviewed GitHub advisories and SVEN at their pins (resumable; size, MD5 and SHA-256 checked) into `/scratch/$USER/kestrix/vul/raw` (0700) |
 | `hpc/vul_qc.sbatch [--rebuild]` | `short` | 4 CPU, 32 GB, 8 h | Re-verify the pins, stream both dumps into private `vul/work/*.sqlite`, write `vul/reports/qc.json` |
 | `hpc/vul_build.sbatch [candidates\|split]` | `short` | 2 CPU, 32 GB, 4 h | `candidates`: PrimeVul relabelling, deduplication, repository list for the local license lookup; `split`: license import and the frozen split manifest. No training |
+| `hpc/vul_extend.sbatch targets\|extract\|split\|audit` | `short` | 2 CPU, 16 GB, 4 h | Extends the C5 pool without touching the frozen test split: `targets` lists the GHSA fix commits CVEfixes and MoreFixes lack (plus the pool commits, for negatives); `extract` labels the fetched commits, deduplicates them against the pool and lists new repositories for the license lookup; `split` merges the licenses, writes split manifest v2, samples negatives and the audit packets; `audit` imports the AI audit verdicts |
+| `hpc/vul_mine.sh` | transfer node | n/a | Fetches the listed fix commits: anonymous HTTPS partial clones (`--filter=blob:none --depth=2`), then only the needed blobs; 8 repositories at a time, one git request per second, backoff on errors, 300 s per git call, 500 MB per repository, resumable. No GitHub API calls |
 
 The cluster has no Docker, so jobs run Elasticsearch from Elastic's official tarball with its
 bundled JDK. That is the same 8.19.3 release the local Docker image pins by digest. The engine

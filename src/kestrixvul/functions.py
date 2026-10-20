@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import re
+import warnings
 from collections import Counter
 from dataclasses import dataclass
 
@@ -77,7 +78,9 @@ def _cut(lines: list[str], start: int, end: int) -> str:
 
 def python_functions(text: str) -> list[Func]:
     try:
-        tree = ast.parse(text)
+        with warnings.catch_warnings():  # invalid escapes in mined code are the project's, not ours
+            warnings.simplefilter("ignore", SyntaxWarning)
+            tree = ast.parse(text)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         return _indented_functions(text)
     lines = text.splitlines()

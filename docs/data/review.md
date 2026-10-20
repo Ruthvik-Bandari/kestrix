@@ -111,3 +111,36 @@ python -m kestrixbench split --freeze --root /scratch/$USER/kestrix/data
 It writes `benchmark/split-manifest.json` with each root rule's source SHA-256 and refuses to
 overwrite an existing manifest. Copy the manifest, which holds ids and hashes only, into
 `docs/data/` so the split is versioned with the code.
+
+## AI-assisted audit of the code-vulnerability labels
+
+The C5 vulnerability pool (`docs/data/vul/`) is labelled by PrimeVul's rules, not by people. Its labels
+are audited with the procedure above, under the second exception in [`policy.md`](policy.md) section 6.
+Results are in [`vul/audit.json`](vul/audit.json) and [`vul/README.md`](vul/README.md#label-audit).
+
+1. **Sample.** `python -m kestrixvul audit-sample` (Slurm) draws a seeded random sample of train and dev
+   records, stratified by source family (CVEfixes and MoreFixes, SVEN, GHSA), language and label rule:
+   at least 15 per stratum, or 6% of it if that is more, or all of a smaller stratum. Each stratum is drawn
+   on its own, so strata added later never redraw ones already reviewed. Test records are never sampled.
+2. **Packets.** One per record: the advisory text (GHSA summary and details, or the CVE description),
+   the CWEs, the function before and after the fix, and their diff, with the packet's SHA-256. They are
+   written to `audit/packets.jsonl` on the cluster (0600) and copied to a private folder outside the
+   repository (0700). Packets are batched for the reviewers.
+3. **Two reviewers.** Two AI reviewers, `ai-a` and `ai-b`, each a separate subagent with no access to the
+   other's files, judge every packet from the same written criteria:
+   - `vulnerable`, `not_vulnerable` or `unclear` for the before-function and the stated advisory;
+   - `fixes`, `does_not_fix` or `unclear` for the after-function;
+   - a one-line reason.
+
+   Record content is treated as untrusted data.
+4. **Adjudication.** A third AI reviewer (`ai-c`) decides every record where the two verdicts differ. It
+   sees both reviews and weighs the evidence itself.
+5. **Combine and import.** `audit-combine` (on the private folder) checks that every packet has both
+   reviews and, where needed, an adjudication. It writes `verdicts.csv` (ids, verdicts and packet hashes,
+   no reasons) and a private `verdicts-private.jsonl` with the reasons. `audit-import` (Slurm) checks
+   every row against the packet hashes and the consensus rule, then writes `work/audit_verdicts.jsonl`
+   and the aggregate `reports/audit.json`.
+6. **No human pass.** The owner decided a human review is not practical here, so the 10% human check
+   used for OTRF is not done. The two reviewers are instances of the same model, so their errors are
+   likely correlated: their agreement and kappa are an upper bound on what two independent people would
+   reach, and the accuracy estimates carry that bias.
