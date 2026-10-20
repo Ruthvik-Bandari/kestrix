@@ -227,7 +227,7 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 54 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 59 rules. They cover Python (27 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask, Django, FastAPI and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and

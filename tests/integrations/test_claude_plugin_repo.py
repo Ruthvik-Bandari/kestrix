@@ -15,6 +15,7 @@ import pytest
 
 from kestrix_scan import plugin, scan
 from kestrix_scan.about import __version__
+from kestrix_scan.registry import rules as registry_rules
 
 REPO = Path(__file__).resolve().parents[2]
 PLUGIN_SRC = REPO / "packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix"
@@ -66,8 +67,10 @@ def test_the_repository_files_are_the_documented_set() -> None:
         "PRIVACY.md",
         "README.md",
         "SECURITY.md",
+        "benchmarks",
         "evals",
         "hooks",
+        "scripts",
         "skills",
         "tests",
     }
@@ -187,8 +190,14 @@ def test_the_shipped_no_network_test_passes(tmp_path: Path) -> None:
 
 
 def test_eval_cases_are_complete() -> None:
-    cases = sorted({name.split("/")[1] for name in FILES if name.startswith("evals/") and name.count("/") >= 2})
-    assert len(cases) >= 4
+    cases = sorted(
+        {
+            name.removesuffix("/prompt.md").removeprefix("evals/")
+            for name in FILES
+            if name.startswith("evals/") and name.endswith("/prompt.md")
+        }
+    )
+    assert len(cases) >= 4 + 13  # the smoke cases and the A/B suite under evals/ab/
     for case in cases:
         prompt = _text(f"evals/{case}/prompt.md")
         assert prompt.startswith("---\n") and "\n---\n" in prompt[4:]
@@ -211,3 +220,105 @@ def test_write_keeps_git_and_refuses_unrelated_directories(tmp_path: Path) -> No
     link.symlink_to(out)
     with pytest.raises(SystemExit, match="symbolic link"):
         build.write(link, TREE)
+
+
+# ----- README claims that must not drift
+
+
+def _registry_counts() -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for rule in registry_rules():
+        family = rule.id.split(".")[0]
+        counts[family] = counts.get(family, 0) + 1
+    return counts
+
+
+def test_readme_rule_counts_match_the_registry() -> None:
+    counts = _registry_counts()
+    total = sum(counts.values())
+    readme = _text("README.md")
+    stated = re.search(
+        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
+        readme,
+    )
+    assert stated, "README.md must state the rule count per family"
+    expected = (total, counts["py"], counts["js"], counts["secret"], counts["dep"], counts["config"])
+    assert tuple(int(n) for n in stated.groups()) == expected
+    # no other count of rules anywhere in the README, and the rule-counting sentences name the same numbers
+    assert {int(n) for n in re.findall(r"(\d+) rules in all", readme)} == {total}
+    assert {int(n) for n in re.findall(r"\b(\d+) rules\b", readme)} <= {total}
+    assert "{{" not in readme
+
+
+def test_other_docs_state_the_same_rule_counts() -> None:
+    counts = _registry_counts()
+    total = sum(counts.values())
+    scan_readme = (REPO / "packages/kestrix-scan/README.md").read_text(encoding="utf-8")
+    assert f"There are {total} rules." in scan_readme
+    for family in ("py", "js", "config", "secret", "dep"):
+        found = re.findall(rf"\((\d+) `{family}\.\*`\s+rules|(\d+) `{family}\.\*`\s+rules", scan_readme)
+        assert found, family
+        assert {int(a or b) for a, b in found} == {counts[family]}, family
+    doc = (REPO / "docs/claude-plugin.md").read_text(encoding="utf-8")
+    assert f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['secret']} secret," in doc
+    assert f"{counts['dep']} dependency, {counts['config']} agent-config rules" in doc
+    submission = (REPO / "docs/plugin-submission.md").read_text(encoding="utf-8")
+    assert {int(n) for n in re.findall(r"Its (\d+) rules", submission)} == {total}
+
+
+def test_readme_example_is_the_real_hook_output() -> None:
+    readme = _text("README.md")
+    block = readme.split("```text\n", 1)[1].split("\n```", 1)[0]
+    assert block == build.readme_example()
+    assert "(CWE-78)" in block and 'subprocess.run(f"ls {path}", shell=True)' in block
+    assert block.rstrip().endswith('subprocess.run(["ls", path], check=True)')
+
+
+def test_readme_privacy_coverage_and_does_it_help_say_what_they_must() -> None:
+    readme = _text("README.md")
+
+    def section(title: str, nth: int = 0) -> str:
+        body = readme.split(f"\n## {title}\n", 1)[1].split("\n## ", 1)[0]
+        return " ".join(body.split("\n\n")[nth].split()) if nth >= 0 else " ".join(body.split())
+
+    privacy = section("Privacy", 0)  # the first paragraph
+    assert "local and makes no network calls" in privacy
+    assert "sent to Anthropic like any other conversation content" in privacy
+    assert "Secret values are never included" in privacy
+    coverage = section("Coverage", -1)
+    for phrase in (
+        "`Write`, `Edit`, `MultiEdit` and `NotebookEdit`",
+        "Bash command",
+        "git",
+        "Analysis is per file",
+        "tracked within one function",
+        "no whole-program or cross-file analysis",
+        "secrets in any text file",
+        "dependency lockfiles",
+        "kestrix-scan db update",
+        "No findings is not proof of security",
+    ):
+        assert phrase in coverage, phrase
+    helps = section("Does it help?", -1)
+    assert "benchmarks/scorecard.md" in helps and "**not blind**" in helps
+    assert "benchmarks/plugin-ab.md" in helps and 'reads "not yet run"' in helps
+    assert "no effectiveness number" in helps.lower()
+
+
+def test_benchmark_pages_ship_without_links_into_the_private_repository() -> None:
+    scorecard, report = _text("benchmarks/scorecard.md"), _text("benchmarks/plugin-ab.md")
+    assert "Disclosure: this round of rule changes was informed by the benchmark" in scorecard
+    assert "[bench/run.py]" not in scorecard and "](../../" not in scorecard + report
+    assert "**Status: not yet run. No effectiveness numbers are claimed.**" in report
+    assert "<!-- results:start -->" in report and "Not yet run." in report
+
+
+def test_secure_review_description_is_third_person_with_trigger_phrases() -> None:
+    text = _text("skills/secure-code-review/SKILL.md")
+    description = re.search(r"^description: (.*)$", text, re.M)
+    assert description
+    value = description.group(1)
+    assert len(value) <= 1024
+    assert value.startswith("Reviews ") and not re.search(r"\b(I|you|your)\b", value)
+    for phrase in ("review this for security", "is this code safe", "check for vulnerabilities", "Use when"):
+        assert phrase in value, phrase

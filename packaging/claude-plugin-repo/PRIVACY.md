@@ -7,7 +7,7 @@ writes, and where its output goes, and points to the test or the code behind eac
 
 | Statement | Evidence |
 | --- | --- |
-| **No network connections from any hook.** None of the five hook events (`SessionStart`, `PreToolUse` on file tools, `PreToolUse` on `Bash`, `PostToolUse`, `Stop`) opens a socket, and neither does the `kestrix-scan` process they start. | [`tests/test_no_network.py`](tests/test_no_network.py) runs every hook the way Claude Code does, with socket creation, `create_connection` and `getaddrinfo` made to raise in the hook process and in every Python process it starts. It asserts that the findings still come back and that no socket was attempted. Run it with `python3 -m unittest discover -s tests -v`. The same check runs in the Kestrix source tree on every change (`packages/kestrix-scan/tests/test_no_network.py`). |
+| **No network connections from any hook.** None of the hooks (`SessionStart`, `PreToolUse` on file tools, `PreToolUse` on `Bash`, `PostToolUse` on file tools, `PostToolUse` and `PostToolUseFailure` on `Bash`, `Stop`) opens a socket, and neither does the `kestrix-scan` or `git` process they start. | [`tests/test_no_network.py`](tests/test_no_network.py) runs every hook the way Claude Code does, including the Bash hooks in a git repository, with socket creation, `create_connection` and `getaddrinfo` made to raise in the hook process and in every Python process it starts. It asserts that the findings still come back and that no socket was attempted. Run it with `python3 -m unittest discover -s tests -v`. The same check runs in the Kestrix source tree on every change (`packages/kestrix-scan/tests/test_no_network.py`). |
 | **No telemetry, analytics, crash reports or update checks.** | The same test: any of these would need a socket. The hook script, [`hooks/kestrix_hook.py`](hooks/kestrix_hook.py), imports only the Python standard library and no networking module. |
 | **No data collection, no account, no credentials.** The plugin declares no `userConfig` and reads no token or key from your environment. | [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) has no `userConfig`. Besides `PATH` and the temporary-directory settings, the only environment variables the hook script reads are `CLAUDE_PLUGIN_DATA`, `CLAUDE_PROJECT_DIR`, `KESTRIX_BLOCK_ON_STOP` and `KESTRIX_INSTALL_GUARD`. |
 | **No installs.** No hook runs `pip`, `npm`, `uvx`, `npx` or any other installer or package launcher. | [`hooks/hooks.json`](hooks/hooks.json) runs only `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" <event>`. The script starts only the `kestrix-scan` (or `kestrix`) executable already on your PATH, never one inside the project directory. |
@@ -15,13 +15,17 @@ writes, and where its output goes, and points to the test or the code behind eac
 ## What it reads and writes, all on your machine
 
 - **Reads:** the hook JSON Claude Code passes on stdin; the file Claude is about to change or just changed (up to
-  1 MiB); the project's `.kestrix.json` and `[tool.kestrix]` settings; and, for the install guard, the local OSV
+  1 MiB); after a Bash command, the output of `git rev-parse`, `git status` and `git show HEAD:<file>` (run locally,
+  with `core.fsmonitor` and `core.hooksPath` turned off) and the modification times of the files `git status` lists;
+  the project's `.kestrix.json` and `[tool.kestrix]` settings; and, for the install guard, the local OSV
   index if you built one.
 - **Writes:** only to the plugin's data directory, `${CLAUDE_PLUGIN_DATA}/sessions/<session id>/`, which Claude Code
   deletes when you uninstall the plugin. When that variable is not set, it uses a private directory,
   `<temp>/kestrix-claude-<uid>/`, with mode 0700. For each session it keeps the list of changed file paths, a copy
-  of each changed file from before the session first touched it, a short-lived copy from just before the current
-  change, and the Stop gate's block count. Session directories older than 14 days are removed at the next session
+  of each changed file from before the session first touched it (for a file changed by a Bash command, its `HEAD`
+  version), a short-lived copy from just before the current change, the time each running Bash command started,
+  the Stop gate's block count, and an event log (`events.tsv`) of scan counts and the paths of files that could not
+  be scanned, which `/kestrix:status` reads. Session directories older than 14 days are removed at the next session
   start.
 - **Never:** reads or prints secret values. For a hard-coded secret, findings show only the kind, the location and
   the first four characters.
@@ -29,8 +33,10 @@ writes, and where its output goes, and points to the test or the code behind eac
 ## Where the hook output goes
 
 What a hook prints goes back to Claude Code, which adds it to your conversation like any tool result, so it is
-handled under the terms of your Claude plan. It holds rule ids, CWE ids, file paths, line numbers, messages and
-fixes, and no code beyond what Claude already wrote.
+handled under the terms of your Claude plan: findings are sent to Anthropic like any other conversation content. It
+holds rule ids, CWE ids, file paths, line numbers, messages and fixes, and no code beyond what Claude already
+wrote. A "not security-checked" notice holds the paths of the files that were not scanned. Secret values are never
+included: a finding for a hard-coded secret shows only its kind, its location and its first four characters.
 
 ## The one network command
 

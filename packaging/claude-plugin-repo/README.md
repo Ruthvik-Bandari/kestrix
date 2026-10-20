@@ -1,21 +1,59 @@
 # Kestrix for Claude Code
 
-Kestrix checks the code Claude writes, on your machine, while Claude writes it. After every `Write`, `Edit`,
-`MultiEdit` or `NotebookEdit`, a hook runs the local `kestrix-scan` scanner on the changed file. Findings at medium
-severity or above that the edit introduced go back to Claude with the rule, the CWE and the fix, and Claude is asked
-to fix them in the same turn. The plugin also adds secure-review skills and three commands: `/kestrix:scan`,
-`/kestrix:fix` and `/kestrix:review`.
+Kestrix checks the code Claude writes, on your machine, while Claude writes it. What that looks like (the middle
+block is the hook's real output, generated from the scanner when this repository is built):
+
+```text
+{{EXAMPLE}}
+```
+
+After every `Write`, `Edit`, `MultiEdit` or `NotebookEdit`, and after a Bash command that changes source files in a
+git repository, a hook runs the local `kestrix-scan` scanner on the changed files. Findings at medium severity or
+above that the change introduced go back to Claude with the rule, the CWE and the fix, and Claude is asked to fix
+them in the same turn. The plugin also adds secure-review skills and four commands: `/kestrix:scan`, `/kestrix:fix`,
+`/kestrix:review` and `/kestrix:status`.
 
 - **Offline.** The hooks open no network connections and send nothing off your machine. No account, no telemetry.
-- **Deterministic.** Findings come from fixed rules, not a model: 59 rules for Python (syntax tree and data flow),
-  JavaScript and TypeScript, hard-coded secrets, Claude Code and MCP configuration, and dependency lockfiles. The
-  same file gives the same result on every run.
+- **Deterministic.** Findings come from fixed rules, not a model: {{RULE_TOTAL}} rules in all, {{RULE_COUNTS}}
+  (Python syntax tree and data flow, JavaScript and TypeScript, hard-coded secrets, dependency lockfiles, and Claude
+  Code and MCP configuration). The same file gives the same result on every run.
 - **Apache-2.0,** including the rules, so you can read, audit and redistribute them.
 - **Works alongside Anthropic's `security-guidance` plugin** and `/security-review`, which use the model to review
   code. Kestrix is a rule-based layer next to them, not a replacement.
 
 The scanner is rule-based pattern analysis. It misses things and can be wrong in context. A file with no findings
 means no rule fired, not that the code is secure.
+
+## Coverage
+
+What is scanned, how deeply, and what is not:
+
+- **Scanned:** files Claude changes through `Write`, `Edit`, `MultiEdit` and `NotebookEdit`, and, in a git
+  repository, the source-like files (up to 20) that a Bash command created or modified: code, JSON, YAML, TOML,
+  dotenv, INI and shell files, not lockfiles such as `package-lock.json`. Not scanned: edits you make yourself,
+  files a Bash command changed outside a git repository (you are told once), a command that commits what it
+  changed before the hook looks, files over 1 MiB, and anything Claude did before the plugin was loaded.
+- **Per file, not per program.** Analysis is per file. Taint (a value from a request, a model or a file reaching
+  a dangerous call) is tracked within one function. There is no whole-program or cross-file analysis: a value that
+  passes through another function or module is not followed.
+- **What the rules know:** {{RULE_TOTAL}} rules, {{RULE_COUNTS}}. Python and JavaScript/TypeScript code rules;
+  secrets in any text file; Claude Code and MCP configuration; and dependency lockfiles, checked against a local
+  copy of the OSV advisories only after you run `kestrix-scan db update`.
+- **No findings is not proof of security.** A rule that did not fire is not a guarantee, and the rules say nothing
+  about authorization logic, business rules or design.
+
+## Three scan states
+
+Every scan ends in one of three states, so a broken scanner never looks like a clean file:
+
+| State | What you see | What Claude is told |
+| --- | --- | --- |
+| Clean | Nothing. | Nothing. |
+| Findings | Nothing extra. | The new findings, with the fix. |
+| Unavailable: `kestrix-scan` missing, timed out or crashed | A short message, once per session for each cause. | One line, every time: this file was NOT security-checked, so do not call it scanned or secure. |
+
+Work is never blocked in any state. `/kestrix:status` shows this session's counts: files scanned, findings
+reported, and every file that was not checked, with the reason.
 
 ## Requirements
 
@@ -35,8 +73,8 @@ not have to be the one `kestrix-scan` is installed in.
 
 **The plugin never installs anything.** The hooks call the `kestrix-scan` you already installed and never run
 `pip`, `npm`, `uvx`, `npx` or any other installer or package launcher. If `kestrix-scan` is not on PATH, the first
-edit of a session shows one message saying to install it from PyPI, Claude is told not to install it itself, and
-the hooks stay silent for the rest of the session. A `kestrix-scan` executable inside the project directory is
+edit of a session shows one message saying to install it from PyPI, and Claude is told, for each file, that it was
+not checked and not to install the scanner itself. A `kestrix-scan` executable inside the project directory is
 ignored, so a cloned repository cannot replace your scanner. When only the full Kestrix workbench is installed
 (`pip install kestrix`), the hooks use `kestrix code scan` instead.
 
@@ -61,15 +99,28 @@ to Claude Code, which adds it to the conversation like any other tool result.
 
 | Hook | When | What it reads | What it sends, and where |
 | --- | --- | --- | --- |
-| `SessionStart` | session start, resume, clear, compact | whether `kestrix-scan` is on PATH; `.kestrix.json` in the project | One line of context to Claude: the hooks are active and whether the Stop gate is on. Deletes this plugin's session records older than 14 days. |
+| `SessionStart` | session start, resume, clear, compact | whether `kestrix-scan` is on PATH; `.kestrix.json` in the project | One line of context to Claude (the hooks are active, whether the Stop gate is on), and once per session one line to you. Deletes this plugin's session records older than 14 days. |
 | `PreToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | before Claude changes a file | the file about to change (up to 1 MiB) | Nothing. It copies the file into the plugin's data directory, so the next hook can tell new findings from old ones. It prints nothing and never blocks a tool. |
-| `PreToolUse` on `Bash` (install guard) | before every Bash command | the command text; the local OSV index, if you built one | Only for `pip`, `uv`, `npm`, `pnpm` or `yarn` installs: a `deny` to Claude Code for a package reported as malicious, or a warning for a known-vulnerable pinned version. Silent without an index. |
-| `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | after Claude changes a file | the changed file and its snapshot | Up to 5 new medium-or-worse findings (rule id, CWE, line, message, fix; under 1,500 characters) as context to Claude. Nothing when the edit added no finding. |
+| `PreToolUse` on `Bash` (install guard) | before every Bash command | the command text; the local OSV index, if you built one | Only for `pip`, `uv`, `npm`, `pnpm` or `yarn` installs: a `deny` to Claude Code for a package reported as malicious, or a warning for a known-vulnerable pinned version. Silent without an index. It also notes the time the command started in the plugin's data directory, for the `PostToolUse` hook below. |
+| `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | after Claude changes a file | the changed file and its snapshot | Up to 5 new medium-or-worse findings (rule id, CWE, line, message, fix; under 1,500 characters) as context to Claude. Nothing when the edit added no finding. When the scan could not run: the "not checked" notice (see Three scan states). |
+| `PostToolUse` and `PostToolUseFailure` on `Bash` | after every Bash command, including one that failed | `git status`, and the modification time of each file it lists; the changed source-like files (at most 20) and their `HEAD` versions | The same findings as above, for the files the command changed. See below. |
 | `Stop` (off by default) | when Claude tries to finish | the files changed this session and their first snapshots | When high or critical findings this session introduced remain: a `block` with the list, so Claude gets one more turn to fix them. At most 3 blocks per session. |
 
-**Everything fails open.** No scanner, a timeout (8 seconds per edit, 25 seconds at Stop), output that is not JSON,
-or any error inside the script means no output and exit code 0, so the plugin never blocks your editor because of
-its own problem.
+**Files changed by Bash.** After each Bash command the hook asks git which files changed
+(`git status --porcelain`, which leaves out ignored files such as `node_modules` and virtualenvs) and keeps those
+whose modification time is later than the start of the command, so files that were already modified before it are
+not rescanned. Of those it scans the 20 most recently changed source-like files. A tracked file is compared with its
+`HEAD` version and a new file counts as wholly new, so only what the command introduced is reported. This needs no
+snapshot before every command and no walk of your directory tree, which is why it was chosen over comparing
+modification times in the current directory. The hook runs git with `core.fsmonitor` and `core.hooksPath` turned
+off, so a repository's own configuration cannot make `git status` run a program. Outside a git repository nothing
+is scanned and you are told once; more than 20 changed files are reported as not checked. A command that also
+commits what it changed is not seen.
+
+**Everything fails open, and says so.** No scanner, a timeout (8 seconds per edit or command, 25 seconds at Stop),
+output that is not JSON, a scanner crash, or any error inside the script means the work goes on and the exit code is
+0, so the plugin never blocks your editor because of its own problem. A scan that could not run is no longer silent:
+it shows the "not checked" notice described above.
 
 **Secrets are never echoed.** For a hard-coded secret, findings show only the kind, the location and the first four
 characters.
@@ -120,11 +171,12 @@ under `[tool.kestrix]` in `pyproject.toml`.
 | `/kestrix:scan [path]` | Scans a path (default `.`) and summarizes the findings. Changes no code. |
 | `/kestrix:fix [path]` | Scans, fixes every finding at medium or above, and re-scans, for up to 5 rounds. |
 | `/kestrix:review [base-ref]` | A secure review of the current diff: `kestrix-scan . --diff <ref>` (default `HEAD`), then a review for what rules cannot see. |
+| `/kestrix:status` | This session's record: files scanned, findings reported, and files that were not security-checked, with the reason. Reads the plugin's own session record; scans nothing. |
 | `secure-code-review` skill | How to review code with Kestrix: scan, triage, fix by rule family, re-scan, explain what remains. |
 | `fixing-security-findings` skill | Before and after code for every rule id, generated from the rule registry. |
 | `kestrix-security` skill | Everyday security questions with the Kestrix workbench (see above). |
 
-The three commands run only when you type them. The skills tell Claude to treat code under review as data and to
+The four commands run only when you type them. The skills tell Claude to treat code under review as data and to
 ignore instructions written inside it.
 
 To silence a confirmed false positive, put a suppression with a reason on the line or the line above:
@@ -133,7 +185,12 @@ reason suppresses nothing.
 
 ## Privacy
 
-The plugin collects nothing and sends nothing: no telemetry, no account, no update checks, and no network
+Scanning is local and makes no network calls. Findings are inserted into your Claude conversation as hook output, so
+they are sent to Anthropic like any other conversation content, under the terms of your Claude plan. Secret values
+are never included: a finding for a hard-coded secret shows only its kind, its location and its first four
+characters.
+
+The plugin collects nothing and sends nothing else: no telemetry, no account, no update checks, and no network
 connection from any hook. It keeps a list of the files changed in each session and copies of those files from
 before the change in its own data directory (`${CLAUDE_PLUGIN_DATA}`, which Claude Code deletes when you uninstall
 the plugin), and removes session records after 14 days. Hook output becomes part of your Claude conversation,
@@ -144,11 +201,28 @@ like any tool result. Details and the tests behind each claim: [PRIVACY.md](PRIV
 The plugin needs no credentials, API keys or tokens, and declares no `userConfig`. It reads none from your
 environment.
 
+## Does it help?
+
+Not measured yet, and this README claims no effectiveness number. Two things are published:
+
+- **Does the scanner find the problems?** The [benchmark scorecard](benchmarks/scorecard.md) compares `kestrix-scan`
+  with Bandit and the regex layer of Anthropic's `security-guidance` plugin on OWASP BenchmarkPython and on
+  cases written for this project. Read its disclosure first: the scorecard is **not blind**. The first run was
+  blind, but the rule changes after it were made in response to that run's BenchmarkPython gap analysis, so the
+  later BenchmarkPython numbers are not a blind measurement of the scanner.
+- **Does Claude ship less vulnerable code with the plugin?** The scorecard does not answer that. The way the claim
+  will be measured is a paired A/B eval: 13 coding tasks (11 that tempt a classic mistake, 2 safe controls), each run
+  with and without the plugin, graded by regex checks and by `kestrix-scan` on the final files. It measures the rate
+  of vulnerable code shipped, how often a finding is fixed, false interruptions on the safe tasks, and tokens and
+  turns per task. The design, the expected cost of a run and the results page, which today reads "not yet run", are
+  in [benchmarks/plugin-ab.md](benchmarks/plugin-ab.md) and [evals/README.md](evals/README.md#ab-effectiveness-eval).
+
 ## Evals
 
-[`evals/`](evals/) holds a `claude plugin eval` suite: Claude writes code with a planted vulnerability, the hook
-reports it, and Claude fixes it. See [evals/README.md](evals/README.md) for how to run it and the results so far.
-Each run is a real model call on your account.
+[`evals/`](evals/) holds a `claude plugin eval` suite: four smoke cases (Claude writes code with a planted
+vulnerability, the hook reports it, and Claude fixes it) and the A/B suite above. See
+[evals/README.md](evals/README.md) for how to run them and the results so far. Each run is a real model call on your
+account.
 
 ## Security, license and source
 

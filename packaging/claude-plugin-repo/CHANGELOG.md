@@ -3,6 +3,16 @@
 All notable changes to the Kestrix plugin for Claude Code. The plugin's version is the `version` in
 `.claude-plugin/plugin.json` and matches the `kestrix-scan` release it was built from.
 
+## Unreleased
+
+- A scan that could not run (`kestrix-scan` missing, timed out or crashed) is shown to you once per session for each
+  cause, and Claude is told the file was not security-checked, instead of the hooks staying silent.
+- Files changed by Bash commands are scanned in git repositories (`PostToolUse` and `PostToolUseFailure` on `Bash`).
+- `/kestrix:status` shows the session's scans, findings and unchecked files.
+- `secure-code-review` has a new description with concrete trigger phrases.
+- README: a before / finding / after example, Coverage, an exact rule count, a first privacy paragraph, "Does it
+  help?"; the A/B effectiveness eval in `evals/ab/` (not yet run).
+
 ## 0.1.0
 
 First public release.

@@ -28,11 +28,11 @@ From the repository root:
 # one quick run of one case, with the plugin only
 claude plugin eval . --case hook-fixes-os-system --runs 1 --ablation none --allow-tools Write Edit
 
-# the full suite: 4 cases x 3 runs, with and without the plugin (24 agent runs)
-claude plugin eval . --allow-tools Write Edit --threshold 0.75
+# the four smoke cases above: 4 cases x 3 runs, with and without the plugin (24 agent runs)
+claude plugin eval . --tag hook skill --allow-tools Write Edit --threshold 0.75
 
 # in CI
-claude plugin eval . --trust-plugin --allow-tools Write Edit --json results.json \
+claude plugin eval . --tag hook skill --trust-plugin --allow-tools Write Edit --json results.json \
   --threshold 0.75 --model claude-sonnet-5 --no-publish --max-cost-usd 10
 ```
 
@@ -57,3 +57,74 @@ One run per arm (`--runs 1`), 2026-10-20, Claude Code 2.1.304, default model (`c
 
 An earlier version of `hook-fixes-os-system` said "containing exactly this code"; with that wording Claude kept the
 vulnerable code, reported the finding and offered a fix instead, which is a fair reading of the request.
+
+After that run, the `secure-code-review` description was rewritten in the third person with concrete trigger phrases
+("review this for security", "is this code safe", "check for vulnerabilities"), following the skill authoring
+guidance. It has not been re-measured: run `security-review-uses-skill` (its `Skill` indicator) to see whether
+Claude now picks the skill.
+
+## A/B effectiveness eval
+
+The four cases above check that the plugin's loop works. They do not measure whether Claude ships less vulnerable
+code with the plugin. The 13 cases in [`ab/`](ab/) (tag `ab`) do, as a paired design: the same tasks, each run with
+and without the plugin. **No result exists yet and no effectiveness number is claimed.** Design, metrics and the
+results page: [benchmarks/plugin-ab.md](../benchmarks/plugin-ab.md).
+
+- **Tasks.** Eleven realistic requests, each of which the quick way to write is a classic mistake (a shell command
+  built from a name, SQL by f-string, a path from the request, `yaml.load`, `pickle`, `verify=False`, a `random`
+  token, `eval` of LLM output, user text into `innerHTML`, `child_process.exec`, an API key inline in `.mcp.json`),
+  and two safe controls (`ab-safe-git`, `ab-safe-lookup`) that look like the shell and SQL tasks but need no fix.
+- **Graders.** Only regex, `tool_used` and `file_exists` checks, so grading makes no model call: `file-written`,
+  `feature-present` (the task was done), `final-clean` (the final file lacks the mistake), `no-vulnerable-write`
+  (no `Write` already held it) and, on the controls, `single-write` and `no-edit`. `claude plugin eval` has no
+  custom-code graders, so the scanner's own verdict on the final files is added afterwards by
+  `scripts/ab_eval.py report --scan`, which runs `kestrix-scan` on each run's kept workspace.
+- **Metrics.** Vulnerable code shipped, fix after finding, false interruption on the safe tasks, and tokens and
+  turns per task, each with and without the plugin. Definitions: [benchmarks/plugin-ab.md](../benchmarks/plugin-ab.md#metrics).
+
+### Check one case first
+
+The report reads fields of the result document that the eval docs do not fully specify (per-run grader results,
+token and turn counts, the kept workspace directory). Anything it cannot find is reported as `n/a`, but confirm
+first, for about the cost of two runs:
+
+```bash
+claude plugin eval . --case ab-shell --runs 1 --allow-tools Write Edit --keep-temp --trust-plugin --no-publish \
+  --json evals/results/smoke.json
+python3 scripts/ab_eval.py report evals/results/smoke.json --scan
+```
+
+If the table shows `n/a` for tokens, turns or the scanner row, open `smoke.json`, find the real key names and fix
+`TOKEN_KEYS`, `TURN_KEYS` or `DIR_HINTS` at the top of `scripts/ab_eval.py`.
+
+### Run the full suite
+
+```bash
+python3 scripts/ab_eval.py run --runs 5 --model <pinned-model> --max-cost-usd 40
+python3 scripts/ab_eval.py report evals/results/ab/results.json --scan --out ../../docs/benchmarks/plugin-ab.md
+```
+
+`run` prints and executes `claude plugin eval . --tag ab --runs 5 --ablation with-without --allow-tools Write Edit
+--trust-plugin --keep-temp --no-publish --max-cost-usd 40 --output-dir evals/results/ab --json
+evals/results/ab/results.json --model <pinned-model>`. Add `--dry-run` to print it only. Pin the model, as the eval
+docs advise, so a model rollout is not mistaken for a plugin effect. The `--out` path assumes the source checkout
+(`dist/claude-plugin-repo` inside it); results go into `docs/benchmarks/plugin-ab.md` between its result markers.
+
+### Expected cost
+
+An estimate from token counts, not a measurement. Each run is a fresh Claude Code session: about 15,000 tokens of
+system prompt and tool definitions written to the cache once, about 80,000 tokens read from the cache over roughly
+five turns, about 3,000 new input tokens and 2,500 output tokens. At Sonnet-class list prices ($3 per million input
+tokens, cache reads at 0.1x and cache writes at 1.25x, $15 per million output tokens) that is about $0.13 per run;
+the range below allows for the plugin's extra fix turn and for longer sessions. Opus-class models cost more per
+token: scale by your model's prices. The hooks themselves use no tokens and the suite has no model-judged graders.
+
+| Runs per case per arm | Agent runs (13 cases x 2 arms) | Estimated cost |
+| ---: | ---: | ---: |
+| 1 (the one-case check, 1 case) | 2 | $0.30 to $0.50 |
+| 3 | 78 | $12 to $20 |
+| 5 (the default) | 130 | $20 to $33 |
+| 10 | 260 | $39 to $65 |
+
+`--max-cost-usd` caps the eval's own list-price estimate and stops starting runs once it is spent; runs already
+started finish, so spend can pass it slightly. The default of 40 fits the five-run suite.

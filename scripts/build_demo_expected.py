@@ -38,6 +38,12 @@ def export_notes(name):
 """
 
 
+# The plugin README's before / finding / after example (``readme_example``).
+README_BEFORE = 'subprocess.run(f"ls {path}", shell=True)'
+README_AFTER = 'subprocess.run(["ls", path], check=True)'
+README_FILE = "import subprocess\n\n\ndef list_files(path):\n    {line}\n"
+
+
 def _setup_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location("setup_demo", DEMO / "setup_demo.py")
     assert spec and spec.loader
@@ -111,6 +117,49 @@ def render() -> dict[str, str]:
         stop = {**base, "hook_event_name": "Stop", "stop_hook_active": False}
         out["stop.json"] = _pretty(_hook("stop", stop, project, data), project)
     return out
+
+
+def readme_example() -> str:
+    """The plugin README's example block, built from the real hook output so it cannot drift.
+
+    Runs the hook script on a ``Write`` of ``README_BEFORE`` and takes its ``additionalContext`` verbatim; then
+    on a ``Write`` of ``README_AFTER``, which must produce no output.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        project = Path(tmp).resolve() / "project"
+        project.mkdir()
+        data = Path(tmp).resolve() / "plugin-data"
+        data.mkdir()
+        context = ""
+        for line, name in ((README_BEFORE, "list_files.py"), (README_AFTER, "list_files_fixed.py")):
+            target = project / name
+            target.write_text(README_FILE.format(line=line), encoding="utf-8")
+            post = {
+                "session_id": "readme-example",
+                "cwd": str(project),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Write",
+                "tool_input": {"file_path": str(target), "content": target.read_text(encoding="utf-8")},
+                "tool_response": {"type": "create", "filePath": str(target)},
+            }
+            out = _hook("post-tool-use", post, project, data)
+            if line == README_BEFORE:
+                context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+                assert "(CWE-78)" in context and "list_files.py:5 [HIGH] py.subprocess.shell_true" in context
+            else:
+                assert out == "", "the corrected line must scan clean"
+    return "\n".join(
+        [
+            "# 1. Claude writes list_files.py",
+            README_BEFORE,
+            "",
+            "# 2. Right after the write, the hook tells Claude:",
+            *context.splitlines(),
+            "",
+            "# 3. Claude rewrites the line:",
+            README_AFTER,
+        ]
+    )
 
 
 def main() -> int:

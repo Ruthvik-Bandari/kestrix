@@ -13,6 +13,12 @@ Code plugin at the repository root, exactly as it ships inside the ``kestrix-sca
 - everything under ``packaging/claude-plugin-repo/``: README, PRIVACY, SECURITY, CHANGELOG, NOTICE,
   ``.gitignore``, the ``claude plugin eval`` suite in ``evals/`` and the no-network test in ``tests/``.
 
+Three things in ``README.md`` are filled in at build time so they cannot drift: ``{{EXAMPLE}}`` (the
+before / finding / after example, from the real hook output via ``scripts/build_demo_expected.py``),
+``{{RULE_TOTAL}}`` and ``{{RULE_COUNTS}}`` (counted from the rule registry). ``benchmarks/scorecard.md`` and
+``benchmarks/plugin-ab.md`` are copies of ``docs/benchmarks/benchmarkpython.md`` and ``plugin-ab.md`` with links
+into the private source repository removed (the text stays).
+
 The build is deterministic (sorted files, fixed content, no timestamps) and refuses to write a tree that breaks
 the directory's pre-submission checklist (``audit``). Writing replaces the destination's files but keeps a
 ``.git`` directory in it, so the owner can push from it; it replaces only an empty directory or an earlier build
@@ -25,6 +31,7 @@ packaged plugin byte for byte.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import shutil
@@ -33,6 +40,7 @@ from pathlib import Path, PurePosixPath
 
 from kestrix_scan import plugin
 from kestrix_scan.about import __author__, __version__
+from kestrix_scan.registry import rules
 from kestrix_scan.skill import walk_files
 
 REPO = Path(__file__).resolve().parents[1]
@@ -55,6 +63,54 @@ LAUNCHER = re.compile(
 )
 HOOK_COMMAND = re.compile(r'python3 "\$\{CLAUDE_PLUGIN_ROOT\}/([A-Za-z0-9_./-]+)" [a-z-]+')
 FOLDER_NAME = re.compile(r"[A-Za-z0-9._-]+")
+BENCHMARKS = {"benchmarks/scorecard.md": "benchmarkpython.md", "benchmarks/plugin-ab.md": "plugin-ab.md"}
+RELATIVE_LINK = re.compile(r"\[([^\]]+)\]\((?!https?://|#|mailto:)[^)]*\)")
+RULE_FAMILIES = (
+    ("py", "Python"),
+    ("js", "JS/TS"),
+    ("secret", "secret"),
+    ("dep", "dependency"),
+    ("config", "agent-config"),
+)
+
+
+def rule_counts() -> tuple[int, str]:
+    """(total, "27 Python, 14 JS/TS, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
+    counts: dict[str, int] = {}
+    for rule in rules():
+        counts[rule.id.split(".")[0]] = counts.get(rule.id.split(".")[0], 0) + 1
+    known = {prefix for prefix, _ in RULE_FAMILIES}
+    if set(counts) != known:
+        raise SystemExit(f"the rule registry has families {sorted(set(counts) - known)} that README.md does not name")
+    text = ", ".join(f"{counts[prefix]} {name}" for prefix, name in RULE_FAMILIES) + " rules"
+    return sum(counts.values()), text
+
+
+def readme_example() -> str:
+    """The README's before / finding / after block, from ``scripts/build_demo_expected.py`` (the real hook output)."""
+    spec = importlib.util.spec_from_file_location("build_demo_expected", REPO / "scripts" / "build_demo_expected.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return str(module.readme_example())
+
+
+def _fill_readme(text: str) -> str:
+    total, counts = rule_counts()
+    return (
+        text.replace("{{EXAMPLE}}", readme_example())
+        .replace("{{RULE_TOTAL}}", str(total))
+        .replace("{{RULE_COUNTS}}", counts)
+    )
+
+
+def benchmark_pages() -> list[tuple[PurePosixPath, bytes]]:
+    """The scorecard and the A/B report template, without links to files outside the plugin repository."""
+    pages = []
+    for name, source in BENCHMARKS.items():
+        text = RELATIVE_LINK.sub(r"\1", (REPO / "docs" / "benchmarks" / source).read_text(encoding="utf-8"))
+        pages.append((PurePosixPath(name), text.encode("utf-8")))
+    return pages
 
 
 def marketplace() -> bytes:
@@ -91,6 +147,11 @@ def render() -> list[tuple[PurePosixPath, bytes]]:
     files = dict(plugin_tree())
     extras = list(walk_files(EXTRAS, PurePosixPath(), keep=frozenset({".gitignore"})))
     extras += [(PurePosixPath("LICENSE"), LICENSE.read_bytes()), (plugin.MARKETPLACE, marketplace())]
+    extras += benchmark_pages()
+    extras = [
+        (path, _fill_readme(data.decode("utf-8")).encode("utf-8") if str(path) == "README.md" else data)
+        for path, data in extras
+    ]
     for path, data in extras:
         if path in files:
             raise SystemExit(f"{path} is both a plugin file and a repository file")
@@ -169,6 +230,9 @@ def audit(tree: list[tuple[PurePosixPath, bytes]]) -> list[str]:
         problems.append("plugin.json needs name, version, description, author and license")
     if "userConfig" in manifest:
         problems.append("plugin.json declares userConfig; this plugin takes no credentials or options")
+    for path, data in files.items():
+        if b"{{" in data and path.suffix == ".md" and str(path).split("/")[0] != "evals":
+            problems.append(f"{path} still holds a {{{{...}}}} placeholder")
     readme = files.get(PurePosixPath("README.md"))
     if readme is None or _readme_words(readme.decode("utf-8")) < MIN_README_WORDS:
         problems.append(f"README.md must have at least {MIN_README_WORDS} words outside code blocks")

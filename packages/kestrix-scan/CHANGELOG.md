@@ -5,6 +5,23 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Claude Code plugin: visible scan states, Bash coverage, `/kestrix:status`.**
+  - A scan that could not run (`kestrix-scan` missing, timed out or crashed) is no longer silent: the user gets one
+    `systemMessage` per session for each cause and Claude gets a line saying the file was not security-checked.
+    `kestrix-scan --hook` still exits 0 on a crash but prints `{"kestrix_error": "<ExceptionType>"}`, and a hook
+    reply carries `kestrix: {"new", "existing"}` counts, which the plugin script reads and removes.
+  - New `PostToolUse` and `PostToolUseFailure` hooks on `Bash` scan the source-like files (at most 20) a command
+    changed in a git repository (`git status` and modification times against a start mark recorded by the
+    `PreToolUse` Bash hook; the text before is the `HEAD` version). The hook payload gains `kestrix_files` for the
+    `Bash` tool. Outside a git repository the user is told once that changed files are not scanned.
+  - New `/kestrix:status` command skill and a once-per-session "scanning is on" line at `SessionStart`.
+  - The `secure-code-review` skill description is rewritten in the third person with concrete trigger phrases.
+  - Plugin repository: README starts with a before / finding / after example generated from the real hook output,
+    a Coverage section, an exact per-family rule count (checked against the registry), and a "Does it help?" section;
+    `evals/ab/` is a paired with/without-plugin eval (13 tasks), with a runner and report script and a results
+    template that reads "not yet run". No effectiveness numbers are claimed.
+  - The kestrix-scan README said 54 rules; the registry has 59 (27 Python, 14 JS/TS, 11 secret, 2 dependency, 5
+    agent-config).
 - **Claude Code plugin, for the directory listing:** `plugin.json` adds `displayName`, `documentationUrl`,
   `supportUrl` and `privacyPolicyUrl`, and its `homepage` and `repository` are now the plugin's own repository,
   https://github.com/Ruthvik-Bandari/kestrix-claude-plugin. The missing-scanner message says to install
