@@ -116,6 +116,7 @@ def test_github_workflow(project: Path) -> None:
     assert "      contents: read\n      security-events: write\n" in text
     assert f"pip install kestrix-scan=={init.__version__}" in text
     assert "kestrix-scan --format sarif --output kestrix.sarif || true" in text
+    assert text.index("run: kestrix-scan db update") < text.index("run: kestrix-scan --format sarif")
     assert "already up to date" in run("init", "--ci", "github").stdout
     path.write_text("name: mine\n")
     assert "left unchanged" in run("init", "--ci", "github").stdout and path.read_text() == "name: mine\n"
