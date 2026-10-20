@@ -4,6 +4,16 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Changed
+
+- **`kestrix-scan` Python rules, informed by the benchmark's gap analysis.** Five new rules (reflected XSS, LDAP and
+  XPath injection, insecure cookies, session trust boundary), shells started through an argument list, a `weak_random`
+  taint kind, more propagators, sanitizers and guards, constant-aware pattern rules, and an XXE rule that follows the
+  Python documentation. On BenchmarkPython v0.1 the score went from 15.8 to 39.5, a number that is no longer blind. A
+  held-out set of 44 owned pairs went from 16.7 to 100.0, and it was written by the same author. Details and
+  disclosure in [docs/benchmarks/benchmarkpython.md](docs/benchmarks/benchmarkpython.md) and
+  [packages/kestrix-scan/CHANGELOG.md](packages/kestrix-scan/CHANGELOG.md).
+
 ### Added
 
 - **Code scanner benchmark and scorecard (roadmap item 3 of

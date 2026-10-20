@@ -1,19 +1,50 @@
 # Code scanner scorecard: OWASP BenchmarkPython and the Kestrix cases
 
-This page compares `kestrix-scan` with Bandit and with the regex layer of Anthropic's `security-guidance` plugin on two
-test suites:
+This page compares `kestrix-scan` with Bandit and with the regex layer of Anthropic's `security-guidance` plugin on
+three test suites:
 
 - [OWASP BenchmarkPython](https://github.com/OWASP-Benchmark/BenchmarkPython) v0.1, a public suite of 1,230 labelled
   Python test cases;
-- the Kestrix cases in [`bench/cases`](../../bench/cases), 87 labelled cases written for this project.
+- the Kestrix cases in [`bench/cases`](../../bench/cases), 87 labelled cases written for this project;
+- the held-out Kestrix cases in [`bench/cases/heldout`](../../bench/cases/heldout), 44 vulnerable/safe pairs (88 cases)
+  written before the latest rule changes were measured.
 
 Semgrep CE was also run. Its numbers are not published here; see [Semgrep](#semgrep) for why.
 
-The machine-readable results are [benchmarkpython.json](benchmarkpython.json) and [owned.json](owned.json). The
-harness is [`bench/run.py`](../../bench/run.py).
+The machine-readable results are [benchmarkpython.json](benchmarkpython.json), [owned.json](owned.json) and
+[heldout.json](heldout.json). Each one carries the earlier Kestrix results for its suite (`history`) and the
+disclosure below (`disclosure`), from [`bench/history.json`](../../bench/history.json). The harness is
+[`bench/run.py`](../../bench/run.py).
 
-**Run:** 2026-10-20, Apple M4 Pro (12 cores), macOS 27.0.1, Python 3.12.13, Kestrix commit `3b74fd0`
-(`kestrix-scan` 0.1.0, the scanner unchanged since `35d2e28`). The rules were not tuned on either suite.
+**Run:** 2026-10-20, Apple M4 Pro (12 cores), macOS 27.0.1, Python 3.12.13, Kestrix commit `0de3fb4` (`kestrix-scan`
+0.1.0, scanner committed).
+
+## Disclosure: this round of rule changes was informed by the benchmark
+
+The first run on this page (scanner `35d2e28`) was blind: the rules had not been tuned on either suite. The rule
+changes since then were made **in response to that run's BenchmarkPython gap analysis** (kept below, under
+[Gap analysis at 35d2e28](#gap-analysis-at-35d2e28-before)). So the "after" BenchmarkPython numbers are no longer a
+blind measurement of the scanner.
+
+What was done to limit that:
+
+- **No BenchmarkPython test-case source was read to write rules.** The changes use only the category-level gap list
+  on this page and the CWE entries and library documentation cited by each rule. Every change is a general rule,
+  justified by language or library semantics, with unit tests written from scratch
+  ([`test_code_rule_gaps.py`](../../packages/kestrix-scan/tests/test_code_rule_gaps.py)).
+- One benchmark case was used for debugging, without reading its source: `BenchmarkTest00431` (command injection)
+  stopped being reported after the constant tracking was added. Probing the engine with synthetic code found the
+  cause, a soundness bug: a branch that ends in `break` or `continue` was dropped from the join. This also lost taint
+  in the scanner before this round. It is fixed, and that case is reported again.
+- **A held-out set** of 44 new pairs was written before the rule changes were measured, and run once with the
+  unchanged scanner. The held-out set is not independent either. The same author wrote the cases and the rules in
+  the same work session, knowing which gaps were being closed. Two held-out false positives were fixed after the
+  first post-change run, which scored 96.2:
+  - a fixed `shell=True` command is no longer reported;
+  - `",".join("?" for _ in ids)` now counts as literal.
+
+  Read the held-out result as a regression check of the new rules on code written in a different style, not as an
+  unbiased estimate.
 
 ## Read this first
 
@@ -21,127 +52,228 @@ harness is [`bench/run.py`](../../bench/run.py).
   a small Flask handler built from templates, and several categories reuse one sink with small variations.
 - **These numbers measure category coverage on synthetic code.** They are not real-world detection or
   false-positive rates.
-- **A category with no rule scores 0.** When a tool has no rule for a category, every vulnerable case is a miss
-  (TPR 0) and the category still counts in the overall average. Kestrix has no rule for 4 of BenchmarkPython's 14
-  categories.
-- **The Kestrix cases are not neutral.** They were written by the Kestrix project, with knowledge of the Kestrix
-  rules, and the configuration category exists only in Kestrix. Treat that table as a regression set, not as a
-  comparison. Most of its categories have 1 to 4 cases, so a single case moves a score by 25 to 100 points.
+- **A category with no rule, or a rule that never fires, scores 0.** When a tool finds nothing in a category, every
+  vulnerable case is a miss (TPR 0), and the category still counts in the overall average.
+- **The Kestrix cases are not neutral.** The Kestrix project wrote both owned sets, with knowledge of the Kestrix
+  rules, and the configuration category exists only in Kestrix. Treat those tables as regression sets, not as a
+  comparison. Most of their categories have 1 to 6 cases, so a single case moves a score by 17 to 100 points.
+
+## History
+
+Kestrix results only. Bandit and security-guidance did not change between the runs (same versions, same scores).
+
+| Run | Scanner | Blind on BenchmarkPython | BenchmarkPython score (TPR / FPR / precision) | Strict-CWE | Owned score | Held-out score |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| before | `35d2e28` (held-out: `0a42c4b`, same Python rules) | yes | 15.8 (43.3 / 27.5 / 59.0) | 15.8 | 72.1 | 16.7 |
+| after | `0de3fb4` | **no**: informed by the gap analysis | 39.5 (65.0 / 25.6 / 66.3) | 39.0 | 86.8 | 100.0 |
+
+On BenchmarkPython, Kestrix's runtime went from 1.2 s to 1.3 s (1.3 to 1.6 s across this round's runs), and its
+findings from 306 to 426.
 
 ## Results: BenchmarkPython v0.1
 
 | Tool | Version | TPR % | FPR % | Score (TPR-FPR) | Precision % | Strict-CWE score | Runtime s |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| kestrix | `0.1.0` | 43.3 | 27.5 | 15.8 | 59.0 | 15.8 | 1.2 |
+| kestrix | `0.1.0` | 65.0 | 25.6 | 39.5 | 66.3 | 39.0 | 1.3 |
 | bandit | `1.9.4` | 48.4 | 30.9 | 17.5 | 71.9 | 9.3 | 1.6 |
 | security-guidance | `2.0.14` | 21.7 | 20.1 | 1.6 | 43.9 | n/a | 0.4 |
 
-**Bandit scores higher than Kestrix overall** (17.5 against 15.8). The difference comes mostly from weak randomness,
-where Bandit finds 77 of 99 cases and Kestrix finds none.
-
-| Category | Cases (vuln/safe) | kestrix | bandit | security-guidance |
-| --- | --- | ---: | ---: | ---: |
-| Command injection (`cmdi`) | 13/7 | -46.2 (7/6/7/0) | 0.0 (13/0/7/0) | -46.2 (7/6/7/0) |
-| Code injection (`codeinj`) | 20/33 | 0.0 (20/0/33/0) | 0.0 (20/0/33/0) | 1.5 (10/10/16/17) |
-| Insecure deserialization (`deserialization`) | 18/36 | 66.7 (18/0/12/24) | 66.7 (18/0/12/24) | 66.7 (18/0/12/24) |
-| Weak hash (`hash`) | 71/80 | 100.0 (71/0/0/80) | 100.0 (71/0/0/80) | 0.0 (0/71/0/80) |
-| LDAP injection (`ldapi`) | 16/13 | 0.0 (0/16/0/13) | 0.0 (0/16/0/13) | 0.0 (0/16/0/13) |
-| Path traversal (`pathtraver`) | 65/103 | -1.8 (14/51/24/79) | 0.0 (0/65/0/103) | 0.0 (0/65/0/103) |
-| Open redirect (`redirect`) | 13/21 | 2.2 (4/9/6/15) | 0.0 (0/13/0/21) | 0.0 (0/13/0/21) |
-| Insecure cookie (`securecookie`) | 24/15 | 0.0 (0/24/0/15) | 0.0 (0/24/0/15) | 0.0 (0/24/0/15) |
-| SQL injection (`sqli`) | 5/11 | 100.0 (5/0/0/11) | 0.0 (5/0/11/0) | 0.0 (0/5/0/11) |
-| Trust boundary violation (`trustbound`) | 18/19 | 0.0 (0/18/0/19) | 0.0 (0/18/0/19) | 0.0 (0/18/0/19) |
-| Weak randomness (`weakrand`) | 99/227 | 0.0 (0/99/0/227) | 77.8 (77/22/0/227) | 0.0 (0/99/0/227) |
-| XPath injection (`xpathi`) | 51/135 | 0.0 (0/51/0/135) | 0.0 (0/51/0/135) | 0.0 (0/51/0/135) |
-| Cross-site scripting (`xss`) | 31/58 | 0.0 (0/31/0/58) | 0.0 (0/31/0/58) | 0.0 (0/31/0/58) |
-| XML external entities (`xxe`) | 8/20 | 0.0 (8/0/20/0) | 0.0 (8/0/20/0) | 0.0 (8/0/20/0) |
+| Category | Cases (vuln/safe) | kestrix before (`35d2e28`) | kestrix after | bandit | security-guidance |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Command injection (`cmdi`) | 13/7 | -46.2 (7/6/7/0) | -31.9 (7/6/6/1) | 0.0 (13/0/7/0) | -46.2 (7/6/7/0) |
+| Code injection (`codeinj`) | 20/33 | 0.0 (20/0/33/0) | 6.1 (20/0/31/2) | 0.0 (20/0/33/0) | 1.5 (10/10/16/17) |
+| Insecure deserialization (`deserialization`) | 18/36 | 66.7 (18/0/12/24) | 72.2 (18/0/10/26) | 66.7 (18/0/12/24) | 66.7 (18/0/12/24) |
+| Weak hash (`hash`) | 71/80 | 100.0 (71/0/0/80) | 100.0 (71/0/0/80) | 100.0 (71/0/0/80) | 0.0 (0/71/0/80) |
+| LDAP injection (`ldapi`) | 16/13 | 0.0 (0/16/0/13) | 44.2 (12/4/4/9) | 0.0 (0/16/0/13) | 0.0 (0/16/0/13) |
+| Path traversal (`pathtraver`) | 65/103 | -1.8 (14/51/24/79) | 25.4 (31/34/23/80) | 0.0 (0/65/0/103) | 0.0 (0/65/0/103) |
+| Open redirect (`redirect`) | 13/21 | 2.2 (4/9/6/15) | 48.4 (10/3/6/15) | 0.0 (0/13/0/21) | 0.0 (0/13/0/21) |
+| Insecure cookie (`securecookie`) | 24/15 | 0.0 (0/24/0/15) | 100.0 (24/0/0/15) | 0.0 (0/24/0/15) | 0.0 (0/24/0/15) |
+| SQL injection (`sqli`) | 5/11 | 100.0 (5/0/0/11) | 100.0 (5/0/0/11) | 0.0 (5/0/11/0) | 0.0 (0/5/0/11) |
+| Trust boundary violation (`trustbound`) | 18/19 | 0.0 (0/18/0/19) | 12.0 (5/13/3/16) | 0.0 (0/18/0/19) | 0.0 (0/18/0/19) |
+| Weak randomness (`weakrand`) | 99/227 | 0.0 (0/99/0/227) | 0.0 (0/99/0/227) | 77.8 (77/22/0/227) | 0.0 (0/99/0/227) |
+| XPath injection (`xpathi`) | 51/135 | 0.0 (0/51/0/135) | 10.9 (15/36/25/110) | 0.0 (0/51/0/135) | 0.0 (0/51/0/135) |
+| Cross-site scripting (`xss`) | 31/58 | 0.0 (0/31/0/58) | 0.0 (0/31/0/58) | 0.0 (0/31/0/58) | 0.0 (0/31/0/58) |
+| XML external entities (`xxe`) | 8/20 | 0.0 (8/0/20/0) | 65.0 (8/0/7/13) | 0.0 (8/0/20/0) | 0.0 (8/0/20/0) |
 
 Each cell is the score in percentage points, then (TP/FN/FP/TN).
 
 ### What the BenchmarkPython numbers show for Kestrix
 
-**Where Kestrix does well:**
+**No category scores lower than before, and no vulnerable case found before is missed now.** The overall score rose
+from 15.8 to 39.5, and Kestrix now scores above
+Bandit (17.5). That comparison is not like for like: Bandit is measured blind, and Kestrix's rules were changed after
+seeing this suite's gap list.
 
-- **SQL injection, 100.** It finds all 5 vulnerable cases and flags none of the 11 safe ones. Bandit flags all 16.
-- **Weak hash, 100.** It ties with Bandit.
+**Where the score went up:**
 
-**Where Kestrix scores 0 because it has no rule:** LDAP injection, XPath injection, insecure cookies and trust
-boundary violations.
+- **Insecure cookies, 0 to 100.** The new `py.cookie.insecure` rule.
+- **XML external entities, 0 to 65.** `py.xml.unsafe_parser` now follows the Python documentation and no longer
+  reports standard-library parsers with their defaults, so 13 of 20 safe cases are no longer flagged. All 8
+  vulnerable cases are still found.
+- **Open redirect, 2.2 to 48.4** and **path traversal, -1.8 to 25.4.** These come from the new propagators
+  (`unquote_plus`, base64, `json.loads`), `codecs.open` as a sink, and the guards. Path traversal finds 31 of 65
+  vulnerable cases (14 before).
+- **LDAP injection, 0 to 44.2**, **trust boundary, 0 to 12.0** and **XPath injection, 0 to 10.9.** These are new
+  rules.
+- **Command injection, -46.2 to -31.9.** All 7 vulnerable cases found before are still found. 6 of 7 safe cases are
+  still flagged.
+- **Code injection, 0 to 6.1** and **deserialization, 66.7 to 72.2.** A few safe cases are now provably constant.
 
-**Where Kestrix has a rule that never fires here:**
+**What did not improve:**
 
-- **Weak randomness.** `py.crypto.insecure_random` reports `random` only when the value is used for something named
-  like a secret. BenchmarkPython puts `random` values in remember-me cookies and session entries.
-- **Cross-site scripting.** `py.xss.markup` covers `Markup(...)` and template source built from request data. The
-  benchmark's XSS cases return an HTML string from the view, which no rule covers.
+- **Weak randomness stays at 0.** The rule now follows `random` values into cookies, session entries, response
+  headers and secret-named variables, and it finds every such case in both owned sets. It finds none of the 99
+  BenchmarkPython cases. Finding out why would mean reading the cases, which this round did not do. Bandit, which
+  reports every `random` call, finds 77.
+- **Cross-site scripting stays at 0** for the same reason. `py.xss.reflected` finds every reflected-XSS case in both
+  owned sets, and none here.
+- **Command injection is still negative.** Most safe cases still look dynamic to the rules.
 
-**Where Kestrix's rule fires on every case, safe or not (score 0 or below):**
+**New false positives.** The new rules add flagged safe cases:
 
-- **Code injection.** Every case passes a non-literal to `eval` or `exec`. Most safe cases (22 of 33) first check
-  that the value is a plain string literal; the others replace it with a constant. The rule fires on the call, not on
-  tainted data.
-- **XML external entities.** `py.xml.unsafe_parser` (CWE-776) reports any standard-library parser on non-literal data.
-  The safe cases rely on parser defaults that do not resolve external entities.
-- **Command injection (-46.2).** All 7 safe cases are flagged. `py.subprocess.shell_true` fires on `shell=True` with
-  any built command, and at least 5 of these cases first replace the request value with a constant (through a dict,
-  a `configparser` entry or a branch whose condition is constant). 6 of 13 vulnerable cases are missed: they run
-  `["sh", "-c", command]` as an argument list, without `shell=True`.
+| Category | New FPs | Safe cases flagged after |
+| --- | ---: | ---: |
+| XPath injection | 25 | 25 of 135 |
+| LDAP injection | 4 | 4 of 13 |
+| Trust boundary | 3 | 3 of 19 |
+| Path traversal | 8 (and 9 no longer flagged) | 23 of 103 |
+| Open redirect | 1 (and 1 no longer flagged) | 6 of 21 |
 
-**Path traversal and open redirect (about 0).** Kestrix finds 14 of 65 and 4 of 13. Most misses are taint that
-stops early:
-
-- `codecs.open` is not a file sink;
-- `urllib.parse.unquote_plus` and a base64 round trip drop the taint;
-- some sources come through a helper module, which intraprocedural analysis cannot follow.
-
-24 safe path cases are flagged. In 19 of them the request value is replaced by a constant in the same ways as above;
-6 of those 19 also resolve the path and check it with `str(...).startswith(...)`.
+These safe cases presumably neutralize the value in a way the rules do not recognize. This was not investigated
+case by case. Overall precision still rose, from 59.0% to 66.3%.
 
 ## Results: Kestrix cases
 
 | Tool | Version | TPR % | FPR % | Score (TPR-FPR) | Precision % | Strict-CWE score | Runtime s |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| kestrix | `0.1.0` | 85.8 | 13.7 | 72.1 | 86.7 | 60.3 | 0.1 |
+| kestrix | `0.1.0` | 87.8 | 1.0 | 86.8 | 97.7 | 80.9 | 0.1 |
 | bandit | `1.9.4` | 63.2 | 11.8 | 51.5 | 72.7 | 20.6 | 0.1 |
 | security-guidance | `2.0.14` | 26.0 | 7.8 | 18.1 | 80.0 | n/a | 0.0 |
 
-| Category | Cases (vuln/safe) | kestrix | bandit | security-guidance |
-| --- | --- | ---: | ---: | ---: |
-| Risky Claude Code / MCP configuration (`agentconfig`) | 10/6 | 100.0 (10/0/0/6) | 0.0 (0/10/0/6) | 0.0 (0/10/0/6) |
-| Command injection (`cmdi`) | 4/6 | 41.7 (3/1/2/4) | 0.0 (4/0/6/0) | 41.7 (3/1/2/4) |
-| Code injection (`codeinj`) | 3/3 | 100.0 (3/0/0/3) | 100.0 (3/0/0/3) | 66.7 (2/1/0/3) |
-| Debug mode enabled (`debug`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) |
-| Insecure deserialization (`deserialization`) | 4/4 | 100.0 (4/0/0/4) | 75.0 (3/1/0/4) | 100.0 (4/0/0/4) |
-| Weak hash (`hash`) | 2/2 | 50.0 (2/0/1/1) | 100.0 (2/0/0/2) | 0.0 (0/2/0/2) |
-| JWT signature not verified (`jwt`) | 1/1 | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) | 0.0 (0/1/0/1) |
-| Path traversal (`pathtraver`) | 4/3 | 50.0 (2/2/0/3) | 0.0 (0/4/0/3) | 0.0 (0/4/0/3) |
-| Open redirect (`redirect`) | 1/1 | 0.0 (1/0/1/0) | 0.0 (0/1/0/1) | 0.0 (0/1/0/1) |
-| Hard-coded credential (`secrets`) | 2/1 | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 0.0 (0/2/0/1) |
-| SQL injection (`sqli`) | 3/4 | 16.7 (2/1/2/2) | 16.7 (2/1/2/2) | 0.0 (0/3/0/4) |
-| Server-side request forgery (`ssrf`) | 2/1 | 50.0 (1/1/0/1) | 0.0 (0/2/0/1) | 0.0 (0/2/0/1) |
-| Insecure temporary file (`tempfile`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) |
-| TLS verification disabled (`tls`) | 2/1 | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) |
-| Weak randomness (`weakrand`) | 2/2 | 50.0 (1/1/0/2) | 50.0 (2/0/1/1) | 0.0 (0/2/0/2) |
-| Cross-site scripting (`xss`) | 3/3 | 66.7 (2/1/0/3) | 33.3 (1/2/0/3) | 0.0 (0/3/0/3) |
-| XML external entities (`xxe`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (1/0/1/0) |
+| Category | Cases (vuln/safe) | kestrix before (`35d2e28`) | kestrix after | bandit | security-guidance |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Risky Claude Code / MCP configuration (`agentconfig`) | 10/6 | 100.0 (10/0/0/6) | 100.0 (10/0/0/6) | 0.0 (0/10/0/6) | 0.0 (0/10/0/6) |
+| Command injection (`cmdi`) | 4/6 | 41.7 (3/1/2/4) | 83.3 (4/0/1/5) | 0.0 (4/0/6/0) | 41.7 (3/1/2/4) |
+| Code injection (`codeinj`) | 3/3 | 100.0 (3/0/0/3) | 100.0 (3/0/0/3) | 100.0 (3/0/0/3) | 66.7 (2/1/0/3) |
+| Debug mode enabled (`debug`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) |
+| Insecure deserialization (`deserialization`) | 4/4 | 100.0 (4/0/0/4) | 100.0 (4/0/0/4) | 75.0 (3/1/0/4) | 100.0 (4/0/0/4) |
+| Weak hash (`hash`) | 2/2 | 50.0 (2/0/1/1) | 100.0 (2/0/0/2) | 100.0 (2/0/0/2) | 0.0 (0/2/0/2) |
+| JWT signature not verified (`jwt`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) | 0.0 (0/1/0/1) |
+| Path traversal (`pathtraver`) | 4/3 | 50.0 (2/2/0/3) | 75.0 (3/1/0/3) | 0.0 (0/4/0/3) | 0.0 (0/4/0/3) |
+| Open redirect (`redirect`) | 1/1 | 0.0 (1/0/1/0) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) | 0.0 (0/1/0/1) |
+| Hard-coded credential (`secrets`) | 2/1 | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 0.0 (0/2/0/1) |
+| SQL injection (`sqli`) | 3/4 | 16.7 (2/1/2/2) | 66.7 (2/1/0/4) | 16.7 (2/1/2/2) | 0.0 (0/3/0/4) |
+| Server-side request forgery (`ssrf`) | 2/1 | 50.0 (1/1/0/1) | 50.0 (1/1/0/1) | 0.0 (0/2/0/1) | 0.0 (0/2/0/1) |
+| Insecure temporary file (`tempfile`) | 1/1 | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 100.0 (1/0/0/1) | 0.0 (0/1/0/1) |
+| TLS verification disabled (`tls`) | 2/1 | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) | 100.0 (2/0/0/1) |
+| Weak randomness (`weakrand`) | 2/2 | 50.0 (1/1/0/2) | 100.0 (2/0/0/2) | 50.0 (2/0/1/1) | 0.0 (0/2/0/2) |
+| Cross-site scripting (`xss`) | 3/3 | 66.7 (2/1/0/3) | 100.0 (3/0/0/3) | 33.3 (1/2/0/3) | 0.0 (0/3/0/3) |
+| XML external entities (`xxe`) | 1/1 | 100.0 (1/0/0/1) | **0.0 (0/1/0/1)** | 100.0 (1/0/0/1) | 0.0 (1/0/1/0) |
 
-Without the configuration category, which only Kestrix scans, Kestrix still scores highest on these cases. But the
-set was written knowing the rules, so that result is weak evidence.
+**One category got worse: XML external entities, 100 to 0.** The vulnerable case `xxe_etree_upload_vuln` parses an
+upload with `xml.etree.ElementTree.fromstring`. Per the Python documentation's XML vulnerabilities table, ElementTree
+does not expand external entities, and Expat 2.4.1 and newer resists entity-expansion attacks. So
+`py.xml.unsafe_parser` no longer reports it. This change was deliberate. The case's label was left as written rather
+than relabelled to match the new rule.
 
-**Where Kestrix loses or ties on its own cases:**
+**What remains:**
 
-- **Weak hash.** It reports MD5 with `usedforsecurity=False` (at low severity, as a checksum use). Bandit does not.
-- **SQL injection.** It flags an `ORDER BY` built from an allowlisted constant and an `int()`-cast id. It misses SQL
-  written by an Anthropic client and run with `conn.execute` (`llm_text_to_sql_vuln`).
-- **Open redirect.** It flags a redirect that a `urlsplit` check has already made local.
-- **Command injection.** It flags `shell=True` after `shlex.quote`, and after a constant overwrite. It misses
-  `["sh", "-c", ...]`.
-- **It also misses:**
-  - path traversal through a helper function;
-  - LLM output parsed with `json.loads` before it reaches `open`;
-  - an `httpx.AsyncClient` call in FastAPI (SSRF);
-  - a reflected XSS f-string returned from a view;
-  - a `random` remember-me cookie.
+- **SQL injection:** `llm_text_to_sql_vuln`, SQL written by an Anthropic client and run with `conn.execute`, is still
+  missed.
+- **Path traversal:** a path built in a helper function is still missed; the analysis is intraprocedural.
+- **SSRF:** an `httpx.AsyncClient` call in FastAPI is still missed.
+- **Command injection:** one safe case is flagged: `shell=True` after `shlex.quote`. It is now reported at low
+  confidence, and the category scoring counts any finding.
+
+## Results: held-out Kestrix cases
+
+44 pairs in 14 categories (2 to 6 pairs each), in Flask, Django and FastAPI style, plus an LLM-output case. See the
+[disclosure](#disclosure-this-round-of-rule-changes-was-informed-by-the-benchmark) for what this set can and cannot
+show.
+
+| Tool | Version | TPR % | FPR % | Score (TPR-FPR) | Precision % | Strict-CWE score | Runtime s |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| kestrix before (`0a42c4b`) | `0.1.0` | 42.1 | 25.5 | 16.7 | 60.7 | 16.7 | 0.1 |
+| kestrix after | `0.1.0` | 100.0 | 0.0 | 100.0 | 100.0 | 90.5 | 0.1 |
+| bandit | `1.9.4` | 46.2 | 20.0 | 26.2 | 65.5 | 13.1 | 0.1 |
+| security-guidance | `2.0.14` | 15.7 | 8.6 | 7.1 | 60.0 | n/a | 0.0 |
+
+| Category | Cases (vuln/safe) | kestrix before | kestrix after | bandit | security-guidance |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Command injection (`cmdi`) | 5/5 | 0.0 (2/3/2/3) | 100.0 (5/0/0/5) | 0.0 (4/1/4/1) | 0.0 (1/4/1/4) |
+| Code injection (`codeinj`) | 3/3 | 33.3 (3/0/2/1) | 100.0 (3/0/0/3) | 33.3 (3/0/2/1) | 33.3 (2/1/1/2) |
+| Insecure deserialization (`deserialization`) | 2/2 | 100.0 (2/0/0/2) | 100.0 (2/0/0/2) | 100.0 (2/0/0/2) | 100.0 (2/0/0/2) |
+| Weak hash (`hash`) | 2/2 | 50.0 (2/0/1/1) | 100.0 (2/0/0/2) | 100.0 (2/0/0/2) | 0.0 (0/2/0/2) |
+| LDAP injection (`ldapi`) | 3/3 | 0.0 (0/3/0/3) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) | 0.0 (0/3/0/3) |
+| Path traversal (`pathtraver`) | 6/6 | 16.7 (1/5/0/6) | 100.0 (6/0/0/6) | 0.0 (0/6/0/6) | 0.0 (0/6/0/6) |
+| Open redirect (`redirect`) | 3/3 | 33.3 (3/0/2/1) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) | 0.0 (0/3/0/3) |
+| Insecure cookie (`securecookie`) | 3/3 | 0.0 (0/3/0/3) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) | 0.0 (0/3/0/3) |
+| SQL injection (`sqli`) | 3/3 | 33.3 (3/0/2/1) | 100.0 (3/0/0/3) | 33.3 (3/0/2/1) | 0.0 (0/3/0/3) |
+| Trust boundary violation (`trustbound`) | 2/2 | 0.0 (0/2/0/2) | 100.0 (2/0/0/2) | 0.0 (0/2/0/2) | 0.0 (0/2/0/2) |
+| Weak randomness (`weakrand`) | 3/3 | 0.0 (0/3/0/3) | 100.0 (3/0/0/3) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) |
+| XPath injection (`xpathi`) | 3/3 | 0.0 (0/3/0/3) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) | 0.0 (0/3/0/3) |
+| Cross-site scripting (`xss`) | 3/3 | 0.0 (0/3/0/3) | 100.0 (3/0/0/3) | 0.0 (0/3/0/3) | 0.0 (0/3/0/3) |
+| XML external entities (`xxe`) | 3/3 | -33.3 (1/2/2/1) | 100.0 (3/0/0/3) | 0.0 (2/1/2/1) | -33.3 (1/2/2/1) |
+
+The perfect score on cases the same author wrote, while closing these exact gaps, is weak evidence. The gap between
+it and BenchmarkPython (39.5, with weak randomness and XSS still at 0) is the more useful signal: the new rules match
+the shapes their author expected, and not yet the shapes another author wrote.
+
+## Gap analysis at 35d2e28 (before)
+
+This is the analysis of the blind run that informed the rule changes. It is kept as written then, for the record.
+
+**Where Kestrix did well:**
+
+- **SQL injection, 100.** It found all 5 vulnerable cases and flagged none of the 11 safe ones. Bandit flagged all
+  16.
+- **Weak hash, 100.** It tied with Bandit.
+
+**Where Kestrix scored 0 because it had no rule:** LDAP injection, XPath injection, insecure cookies and trust
+boundary violations.
+
+**Where Kestrix had a rule that never fired:**
+
+- **Weak randomness.** `py.crypto.insecure_random` reported `random` only when the value was used for something
+  named like a secret. BenchmarkPython puts `random` values in remember-me cookies and session entries.
+- **Cross-site scripting.** `py.xss.markup` covered `Markup(...)` and template source built from request data. The
+  benchmark's XSS cases return an HTML string from the view, which no rule covered.
+
+**Where Kestrix's rule fired on every case, safe or not (score 0 or below):**
+
+- **Code injection.** Every case passes a non-literal to `eval` or `exec`. Most safe cases (22 of 33) first check
+  that the value is a plain string literal; the others replace it with a constant. The rule fired on the call, not
+  on tainted data.
+- **XML external entities.** `py.xml.unsafe_parser` (then CWE-776) reported any standard-library parser on
+  non-literal data. The safe cases rely on parser defaults that do not resolve external entities.
+- **Command injection (-46.2).** All 7 safe cases were flagged. `py.subprocess.shell_true` fired on `shell=True` with
+  any built command, and at least 5 of these cases first replace the request value with a constant (through a dict,
+  a `configparser` entry or a branch whose condition is constant). 6 of 13 vulnerable cases were missed: they run
+  `["sh", "-c", command]` as an argument list, without `shell=True`.
+
+**Path traversal and open redirect (about 0).** Kestrix found 14 of 65 and 4 of 13. Most misses were taint that
+stopped early:
+
+- `codecs.open` was not a file sink;
+- `urllib.parse.unquote_plus` and a base64 round trip dropped the taint;
+- some sources come through a helper module, which intraprocedural analysis cannot follow.
+
+24 safe path cases were flagged. In 19 of them the request value is replaced by a constant in the same ways as
+above; 6 of those 19 also resolve the path and check it with `str(...).startswith(...)`.
+
+**Owned cases:** MD5 with `usedforsecurity=False` was reported at low severity; an `ORDER BY` from an allowlisted
+constant, an `int()`-cast id, a `urlsplit`-checked redirect, `shell=True` after `shlex.quote` and a constant overwrite
+were flagged; `["sh", "-c", ...]`, a reflected XSS f-string and a `random` remember-me cookie were missed.
+
+### What this round changed, and what it left out
+
+Each item in the gap list became a general rule change; see `docs/modules/code.md` and the commit history for the
+details. Items that were **not** addressed:
+
+- the `configparser` constant (a value written with `set` and read back with `get`);
+- the eval/exec safe cases that "check that the value is a plain string literal": the check's form is not known
+  without reading the cases;
+- sources that come through a helper module (interprocedural analysis).
 
 ## Method
 
@@ -162,6 +294,12 @@ case's category, CWE and whether it is a real vulnerability. Every tool scans `t
 - **16 Claude Code and MCP configuration cases.** These are `.claude/settings.json`, plugin `hooks/hooks.json` and
   `.mcp.json` files. Every URL in them uses the reserved `.invalid` domain.
 
+**The held-out Kestrix cases** are in [`bench/cases/heldout`](../../bench/cases/heldout), labelled in their own
+`expected.csv`. They are 44 vulnerable/safe pairs, written from scratch from the category-level gap list and the
+CWE and library documentation before the rule changes were measured (commit `ce7e3d3`), and measured once with the
+unchanged scanner. They are scanned as their own suite; the owned suite counts only findings in its own cases, so the
+held-out files in its directory do not affect it.
+
 ### Tools
 
 | Tool | Version | How it runs |
@@ -181,7 +319,7 @@ The scoring follows [OWASP BenchmarkUtils](https://github.com/OWASP-Benchmark/Be
 from it.
 
 A finding belongs to the test case whose name is its file's name. For the configuration cases, the case name is the
-directory name. A case is *flagged* when at least one of its findings matches the case's category. Then, for each
+directory name. Findings in files that belong to no case of the suite are ignored. A case is *flagged* when at least one of its findings matches the case's category. Then, for each
 category:
 
 - **TP:** a vulnerable case that is flagged. **FN:** a vulnerable case that is not.
@@ -196,8 +334,8 @@ Two matching modes are reported:
 
 - **Category (primary).** A finding matches through the mapping tables below.
 - **Strict CWE.** This is BenchmarkUtils' own rule: a CWE the tool reports must equal the case's CWE. It penalizes
-  tools that report a near-synonym, for example Kestrix's CWE-95 for `eval`, CWE-776 for XML parsers, and Bandit's
-  CWE-20 for XML and CWE-78 for `exec`. The security-guidance layer reports no CWE, so it has no strict score.
+  tools that report a near-synonym, for example Kestrix's CWE-95 for `eval` and CWE-1004 for a cookie missing only
+  HttpOnly, and Bandit's CWE-20 for XML and CWE-78 for `exec`. The security-guidance layer reports no CWE, so it has no strict score.
 
 ### Mapping tables
 
@@ -233,7 +371,7 @@ checks. This is why Bandit flags every command-injection case.
 | CWE-502 | `deserialization` |
 | CWE-601 | `redirect` |
 | CWE-611, 776 | `xxe` |
-| CWE-614 | `securecookie` |
+| CWE-614, 1004 | `securecookie` |
 | CWE-643 | `xpathi` |
 | CWE-918 | `ssrf` |
 
@@ -253,7 +391,11 @@ checks. This is why Bandit flags every command-injection case.
 | `py.path.traversal` | `pathtraver` |
 | `py.ssrf.request` | `ssrf` |
 | `py.redirect.open` | `redirect` |
-| `py.xss.markup` | `xss` |
+| `py.xss.markup`, `py.xss.reflected` | `xss` |
+| `py.ldap.injection` | `ldapi` |
+| `py.xpath.injection` | `xpathi` |
+| `py.cookie.insecure` | `securecookie` |
+| `py.trust_boundary.session` | `trustbound` |
 | `py.llm.output_to_sink` | by the finding's CWE (94, 78, 89 or 22) |
 | `config.*` | `agentconfig` |
 | `secret.*` | `secrets` |
@@ -316,7 +458,7 @@ Semgrep, or use a ruleset whose license allows it.
   by CI.
 - **The security-guidance patterns are downloaded at run time.** They are Apache-2.0 and are not copied into this
   repository.
-- **The Kestrix cases are Apache-2.0,** written from scratch for this project.
+- **The Kestrix cases, held-out cases included, are Apache-2.0,** written from scratch for this project.
 
 ## Reproduce
 
@@ -325,9 +467,12 @@ uv sync --all-extras
 uv run python -m bench.run --suite all --tools kestrix,bandit,security-guidance --publish docs/benchmarks
 ```
 
-The first run needs network access, `git` and `uv`. It fetches BenchmarkPython and builds the tool environment
+`--suite all` runs BenchmarkPython, the owned cases and the held-out cases; `--suite heldout` runs only the held-out
+cases. The first run needs network access, `git` and `uv`. It fetches BenchmarkPython and builds the tool environment
 (Python 3.12). Later runs reuse `bench/.cache/`. Results go to `bench/.cache/results/` (`<suite>.json` and a
-Markdown table). `--publish DIR` also writes the publishable JSON to `DIR`.
+Markdown table). `--publish DIR` also writes the publishable JSON to `DIR`, with the suite's `history` and the
+`disclosure` from `bench/history.json`. Add a run to the history by hand when its results replace the published
+ones.
 
 The [`bench.yml`](../../.github/workflows/bench.yml) workflow runs the harness weekly and on demand, and uploads the
 scored results as an artifact. It is not a pull-request check. The scoring code is unit-tested in

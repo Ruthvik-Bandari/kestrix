@@ -5,6 +5,30 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Python rule gaps closed (informed by the BenchmarkPython gap analysis; see
+  [the scorecard](../../docs/benchmarks/benchmarkpython.md)):**
+  - New rules: `py.xss.reflected` (CWE-79), `py.ldap.injection` (CWE-90), `py.xpath.injection` (CWE-643),
+    `py.cookie.insecure` (CWE-614, or CWE-1004 when only HttpOnly is missing) and `py.trust_boundary.session`
+    (CWE-501). They sit after `py.ml.unsafe_model_load` in the registry, so the SARIF `ruleIndex` of every later rule
+    (`config.*`, `secret.*`, `dep.*`, `js.*`) moved by 5.
+  - `py.subprocess.shell_true` also reports a shell started through an argument list (`["sh", "-c", script]`,
+    `cmd /c`, `powershell -Command`, `asyncio.create_subprocess_exec`). A command whose values all pass through
+    `shlex.quote` is reported at low confidence. A provably fixed `shell=True` command is no longer reported (it was
+    low).
+  - `py.xml.unsafe_parser` is now CWE-611 (medium, high confidence). It follows the Python documentation's XML
+    vulnerabilities table: standard-library parsers with their defaults are no longer reported. lxml with
+    `resolve_entities=True` or `no_network=False`, and SAX external-entity features, are reported; lxml `huge_tree=True`
+    is reported at low severity as CWE-776.
+  - `py.crypto.weak_hash` no longer reports `usedforsecurity=False` (it was low).
+  - `py.crypto.insecure_random` also follows `random` values (new `weak_random` taint kind) into `set_cookie`,
+    `session[...]`, response headers and secret-named arguments.
+  - Taint: more propagators (`urllib.parse` unquote/quote, `base64`, `codecs`, `json.loads`, `str.join`/`bytes.decode`
+    called on the type), `codecs.open` as a path sink, and new guards: inline normalize-and-contain checks, `urlsplit`
+    netloc checks, and literal-allowlist membership.
+  - Constants: the pattern rules stay quiet on values that are provably constant (flow-sensitive constants, literal
+    dict and list items, `format`/`join` of literals, `int()` casts, and branches whose condition is a constant), and
+    on `pickle.loads`/`yaml.load` of a literal.
+  - Fix: a branch ending in `break` or `continue` no longer drops its taint at the loop exit or head.
 - **JavaScript and TypeScript rules (ADR 0005 slice C3):** 14 `js.*` rules for `.js`, `.mjs`, `.cjs`, `.jsx`,
   `.ts`, `.tsx`, `.mts` and `.cts`, with no new dependency: a bounded tokenizer (strings, nested templates,
   comments, regex versus division, JSX, TypeScript) and a structural matcher (calls, member chains, assignments,
