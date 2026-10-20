@@ -37,7 +37,7 @@ from .paths import content_reason, path_reason, size_reason
 from .qc import fix_commits_sql, sven_rows
 
 HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
-SOURCE_PRIORITY = ("sven", "cvefixes", "morefixes")
+SOURCE_PRIORITY = ("sven", "cvefixes", "morefixes", "ghsa")
 MAX_METHOD_CHARS = 200_000
 
 

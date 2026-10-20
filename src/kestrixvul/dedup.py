@@ -144,14 +144,27 @@ def order_key(record: dict[str, Any]) -> tuple[int, str, str]:
     return (SOURCE_PRIORITY.index(record["source"]), record.get("published") or "9999", record["id"])
 
 
-def deduplicate(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Return the kept records (with normalized hashes added) and the drop statistics."""
+def deduplicate(
+    records: list[dict[str, Any]], prior: list[dict[str, Any]] | None = None
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return the kept records (with normalized hashes added) and the drop statistics.
+
+    ``prior`` records (an already deduplicated pool) are indexed first and never dropped, so new
+    records are checked against every function of the existing pool and the pool stays unchanged.
+    """
     stats: dict[str, Counter[str]] = defaultdict(Counter)
     cross: Counter[str] = Counter()
     exact: dict[str, str] = {}
     near = NearIndex()
     by_id: dict[str, dict[str, Any]] = {}
     kept: list[dict[str, Any]] = []
+    for record in prior or []:
+        by_id[record["id"]] = record
+        for code in (record["vulnerable"], record.get("patched")):
+            if code:
+                prior_toks = tokens(code, record["language"])
+                exact[hashlib.sha256(" ".join(prior_toks).encode()).hexdigest()] = record["id"]
+                near.add(minhash(shingles(prior_toks)), record["id"])
     for record in sorted(records, key=order_key):
         key = f"{record['source']}/{record['language']}"
         stats[key]["input"] += 1
@@ -190,11 +203,12 @@ def deduplicate(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
             "exact": "sha256 of the normalized token stream",
             "near": f"MinHash {PERMUTATIONS} hash functions (SHAKE-128), {SHINGLE}-token shingles, "
             f"LSH {BANDS}x{ROWS}, estimated Jaccard >= {THRESHOLD}",
-            "order": "sven, cvefixes, morefixes; then publication date; then id",
+            "order": "sven, cvefixes, morefixes, ghsa; then publication date; then id",
         },
         "per_source_language": {k: dict(sorted(v.items())) for k, v in sorted(stats.items())},
         "dropped_by_source_pair": dict(sorted(cross.items())),
         "kept_total": len(kept),
+        "prior_pool": len(prior or []),
     }
     return kept, report
 
@@ -204,6 +218,22 @@ def run(root: Path) -> dict[str, Any]:
     records = [json.loads(line) for line in src.read_text(encoding="utf-8").splitlines() if line]
     kept, report = deduplicate(records)
     out = root / "work" / "deduped.jsonl"
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in kept), encoding="utf-8")
+    tmp.chmod(0o600)
+    tmp.replace(out)
+    return report
+
+
+def run_extend(root: Path) -> dict[str, Any]:
+    """Deduplicate the mined GHSA candidates against the existing pool (``work/deduped.jsonl``)."""
+    work = root / "work"
+    prior = [json.loads(line) for line in (work / "deduped.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    new = [
+        json.loads(line) for line in (work / "ghsa_candidates.jsonl").read_text(encoding="utf-8").splitlines() if line
+    ]
+    kept, report = deduplicate(new, prior)
+    out = work / "ghsa_deduped.jsonl"
     tmp = out.with_name(out.name + ".tmp")
     tmp.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in kept), encoding="utf-8")
     tmp.chmod(0o600)

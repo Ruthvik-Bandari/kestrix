@@ -11,6 +11,11 @@ git sources into ``raw/`` and writes ``manifests/<source>.json`` plus ``manifest
 list; ``licenses-fetch`` runs on the owner's machine with an authenticated ``gh``;
 ``licenses-import`` validates the returned table (``reports/licenses-summary.json``). ``split``
 assigns the temporal, project-disjoint split (``work/split.jsonl``, ``reports/split-manifest.json``).
+``mine-targets``, ``mine-fetch`` (transfer node) and ``mine-extract`` mine the uncovered GHSA fix
+commits (``ghsa_mine.py``); ``dedup-extend``, ``licenses-export-new`` and ``licenses-merge`` add them
+to the pool; ``split-extend`` writes split manifest v2 without changing the frozen test split;
+``negatives`` samples unchanged functions; ``audit-sample``, ``audit-combine`` (outside the cluster,
+on the private review folder) and ``audit-import`` run the AI-assisted label audit.
 Reports hold counts, ids and hashes only. Exit status is 1 on any failure.
 """
 
@@ -25,7 +30,27 @@ from pathlib import Path
 
 from .sources import ARCHIVES, GIT_SOURCES, NAMES
 
-COMMANDS = ("acquire", "qc", "labels", "dedup", "licenses-export", "licenses-fetch", "licenses-import", "split")
+COMMANDS = (
+    "acquire",
+    "qc",
+    "labels",
+    "dedup",
+    "licenses-export",
+    "licenses-fetch",
+    "licenses-import",
+    "split",
+    "mine-targets",
+    "mine-fetch",
+    "mine-extract",
+    "dedup-extend",
+    "licenses-export-new",
+    "licenses-merge",
+    "split-extend",
+    "negatives",
+    "audit-sample",
+    "audit-combine",
+    "audit-import",
+)
 
 
 def write_json(path: Path, obj: object) -> None:
@@ -104,8 +129,67 @@ def _run(command: str, root: Path, args: argparse.Namespace) -> int:
         from .split import run as split
 
         write_json(root / "reports" / "split-manifest.json", split(root))
+    elif command.startswith("mine-"):
+        return _mine(command, root, args)
+    else:
+        _extend(command, root, args)
     print(f"{command}: done")
     return 0
+
+
+def _mine(command: str, root: Path, args: argparse.Namespace) -> int:
+    from . import ghsa_mine
+
+    if command == "mine-targets":
+        write_json(root / "reports" / "mine-targets.json", ghsa_mine.targets(root))
+    elif command == "mine-fetch":
+        os.umask(0o077)
+        config = ghsa_mine.FetchConfig(timeout=args.timeout, max_bytes=args.max_mb * 1024 * 1024)
+        report = ghsa_mine.fetch(root, workers=args.workers, interval=args.interval, config=config, limit=args.limit)
+        write_json(root / "reports" / "mine-fetch.json", report)
+    else:
+        write_json(root / "reports" / "mine-extract.json", ghsa_mine.extract(root))
+    print(f"{command}: done")
+    return 0
+
+
+def _extend(command: str, root: Path, args: argparse.Namespace) -> None:
+    if command == "dedup-extend":
+        from .dedup import run_extend
+
+        write_json(root / "reports" / "dedup-extend.json", run_extend(root))
+    elif command == "licenses-export-new":
+        from .licenses import export_new
+
+        print(f"licenses-export-new: {export_new(root)} repositories -> {root / 'licenses' / 'repos-new.txt'}")
+    elif command == "licenses-merge":
+        from .licenses import merge_table
+
+        if args.table is None:
+            raise ValueError("licenses-merge needs --table")
+        write_json(root / "reports" / "licenses-summary-v2.json", merge_table(root, args.table))
+    elif command == "split-extend":
+        from .extend import run as extend
+
+        write_json(root / "reports" / "split-manifest-v2.json", extend(root))
+    elif command == "negatives":
+        from .negatives import run as negatives
+
+        write_json(root / "reports" / "negatives.json", negatives(root))
+    elif command == "audit-sample":
+        from .audit import sample
+
+        write_json(root / "reports" / "audit-sample.json", sample(root))
+    elif command == "audit-combine":
+        from .audit import write_combined
+
+        print(f"audit-combine: {write_combined(root)}")
+    elif command == "audit-import":
+        from .audit import import_verdicts
+
+        if args.table is None:
+            raise ValueError("audit-import needs --table")
+        write_json(root / "reports" / "audit.json", import_verdicts(root, args.table))
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -114,9 +198,16 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", type=Path, help="data root outside the repository (not licenses-fetch)")
     parser.add_argument("--source", action="append", choices=list(NAMES), help="acquire: only these sources")
     parser.add_argument("--rebuild", action="store_true", help="qc: reload the dumps even if work/ is current")
-    parser.add_argument("--table", type=Path, help="licenses-import: the CSV written by licenses-fetch")
+    parser.add_argument(
+        "--table", type=Path, help="licenses-import/-merge: CSV from licenses-fetch; audit-import: verdicts.csv"
+    )
     parser.add_argument("--repos", type=Path, help="licenses-fetch: repos.txt from licenses-export")
     parser.add_argument("--out", type=Path, help="licenses-fetch: output CSV (a cache next to it is reused)")
+    parser.add_argument("--workers", type=int, default=8, help="mine-fetch: repositories in parallel")
+    parser.add_argument("--interval", type=float, default=1.0, help="mine-fetch: seconds between git requests")
+    parser.add_argument("--timeout", type=float, default=300.0, help="mine-fetch: seconds per git call")
+    parser.add_argument("--max-mb", type=int, default=500, help="mine-fetch: object store cap per repository")
+    parser.add_argument("--limit", type=int, help="mine-fetch: only the first N repositories (smoke run)")
     return parser
 
 
