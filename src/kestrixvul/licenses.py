@@ -162,3 +162,52 @@ def import_table(root: Path, table_path: Path) -> dict[str, Any]:
         },
         "shipped_weight_pool_records": {lang: counts.get("permissive", 0) for lang, counts in sorted(records.items())},
     }
+
+
+def _new_pool(root: Path) -> list[dict[str, Any]]:
+    path = root / "work" / "ghsa_deduped.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def export_new(root: Path) -> int:
+    """``licenses/repos-new.txt``: GitHub repositories of the mined records not in ``licenses.csv``."""
+    known = read_table(root / "licenses" / "licenses.csv")
+    names = sorted({n for r in _new_pool(root) if (n := github_name(r["repo"])) and n.lower() not in known})
+    (root / "licenses" / "repos-new.txt").write_text("".join(n + "\n" for n in names))
+    return len(names)
+
+
+def merge_table(root: Path, table_path: Path) -> dict[str, Any]:
+    """Validate the lookup of the new repositories and merge it into ``licenses.csv``."""
+    new = read_table(table_path)
+    expected = {line.strip().lower() for line in (root / "licenses" / "repos-new.txt").read_text().splitlines() if line}
+    missing = sorted(expected - set(new))
+    if missing:
+        raise ValueError(f"license table misses {len(missing)} exported repositories")
+    dest = root / "licenses" / "licenses.csv"
+    table = read_table(dest)
+    conflicts = sorted(r for r in new if r in table and table[r] != new[r])
+    if conflicts:
+        raise ValueError(f"{len(conflicts)} repositories already have a different license in licenses.csv")
+    table |= {r: new[r] for r in expected}
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(["repo", "spdx_id", "license_class"])
+    for repo in sorted(table):
+        writer.writerow([repo, table[repo], classify(table[repo])])
+    tmp = dest.with_name(dest.name + ".tmp")
+    tmp.write_text(buf.getvalue())
+    tmp.chmod(0o600)
+    tmp.replace(dest)
+    records: dict[str, Counter[str]] = defaultdict(Counter)
+    for record in _new_pool(root):
+        records[record["language"]][classify(license_of(record, table))] += 1
+    return {
+        "schema_version": 1,
+        "new_repositories": len(expected),
+        "new_repositories_by_class": dict(sorted(Counter(classify(new[r]) for r in expected).items())),
+        "repositories_total": len(table),
+        "new_records_by_language_and_class": {
+            lang: {c: counts.get(c, 0) for c in CLASSES} for lang, counts in sorted(records.items())
+        },
+    }

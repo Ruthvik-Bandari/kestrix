@@ -62,6 +62,15 @@ Cluster jobs write aggregate reports, and only those are reviewed in sessions.
 
 **Exception, approved by the owner on 2026-10-16:** the OTRF review packet may be labeled by AI reviewers in a Claude Code session. That data is public lab recordings, not institutional telemetry. The labels carry `ai-` reviewer provenance and are reported separately, and a human checks every adjudicated label plus a 10% sample before the split is frozen ([`review.md`](review.md)). The exception does not cover institutional data, credentials or locked test results.
 
+**Code-vulnerability label audit (C5), owner decision of 2026-10-20:** the labels are audited by two open-weight Apache-2.0 models (Qwen2.5-Coder-32B-Instruct and Granite-34B-Code-Instruct) running in a Slurm job on the cluster, following the two-reviewer procedure in [`review.md`](review.md#ai-assisted-audit-of-the-code-vulnerability-labels). No packet is sent to an AI assistant session, so this needs no exception to the boundary above. Rules:
+
+- the owner decided that a human review is not practical, so no human checks the model verdicts; every result built on them says "AI-assisted";
+- only train and dev records are audited; the frozen test split and the test extension are not read;
+- packets and per-record verdicts stay private on the cluster (0600); the repository gets aggregates and ids only;
+- per-record verdicts are evaluation metadata, never training labels or a training-record selector. Only the aggregate per-stratum accuracy may decide a rule-level filter (for example, leaving out a labelling rule that proves noisy).
+
+A first trial on 2026-10-20 used Claude Code subagents as reviewers for 171 train/dev packets before the owner switched to the cluster models. Those verdicts are kept in a private folder outside the repository and are not used.
+
 ## 7. Lab testing (Atomic Red Team)
 
 Running a test, as opposed to reading its definition, requires all of the following:

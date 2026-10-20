@@ -111,3 +111,38 @@ python -m kestrixbench split --freeze --root /scratch/$USER/kestrix/data
 It writes `benchmark/split-manifest.json` with each root rule's source SHA-256 and refuses to
 overwrite an existing manifest. Copy the manifest, which holds ids and hashes only, into
 `docs/data/` so the split is versioned with the code.
+
+## AI-assisted audit of the code-vulnerability labels
+
+The C5 vulnerability pool (`docs/data/vul/`) is labelled by PrimeVul's rules, not by people. Its labels
+are audited with the procedure above, under the second exception in [`policy.md`](policy.md) section 6.
+Results are in [`vul/audit.json`](vul/audit.json) and [`vul/README.md`](vul/README.md#label-audit).
+
+1. **Sample.** `python -m kestrixvul audit-sample` (Slurm) draws a seeded random sample of train and dev
+   records, stratified by source family (CVEfixes and MoreFixes, SVEN, GHSA), language and label rule:
+   at least 15 per stratum, or 6% of it if that is more, or all of a smaller stratum. Each stratum is drawn
+   on its own, so strata added later never redraw ones already reviewed. Test records are never sampled.
+2. **Packets.** One per record: the advisory text (GHSA summary and details, or the CVE description),
+   the CWEs, the function before and after the fix, and their diff, with the packet's SHA-256. They are
+   written to `audit/packets.jsonl` on the cluster (0600) and copied to a private folder outside the
+   repository (0700). Packets are batched for the reviewers.
+3. **Two reviewers.** `hpc/vul_audit.sbatch` (one H200, 8 h at most) runs two open-weight Apache-2.0
+   models on the cluster, each from the same written criteria (`src/kestrixvul/prompts/vul_audit_reviewer.txt`):
+   `ai-a` is Qwen2.5-Coder-32B-Instruct and `ai-b` is IBM Granite-34B-Code-Instruct-8k, both at pinned
+   revisions (`hpc/fetch_vul_audit_models.sh`), bf16, greedy decoding. Each gives
+   - `vulnerable`, `not_vulnerable` or `unclear` for the before-function and the stated advisory;
+   - `fixes`, `does_not_fix` or `unclear` for the after-function;
+   - a one-line reason.
+
+   Record content is treated as untrusted data. Packets longer than Granite's 8k-token context are cut,
+   part by part, with a `[truncated]` marker.
+4. **Adjudication.** The stronger model (Qwen, 32k context) decides every record where the two verdicts
+   differ, with a separate prompt (`vul_audit_adjudicator.txt`) that shows both reviews and asks it to weigh
+   the evidence itself (`ai-c`).
+5. **Combine and import.** The same job checks that every packet has both reviews and, where needed, an
+   adjudication, writes `audit/verdicts.csv` (ids, verdicts and packet hashes) and the private
+   `audit/verdicts-private.jsonl` with the reasons, validates every row against the packet hashes and the
+   consensus rule, and writes `work/audit_verdicts.jsonl` and the aggregate `reports/audit.json`.
+6. **No human pass.** The owner decided a human review is not practical here, so the 10% human check
+   used for OTRF is not done. Model reviewers share failure modes, so their agreement and kappa are an
+   upper bound on what two independent people would reach, and the accuracy estimates carry that bias.
