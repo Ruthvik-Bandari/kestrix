@@ -1,12 +1,14 @@
 # Code security scanning
 
-The code module looks for common security mistakes in source code before they ship: shell and SQL injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, and hard-coded secrets. Run it on a checkout, in CI, or from a Claude Code hook on every file the assistant writes. Each finding names a rule, a CWE, why it matters and how to fix it. It is available from the CLI, pre-commit, pytest and as a Python function; there is no API route or dashboard page yet.
+The code module looks for common security mistakes in source code before they ship: shell and SQL injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, hard-coded secrets, and [dependencies](#dependencies) with known vulnerabilities or reported as malware. Run it on a checkout, in CI, or from a Claude Code hook on every file the assistant writes. Each finding names a rule, a CWE, why it matters and how to fix it. It is available from the CLI, pre-commit, pytest and as a Python function; there is no API route or dashboard page yet.
 
 It is pattern analysis, not a proof. Rules miss things, and a finding can be wrong in context. Kestrix has not measured detection or false-positive rates for this module, so none are claimed; "no findings" means no rule fired, not that the code is secure. The design is recorded in [ADR 0005](../adr/0005-code-security.md); this page describes slice C1: the Python rules, the secret rules, the CLI, the output formats, exit codes, suppression and baselines. Since [ADR 0006](../adr/0006-two-packages.md) the scanner is its own package, `kestrix-scan` (import name `kestrix_scan`), with no runtime dependencies on Python 3.11+ (`tomli` on 3.10); its source is under [`packages/kestrix-scan/src/kestrix_scan/`](../../packages/kestrix-scan/src/kestrix_scan/) and its user guide is [packages/kestrix-scan/README.md](../../packages/kestrix-scan/README.md). The workbench depends on it: `kestrix code scan` runs `kestrix-scan scan` with the same options, output and exit codes, and `kestrix.code` re-exports its Python API.
 
 ## Privacy and safety
 
 The scanner reads files as bytes and decodes them as UTF-8 (invalid bytes replaced). Python source is parsed with the standard-library `ast` module; nothing is imported, executed or sent off the machine. Secret values never leave the scanner: findings, JSON, SARIF, text output, baselines and hook output hold only the secret's kind, its location and its first four characters (for example `github_token:ghp_…`). Secrets found anywhere on a reported line are also redacted from the snippets of other findings.
+
+`kestrix-scan db update` is the only command that uses the network: it downloads the public OSV vulnerability exports over HTTPS. Scans, the hooks and the install guard read the local copy and open no sockets; the test suite checks this with every socket call refused. Nothing about your project is sent anywhere, including by `db update`, which sends a plain GET for each ecosystem's export.
 
 ## Commands
 
@@ -15,6 +17,8 @@ The scanner reads files as bytes and decodes them as UTF-8 (invalid bytes replac
 | `kestrix-scan [scan] [PATH ...]` (or `kestrix code scan [PATH ...]`) | `--format text\|json\|sarif`, `--output FILE`, `--fail-on low\|medium\|high\|critical\|none` (default `high`, or `[tool.kestrix]` `fail-on`), `--baseline FILE`, `--write-baseline FILE`, `--diff BASE`, `--hook`, `--config FILE`, `--no-config` | 0 no findings at or above `--fail-on`; 1 findings at or above it; 2 usage or input error |
 | `kestrix-scan init` | `--ci github`, `--pre-commit`, `--claude-plugin`, `--force`, `--dir DIR` | 0 done; 2 refused |
 | `kestrix-scan rules` | | 0 |
+| `kestrix-scan db update` (network) | `--ecosystem PyPI npm` (default: both) | 0 done; 2 download or index error |
+| `kestrix-scan db status` | | 0 index present; 1 no index |
 
 `PATH` defaults to `.`; `scan` is the default command, so `kestrix-scan src` is `kestrix-scan scan src`. Errors print `Rejected (<reason>): <detail>` to stderr and exit 2: a missing path, an unreadable or malformed baseline, `--diff` outside a git work tree or with an unknown ref, a bad option, or bad [configuration](#configuration).
 
@@ -51,6 +55,8 @@ exclude = ["tests/fixtures/", "*.min.js"]
 baseline = ".kestrix-baseline.json"
 rules.enable = ["py.", "secret."]
 rules.disable = ["py.crypto.weak_hash"]
+ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
+claude.install-guard = false
 ```
 
 | Key | Meaning |
@@ -60,10 +66,12 @@ rules.disable = ["py.crypto.weak_hash"]
 | `baseline` | the default for `--baseline`, relative to the settings file |
 | `rules.enable` | rule ids or prefixes (`py.`, `secret.`, `py.crypto`) to report; default: every rule |
 | `rules.disable` | rule ids or prefixes to leave out, applied after `enable` |
+| `ignore-advisories` | a table of advisory id (or alias, such as a CVE) to the reason it does not apply; the reason is required. Those advisories are left out of [dependency findings](#dependencies) and install-guard decisions. |
+| `claude.install-guard` | `false` turns off the Claude Code [install guard](../claude-plugin.md#pretooluse-on-bash-the-install-guard) for this project |
 
 The scanner looks for settings from the scan root upwards: in each directory it reads `.kestrix.toml` first, then `pyproject.toml` if it has a `[tool.kestrix]` table, and the first one found wins. The search stops at the directory holding `.git`. Command-line options override settings. An unknown key prints a `warning:` line on stderr and is ignored; an unknown rule id or prefix, a bad value or invalid TOML is an error (exit 2), and a misspelled rule id gets a suggestion (`did you mean 'py.subprocess.shell_true'?`). The Claude Code hook applies `rules` and `exclude` too (not `baseline`, since it already reports only new findings), and so does `pytest --kestrix`.
 
-`kestrix-scan init` appends a minimal `[tool.kestrix]` (`fail-on = "high"`, `exclude = []`) to `pyproject.toml` as text, or writes `.kestrix.toml` when there is no `pyproject.toml`. It leaves an existing table alone unless `--force`, which replaces only a plain `[tool.kestrix]` section. `--pre-commit` writes `.pre-commit-config.yaml` when it is missing or empty and otherwise prints the entry to add; `--ci github` writes `.github/workflows/kestrix.yml`, which installs `kestrix-scan`, scans with `--format sarif` and uploads the result with `github/codeql-action/upload-sarif`, with actions pinned to commit SHAs and only `contents: read` and `security-events: write`; `--claude-plugin` installs the Claude Code plugin. Each step prints one line, and running `init` again changes nothing.
+`kestrix-scan init` appends a minimal `[tool.kestrix]` (`fail-on = "high"`, `exclude = []`) to `pyproject.toml` as text, or writes `.kestrix.toml` when there is no `pyproject.toml`. It leaves an existing table alone unless `--force`, which replaces only a plain `[tool.kestrix]` section. `--pre-commit` writes `.pre-commit-config.yaml` when it is missing or empty and otherwise prints the entry to add; `--ci github` writes `.github/workflows/kestrix.yml`, which installs `kestrix-scan`, runs `kestrix-scan db update` (so that CI job needs network access to `storage.googleapis.com`), scans with `--format sarif` and uploads the result with `github/codeql-action/upload-sarif`, with actions pinned to commit SHAs and only `contents: read` and `security-events: write`; `--claude-plugin` installs the Claude Code plugin. Each step prints one line, and running `init` again changes nothing.
 
 ## pre-commit and pytest
 
@@ -78,6 +86,7 @@ The repository root has a `.pre-commit-hooks.yaml` with the hook `kestrix-scan` 
 - **Python rules** run on `.py` and `.pyw` files. A file that does not parse is listed as `syntax_error` (or `too_complex` for pathological nesting); the secret rules still run on it.
 - **Configuration rules** run on `.claude/settings.json`, `.claude/settings.local.json`, `hooks/hooks.json` and `.mcp.json` (see [Claude Code and MCP configuration](#claude-code-and-mcp-configuration)). A walk inside a git work tree only sees files git does not ignore, so name an ignored `settings.local.json` explicitly to check it.
 - **Secret rules** run on every text file.
+- **Dependency files** (below) are checked against the local vulnerability index. They may be up to 64 MiB; one over 1 MiB gets only the dependency check, not the secret rules.
 
 Finding paths are relative to the scan root: the current directory when every path is inside it, otherwise the paths' common parent.
 
@@ -126,6 +135,8 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `secret.anthropic_api_key` | any text file | CWE-798 | critical | high | Anthropic API key |
 | `secret.openai_api_key` | any text file | CWE-798 | critical | medium | OpenAI-style API key |
 | `secret.generic` | any text file | CWE-798 | high | medium | Hard-coded credential |
+| `dep.vulnerable` | lockfiles | CWE-1395 | critical | high | Dependency version with a known vulnerability (OSV) |
+| `dep.malicious` | lockfiles | CWE-506 | critical | high | Dependency reported as a malicious package (OSV MAL-) |
 <!-- rules:end -->
 
 **How the Python rules decide.** Calls are resolved through imports and aliases (`import subprocess as sp`, `from os import system`). A name counts as a literal when every assignment to it in its function, or in the module, is a literal; a fixed command or query is not reported. When an argument cannot be classified, the rule stays quiet: the rules prefer missing a case to flagging safe code.
@@ -184,6 +195,55 @@ The `config.*` rules read `.claude/settings.json`, `.claude/settings.local.json`
 JSON has no comments, so these findings cannot be suppressed inline; use `rules.disable` or a baseline.
 
 **How the secret rules decide.** Provider rules match the documented shape of each credential and need at least 3.0 bits of entropy per character, which drops runs such as `ghp_xxxx…`. Values that contain placeholder words (example, changeme, test, your, xxxx, a `${...}` or `<...>`) are ignored, which also drops the AWS documentation key. A private key needs its base64 body, not just the `BEGIN` line. `secret.generic` needs a credential-like name (password, secret, api_key, token, client_secret and similar, but not names ending in `_url`, `_path`, `_env`, `_hash`, `_id` and similar) assigned a quoted value, or an unquoted `NAME=value` line as in `.env` files, and the value must be at least 16 characters, have at least 3.5 bits of entropy per character, mix character classes and not look like a URL, path, dotted name or environment-variable name. A provider match wins over a generic match of the same value. Severities: critical for live provider credentials and private keys; high for AWS access key ids, Google API keys, JWTs and generic credentials.
+
+## Dependencies
+
+Pinned dependency versions in lockfiles are checked against a local copy of [OSV](https://osv.dev), which aggregates the GitHub Advisory Database, the PyPA advisory database, the OpenSSF malicious-packages feed and others. The check is offline: build the index once with `kestrix-scan db update`, refresh it now and then, and every scan, hook and install-guard decision reads it.
+
+```text
+$ kestrix-scan db update --ecosystem PyPI npm
+Updated ~/Library/Caches/kestrix-scan/osv.sqlite3 in 10.3 s.
+Index: ~/Library/Caches/kestrix-scan/osv.sqlite3 (built 2026-10-20T01:14:58+00:00)
+Age: 0.0 days
+  PyPI: 25,776 advisories (11,827 malicious-package reports); downloaded 2026-10-20T01:14:49+00:00, 36.5 MB, sha256 9afc5a76…
+  npm: 229,740 advisories (222,340 malicious-package reports); downloaded 2026-10-20T01:14:51+00:00, 218.6 MB, sha256 796ba88c…
+```
+
+**`db update`** downloads `https://storage.googleapis.com/osv-vulnerabilities/<ECOSYSTEM>/all.zip` for each ecosystem ([OSV data dumps](https://google.github.io/osv.dev/data/)). It uses HTTPS only and refuses a redirect to anything else, refuses a download over 2 GiB (by `Content-Length` and by bytes received), checks that the body is a zip, and writes it to a temporary file before renaming it into place. The zip is kept in the cache with its ETag, so the next update sends `If-None-Match` and skips an unchanged export. The index (`osv.sqlite3`) is then rebuilt from every cached zip into a temporary file and renamed over the old one, so a scan never reads a half-written index. It records each export's URL, SHA-256, size and download time. Advisory files over 16 MiB, or a zip that unpacks to more than 8 GiB, are refused. Withdrawn advisories are left out. Sizes on 2026-10-20: PyPI 36.5 MB, npm 218.6 MB, index 86 MB; the whole update took 10 s on a fast connection.
+
+**Where:** `$KESTRIX_SCAN_DB` when set; otherwise `~/Library/Caches/kestrix-scan` on macOS, `$XDG_CACHE_HOME/kestrix-scan` (default `~/.cache/kestrix-scan`) on Linux and `%LOCALAPPDATA%\kestrix-scan` on Windows. **`db status`** prints the index path, its age and the counts per ecosystem.
+
+**Files read** (matched by name, anywhere the walk reaches; `node_modules` is never entered):
+
+| File | What is checked |
+| --- | --- |
+| `requirements*.txt`, `requirements/*.txt` | exact pins only (`name==1.2.3`, `name===1.2.3`, extras and markers allowed). Other requirement lines (`>=`, `!=`, `~=`, `==1.*`, no version) are listed in one `dep.not_checked` note per file. Options, `-r`, `-e`, URLs and paths are skipped. |
+| `uv.lock`, `poetry.lock`, `pdm.lock` | every `[[package]]` from a registry; workspace, path, git, URL and editable packages are skipped |
+| `Pipfile.lock` | `default` and `develop` entries pinned with `==` |
+| `package-lock.json`, `npm-shrinkwrap.json` | `lockfileVersion` 2 and 3 (`packages`); linked packages are skipped. Version 1 gets a `dep.unsupported` note. |
+| `yarn.lock` | v1, and Berry (v2+) entries resolved with the `npm:` protocol |
+| `pnpm-lock.yaml` | versions 5 to 9: the package keys under `packages:` and `snapshots:`, read line by line (no YAML parser) |
+
+**Matching.** A version is affected when an advisory lists it in `versions`, or it falls inside an `ECOSYSTEM` or `SEMVER` range: `introduced` opens an interval (`0` means from the start), `fixed` closes it before that version and `last_affected` after it. PyPI versions are compared by PEP 440 (epochs, pre-, post- and dev releases, local versions, normalized spellings); npm versions by SemVer 2.0 precedence, so a pre-release sorts before its release. Kestrix implements both orderings itself rather than vendoring `packaging`, to keep zero dependencies and one license; the tests use the orderings listed in PEP 440 and SemVer. PyPI names are normalized as in PEP 503. A version that is not valid PEP 440 or SemVer matches only an explicit `versions` entry.
+
+**Findings.** All the advisories that affect one dependency make one finding on its lockfile line. Advisories that name each other as aliases (a GHSA, its PYSEC and its CVE) count as one vulnerability.
+
+- `dep.malicious` (critical, CWE-506) when any of them is an OpenSSF `MAL-` report. The fix is to remove the package and rotate every credential on machines where it was installed.
+- `dep.vulnerable` otherwise. Severity is the highest of the advisories': the CVSS v3 base score (computed from the vector: 9.0+ critical, 7.0+ high, 4.0+ medium, else low), else GitHub's `database_specific.severity` label, else medium. The CWE is the first in `database_specific.cwe_ids`, else CWE-1395. The message names `package@version`, the advisory ids (GHSA first, with the CVE), the first summary and the fixed versions; the fix is "Upgrade X to V or later", where V is the lowest version that fixes every vulnerability, and it says so when one has no fix.
+- `dep.db_stale`, a note, not a finding: once per scan that found a dependency file, when there is no index or it is more than 7 days old. It never changes the exit code.
+
+The fingerprint's snippet is `name@version` plus the matching advisory ids, so a baselined finding comes back when a new advisory affects the same version. Rules, `exclude`, baselines, `--diff` and `--fail-on` apply as to other findings, and SARIF results point at the lockfile line.
+
+```text
+requirements.txt
+  1:1  HIGH  dep.vulnerable  CWE-522
+      requests@2.19.0 (PyPI) has 5 known vulnerability(ies): GHSA-9hjg-9r4m-mvj7 (CVE-2024-47081), GHSA-9wx4-h78v-vm56 (CVE-2024-35195), GHSA-gc5v-m9x4-r6x2 (CVE-2026-25645), GHSA-j8r2-6x86-q33q (CVE-2023-32681) (+1 more). Requests vulnerable to .netrc credentials leak via malicious URLs; fixed in 2.20.0, 2.31.0, 2.32.0, 2.32.4, 2.33.0.
+      fix: Upgrade requests to 2.33.0 or later and update the lockfile.
+```
+
+**Suppression.** In a requirements file, `# kestrix: ignore[<rule id or advisory id>] reason` on the line or the line above drops the finding or that one advisory. Lockfiles have no comments, so for them (and everywhere) use `ignore-advisories` in [configuration](#configuration), with a reason per advisory.
+
+**Not covered.** Reachability is not analyzed: a finding means the version is affected, not that your code calls the vulnerable function. Only PyPI and npm are indexed. Unpinned requirements, `package.json` ranges and `pyproject.toml` dependency lists are not resolved; check the lockfile instead. Advisory data is as good as OSV's.
 
 ## Suppression
 
@@ -257,6 +317,7 @@ raise SystemExit(kestrix_scan.exit_code(report))
 ## Limits
 
 - Only Python has code rules in this slice, plus the Claude Code and MCP configuration rules. JavaScript and TypeScript rules are slice C3.
+- Dependency checks cover PyPI and npm lockfiles only, and need `kestrix-scan db update` first.
 - Data flow is local: taint is followed within one function, class body or module top level, never across functions or files, and through only the calls listed under [Taint analysis](#taint-analysis); `json.loads(request.data)` and a helper that builds a command are not followed. Literal propagation for the pattern rules follows names a few hops deep in the same scope.
 - The secret rules are high-precision on purpose and miss credentials with no recognizable shape or name.
 - Column numbers come from the parser's offsets and can be off on lines with non-ASCII characters before the finding.

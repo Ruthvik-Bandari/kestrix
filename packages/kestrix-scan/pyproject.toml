@@ -3,13 +3,13 @@
 [project]
 name = "kestrix-scan"
 version = "0.1.0"
-description = "Kestrix code scanner: local, zero-dependency security checks for Python code and hard-coded secrets, with SARIF, pre-commit, pytest and a Claude Code plugin."
+description = "Kestrix code scanner: local, zero-dependency security checks for Python code, hard-coded secrets and dependency lockfiles (offline OSV), with SARIF, pre-commit, pytest and a Claude Code plugin."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Ruthvik Bandari", email = "bandari.ru@northeastern.edu" }]
 requires-python = ">=3.10"
-keywords = ["security", "sast", "secrets", "static-analysis", "cwe", "sarif", "pre-commit", "claude-code"]
+keywords = ["security", "sast", "sca", "osv", "secrets", "static-analysis", "cwe", "sarif", "pre-commit", "claude-code"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",

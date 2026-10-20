@@ -16,10 +16,12 @@ import argparse
 import json
 import shlex
 import sys
+import time
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from . import plugin, skill
 from .about import ATTRIBUTION, __version__
@@ -31,6 +33,9 @@ from .hook import MAX_STDIN_BYTES, hook_response
 from .models import NOTICE, Finding, ScanReport
 from .registry import RULES
 from .sarif import to_sarif
+
+if TYPE_CHECKING:
+    from .osvdb import Status
 
 PROG = "kestrix-scan"
 FORMATS = ("text", "json", "sarif")
@@ -280,6 +285,68 @@ def package_claude_plugin(argv: Sequence[str], prog: str) -> int:
     return 0
 
 
+# ----- db: the local OSV vulnerability index
+
+
+def run_db(argv: Sequence[str], prog: str) -> int:
+    from . import osvdb
+
+    parser = argparse.ArgumentParser(
+        prog=prog,
+        description="Manage the local OSV vulnerability index used to check lockfiles. `update` is the only "
+        "kestrix-scan command that uses the network: it downloads the OSV export of each ecosystem over HTTPS.",
+    )
+    actions = parser.add_subparsers(dest="action", required=True)
+    update = actions.add_parser("update", help="Download the OSV data and rebuild the index (uses the network).")
+    update.add_argument(
+        "--ecosystem",
+        nargs="+",
+        choices=osvdb.ECOSYSTEMS,
+        default=list(osvdb.ECOSYSTEMS),
+        help="Ecosystems to download. Default: all of them.",
+    )
+    actions.add_parser("status", help="Show where the index is, how old it is and what it holds.")
+    ns = parser.parse_args(list(argv))
+    if ns.action == "update":
+        started = time.monotonic()
+        tty = sys.stderr.isatty()
+
+        def progress(line: str) -> None:
+            sys.stderr.write(f"\r\x1b[K{line}" if tty else line + "\n")
+            sys.stderr.flush()
+
+        try:
+            path = osvdb.update(ns.ecosystem, progress=progress)
+        except Rejected as exc:
+            if tty:
+                _err("")
+            _err(f"Rejected ({exc.reason.value}): {exc.detail}")
+            return 2
+        if tty:
+            _err("")
+        _out(f"Updated {path} in {time.monotonic() - started:.1f} s.")
+    return _db_status(osvdb.status())
+
+
+def _db_status(state: Status) -> int:
+    from .osvdb import STALE_AFTER_S
+
+    if not state.sources:
+        _out(f"No vulnerability index at {state.path}. Run `kestrix-scan db update` (downloads the OSV data).")
+        return 1
+    age = state.age_s() or 0.0
+    stale = " (stale: run `kestrix-scan db update`)" if age > STALE_AFTER_S else ""
+    _out(f"Index: {state.path} (built {state.built_at})")
+    _out(f"Age: {age / 86400:.1f} days{stale}")
+    for source in state.sources:
+        advisories, malicious = state.counts.get(source.ecosystem, (0, 0))
+        _out(
+            f"  {source.ecosystem}: {advisories:,} advisories ({malicious:,} malicious-package reports); "
+            f"downloaded {source.downloaded_at}, {source.size / 1e6:.1f} MB, sha256 {source.sha256}"
+        )
+    return 0
+
+
 # ----- init, rules, version
 
 
@@ -326,6 +393,7 @@ COMMANDS: dict[str, tuple[Command, str]] = {
     "scan": (run_scan, "Scan files (the default command)."),
     "init": (run_init, "Add [tool.kestrix], pre-commit, a GitHub workflow or the Claude plugin to a project."),
     "rules": (list_rules, "List the rules."),
+    "db": (run_db, "Update (network) or show the local OSV vulnerability index for lockfile checks."),
     "install-claude-plugin": (install_claude_plugin, "Install the Claude Code plugin to a local directory."),
     "package-claude-plugin": (package_claude_plugin, "Write the Claude Code plugin as a zip."),
     "install-claude-skill": (install_claude_skill, "Install the kestrix-security skill for Claude Code."),
@@ -343,7 +411,8 @@ def _usage(prog: str) -> str:
             f"usage: {prog} [scan] [PATH ...] [--format text|json|sarif] [--output FILE] [--fail-on LEVEL]",
             f"       {prog} COMMAND [--help]",
             "",
-            "Local security checks for Python code and hard-coded secrets. Nothing leaves the machine.",
+            "Local security checks for Python code, hard-coded secrets and dependency lockfiles. Nothing leaves the",
+            "machine; only `db update` uses the network, to download the OSV vulnerability data.",
             "",
             "commands:",
             *rows,

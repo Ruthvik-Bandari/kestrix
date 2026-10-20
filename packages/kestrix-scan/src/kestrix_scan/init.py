@@ -7,7 +7,8 @@
   ``[tool.kestrix]`` section. Without a ``pyproject.toml``, ``.kestrix.toml`` is written instead.
 - ``.pre-commit-config.yaml``: written when missing or empty. A file with other content is never
   edited; the entry to add is printed instead.
-- ``.github/workflows/kestrix.yml`` (``ci="github"``): a workflow that runs the scanner and uploads
+- ``.github/workflows/kestrix.yml`` (``ci="github"``): a workflow that downloads the OSV vulnerability
+  data (``kestrix-scan db update``, the one step that needs network access), runs the scanner and uploads
   SARIF to GitHub code scanning, with SHA-pinned actions and minimal permissions. An existing,
   different file is replaced only with ``force``.
 - The Claude Code plugin (``claude_plugin``): installed to ``~/.claude/kestrix-plugin``.
@@ -83,6 +84,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install kestrix-scan=={__version__}
+      # The only network step of the scanner: download the OSV vulnerability data for the lockfile check.
+      - run: kestrix-scan db update
       - run: kestrix-scan --format sarif --output kestrix.sarif || true
       - uses: {UPLOAD_SARIF}
         with:

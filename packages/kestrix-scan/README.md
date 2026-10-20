@@ -1,13 +1,14 @@
 # kestrix-scan
 
-**Local security checks for Python code and hard-coded secrets.** `kestrix-scan` finds shell and SQL injection,
-unsafe deserialization, disabled TLS checks, weak hashes and randomness, and leaked API keys, with a CWE and a
-concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
+**Local security checks for Python code, hard-coded secrets and dependencies.** `kestrix-scan` finds shell and SQL
+injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, leaked API keys, and lockfile
+dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
 
 - **No dependencies** on Python 3.11 and newer (only `tomli` on 3.10). Python 3.10 to 3.13.
-- **Nothing leaves your machine.** Files are read as data: never imported, executed or uploaded. The scanner
-  opens no network connections.
+- **Nothing leaves your machine.** Files are read as data: never imported, executed or uploaded. Scans open no
+  network connections. The only command that uses the network is `kestrix-scan db update`, which you run to
+  download the public OSV vulnerability data; dependency checks read that local copy.
 - **Fast to start:** `kestrix-scan --version` takes about 40 to 55 ms, a few milliseconds more than Python itself.
 
 Part of [Kestrix](https://github.com/Ruthvik-Bandari/kestrix) by Ruthvik Bandari. Apache-2.0.
@@ -53,6 +54,44 @@ Silence a confirmed false positive on its line, or the line above, with a reason
 subprocess.run(BUILD, shell=True)  # kestrix: ignore[py.subprocess.shell_true] fixed command defined above
 ```
 
+## Dependency scanning
+
+```bash
+kestrix-scan db update                    # downloads the OSV data for PyPI and npm (the only network step)
+kestrix-scan .                            # lockfiles are now checked too, offline
+kestrix-scan db status                    # where the index is, how old, how many advisories
+```
+
+`db update` downloads the [OSV](https://osv.dev) export of each ecosystem
+(`https://storage.googleapis.com/osv-vulnerabilities/<ECOSYSTEM>/all.zip`) over HTTPS, with a 2 GiB cap,
+keeps it in your cache directory (`$KESTRIX_SCAN_DB`, or `~/Library/Caches/kestrix-scan`,
+`$XDG_CACHE_HOME/kestrix-scan`, `%LOCALAPPDATA%\kestrix-scan`) and builds a SQLite index from it, recording
+each download's SHA-256 and time. The exports include the OpenSSF malicious-packages feed. On 2026-10-20
+PyPI was 36.5 MB and npm 218.6 MB, and the index 86 MB; `--ecosystem PyPI` limits it to one.
+
+Scans then read `requirements*.txt` (exact `==` pins; other lines are noted as not checked), `uv.lock`,
+`poetry.lock`, `pdm.lock`, `Pipfile.lock`, `package-lock.json` (v2 and v3), `yarn.lock` (v1 and Berry) and
+`pnpm-lock.yaml`, and match each version against the advisories with PEP 440 or SemVer ordering:
+
+```text
+package-lock.json
+  12:1  CRITICAL  dep.vulnerable  CWE-1321
+      minimist@1.2.0 (npm) has 2 known vulnerability(ies): GHSA-vh95-rmgr-6w4m (CVE-2020-7598), GHSA-xvch-5gv4-984h (CVE-2021-44906). Prototype Pollution in minimist; fixed in 1.2.3, 1.2.6.
+      fix: Upgrade minimist to 1.2.6 or later and update the lockfile.
+  15:1  CRITICAL  dep.malicious  CWE-506
+      react-0b1@1.0.0 (npm) is reported as a malicious package: GHSA-8ghv-p6hq-5px9 (MAL-2023-722). Malicious code in react-0b1 (npm)
+      fix: Remove react-0b1 from the project and its lockfile, then rotate every credential, token and key on machines where it was installed.
+```
+
+- `dep.vulnerable`: the advisories' highest CVSS severity, their CWE, ids and summary, and "Upgrade X to V or
+  later" with the lowest version that fixes all of them. `dep.malicious`: critical; remove it and rotate
+  credentials.
+- A `dep.db_stale` note (never a failure) when the index is missing or more than 7 days old.
+- Suppress with `# kestrix: ignore[GHSA-...] reason` on a requirements line, or for any file with
+  `ignore-advisories = {"GHSA-..." = "reason"}` in `[tool.kestrix]`. Baselines, `--diff` and `fail-on` apply.
+- Reachability is not analyzed, and only PyPI and npm lockfiles are read. Details:
+  [docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#dependencies).
+
 ## Configuration
 
 `[tool.kestrix]` in `pyproject.toml`, or the same keys at the top level of `.kestrix.toml`:
@@ -64,6 +103,8 @@ exclude = ["tests/fixtures/", "*.min.js"]       # globs, as in .gitignore
 baseline = ".kestrix-baseline.json"             # relative to this file
 rules.enable = ["py.", "secret."]               # rule ids or prefixes; default: every rule
 rules.disable = ["py.crypto.weak_hash"]
+ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
+claude.install-guard = false                    # turn off the Claude Code install guard here
 ```
 
 - The nearest file wins, searching upwards from the scan root and stopping at the git root. In each directory
@@ -106,6 +147,7 @@ only `contents: read` and `security-events: write`:
 
 ```yaml
 - run: pip install kestrix-scan==0.1.0
+- run: kestrix-scan db update        # downloads the OSV data, so this job needs network access
 - run: kestrix-scan --format sarif --output kestrix.sarif || true
 - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
   with:
@@ -140,6 +182,10 @@ Or from the repository's marketplace: `/plugin marketplace add Ruthvik-Bandari/k
   findings the edit introduced, with the rule, CWE and fix, so Claude fixes them in the same turn.
 - **Skills and commands:** `secure-code-review`, a per-rule `fixing-security-findings` playbook,
   `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` (a review of the current git diff).
+- **Install guard:** before a `pip`, `uv`, `npm`, `pnpm` or `yarn` install runs, the plugin checks the packages
+  against the local OSV index. A known malicious package is denied; a known-vulnerable pinned version gets a
+  warning naming the fixed version. No index means no check. Turn it off with `KESTRIX_INSTALL_GUARD=0` or
+  `claude.install-guard = false`.
 - **Opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, Claude cannot finish while new high or critical
   findings remain in files it changed (at most three times per session).
 - **Fails open:** a missing scanner, a timeout or an error never blocks an edit. Findings never contain secret
@@ -172,20 +218,21 @@ settings. The package is typed (`py.typed`).
 
 `kestrix-scan` reads files as bytes, decodes them as text and parses Python with the standard-library `ast`.
 It never imports or runs the code it scans, never follows symbolic links out of the scan root, and caps
-file size and count. It makes no network requests; the test suite proves the scanner and the plugin hooks
-work with every socket call refused. `--diff` and directory walks run the local `git` binary.
+file size and count. Scans, the plugin hooks and the install guard make no network requests; the test suite
+proves they work with every socket call refused. The one exception is `kestrix-scan db update`, which you run
+explicitly: it downloads the public OSV exports over HTTPS and sends nothing about your project. `--diff` and directory walks run the local `git` binary.
 
 ## Rules
 
-There are 38 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 40 rules. They cover Python (22 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask, Django, FastAPI and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
 LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), Claude Code and MCP configuration
 (5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and
-literal credentials) and secrets in any text file (11 `secret.*`
-rules: AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys, JWTs and
-high-entropy credentials). The full table with CWEs and severities is in
+literal credentials), secrets in any text file (11 `secret.*` rules: AWS, GitHub, Slack, Stripe, Google, Anthropic
+and OpenAI-style keys, private keys, JWTs and high-entropy credentials), and dependencies in lockfiles (2 `dep.*`
+rules: `dep.vulnerable`, `dep.malicious`). The full table with CWEs and severities is in
 [docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules), and
 each rule's sources are in
 [docs/modules/code-rules-provenance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code-rules-provenance.md).

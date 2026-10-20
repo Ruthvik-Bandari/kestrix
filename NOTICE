@@ -8,6 +8,26 @@ The code scanner's rules (packages/kestrix-scan/src/kestrix_scan/registry.py) we
 and the language, library and standard documentation cited per rule in
 docs/modules/code-rules-provenance.md. No rule text, pattern or code from other scanners is included.
 
+Dependency scanning (packages/kestrix-scan/src/kestrix_scan/osvdb.py, deps.py, versions.py, lockfiles.py):
+no advisory data is included in this repository or in the kestrix-scan package. `kestrix-scan db update`
+downloads it to the user's cache from OSV (https://osv.dev, https://google.github.io/osv.dev/data/), and
+findings and install-guard messages quote advisory ids and summaries from it. OSV redistributes each source
+under that source's license; the sources present in the PyPI and npm exports (checked 2026-10-20) are:
+
+- GitHub Advisory Database (GHSA- ids), GitHub, Inc.: CC-BY 4.0. https://github.com/github/advisory-database
+- PyPI Advisory Database (PYSEC- ids), Python Packaging Authority: CC-BY 4.0. https://github.com/pypa/advisory-database
+- OpenSSF Malicious Packages (MAL- ids), Open Source Security Foundation: Apache-2.0.
+  https://github.com/ossf/malicious-packages
+- OSS-Fuzz (OSV- ids), Google: CC-BY 4.0. https://github.com/google/oss-fuzz-vulns
+- Erlang Ecosystem Foundation CNA (EEF- ids): CC-BY 4.0. https://github.com/erlef/security-database
+- Global Security Database (GSD- ids), Cloud Security Alliance: CC0 1.0. https://github.com/cloudsecurityalliance/gsd-database
+
+The OSV schema (https://ossf.github.io/osv-schema/) is Apache-2.0. PEP 440 version ordering and SemVer 2.0
+precedence were implemented for Kestrix from the PEP 440 text (public domain) and the SemVer specification
+(CC BY 3.0); no code from `packaging` or any other version library is included. The CVSS v3.1 base-score
+formula follows the FIRST CVSS v3.1 specification (https://www.first.org/cvss/v3.1/specification-document).
+The tests use synthetic advisories only.
+
 Third-party notices policy: third-party code, rules or data are added to this repository only under a
 license that permits redistribution with Apache-2.0, and each addition is recorded in this file with its
 source, copyright holder and license in the same change. Datasets for the code-vulnerability research are

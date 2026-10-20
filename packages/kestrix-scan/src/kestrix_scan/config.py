@@ -14,6 +14,8 @@ Keys::
     baseline = ".kestrix-baseline.json"   # relative to the file's directory
     rules.enable = ["py.", "secret."]     # rule ids or prefixes; default: every rule
     rules.disable = ["py.crypto.weak_hash"]
+    ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
+    claude.install-guard = false          # turn off the Claude Code install guard for this project
 
 Unknown keys produce a warning. Unknown rule ids, bad values and unreadable files raise ``Rejected``.
 """
@@ -42,8 +44,9 @@ FAIL_ON_CHOICES: tuple[str, ...] = ("low", "medium", "high", "critical", "none")
 CONFIG_FILE = ".kestrix.toml"
 PYPROJECT = "pyproject.toml"
 MAX_CONFIG_BYTES = 1024 * 1024
-_TOP_KEYS = frozenset({"fail-on", "exclude", "baseline", "rules"})
+_TOP_KEYS = frozenset({"fail-on", "exclude", "baseline", "rules", "ignore-advisories", "claude"})
 _RULE_KEYS = frozenset({"enable", "disable"})
+_CLAUDE_KEYS = frozenset({"install-guard"})
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -55,6 +58,8 @@ class Config:
     enable: tuple[str, ...] = ()  # rule ids or prefixes; empty means every rule
     disable: tuple[str, ...] = ()
     baseline: Path | None = None
+    ignore_advisories: tuple[tuple[str, str], ...] = ()  # (advisory id or alias, reason)
+    install_guard: bool | None = None  # claude.install-guard; None means on
     source: Path | None = None  # the file the settings came from, if any
     warnings: tuple[str, ...] = field(default=(), compare=False)
 
@@ -134,15 +139,34 @@ def from_mapping(data: Mapping[str, Any], *, base: Path, source: Path | None = N
     warnings += [f"{where}: unknown key 'rules.{key}' ignored" for key in rules if key not in _RULE_KEYS]
     enable = check_rule_selectors(_strings(rules.get("enable", []), "rules.enable"), f"{where}: rules.enable")
     disable = check_rule_selectors(_strings(rules.get("disable", []), "rules.disable"), f"{where}: rules.disable")
+    claude = data.get("claude", {})
+    if not isinstance(claude, dict):
+        raise Rejected(Reason.INVALID_INPUT, f"{where}: claude must be a table")
+    warnings += [f"{where}: unknown key 'claude.{key}' ignored" for key in claude if key not in _CLAUDE_KEYS]
+    guard = claude.get("install-guard")
+    if guard is not None and not isinstance(guard, bool):
+        raise Rejected(Reason.INVALID_INPUT, f"{where}: claude.install-guard must be true or false")
     return Config(
         fail_on=fail_on,
         exclude=_strings(data.get("exclude", []), f"{where}: exclude"),
         enable=enable,
         disable=disable,
         baseline=(base / baseline) if baseline else None,
+        ignore_advisories=_advisory_reasons(data.get("ignore-advisories", {}), where),
+        install_guard=guard,
         source=source,
         warnings=tuple(warnings),
     )
+
+
+def _advisory_reasons(value: Any, where: str) -> tuple[tuple[str, str], ...]:
+    """``ignore-advisories``: a table of advisory id to a non-empty reason."""
+    if not isinstance(value, dict):
+        raise Rejected(Reason.INVALID_INPUT, f"{where}: ignore-advisories must be a table of advisory id = reason")
+    for key, reason in value.items():
+        if not isinstance(reason, str) or not any(char.isalnum() for char in reason):
+            raise Rejected(Reason.INVALID_INPUT, f"{where}: ignore-advisories.{key} needs a reason")
+    return tuple(sorted(value.items()))
 
 
 def _read_toml(path: Path) -> dict[str, Any]:

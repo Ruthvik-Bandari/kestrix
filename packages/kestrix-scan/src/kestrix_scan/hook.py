@@ -18,6 +18,9 @@ counts as new. The output is a ``hookSpecificOutput`` whose ``additionalContext`
 new findings at medium severity or above, most severe first, in about 1,500 characters, or nothing
 when the edit introduced none.
 
+``PreToolUse`` for the ``Bash`` tool: the install guard in ``install_guard.py`` checks the packages
+an install command names against the local vulnerability index.
+
 ``Stop`` (``hook_event_name`` is ``Stop``; used by the plugin's Stop gate): scans the absolute paths
 in ``kestrix_files`` against their session-start snapshots in ``kestrix_before`` and prints
 ``{"kestrix_stop": {"new": [{"line", "fingerprint"}], "existing": N}}`` for high and critical
@@ -74,6 +77,10 @@ def hook_response(raw: str) -> str | None:
         return None
     if payload.get("hook_event_name") == "Stop":
         return stop_response(payload)
+    if payload.get("hook_event_name") == "PreToolUse" and payload.get("tool_name") == "Bash":
+        from .install_guard import guard_response
+
+        return guard_response(payload)
     new: list[Finding] = []
     existing = 0
     for target, root in _targets(payload, hook_paths(payload)):
@@ -126,7 +133,9 @@ def introduced(target: Path, root: Path, before: str | None) -> tuple[list[Findi
         return findings, []
     real = target.resolve()
     active = settings.active_rules() if settings.enable or settings.disable else None
-    old, _, _, _ = scan_text(before, Candidate(path=real, rel=rel_path(real, root)), active)
+    old, _, _, _ = scan_text(
+        before, Candidate(path=real, rel=rel_path(real, root)), active, dict(settings.ignore_advisories)
+    )
     remaining = Counter(f.fingerprint for f in old)
     new: list[Finding] = []
     kept: list[Finding] = []

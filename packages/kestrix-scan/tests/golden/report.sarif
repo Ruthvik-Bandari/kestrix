@@ -996,6 +996,58 @@
                   "CWE-798"
                 ]
               }
+            },
+            {
+              "id": "dep.vulnerable",
+              "name": "DepVulnerable",
+              "shortDescription": {
+                "text": "Dependency version with a known vulnerability (OSV)"
+              },
+              "fullDescription": {
+                "text": "A pinned dependency version is listed as affected in an OSV advisory. Whether your code reaches the vulnerable function is not analyzed, so treat it as exploitable until you know otherwise."
+              },
+              "help": {
+                "text": "Upgrade the package to a fixed version and update the lockfile. If no fix exists, replace the package or record why it is safe in [tool.kestrix] ignore-advisories.",
+                "markdown": "**Why:** A pinned dependency version is listed as affected in an OSV advisory. Whether your code reaches the vulnerable function is not analyzed, so treat it as exploitable until you know otherwise.\n\n**Fix:** Upgrade the package to a fixed version and update the lockfile. If no fix exists, replace the package or record why it is safe in [tool.kestrix] ignore-advisories."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-1395"
+                ]
+              }
+            },
+            {
+              "id": "dep.malicious",
+              "name": "DepMalicious",
+              "shortDescription": {
+                "text": "Dependency reported as a malicious package (OSV MAL-)"
+              },
+              "fullDescription": {
+                "text": "The OpenSSF malicious-packages feed reports this package version as malware, typically code that steals credentials or opens a backdoor when it is installed or imported."
+              },
+              "help": {
+                "text": "Remove the package and its lockfile entry, then rotate every credential, token and key on machines where it was installed.",
+                "markdown": "**Why:** The OpenSSF malicious-packages feed reports this package version as malware, typically code that steals credentials or opens a backdoor when it is installed or imported.\n\n**Fix:** Remove the package and its lockfile entry, then rotate every credential, token and key on machines where it was installed."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-506"
+                ]
+              }
             }
           ]
         }

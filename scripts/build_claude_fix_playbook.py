@@ -156,7 +156,7 @@ CREDENTIAL_EXAMPLE_AFTER = (
 
 HEADER = """---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, config.* and secret.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -269,6 +269,15 @@ def render() -> str:
         "```\n",
     ]
     parts += [_secret_section(rule) for rule in RULES.values() if rule.language == "any"]
+    parts += [
+        "## Dependency rules\n",
+        "These come from lockfiles checked against the local OSV index (`kestrix-scan db update`). The finding names "
+        "the package, its version, the advisory ids and the version to upgrade to. Change the version constraint in "
+        "the manifest (pyproject.toml, requirements*.txt or package.json), regenerate the lockfile with the project's "
+        "own tool (uv lock, poetry lock, npm install), then re-run `kestrix-scan`. Only when the advisory does not "
+        "apply, add its id with a reason to `[tool.kestrix] ignore-advisories`.\n",
+    ]
+    parts += [_secret_section(rule) for rule in RULES.values() if rule.language == "dependency"]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

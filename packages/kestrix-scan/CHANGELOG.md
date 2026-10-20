@@ -18,7 +18,7 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
   line), `py.ml.unsafe_model_load` (CWE-502; `torch.load`, `joblib.load`, pickled model files, Keras
   `safe_mode=False`, `trust_remote_code=True`), and `config.claude.hook_remote_exec`,
   `config.claude.permissions_bypass`, `config.mcp.unpinned_launcher`, `config.mcp.secret_inline` and
-  `config.claude.env_leak` for `.claude/settings*.json`, plugin `hooks/hooks.json` and `.mcp.json`. 38 rules.
+  `config.claude.env_leak` for `.claude/settings*.json`, plugin `hooks/hooks.json` and `.mcp.json`.
 - **Report:** findings may carry `trace` (a list of `{line, note}`); the key is present only on taint findings,
   so `schema_version` stays 1 and existing reports are unchanged. SARIF results carry it as `codeFlows`; the
   text report prints a `trace:` line and the hook context a compact `[trace: L4→L7]`. A finding's `cwe` and
@@ -27,6 +27,29 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
   `py.deserialize.pickle`; a secret in a configuration file reports the `config.*` rule instead of `secret.*`.
   New rules sit after `py.path.traversal` in the registry, so SARIF `ruleIndex` values of the `secret.*`
   rules moved.
+### Added
+
+- **Offline dependency scanning.** `kestrix-scan db update [--ecosystem PyPI npm]` downloads the OSV exports
+  over HTTPS (2 GiB cap, atomic writes, ETag reuse) and builds a local SQLite index with each download's
+  SHA-256 and time; it is the only command that uses the network. `kestrix-scan db status` shows its age and
+  counts. Scans then check `requirements*.txt` (exact pins), `uv.lock`, `poetry.lock`, `pdm.lock`,
+  `Pipfile.lock`, `package-lock.json` v2/v3, `yarn.lock` v1 and Berry, and `pnpm-lock.yaml` with PEP 440 and
+  SemVer range matching.
+- **New rules** `dep.vulnerable` (CVSS-based severity, OSV CWE, "upgrade to" fix) and `dep.malicious`
+  (critical; OpenSSF `MAL-` reports), appended to the registry, so earlier SARIF `ruleIndex` values are
+  unchanged. Notes `dep.db_stale` (missing or 7-day-old index, once per scan), `dep.not_checked` and
+  `dep.unsupported`.
+- **Configuration:** `ignore-advisories = {"GHSA-..." = "reason"}` and `claude.install-guard = false`.
+  Requirements lines accept `# kestrix: ignore[<advisory id>] reason`.
+- **Claude Code install guard:** a `PreToolUse` hook on `Bash` that denies installing a known malicious
+  package and warns about a known-vulnerable pinned version (`pip`, `uv`, `npm`, `pnpm`, `yarn`). It fails
+  open and is turned off with `KESTRIX_INSTALL_GUARD=0`.
+- `kestrix-scan init --ci github` runs `kestrix-scan db update` before the scan.
+
+### Changed
+
+- Lockfiles up to 64 MiB are scanned (other files keep the 1 MiB limit); a lockfile over 1 MiB gets only the
+  dependency check.
 
 ## 0.1.0
 

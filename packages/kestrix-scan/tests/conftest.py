@@ -39,4 +39,15 @@ def repo(tmp_path: Path, git: Callable[..., str]) -> Path:
     return root
 
 
+@pytest.fixture(autouse=True)
+def isolated_osv_index(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Every test sees an empty vulnerability-index directory, never the developer's real cache."""
+    from kestrix_scan import deps
+
+    directory = tmp_path_factory.mktemp("osv-index")
+    monkeypatch.setenv("KESTRIX_SCAN_DB", str(directory))
+    monkeypatch.setattr(deps, "_INDEX", deps._Index())
+    return directory
+
+
 pytest_plugins = ["pytester"]
