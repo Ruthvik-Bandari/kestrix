@@ -29,6 +29,9 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | `hpc/sft.sbatch` | `short` | 4 CPU, 12 GB, 2 h | Build M1 training examples from the train and development cases (never test) into `sft/` |
 | `hpc/m1.sbatch [--max-steps N] [--train-seed S]` | `gpu`, A100 | 8 CPU, 64 GB, 8 h | LoRA fine-tuning (bf16). Smoke with `--max-steps 5` first to measure memory and throughput. Writes the adapter to `models/` and `reports/m1-*-training.json` |
 | `hpc/m1_eval.sbatch <adapter> [--locked]` | `gpu`, V100-SXM2 | 4 CPU, 48 GB, 8 h | Evaluate base model plus adapter, the same way as B2 |
+| `hpc/vul_acquire.sh` | transfer node | n/a | C5 code-vulnerability data: download CVEfixes, MoreFixes, the reviewed GitHub advisories and SVEN at their pins (resumable; size, MD5 and SHA-256 checked) into `/scratch/$USER/kestrix/vul/raw` (0700) |
+| `hpc/vul_qc.sbatch [--rebuild]` | `short` | 4 CPU, 32 GB, 8 h | Re-verify the pins, stream both dumps into private `vul/work/*.sqlite`, write `vul/reports/qc.json` |
+| `hpc/vul_build.sbatch [candidates\|split]` | `short` | 2 CPU, 32 GB, 4 h | `candidates`: PrimeVul relabelling, deduplication, repository list for the local license lookup; `split`: license import and the frozen split manifest. No training |
 
 The cluster has no Docker, so jobs run Elasticsearch from Elastic's official tarball with its
 bundled JDK. That is the same 8.19.3 release the local Docker image pins by digest. The engine

@@ -41,3 +41,27 @@ Event labels are `malicious`, `benign` or `unknown`. Each also has a scenario ID
 
 - **NSL-KDD and UNSW-NB15:** these are flow tables with no process-event context (plan section 11).
 - **Data from systems we are not authorized to collect from:** never used.
+
+## Code-vulnerability data (ADR 0005, slice C5)
+
+The pins live in `src/kestrixvul/sources.py`; the plan is `docs/research/code-vuln-ml-plan.md`.
+`python -m kestrixvul acquire` verifies each archive against the Zenodo record's size and MD5 and
+against the SHA-256 pinned after the first verified download, and each git source against its
+pinned commit. Raw files stay private on the cluster (`/scratch/$USER/kestrix/vul/raw`, 0700/0600).
+Only aggregate reports are committed, in [`vul/`](vul/README.md).
+
+| Source | Pinned revision | License | What we use | Allowed use and obligations |
+| --- | --- | --- | --- | --- |
+| [CVEfixes](https://github.com/secureIT-project/CVEfixes) | v1.0.8, [Zenodo 13118970](https://zenodo.org/records/13118970) (doi 10.5281/zenodo.13118970), `CVEfixes_v1.0.8.zip` | Data CC BY 4.0; collection code MIT | Fixes, CVE dates and descriptions, CWEs, and the Python, JavaScript and TypeScript file and method changes from the SQLite dump | Use and adapt with attribution (Bhandari, Naseer and Moonen, PROMISE '21). The mined code keeps each project's own license: see the per-repository license check. |
+| [MoreFixes](https://github.com/JafarAkhondali/Morefixes) | v4, dump 2026-06-20, [Zenodo 20776007](https://zenodo.org/records/20776007) (doi 10.5281/zenodo.20776007), `dump-2026-06-20.sql.gz` and `patch-files2026-06-20.zip` | CC BY 4.0 | The same tables from the PostgreSQL dump, fix commits with `score >= 65` only (the authors' recommended threshold). The `users` table and CPE mappings are never read. The patch archive is acquired and verified but not used yet. | Use and adapt with attribution (Akhoundali et al., PROMISE '24). The record warns that mined repositories carry their own licenses. |
+| [GitHub Advisory Database](https://github.com/github/advisory-database) | commit `f192b634af70bbe4cbe055f5a0e45b62da28b910` (main, 2026-10-19) | CC BY 4.0 | `advisories/github-reviewed/**`, reviewed PyPI and npm advisories only: ids, CVE aliases, publication dates, CWEs and fix-commit references | Use, share and adapt with attribution to GitHub and the database contributors. |
+| [SVEN](https://github.com/eth-sri/sven) | commit `e8449a0d54a5ae0bbdc6bb236330b8c7ec71df57` (master, 2024-07-14) | MIT | `data_train_val/`, the Python vulnerable/patched pairs, as a curated development set | Use with the MIT notice (He and Vechev, CCS '23). The functions keep their projects' licenses. |
+
+Two tiers apply (plan, "Licensing principles"): the research model may use all of the above; weights
+shipped with Kestrix may train only on functions whose repository GitHub reports as MIT, BSD-2/3-Clause,
+Apache-2.0, ISC, 0BSD, Unlicense, Zlib or PSF-2.0. MPL, LGPL and EPL are weak copyleft and kept apart;
+GPL and AGPL are copyleft; `NOASSERTION`, unlisted licenses, no license and unknown repositories never
+count as permissive. The per-repository table is [`vul/licenses.csv`](vul/licenses.csv).
+
+Not used, from the plan: DiverseVul, ReposVul, CleanVul and VUDENC (no license), MegaVul (GPL-3.0),
+PySecDB (non-commercial), and labels written by commercial models (CleanVul, R2Vul).

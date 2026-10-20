@@ -130,7 +130,7 @@ modules = [
     "kestrix_scan.walk",
 ]
 strict = true
-packages = ["kestrix", "kestrixbench", "bench"]
+packages = ["kestrix", "kestrixbench", "bench", "kestrixvul"]
 # The deliberately vulnerable benchmark cases are data for the scanners, not project code.
 exclude = ["^bench/cases/"]
 mypy_path = "src"

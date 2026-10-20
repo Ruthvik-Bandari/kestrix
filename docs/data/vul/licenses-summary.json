@@ -1,0 +1,78 @@
+{
+  "permissive_spdx": [
+    "0BSD",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "PSF-2.0",
+    "Unlicense",
+    "Zlib"
+  ],
+  "records_by_language_and_class": {
+    "javascript": {
+      "copyleft": 80,
+      "none": 54,
+      "other": 118,
+      "permissive": 404,
+      "unknown": 7,
+      "weak_copyleft": 11
+    },
+    "python": {
+      "copyleft": 217,
+      "none": 179,
+      "other": 267,
+      "permissive": 827,
+      "unknown": 15,
+      "weak_copyleft": 23
+    },
+    "typescript": {
+      "copyleft": 32,
+      "none": 11,
+      "other": 47,
+      "permissive": 164,
+      "unknown": 4,
+      "weak_copyleft": 7
+    }
+  },
+  "repositories": 1276,
+  "repositories_by_class": {
+    "copyleft": 187,
+    "none": 128,
+    "other": 206,
+    "permissive": 706,
+    "unknown": 17,
+    "weak_copyleft": 32
+  },
+  "repositories_by_spdx": {
+    "0BSD": 1,
+    "AGPL-3.0": 59,
+    "Apache-2.0": 166,
+    "Artistic-2.0": 1,
+    "BSD-2-Clause": 13,
+    "BSD-3-Clause": 56,
+    "BlueOak-1.0.0": 2,
+    "CC-BY-SA-4.0": 1,
+    "CC0-1.0": 1,
+    "EPL-2.0": 1,
+    "GPL-2.0": 31,
+    "GPL-3.0": 95,
+    "ISC": 13,
+    "LGPL-2.1": 6,
+    "LGPL-3.0": 19,
+    "MIT": 452,
+    "MPL-2.0": 6,
+    "NOASSERTION": 202,
+    "NONE": 128,
+    "NOT_FOUND": 17,
+    "OSL-3.0": 1,
+    "Unlicense": 5
+  },
+  "schema_version": 1,
+  "shipped_weight_pool_records": {
+    "javascript": 404,
+    "python": 827,
+    "typescript": 164
+  }
+}

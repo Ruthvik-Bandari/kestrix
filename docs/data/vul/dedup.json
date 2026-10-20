@@ -1,0 +1,65 @@
+{
+  "dropped_by_source_pair": {
+    "cvefixes->cvefixes": 27,
+    "cvefixes->sven": 6,
+    "morefixes->cvefixes": 651,
+    "morefixes->morefixes": 263,
+    "morefixes->sven": 10,
+    "sven->sven": 2
+  },
+  "kept_total": 2467,
+  "method": {
+    "exact": "sha256 of the normalized token stream",
+    "near": "MinHash 128 hash functions (SHAKE-128), 5-token shingles, LSH 16x8, estimated Jaccard >= 0.9",
+    "normalization": "comments and whitespace removed (Python tokenize; JS/TS lexer)",
+    "order": "sven, cvefixes, morefixes; then publication date; then id"
+  },
+  "per_source_language": {
+    "cvefixes/javascript": {
+      "dropped_exact_duplicate": 14,
+      "dropped_near_duplicate": 1,
+      "dropped_unchanged_after_normalization": 4,
+      "input": 284,
+      "kept": 265
+    },
+    "cvefixes/python": {
+      "dropped_exact_duplicate": 14,
+      "dropped_near_duplicate": 1,
+      "input": 319,
+      "kept": 304
+    },
+    "cvefixes/typescript": {
+      "dropped_exact_duplicate": 3,
+      "dropped_unchanged_after_normalization": 5,
+      "input": 126,
+      "kept": 118
+    },
+    "morefixes/javascript": {
+      "dropped_exact_duplicate": 319,
+      "dropped_near_duplicate": 9,
+      "dropped_unchanged_after_normalization": 8,
+      "input": 745,
+      "kept": 409
+    },
+    "morefixes/python": {
+      "dropped_exact_duplicate": 489,
+      "dropped_near_duplicate": 28,
+      "dropped_unchanged_after_normalization": 6,
+      "input": 1394,
+      "kept": 871
+    },
+    "morefixes/typescript": {
+      "dropped_exact_duplicate": 78,
+      "dropped_near_duplicate": 1,
+      "dropped_unchanged_after_normalization": 6,
+      "input": 232,
+      "kept": 147
+    },
+    "sven/python": {
+      "dropped_exact_duplicate": 2,
+      "input": 355,
+      "kept": 353
+    }
+  },
+  "schema_version": 1
+}
