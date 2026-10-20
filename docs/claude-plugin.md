@@ -18,6 +18,7 @@ depends on.
 | Component | Name in Claude Code | What it does |
 | --- | --- | --- |
 | Hook | `PreToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Snapshots the file before the change, so the other hooks can tell new findings from old ones. It prints nothing and never blocks a tool. |
+| Hook | `PreToolUse` on `Bash` (install guard) | Checks the packages a `pip`, `uv`, `npm`, `pnpm` or `yarn` install names against the local OSV index. It denies a known malicious package and warns about a known-vulnerable pinned version. Silent without an index. |
 | Hook | `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Scans the changed file with `kestrix-scan scan --hook` (or `kestrix code scan --hook`) and returns the medium-or-worse findings the edit introduced as `additionalContext`. |
 | Hook | `Stop` (opt-in) | Blocks Claude from finishing while files changed this session have high or critical findings that this session introduced. Off unless you enable it. |
 | Hook | `SessionStart` | Adds one line of context, "Kestrix security hooks are active ...", when `kestrix-scan` or `kestrix` is on PATH. It is silent otherwise. |
@@ -129,6 +130,47 @@ A file that does not exist yet is recorded as absent, so everything in it counts
 missing a snapshot (unreadable, not a regular file, or over 1 MiB, which the scanner skips anyway) gets
 none. The hook prints nothing and exits 0. Claude Code documents that "exit code 0 with no output means the
 hook has no decision to report", so the snapshot never approves or blocks a tool call.
+
+### PreToolUse on Bash: the install guard
+
+Before every `Bash` command, the script looks for a package install. When the command mentions `pip`, `uv`,
+`npm`, `pnpm` or `yarn` with `install`, `add` or `i`, it passes the hook JSON to `kestrix-scan scan --hook`,
+which parses the command and checks each package against the local OSV index that
+`kestrix-scan db update` builds ([dependencies](modules/code.md#dependencies)). Other commands cost one
+Python start-up and a regular expression.
+
+**Recognized:** `pip install`, `pip3 install`, `python -m pip install`, `uv pip install`, `uv add`,
+`npm install`, `npm i`, `npm add`, `pnpm add` and `yarn add`, also after `&&`, `;`, `|`, a newline,
+`VAR=value`, `sudo` or `env`. Package specs are `name`, `name==1.2.3` or `name>=1` for Python and `name`,
+`name@1.2.3` or `@scope/name@^1` for npm. Requirement files (`-r`), editable installs (`-e .`), URLs,
+paths, VCS references, npm aliases and anything `shlex` cannot split are skipped, not guessed at.
+
+**Decisions:**
+
+- **Deny** when a `MAL-` (OpenSSF malicious-packages) advisory covers the pinned version, or covers every
+  version of an unpinned package. The hook returns the documented PreToolUse decision, so the command does
+  not run and Claude sees the reason:
+
+  ```json
+  {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+   "permissionDecisionReason": "Kestrix install guard blocked this install:\nreact-0b1 (npm) is reported as a malicious package: MAL-2023-722 (Malicious code in react-0b1 (npm)).\n..."}}
+  ```
+
+- **Warn, without blocking,** when an exactly pinned version has known vulnerabilities, naming the version
+  that fixes them, or when some versions of an unpinned package are reported as malicious. The reply is
+  `additionalContext` only, with no `permissionDecision`, so the normal permission flow is unchanged.
+- **Stay silent** otherwise.
+
+**Fails open:** no index, no `kestrix-scan` on PATH, a timeout (8 s, inside the 10 s hook timeout) or any
+error means no output and exit code 0, so the command runs as if the plugin were not installed.
+
+**Opt out** with `KESTRIX_INSTALL_GUARD=0` in the environment, or for one project with
+`claude.install-guard = false` under `[tool.kestrix]`. To accept one advisory, add it to
+`[tool.kestrix] ignore-advisories` with a reason.
+
+Measured 2026-10-20 on the same Apple M4 Pro, Python 3.14.5 running the hook script, with the real PyPI and npm index (20 runs, p50 / p95): a
+`Bash` command that is not an install takes 57 / 64 ms; `npm i react-0b1 lodash@4.17.20` (one deny, one
+warning) takes 154 / 158 ms, including starting `kestrix-scan`.
 
 ### PostToolUse: scan what Claude just wrote
 
@@ -246,7 +288,9 @@ directories older than 14 days are removed at the next session start.
 ## Privacy
 
 - **No network calls.** Neither the scanner nor the hooks open a network connection. They need no
-  account, send no telemetry and check for no updates. A test proves it:
+  account, send no telemetry and check for no updates. The one command that downloads anything is
+  `kestrix-scan db update`, which you run yourself to fetch the public OSV vulnerability data; the install
+  guard and dependency checks only read that local copy. A test proves it:
   `packages/kestrix-scan/tests/test_no_network.py` runs a scan, the hook mode and the Stop mode with every socket
   call made to raise. It also runs the hook script and the `kestrix-scan` process it starts with sockets
   refused in both processes, and asserts that both still work and that no socket was attempted.
