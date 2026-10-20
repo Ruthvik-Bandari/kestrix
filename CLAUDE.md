@@ -1,6 +1,6 @@
 # Kestrix
 
-Local-first security workbench: one Python package (`kestrix`) with a Typer CLI and a
+Local-first security workbench: the `kestrix` package (Python 3.10+) with a Typer CLI and a
 FastAPI server that serves a bundled React dashboard on 127.0.0.1:8765. Platform decision:
 `docs/adr/0001-platform-direction.md`. Detection-repair research plan:
 `docs/CyberGuard_Engineering_Plan.md` (its CyberGuard/Spring Boot wording is historical).
@@ -11,7 +11,9 @@ Session state: `docs/handoff.md`. Workflow: `docs/claude/workflow.md`.
 - `src/kestrix/core/` reason codes, safe YAML/JSONL loading, netguard, config/secrets, evidence
 - `src/kestrix/detect/` Sigma repair: rule, mapping, fixtures, engine, replay, diagnose,
   candidate, repair, workflow; bundled cases in `detect/cases/` (generated)
-- `src/kestrix/forensics/`, `webcheck/`, `bitcoin/`, `mail/`, `code/` the other five modules
+- `src/kestrix/forensics/`, `webcheck/`, `bitcoin/`, `mail/` the other modules; `code/` re-exports kestrix-scan
+- `packages/kestrix-scan/` the zero-dependency scanner (`kestrix_scan`: rules, argparse CLI, config, init,
+  pytest plugin, Claude Code plugin), a uv workspace member with its own tests (ADR 0006)
 - `src/kestrix/server/` FastAPI app; dashboard bundle built into `server/static/`
 - `src/kestrix/cli.py` entry point; each module has thin `cli.py` and `api.py` adapters
 - `frontend/` React + Vite dashboard source; `tests/` per module; `scripts/` generators
@@ -23,8 +25,8 @@ Session state: `docs/handoff.md`. Workflow: `docs/claude/workflow.md`.
 uv sync --all-extras
 uv run pytest                          # engine tests skip if Elasticsearch is down
 uv run pytest -m engine                # needs `uv run kestrix detect engine-up`
-uv run ruff check src tests scripts
-uv run ruff format --check src tests scripts
+uv run ruff check .
+uv run ruff format --check .
 uv run mypy
 npm --prefix frontend run build        # lint/typecheck/test also exist
 uv run python scripts/build_detect_cases.py   # regenerate bundled cases

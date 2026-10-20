@@ -9,35 +9,41 @@ and three slash commands. It is slice C2 of [ADR 0005](adr/0005-code-security.md
 The scanner is rule-based pattern analysis ([code module](modules/code.md)). It misses things and can be
 wrong in context. A file with no findings means no rule fired, not that the code is secure.
 
-The source is [`src/kestrix/integrations/claude_plugin/kestrix/`](../src/kestrix/integrations/claude_plugin/kestrix/),
-and it ships inside the `kestrix` wheel.
+The source is [`packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix/`](../packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix/),
+and it ships inside the `kestrix-scan` wheel ([ADR 0006](adr/0006-two-packages.md)), which the `kestrix` workbench
+depends on.
 
 ## What it adds
 
 | Component | Name in Claude Code | What it does |
 | --- | --- | --- |
 | Hook | `PreToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Snapshots the file before the change, so the other hooks can tell new findings from old ones. It prints nothing and never blocks a tool. |
-| Hook | `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Scans the changed file with `kestrix code scan --hook` and returns the medium-or-worse findings the edit introduced as `additionalContext`. |
+| Hook | `PostToolUse` on `Write\|Edit\|MultiEdit\|NotebookEdit` | Scans the changed file with `kestrix-scan scan --hook` (or `kestrix code scan --hook`) and returns the medium-or-worse findings the edit introduced as `additionalContext`. |
 | Hook | `Stop` (opt-in) | Blocks Claude from finishing while files changed this session have high or critical findings that this session introduced. Off unless you enable it. |
-| Hook | `SessionStart` | Adds one line of context, "Kestrix security hooks are active ...", when `kestrix` is on PATH. It is silent otherwise. |
+| Hook | `SessionStart` | Adds one line of context, "Kestrix security hooks are active ...", when `kestrix-scan` or `kestrix` is on PATH. It is silent otherwise. |
 | Skill | `secure-code-review` | How to review code with Kestrix: scan, triage by severity, fix by rule family, re-scan and explain the risk that remains. Claude uses it on its own when you ask for a security review. |
 | Skill | `fixing-security-findings` | A per-rule playbook with before and after code for every rule id. It is generated from the rule registry. |
 | Skill | `kestrix-security` | The existing skill for email, link, file, website, Sigma and Bitcoin questions ([docs/claude-skill.md](claude-skill.md)). |
 | Command | `/kestrix:scan [path]` | Scans a path (default `.`) and summarizes the findings. It changes no code. |
 | Command | `/kestrix:fix [path]` | Scans, fixes every finding at medium or above, and re-scans until the code is clean or each remaining finding is explained. It stops after 5 rounds. |
-| Command | `/kestrix:review [base-ref]` | A secure review of the current diff. It runs `kestrix code scan . --diff <ref>` (default `HEAD`), then reviews the diff for what the rules cannot see. |
+| Command | `/kestrix:review [base-ref]` | A secure review of the current diff. It runs `kestrix-scan . --diff <ref>` (default `HEAD`), then reviews the diff for what the rules cannot see. |
 
 The three commands are skills with `disable-model-invocation: true`, so they run only when you type them.
 The plugin docs recommend `skills/` over `commands/` for new plugins.
 
 ## Install
 
-The plugin calls the `kestrix` command, so install Kestrix first. The PyPI release is pending, so install
-from the repository:
+The plugin calls the `kestrix-scan` command, so install it first. It has no dependencies on Python 3.11
+and newer:
 
 ```bash
-uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"   # or: pipx install "git+https://..."
+pip install kestrix-scan              # or: uv tool install kestrix-scan / pipx install kestrix-scan
 ```
+
+Until the first PyPI release, install it from the repository with
+`uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
+The full workbench (`pip install kestrix`) includes `kestrix-scan`; when only an older `kestrix` without it is
+on PATH, the hooks fall back to `kestrix code scan`.
 
 The hooks also need `python3` on PATH. Any Python 3.9 or later works, including the macOS system Python,
 and it does not have to be the one Kestrix is installed in.
@@ -58,7 +64,7 @@ From your shell, run `claude plugin marketplace add Ruthvik-Bandari/kestrix` and
 ### From the installed package (works now)
 
 ```bash
-kestrix integrations install-claude-plugin            # copies the plugin to ~/.claude/kestrix-plugin
+kestrix-scan install-claude-plugin                   # copies the plugin to ~/.claude/kestrix-plugin
 claude plugin marketplace add ~/.claude/kestrix-plugin
 claude plugin install kestrix@kestrix-local
 ```
@@ -69,10 +75,12 @@ one session without installing it, run `claude --plugin-dir ~/.claude/kestrix-pl
 
 | Command | Options | What it does |
 | --- | --- | --- |
-| `kestrix integrations install-claude-plugin` | `--dest DIR`, `--force` | Copies the plugin and a `kestrix-local` `marketplace.json` to `DIR` (default `~/.claude/kestrix-plugin`), then prints the commands that enable it. |
-| `kestrix integrations package-claude-plugin` | `--out FILE.zip` (required), `--force` | Writes the same files as a zip, with the plugin at the top level, for `claude --plugin-dir FILE.zip`. |
+| `kestrix-scan install-claude-plugin` | `--dest DIR`, `--force` | Copies the plugin and a `kestrix-local` `marketplace.json` to `DIR` (default `~/.claude/kestrix-plugin`), then prints the commands that enable it. |
+| `kestrix-scan package-claude-plugin` | `--out FILE.zip` (required), `--force` | Writes the same files as a zip, with the plugin at the top level, for `claude --plugin-dir FILE.zip`. |
 
-Exit codes: 0 done, 2 refused, with the reason on stderr.
+Exit codes: 0 done, 2 refused, with the reason on stderr. `kestrix integrations install-claude-plugin` and
+`package-claude-plugin` run the same commands. `kestrix-scan init --claude-plugin` installs the plugin as part of
+setting up a project.
 
 **Installer safety.** The installer follows the same rules as the skill installer:
 
@@ -95,15 +103,16 @@ To remove the plugin, run `claude plugin uninstall kestrix@kestrix-local` and
 ## The hooks
 
 `hooks/hooks.json` starts `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" <event>`. The script
-uses only the standard library and calls the `kestrix` executable it finds on PATH.
+uses only the standard library and calls the `kestrix-scan` executable it finds on PATH, or, when there is
+none, the `kestrix` executable (`kestrix code scan`).
 
 **Why the wrapper is a Python script, not a shell script:**
 
 - **It needs a JSON parser.** It reads `session_id`, `stop_hook_active` and the file paths from JSON.
   POSIX `sh` has no JSON parser without `jq`.
 - **macOS has no `timeout` command,** and Python's `subprocess` timeout works everywhere.
-- **Kestrix itself needs Python 3.12,** so a machine that runs Kestrix already has Python. The wrapper
-  runs on 3.9 or later and calls `kestrix` instead of importing it, so a `uv tool` or `pipx` install works.
+- **The scanner itself needs Python 3.10,** so a machine that runs it already has Python. The wrapper
+  runs on 3.9 or later and calls `kestrix-scan` instead of importing it, so a `uv tool` or `pipx` install works.
 - **It does not depend on the executable bit.** The file runs as `python3 <file>`, so modes lost in a zip
   or a copy do not break it.
 
@@ -130,7 +139,7 @@ The script reads the hook JSON from stdin and finds the changed file in one of t
 - the `file_path` of each entry in `tool_input.edits`.
 
 It records the absolute path in the session's file list, adds the PreToolUse snapshot to the JSON as
-`kestrix_before`, and pipes it to `kestrix code scan --hook` with an 8-second limit, inside the hook's
+`kestrix_before`, and pipes it to `kestrix-scan scan --hook` (or `kestrix code scan --hook`) with an 8-second limit, inside the hook's
 10-second `timeout`. When the scanner replies, the script passes the reply through:
 
 ```json
@@ -160,10 +169,10 @@ medium-or-worse finding produces no output.
 **Fail open.** The hook script always exits 0. When the scanner errors, prints something that is not
 JSON, or runs past its time limit, the script produces no output, so it never blocks an edit.
 
-When `kestrix` is not on PATH, the first edit of the session shows one warning (`systemMessage`) with the
-install command. Claude also gets a note not to install Kestrix itself. Later edits in that session stay
-silent. A `kestrix` executable in the project directory itself is ignored, so a cloned repository cannot
-put its own scanner in place of yours.
+When neither `kestrix-scan` nor `kestrix` is on PATH, the first edit of the session shows one warning
+(`systemMessage`) with the install command. Claude also gets a note not to install Kestrix itself. Later edits
+in that session stay silent. A `kestrix-scan` or `kestrix` executable in the project directory itself is
+ignored, so a cloned repository cannot put its own scanner in place of yours.
 
 ### Stop: block finishing while serious findings remain (opt-in)
 
@@ -180,7 +189,7 @@ The project directory is `CLAUDE_PROJECT_DIR`, or the hook's `cwd`. `KESTRIX_BLO
 gate off even when the project file turns it on. Any value other than the JSON `true` leaves the gate off.
 
 When Claude tries to finish, the gate scans every file the PostToolUse hook recorded in this session that
-still exists. It allows up to 200 files, using `kestrix code scan --hook` in Stop mode with a 25-second
+still exists. It allows up to 200 files, using the same scanner command with `--hook` in Stop mode with a 25-second
 limit inside the hook's 30-second `timeout`.
 
 **Only this session's work.** Each file is compared with its `before-first` snapshot, the file as it was
@@ -238,10 +247,10 @@ directories older than 14 days are removed at the next session start.
 
 - **No network calls.** Neither the scanner nor the hooks open a network connection. They need no
   account, send no telemetry and check for no updates. A test proves it:
-  `tests/integrations/test_no_network.py` runs a scan, the hook mode and the Stop mode with every socket
-  call made to raise. It also runs the hook script and the `kestrix` process it starts with sockets
+  `packages/kestrix-scan/tests/test_no_network.py` runs a scan, the hook mode and the Stop mode with every socket
+  call made to raise. It also runs the hook script and the `kestrix-scan` process it starts with sockets
   refused in both processes, and asserts that both still work and that no socket was attempted.
-- **Everything runs on your machine.** The hooks call the local `kestrix` command. The scanner reads files
+- **Everything runs on your machine.** The hooks call the local `kestrix-scan` command. The scanner reads files
   as data and never imports, executes or uploads them.
 - **Snapshots stay local.** The PreToolUse copies of changed files live only in the plugin's data
   directory, or in the private temp directory, and are removed with the session record.
@@ -263,19 +272,19 @@ hook script run by the same Python:
 
 | File lines | in-process | pre-tool-use | post-tool-use |
 | ---: | ---: | ---: | ---: |
-| 103 | 5.2 / 5.4 | 34.4 / 35.6 | 369.1 / 374.9 |
-| 999 | 49.6 / 50.1 | 34.5 / 35.0 | 414.9 / 441.7 |
-| 4,999 | 256.6 / 264.5 | 34.5 / 35.7 | 622.4 / 632.7 |
+| 103 | 5.3 / 5.6 | 34.7 / 35.9 | 95.1 / 96.1 |
+| 999 | 50.4 / 55.2 | 35.2 / 36.0 | 141.5 / 142.4 |
+| 4,999 | 259.4 / 266.0 | 37.1 / 44.2 | 352.9 / 365.3 |
 
-- **in-process** is `kestrix.code.hook.hook_response`: the scan after the edit plus the scan of the text
+- **in-process** is `kestrix_scan.hook.hook_response`: the scan after the edit plus the scan of the text
   before it.
 - **pre-tool-use** is the whole PreToolUse hook process, which copies the file.
-- **post-tool-use** is the whole PostToolUse hook process, including starting `kestrix code scan --hook`.
+- **post-tool-use** is the whole PostToolUse hook process, including starting `kestrix-scan scan --hook`.
   This is what you wait for after each edit.
 
-Most of the PostToolUse time is fixed start-up cost: importing the `kestrix` command takes about 260 ms,
-because the root CLI loads every module. The scan itself grows with the file, to about a quarter of a second
-at 5,000 lines. A test keeps the in-process hook on a 2,000-line file under 2 seconds.
+The hooks call `kestrix-scan`, which imports only the standard library, so the fixed start-up cost of the
+PostToolUse process is about 90 ms (it was about 370 ms when the hooks started the full `kestrix` command,
+which loaded every module). The scan itself grows with the file, to about a quarter of a second at 5,000 lines. A test keeps the in-process hook on a 2,000-line file under 2 seconds.
 Rerun with `uv run python scripts/bench_hook.py`.
 
 ## Suppressing a finding
@@ -294,14 +303,14 @@ Stop gate. To adopt the scanner on existing code without fixing everything first
 
 ## Maintaining the plugin
 
-- **Versions:** `plugin.json`, both marketplace entries and `kestrix.__version__` carry the same
-  version, and a test checks that they match.
+- **Versions:** `plugin.json`, both marketplace entries, `kestrix_scan.__version__`, both `pyproject.toml`
+  files and the workbench's `kestrix-scan==` pin carry the same version, and a test checks that they match.
 - **The fix playbook:** `skills/fixing-security-findings/SKILL.md` is generated with
   `uv run python scripts/build_claude_fix_playbook.py`. A test fails when it drifts from
-  `src/kestrix/code/rules.py`. The test also scans each example: the "before" code must fire its rule,
+  `packages/kestrix-scan/src/kestrix_scan/registry.py`. The test also scans each example: the "before" code must fire its rule,
   and the "after" code must produce no findings.
 - **The skill installer:** `kestrix-security` lives only in the plugin, under `skills/kestrix-security/`.
-  `kestrix integrations install-claude-skill` copies it from there, so the plugin and the standalone
+  `kestrix-scan install-claude-skill` copies it from there, so the plugin and the standalone
   skill never drift apart.
-- **Validation:** `claude plugin validate src/kestrix/integrations/claude_plugin/kestrix` and
-  `claude plugin validate .` check the manifest and the marketplace.
+- **Validation:** `claude plugin validate --strict packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix`
+  and `claude plugin validate --strict .` check the manifest and the marketplace.

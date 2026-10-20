@@ -1,1 +1,191 @@
 # kestrix-scan
+
+**Local security checks for Python code and hard-coded secrets.** `kestrix-scan` finds shell and SQL injection,
+unsafe deserialization, disabled TLS checks, weak hashes and randomness, and leaked API keys, with a CWE and a
+concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
+pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
+
+- **No dependencies** on Python 3.11 and newer (only `tomli` on 3.10). Python 3.10 to 3.13.
+- **Nothing leaves your machine.** Files are read as data: never imported, executed or uploaded. The scanner
+  opens no network connections.
+- **Fast to start:** `kestrix-scan --version` takes about 40 to 55 ms, a few milliseconds more than Python itself.
+
+Part of [Kestrix](https://github.com/Ruthvik-Bandari/kestrix) by Ruthvik Bandari. Apache-2.0.
+
+## Quick start
+
+```bash
+pip install kestrix-scan          # or: uv tool install kestrix-scan / pipx install kestrix-scan
+kestrix-scan src                  # text report; exit 1 on high or critical findings
+```
+
+Before the first PyPI release, install it from GitHub:
+`pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
+
+```text
+$ kestrix-scan app.py
+app.py
+  4:5  HIGH  py.subprocess.shell_true  CWE-78
+      subprocess.run runs a built command through the shell (shell=True).
+      fix: Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.
+
+1 finding(s): 0 critical, 1 high, 0 medium, 0 low in 1 file(s); 0 suppressed, 0 in baseline, 0 skipped; fail-on high.
+Rule-based pattern analysis on this machine. Rules miss things and can be wrong; no detection rate is claimed. No findings means no rule fired, not that the code is secure.
+```
+
+| Option | Meaning |
+| --- | --- |
+| `PATH ...` | Files or directories to scan (default `.`). Directories skip `.gitignore`d, vendored and build paths. |
+| `--format text\|json\|sarif` | Output format. JSON has a `schema_version`; SARIF 2.1.0 is for GitHub code scanning. |
+| `--output FILE` | Write the report to a file instead of stdout. |
+| `--fail-on low\|medium\|high\|critical\|none` | Lowest severity that makes the command exit 1 (default `high`, or `[tool.kestrix]` `fail-on`). |
+| `--diff REF` | Only report findings on lines changed since a git ref (untracked files count as new). |
+| `--baseline FILE` / `--write-baseline FILE` | Leave out known findings / record the current ones, to adopt the scanner gradually. |
+| `--config FILE` / `--no-config` | Use one settings file / ignore settings files. |
+| `--hook` | Claude Code hook mode: read the hook JSON on stdin; always exit 0. |
+
+**Exit codes:** 0 nothing at or above `--fail-on`, 1 findings at or above it, 2 usage or input error.
+`kestrix-scan rules` lists every rule; `kestrix-scan --help` lists the commands. `python -m kestrix_scan` works too.
+
+Silence a confirmed false positive on its line, or the line above, with a reason (required):
+
+```python
+subprocess.run(BUILD, shell=True)  # kestrix: ignore[py.subprocess.shell_true] fixed command defined above
+```
+
+## Configuration
+
+`[tool.kestrix]` in `pyproject.toml`, or the same keys at the top level of `.kestrix.toml`:
+
+```toml
+[tool.kestrix]
+fail-on = "medium"                              # low, medium, high, critical or none
+exclude = ["tests/fixtures/", "*.min.js"]       # globs, as in .gitignore
+baseline = ".kestrix-baseline.json"             # relative to this file
+rules.enable = ["py.", "secret."]               # rule ids or prefixes; default: every rule
+rules.disable = ["py.crypto.weak_hash"]
+```
+
+- The nearest file wins, searching upwards from the scan root and stopping at the git root. In each directory
+  `.kestrix.toml` is read before `pyproject.toml`; a `pyproject.toml` without `[tool.kestrix]` is skipped.
+- Command-line flags override the file.
+- An unknown key is a warning. An unknown rule id or prefix is an error (exit 2) with a suggestion, so a
+  typo never silently disables nothing.
+- Excludes apply to files named on the command line too, which is how pre-commit passes them.
+
+## Set up a project: `kestrix-scan init`
+
+```bash
+kestrix-scan init                        # append a minimal [tool.kestrix] to pyproject.toml
+kestrix-scan init --pre-commit           # add the pre-commit hook
+kestrix-scan init --ci github            # write .github/workflows/kestrix.yml
+kestrix-scan init --claude-plugin        # install the Claude Code plugin
+```
+
+`init` appends to `pyproject.toml` as text and never rewrites it; it leaves an existing `[tool.kestrix]`
+alone unless you pass `--force`. Without a `pyproject.toml` it writes `.kestrix.toml`. It writes
+`.pre-commit-config.yaml` only when it is missing or empty, and otherwise prints the entry to add. Running
+it again is safe: each step reports what is already in place.
+
+## pre-commit
+
+```yaml
+repos:
+  - repo: https://github.com/Ruthvik-Bandari/kestrix
+    rev: v0.1.0
+    hooks:
+      - id: kestrix-scan
+```
+
+The hook scans the staged Python and text files and honours `[tool.kestrix]`.
+
+## GitHub code scanning
+
+`kestrix-scan init --ci github` writes this workflow. Its actions are pinned to commit SHAs and its job has
+only `contents: read` and `security-events: write`:
+
+```yaml
+- run: pip install kestrix-scan==0.1.0
+- run: kestrix-scan --format sarif --output kestrix.sarif || true
+- uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+  with:
+    sarif_file: kestrix.sarif
+```
+
+Findings then appear under **Security → Code scanning**. To fail the build instead, drop `|| true`.
+
+## pytest
+
+```bash
+pytest --kestrix                          # adds one "kestrix-scan" item that scans the rootdir
+pytest --kestrix --kestrix-fail-on=medium
+```
+
+The item fails when findings meet the threshold (default: `[tool.kestrix]` `fail-on`, else `high`), and its
+failure report is the scanner's text report. Without `--kestrix` the plugin only registers its options; the
+scanner is not even imported.
+
+## Claude Code plugin
+
+```bash
+kestrix-scan install-claude-plugin        # copies the plugin to ~/.claude/kestrix-plugin
+claude plugin marketplace add ~/.claude/kestrix-plugin
+claude plugin install kestrix@kestrix-local
+```
+
+Or from the repository's marketplace: `/plugin marketplace add Ruthvik-Bandari/kestrix`, then
+`/plugin install kestrix@kestrix`. Nothing in your Claude Code settings changes until you run those commands.
+
+- **After every Write or Edit** the plugin runs `kestrix-scan --hook` on the changed file and hands Claude the
+  findings the edit introduced, with the rule, CWE and fix, so Claude fixes them in the same turn.
+- **Skills and commands:** `secure-code-review`, a per-rule `fixing-security-findings` playbook,
+  `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` (a review of the current git diff).
+- **Opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, Claude cannot finish while new high or critical
+  findings remain in files it changed (at most three times per session).
+- **Fails open:** a missing scanner, a timeout or an error never blocks an edit. Findings never contain secret
+  values, only their kind and first four characters.
+
+`kestrix-scan install-claude-skill` installs only the `kestrix-security` skill;
+`package-claude-plugin` and `package-claude-skill` write zips. Full details:
+[docs/claude-plugin.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/claude-plugin.md).
+
+## Python API
+
+```python
+import kestrix_scan
+
+config = kestrix_scan.load_config("src")  # [tool.kestrix] or .kestrix.toml, if any
+report = kestrix_scan.scan(["src"], config=config, fail_on="high")
+for finding in report.findings:  # kestrix_scan.Finding: frozen dataclass
+    print(finding.path, finding.line, finding.rule_id, finding.cwe, finding.fix)
+print(report.to_json())  # the same JSON as --format json
+raise SystemExit(kestrix_scan.exit_code(report))
+
+for rule in kestrix_scan.rules():  # the registry, in its stable order
+    print(rule.id, rule.severity, rule.cwe, rule.title)
+```
+
+`scan` raises `kestrix_scan.Rejected` for a missing path, a bad baseline, an unknown git ref or bad
+settings. The package is typed (`py.typed`).
+
+## Privacy
+
+`kestrix-scan` reads files as bytes, decodes them as text and parses Python with the standard-library `ast`.
+It never imports or runs the code it scans, never follows symbolic links out of the scan root, and caps
+file size and count. It makes no network requests; the test suite proves the scanner and the plugin hooks
+work with every socket call refused. `--diff` and directory walks run the local `git` binary.
+
+## Rules
+
+The rules cover Python (`py.*`: `eval`/`exec`, `shell=True` and `os.system`, pickle and unsafe YAML, SQL built
+from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`, Flask debug, unverified
+JWTs, stdlib XML parsers, `assert` for access checks, paths from request data) and secrets in any text file
+(`secret.*`: AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys, JWTs and
+high-entropy credentials). The full table with CWEs and severities is in
+[docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules), and
+each rule's sources are in
+[docs/modules/code-rules-provenance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code-rules-provenance.md).
+
+Rules are pattern analysis: they miss things and can be wrong in context. No detection rate is claimed, and
+no findings means no rule fired, not that the code is secure. Rule ids are stable; renaming one is a breaking
+change recorded in the [CHANGELOG](CHANGELOG.md).

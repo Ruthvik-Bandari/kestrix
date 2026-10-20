@@ -19,8 +19,8 @@ It covers:
 
 The skill is Markdown only: `SKILL.md` with the workflows and safety rules, plus `reference/` files that
 Claude loads when it needs them (every finding id with its severity, and a guide to the JSON fields). The
-source is [`src/kestrix/integrations/claude_plugin/kestrix/skills/kestrix-security/`](../src/kestrix/integrations/claude_plugin/kestrix/skills/kestrix-security/),
-inside the Claude Code plugin, and it ships inside the `kestrix` wheel. The plugin and the standalone
+source is [`packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix/skills/kestrix-security/`](../packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix/skills/kestrix-security/),
+inside the Claude Code plugin, and it ships inside the `kestrix-scan` wheel, which `kestrix` depends on. The plugin and the standalone
 install below use the same files.
 
 ## Install for Claude Code
@@ -29,7 +29,7 @@ Install Kestrix first. The PyPI release is pending, so install from the reposito
 
 ```bash
 uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"   # or: pipx install "git+https://..."
-kestrix integrations install-claude-skill
+kestrix integrations install-claude-skill        # the same as: kestrix-scan install-claude-skill
 ```
 
 The skill goes to `~/.claude/skills/kestrix-security`. Start a new Claude Code session to load it.

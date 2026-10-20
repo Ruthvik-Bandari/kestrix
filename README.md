@@ -1,12 +1,33 @@
 # Kestrix
 
 [![CI](https://github.com/Ruthvik-Bandari/kestrix/actions/workflows/ci.yml/badge.svg)](https://github.com/Ruthvik-Bandari/kestrix/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-**A local-first security workbench.** It fixes broken threat detections, inspects suspicious files and
-links, checks your website's defences, and tells you whether your Bitcoin addresses are exposed to future
-quantum attacks. Everything runs on your own machine, through one `pip install`, a CLI and a dashboard.
+**Security checks for your code, and a local-first security workbench.** Everything runs on your own machine.
+
+### Scan your code: `kestrix-scan`
+
+A small, fast scanner for insecure Python code and hard-coded secrets, with **no dependencies** on Python
+3.11 and newer (only `tomli` on 3.10). It works in the terminal, CI, pre-commit and pytest, and inside Claude
+Code, where it has Claude fix what it finds as it writes code.
+
+```bash
+pip install kestrix-scan
+kestrix-scan src                          # exit 1 on high or critical findings
+kestrix-scan init --ci github --pre-commit   # [tool.kestrix] config, SARIF upload workflow, pre-commit hook
+kestrix-scan install-claude-plugin        # the Claude Code plugin: scan every file Claude writes
+```
+
+Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](packages/kestrix-scan/README.md).
+Until the first PyPI release, install it with
+`pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
+
+### The full workbench: `kestrix`
+
+It fixes broken threat detections, inspects suspicious files and links, checks your website's defences,
+reads suspicious emails, and tells you whether your Bitcoin addresses are exposed to future quantum
+attacks, through one `pip install`, a CLI and a dashboard. It includes `kestrix-scan`.
 
 ```bash
 pip install kestrix
@@ -46,9 +67,10 @@ kestrix dashboard            # opens http://localhost:8765
 
 ## Install
 
-Requires Python 3.12 or newer.
+Requires Python 3.10 or newer.
 
 ```bash
+pip install kestrix-scan            # only the code scanner and the Claude Code plugin; no dependencies
 pip install kestrix                 # core: all six modules (incl. the code scanner) and the dashboard
 pip install "kestrix[exif]"         # + photo metadata (Pillow)
 pip install "kestrix[ai]"           # + the optional AI guardian (bring your own Anthropic key)
@@ -69,7 +91,7 @@ kestrix forensics file ~/Downloads/invoice.pdf      # hashes, entropy, type chec
 kestrix forensics url "http://paypa1-login.example.top/verify"
 kestrix webcheck scan https://your-site.example
 kestrix mail analyze ~/Downloads/message.eml     # offline email checks
-kestrix code scan src                            # insecure code and hard-coded secrets
+kestrix-scan src                                 # insecure code and hard-coded secrets
 kestrix bitcoin scan bc1q... 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 kestrix detect cases                                # 11 bundled demonstrations
 kestrix detect demo c03-noise-updater-temp
@@ -211,10 +233,13 @@ not a probability, and no detection rates are claimed yet. Details: [docs/module
 ## Code security scanning
 
 ```bash
-kestrix code scan src                               # text report; exit 1 on high or critical findings
-kestrix code scan . --format sarif --output kestrix.sarif
-kestrix code scan . --diff origin/main --fail-on medium
+kestrix-scan src                                    # text report; exit 1 on high or critical findings
+kestrix-scan . --format sarif --output kestrix.sarif
+kestrix-scan . --diff origin/main --fail-on medium
 ```
+
+The scanner is the `kestrix-scan` package; inside the workbench, `kestrix code scan` runs the same command
+with the same options.
 
 Kestrix reads your code as data (Python through the standard-library `ast`, never imported or run) and reports:
 
@@ -230,8 +255,14 @@ Every finding has a rule id, CWE, severity, confidence, location, why it matters
 0 (nothing at or above `--fail-on`), 1 (findings) and 2 (usage error). Output is text, JSON or SARIF 2.1.0
 for GitHub code scanning. Silence a false positive with `# kestrix: ignore[rule-id] reason` (the reason
 is required), adopt existing code with `--write-baseline` and `--baseline`, and use `--hook` from a Claude
-Code `PostToolUse` hook (the [Claude Code plugin](#claude-code-plugin) sets that up). From Python: `from kestrix.code import scan`. The rules are pattern analysis and
-miss things; no detection rates are claimed. Details: [docs/modules/code.md](docs/modules/code.md).
+Code `PostToolUse` hook (the [Claude Code plugin](#claude-code-plugin) sets that up).
+
+Settings live in `[tool.kestrix]` in `pyproject.toml` (or `.kestrix.toml`): `fail-on`, `exclude`,
+`rules.enable` / `rules.disable` and `baseline`, with command-line flags taking precedence.
+`kestrix-scan init` writes them, a pre-commit entry and a GitHub workflow that uploads SARIF;
+`pytest --kestrix` adds a scan to a test run. From Python: `kestrix_scan.scan(["src"])` (`kestrix.code` still
+works). The rules are pattern analysis and miss things; no detection rates are claimed. Details:
+[docs/modules/code.md](docs/modules/code.md).
 
 ## Bitcoin quantum risk
 
@@ -267,9 +298,11 @@ Kestrix includes a Claude skill, `kestrix-security`, so you can ask Claude Code 
 locally, reads the JSON and explains the verdict, the main reasons and what to do next.
 
 ```bash
-kestrix integrations install-claude-skill                           # into ~/.claude/skills/kestrix-security
-kestrix integrations package-claude-skill --out kestrix-security.zip   # to upload in Claude.ai or Claude Desktop
+kestrix-scan install-claude-skill                           # into ~/.claude/skills/kestrix-security
+kestrix-scan package-claude-skill --out kestrix-security.zip   # to upload in Claude.ai or Claude Desktop
 ```
+
+`kestrix integrations install-claude-skill` and the other `kestrix integrations` commands do the same.
 
 The skill keeps everything on your machine, never opens links or runs files, treats email and file content
 as untrusted data, and checks only websites you own. Details and example prompts:
@@ -279,12 +312,14 @@ the recommended way to install it.
 ## Claude Code plugin
 
 The `kestrix` plugin makes Claude Code scan every file it writes. A `PostToolUse` hook on `Write`, `Edit`,
-`MultiEdit` and `NotebookEdit` runs `kestrix code scan --hook` on the changed file. Findings at medium
+`MultiEdit` and `NotebookEdit` runs `kestrix-scan --hook` (or, with only the workbench installed,
+`kestrix code scan --hook`) on the changed file. Findings at medium
 severity or above go back to Claude with the rule, the CWE and the fix, and Claude fixes them in the same
 turn. It suppresses a finding only when it is a confirmed false positive, with a written reason.
 
 ```bash
-kestrix integrations install-claude-plugin            # copies the plugin to ~/.claude/kestrix-plugin
+pip install kestrix-scan                             # or: uv tool install kestrix-scan
+kestrix-scan install-claude-plugin                   # copies the plugin to ~/.claude/kestrix-plugin
 claude plugin marketplace add ~/.claude/kestrix-plugin
 claude plugin install kestrix@kestrix-local
 ```
@@ -299,7 +334,7 @@ The plugin also includes:
 - **An opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, or `{"claude": {"block_on_stop": true}}` in
   `.kestrix.json`, Claude cannot finish while high or critical findings remain in the files it changed.
 
-Everything runs locally, and the hooks fail open. When `kestrix` is not installed, the plugin shows one
+Everything runs locally, and the hooks fail open. When neither `kestrix-scan` nor `kestrix` is installed, the plugin shows one
 hint per session and never blocks an edit. Findings never include secret values. Details:
 [docs/claude-plugin.md](docs/claude-plugin.md).
 
@@ -333,6 +368,7 @@ properties are in [docs/hosted.md](docs/hosted.md).
 ```mermaid
 flowchart LR
   CLI["kestrix CLI (Typer)"] --> Core
+  CLI --> Scan["kestrix-scan (stdlib only): rules, secrets, SARIF, hook, Claude plugin"]
   UI["Dashboard (React SPA, bundled)"] -->|"/api (loopback only)"| API["FastAPI"]
   API --> Core
   subgraph Core["kestrix core modules"]
@@ -358,14 +394,16 @@ git clone https://github.com/Ruthvik-Bandari/kestrix.git kestrix
 cd kestrix
 uv sync --all-extras
 uv run kestrix detect engine-up       # for the engine-backed tests
-uv run pytest                           # engine tests skip automatically if Elasticsearch is down
-uv run ruff check src tests && uv run ruff format --check src tests && uv run mypy
+uv run pytest                           # both packages; engine tests skip if Elasticsearch is down
+uv run ruff check . && uv run ruff format --check . && uv run mypy
 
 cd frontend && npm ci && npm run dev    # dashboard with hot reload, proxied to the API on :8765
 npm run build                           # writes the bundle into src/kestrix/server/static
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
+The repository is a uv workspace: the `kestrix` workbench at the root and `kestrix-scan` in
+`packages/kestrix-scan/`. Releases are described in [docs/release.md](docs/release.md). See
+[CONTRIBUTING.md](CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
 this project is in [docs/claude](docs/claude).
 
 ## Roadmap

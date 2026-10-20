@@ -6,6 +6,18 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **`kestrix-scan`, the code scanner as its own package (ADR 0006,
+  [packages/kestrix-scan](packages/kestrix-scan/README.md)).** `pip install kestrix-scan` installs the scanner
+  and the Claude Code plugin with no dependencies on Python 3.11+ (`tomli` on 3.10). Its own changelog is
+  [packages/kestrix-scan/CHANGELOG.md](packages/kestrix-scan/CHANGELOG.md). New with it:
+  - `[tool.kestrix]` / `.kestrix.toml` configuration (`fail-on`, `exclude`, `rules.enable`, `rules.disable`,
+    `baseline`); unknown rule ids are an error with a suggestion;
+  - `kestrix-scan init [--ci github] [--pre-commit] [--claude-plugin] [--force]`;
+  - a pre-commit hook (`.pre-commit-hooks.yaml`), a pytest plugin (`pytest --kestrix`) and the typed API
+    `kestrix_scan.scan`, `Finding`, `rules()`, `load_config`;
+  - `kestrix-scan rules`, `kestrix-scan version` and `python -m kestrix_scan`.
+- **Release workflow** (`.github/workflows/release.yml`): on a `v*` tag it builds both packages, attests their
+  build provenance and publishes them with PyPI trusted publishing. One-time setup: [docs/release.md](docs/release.md).
 - **Code security scanning (`kestrix code scan`, ADR 0005 slice C1).** A local, rule-based scanner for source code.
   - **Python rules** over the standard-library AST, with import and alias resolution and literal propagation within a function: `eval`/`exec`/`compile` of non-literals, `shell=True` and `os.system`/`os.popen` with built commands, pickle-style and unsafe YAML deserialization, SQL built from strings, disabled TLS verification, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`, Flask debug mode, unverified JWTs, stdlib XML parsers, `assert` for access checks and request-derived file paths.
   - **Secret rules** for any text file: AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys, JWTs, and entropy-gated generic assignments. Secret values never appear in any output; only the kind and the first four characters do.
@@ -24,6 +36,17 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Python 3.10 and newer** (was 3.12). `enum.StrEnum` became `kestrix.core.enums.TextEnum`, whose members
+  still print and serialize as their value; `datetime.UTC` became `timezone.utc`. On 3.10, uv resolves
+  Starlette 1.7 (1.8 needs 3.11); no advisory affects 1.7.
+- **The scanner and the Claude Code plugin moved to `kestrix-scan`.** `kestrix` depends on `kestrix-scan==0.1.0`.
+  `kestrix code scan` and `kestrix integrations ...` run the `kestrix-scan` commands with the same options,
+  output and exit codes; `kestrix.code` re-exports the API, and `kestrix.code.models`, `.rules` and the other
+  old submodules still import. The report models are now frozen dataclasses (`to_dict()`, `to_json()`)
+  instead of pydantic models; the JSON report is byte-identical. The plugin's hooks run `kestrix-scan`
+  first and fall back to `kestrix code scan`.
+- **Faster CLI start:** module command groups load on first use, so `kestrix --help` takes about 90 ms instead
+  of 340 ms and `kestrix code scan` no longer imports FastAPI, pySigma or pydantic.
 - **Security review fixes (hosted mode).** An independent review found no authentication, session, CSRF or SSRF bypass. The following were fixed.
   - **Resource abuse:**
     - email header-parameter bombs are rejected before parsing, in both modes;
