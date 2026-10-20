@@ -15,7 +15,9 @@ Everything third-party is downloaded into the cache (default ``bench/.cache/``, 
 ``--out`` gets ``<suite>.json`` (every tool) and ``<suite>.md`` (tables). ``--publish DIR`` also writes
 ``DIR/<suite>.json`` and ``<out>/<suite>.public.md`` restricted to the tools in ``PUBLISHABLE``: Semgrep's numbers
 stay out of committed results (see the scorecard).
-Results hold only test-case names, categories, CWEs, booleans, counts, rates, versions and timings.
+Results hold only test-case names, categories, CWEs, booleans, counts, rates, versions and timings. Published results
+also carry ``bench/history.json``: earlier Kestrix results for the suite and the disclosure that later rule changes
+were informed by the BenchmarkPython gap analysis.
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE = REPO / "bench" / ".cache"
 OWNED_CASES = REPO / "bench" / "cases"
 HELDOUT_CASES = OWNED_CASES / "heldout"  # written before the gap-analysis rule changes were measured
+HISTORY = REPO / "bench" / "history.json"  # earlier published Kestrix results and the tuning disclosure
 
 BENCHMARK_PYTHON = {
     "repository": "https://github.com/OWASP-Benchmark/BenchmarkPython",
@@ -351,8 +354,12 @@ def _need(venv: Path | None) -> Path:
     return venv
 
 
-def publishable(result: dict[str, Any]) -> dict[str, Any]:
+def publishable(result: dict[str, Any], history: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The result without Semgrep, with this suite's earlier Kestrix results and the disclosure from ``history``."""
     out = dict(result)
+    if history is not None:
+        out["disclosure"] = history["disclosure"]
+        out["history"] = history.get(result["suite"], [])
     out["tools"] = {k: v for k, v in result["tools"].items() if k in PUBLISHABLE}
     env = dict(result["environment"])
     env.pop("semgrep_ruleset", None)
@@ -395,7 +402,8 @@ def main(argv: list[str] | None = None) -> int:
         _write(out_dir / f"{suite.name}.md", tables(result))
         print(tables(result))
         if args.publish is not None:
-            public = publishable(result)
+            history = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.is_file() else None
+            public = publishable(result, history)
             _write(args.publish / f"{suite.name}.json", json.dumps(public, indent=2) + "\n")
             _write(out_dir / f"{suite.name}.public.md", tables(public))
     return 0

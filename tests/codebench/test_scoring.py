@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """The benchmark harness scores like OWASP BenchmarkUtils on a tiny synthetic expected-results file."""
 
+import json
+
 import pytest
 from bench import mapping, run, sg_regex
 from bench.scoring import Counts, ExpectedResultsError, Finding, case_of, parse_expected, score
@@ -144,3 +146,14 @@ def test_heldout_cases_are_pairs_with_a_file_each_and_no_owned_names():
     real = {c.name.removesuffix("_vuln") for c in cases if c.real}
     safe = {c.name.removesuffix("_safe") for c in cases if not c.real}
     assert real == safe and len(real) >= 30
+
+
+def test_published_results_carry_the_history_and_the_disclosure():
+    history = {"disclosure": "informed by the gap analysis", "owned": [{"label": "before"}]}
+    result = {"suite": "owned", "tools": {"kestrix": {}}, "environment": {}}
+    public = run.publishable(result, history)
+    assert public["disclosure"] == "informed by the gap analysis"
+    assert public["history"] == [{"label": "before"}]
+    assert "history" not in run.publishable(result)
+    committed = json.loads(run.HISTORY.read_text())
+    assert committed["disclosure"] and {"benchmarkpython", "owned", "heldout"} <= set(committed)
