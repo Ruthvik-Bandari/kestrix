@@ -155,3 +155,81 @@ pass, before training. Two known weaknesses:
   enlarge the pool.
 - **Missing negatives:** the pool holds vulnerable functions and their patches only. A realistic-prevalence
   test set also needs unchanged functions from the same files.
+
+## Extension, 2026-10-20: GHSA fix commits, negatives, label audit
+
+Code: `src/kestrixvul/ghsa_mine.py`, `functions.py`, `negatives.py`, `extend.py`, `audit.py`,
+`audit_llm.py`; jobs `hpc/vul_mine.sh` (transfer node), `hpc/vul_extend.sbatch`, `hpc/vul_audit.sbatch`
+(H200). Logs: `/scratch/$USER/kestrix/vul/logs/`.
+
+**The frozen test split does not change.** `split-extend` recomputes the v1 test ids and their content
+hashes (vulnerable and patched function hashes) before and after and aborts on any difference. New
+records go only to train, dev or a new `test_extension` (post-cutoff records of held-out groups or of
+groups made only of new records). Negatives and audit flags are listed by id beside the splits in
+`split-manifest-v2.json`, which records `base_manifest_sha256` (the v1 hash above) and
+`frozen_test.before`/`after`.
+
+### GHSA mining
+
+| Stage | Count |
+| --- | --- |
+| Distinct (repository, commit) pairs cited by reviewed, non-withdrawn PyPI/npm advisories | 9,612 |
+| Covered by CVEfixes only / MoreFixes only / both | 299 / 2,188 / 1,230 |
+| In neither | 5,895 |
+| Skipped: abbreviated commit id (cannot be fetched by id) | 44 |
+| Targets: GHSA commits / pool commits (negatives only) | 5,846 / 1,872 (2,500 repositories) |
+| Fetched (transfer node, 2026-10-20 13:41 to 18:12) | 7,648 |
+| Unavailable: commit gone (force-push) / repository gone or private / root commit | 33 / 32 (+5 commits of those repositories) / 2 |
+
+- **How:** anonymous HTTPS partial clone per repository (`--filter=blob:none --depth=2`, commit, parent
+  and trees only), then one fetch of exactly the needed blobs into a separate plain object store (git 2.19
+  on the transfer node fails lazy fetches in a shallow repository). No GitHub API calls; 8 repositories
+  at a time; at most one git request per second overall; exponential backoff shared by all workers; 300 s
+  per git call; 500 MB per repository; resumable from `mine/status.jsonl`.
+- **Functions:** Python through `ast` (indentation scan for Python 2 files); JS/TS through the
+  `kestrix_scan` tokenizer with brace matching. Nested functions belong to their parent; anonymous
+  callbacks outside any named function count for OneFunc but are never labelled. A changed file in
+  another code language counts as at least one changed function, so OneFunc cannot fire.
+- **Labels:** the PrimeVul rules of `labels.py`. NVDCheck reads the GHSA summary, the details as prose
+  (fenced and indented code blocks and URLs removed, since proof-of-concept code names many functions)
+  and the linked CVE descriptions.
+
+Counts per stage after `extract` (functions, labels, dedup, split, negatives) are in `mine-extract.json`,
+`dedup-extend.json`, `split-manifest-v2.json` and `negatives.json`, copied here when the jobs finish.
+
+### Negatives
+
+`negative_unchanged`: functions the fix left unchanged in the changed files, plus every function of up to
+three unchanged files sampled (seeded) from the parent snapshot. Dropped when they match any pool
+function exactly, reach MinHash 0.7 with any vulnerable function, or 0.9 with an earlier negative; at
+most 40 per commit; the split follows the commit's project group and the date rule. The frozen test
+gets its own `negatives.test` list, so a realistic-prevalence test pool is the frozen test ids plus those
+negatives.
+
+### Label audit
+
+Procedure: [`../review.md`](../review.md#ai-assisted-audit-of-the-code-vulnerability-labels).
+Strata: source family (CVEfixes and MoreFixes, SVEN, GHSA) × language × rule, at least 15 records each
+(6% of larger strata), train and dev only. Results go to `audit.json`. A stratum (or a source/rule group
+of at least 5 records) below 0.80 label accuracy is excluded in the *filtered view* of manifest v2
+(`filters.excluded_ids`); the full view keeps it.
+
+**Sensitivity plan.** Every model is evaluated three ways and all three are reported: on the full
+labels, on the filtered view, and on dev on the subset the audit confirmed (`filters.audit_confirmed_ids`).
+Test is reported on the full and filtered views; per-record audit of test would read locked test inputs
+and is not done.
+
+### Re-acquiring after the scratch purge
+
+`/scratch` is purged on the first Tuesday of each month, next on **2026-11-03**. Everything under
+`/scratch/$USER/kestrix/vul/` and `/scratch/$USER/kestrix/models/` is lost. To rebuild: `vul_acquire.sh`,
+`vul_qc.sbatch`, `vul_build.sbatch candidates` then `split` (the v1 pins reproduce the frozen manifest),
+`vul_extend.sbatch targets`, `vul_mine.sh` (about 4.5 h), `vul_extend.sbatch extract`, the local license
+lookup, `vul_extend.sbatch split`, `fetch_vul_audit_models.sh` and `vul_audit.sbatch`. Copy
+`work/split-v2.jsonl`, `work/negatives.jsonl`, `audit/` and `licenses/licenses.csv` to `/work` (or another
+persistent private location) before the purge to skip the rebuild.
+
+### Training hardware (next stage)
+
+Training will run on H200: the `gpu` partition offers `--gres=gpu:h200:N` with an 8 h limit. The existing
+`/scratch/$USER/kestrix/venv-gpu` (torch 2.6.0+cu124) works on H200 (smoke job 11258264).

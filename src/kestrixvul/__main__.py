@@ -50,6 +50,7 @@ COMMANDS = (
     "audit-sample",
     "audit-combine",
     "audit-import",
+    "audit-review",
 )
 
 
@@ -184,12 +185,36 @@ def _extend(command: str, root: Path, args: argparse.Namespace) -> None:
         from .audit import write_combined
 
         print(f"audit-combine: {write_combined(root)}")
+    elif command == "audit-review":
+        _audit_review(root, args.limit)
     elif command == "audit-import":
         from .audit import import_verdicts
 
         if args.table is None:
             raise ValueError("audit-import needs --table")
         write_json(root / "reports" / "audit.json", import_verdicts(root, args.table))
+
+
+def _audit_review(root: Path, limit: int | None) -> None:
+    """GPU job: model reviews; the full run then combines and imports them (``reports/audit.json``)."""
+    from .audit import import_verdicts, read_jsonl, write_combined, write_private
+    from .audit_llm import run as review
+
+    os.umask(0o077)
+    models = root.parent / "models"
+    folder = root / "audit"
+    if limit:  # smoke: the first packets, in a separate folder
+        folder = root / "audit" / "smoke"
+        packets = read_jsonl(root / "audit" / "packets.jsonl")[:limit]
+        write_private(folder / "packets.jsonl", "".join(json.dumps(p, sort_keys=True) + "\n" for p in packets))
+    report = review(folder, models)
+    write_json(root / "reports" / ("audit-review-smoke.json" if limit else "audit-review.json"), report)
+    if limit:
+        print(f"audit-review smoke: {report}")
+        return
+    print(f"audit-combine: {write_combined(folder)}")
+    audit = import_verdicts(root, folder / "verdicts.csv") | {"reviewers": report["reviewers"]}
+    write_json(root / "reports" / "audit.json", audit)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -207,7 +232,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--interval", type=float, default=1.0, help="mine-fetch: seconds between git requests")
     parser.add_argument("--timeout", type=float, default=300.0, help="mine-fetch: seconds per git call")
     parser.add_argument("--max-mb", type=int, default=500, help="mine-fetch: object store cap per repository")
-    parser.add_argument("--limit", type=int, help="mine-fetch: only the first N repositories (smoke run)")
+    parser.add_argument("--limit", type=int, help="mine-fetch: first N repositories; audit-review: first N packets")
     return parser
 
 

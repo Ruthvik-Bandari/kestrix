@@ -10,12 +10,13 @@
    sampled: they are locked test inputs, which an AI assistant session must not receive. Each
    packet (``audit/packets.jsonl``, 0600) holds the advisory text, the CWEs, the function before and
    after the fix and their diff, plus its SHA-256.
-2. Outside the repository, two independent reviewers (``ai-a``, ``ai-b``) judge each packet:
+2. ``audit-review`` (``hpc/vul_audit.sbatch``, one H200): two open-weight Apache-2.0 models
+   (``audit_llm.py``: ``ai-a`` Qwen2.5-Coder-32B-Instruct, ``ai-b`` Granite-34B-Code-Instruct) judge each packet:
    ``vulnerable`` / ``not_vulnerable`` / ``unclear`` for the before-function and the stated
    advisory, ``fixes`` / ``does_not_fix`` / ``unclear`` for the after-function, and a one-line
    reason. A third reviewer adjudicates every disagreement on the before-function verdict.
-   ``audit-combine`` turns the review files into ``verdicts.csv`` (ids, verdicts and packet hashes;
-   no reasons) and the private ``verdicts-private.jsonl`` (with reasons).
+   ``audit-combine`` (run by the same job) turns the review files into ``verdicts.csv`` (ids, verdicts
+   and packet hashes; no reasons) and the private ``verdicts-private.jsonl`` (with reasons).
 3. ``audit-import`` (Slurm) validates ``verdicts.csv`` against the packets and writes
    ``work/audit_verdicts.jsonl`` and the aggregate ``reports/audit.json``: per-stratum label accuracy
    with Wilson 95% intervals, raw agreement and Cohen's kappa between the two reviewers, and the
@@ -314,8 +315,9 @@ def aggregate(
     )
     return {
         "schema_version": 1,
-        "procedure": "AI-assisted (docs/data/policy.md section 6): two independent AI reviewers (ai-a, ai-b), "
-        "a third adjudicates disagreements; no human review (owner decision). Train and dev records only.",
+        "procedure": "AI-assisted (docs/data/review.md): two open-weight reviewers (ai-a, ai-b) on the cluster, "
+        "the stronger one adjudicates disagreements with a separate prompt; no human review (owner decision). "
+        "Train and dev records only.",
         "label_accuracy_definition": "share of audited records whose final verdict is 'vulnerable' (unclear "
         "counts as not confirmed); Wilson 95% interval",
         "audited": len(rows),
