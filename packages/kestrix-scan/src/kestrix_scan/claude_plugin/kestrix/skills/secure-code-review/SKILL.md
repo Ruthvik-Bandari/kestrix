@@ -7,8 +7,8 @@ description: Review code for security problems with the local Kestrix scanner an
 
 Kestrix by Ruthvik Bandari — https://github.com/Ruthvik-Bandari/kestrix
 
-`kestrix-scan` is a local, rule-based scanner: Python rules (`py.*`) and secret rules (`secret.*`)
-for any text file. It never runs or imports the code and sends nothing off the machine. It is pattern
+`kestrix-scan` is a local, rule-based scanner: Python rules (`py.*`), Claude Code and MCP configuration
+rules (`config.*`) and secret rules (`secret.*`) for any text file. It never runs or imports the code and sends nothing off the machine. It is pattern
 analysis: it misses things and can be wrong in context, so "no findings" means no rule fired, not that
 the code is secure.
 
@@ -55,6 +55,7 @@ the code is secure.
    | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser` | Debug from the environment; explicit `if not ...: raise`; `defusedxml`. |
    | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source from input. |
    | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |
+   | Agent configuration | `config.*` | No downloaded scripts in hooks, no `bypassPermissions` or `Bash(*)` in project settings, pinned MCP package versions, and `${VAR}` references instead of literal credentials. |
    | Secrets | `secret.*` | Remove the value, read it from the environment or a secrets manager, and tell the user to rotate it. |
 
    For a secret, removing it from the file is not enough: it stays in version-control history. Tell the

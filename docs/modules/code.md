@@ -109,6 +109,11 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `py.xss.markup` | Python | CWE-79 | high | medium | Request data marked as safe HTML or used as a template |
 | `py.llm.output_to_sink` | Python | CWE-94 | high | medium | LLM output used as code, a shell command, SQL or a file path |
 | `py.ml.unsafe_model_load` | Python | CWE-502 | high | medium | Model loaded in a way that can run code from the file |
+| `config.claude.hook_remote_exec` | Claude Code and MCP config | CWE-494 | critical | high | Claude Code hook runs a script downloaded at run time |
+| `config.claude.permissions_bypass` | Claude Code and MCP config | CWE-250 | high | high | Project settings skip Claude Code permission prompts |
+| `config.mcp.unpinned_launcher` | Claude Code and MCP config | CWE-829 | medium | high | MCP server launched from a package without a pinned version |
+| `config.mcp.secret_inline` | Claude Code and MCP config | CWE-798 | critical | medium | Credential written into .mcp.json |
+| `config.claude.env_leak` | Claude Code and MCP config | CWE-798 | critical | medium | Credential written into the env block of Claude Code settings |
 | `secret.aws_access_key_id` | any text file | CWE-798 | high | high | AWS access key id |
 | `secret.aws_secret_access_key` | any text file | CWE-798 | critical | medium | AWS secret access key |
 | `secret.github_token` | any text file | CWE-798 | critical | high | GitHub token |

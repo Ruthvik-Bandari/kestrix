@@ -181,6 +181,29 @@ def check_secrets(text: str) -> list[Hit]:
     return hits
 
 
+_CREDENTIAL_NAME = re.compile(r"(?i)" + _NAME_WORDS)
+
+
+def detect(value: str, name: str = "") -> tuple[str, str] | None:
+    """(kind, secret) for the first credential in one configuration value, or None.
+
+    Provider patterns are tried first. The generic rule needs ``name`` (the key the value is stored
+    under) to look like a credential name, with the same value checks as ``secret.generic``.
+    """
+    first = next(_matches(value), None)
+    if first is not None:
+        kind, start, end = first
+        return kind, value[start:end]
+    if (
+        _CREDENTIAL_NAME.search(name)
+        and MIN_GENERIC_LENGTH <= len(value) <= 200
+        and not any(c.isspace() or c in "'\"\\" for c in value)
+        and _generic_value_ok(name, value)
+    ):
+        return "generic", value
+    return None
+
+
 def redact(text: str) -> str:
     """``text`` with every secret value replaced by its redacted form."""
     pieces: list[str] = []

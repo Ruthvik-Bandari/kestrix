@@ -582,6 +582,136 @@
               }
             },
             {
+              "id": "config.claude.hook_remote_exec",
+              "name": "ConfigClaudeHookRemoteExec",
+              "shortDescription": {
+                "text": "Claude Code hook runs a script downloaded at run time"
+              },
+              "fullDescription": {
+                "text": "Hooks in project settings and plugins run shell commands on the developer's machine. A hook that pipes curl or wget into a shell runs whatever the server returns that day, with no review and no integrity check; a malicious repository can use this to run code when the project is opened (Check Point, CVE-2025-59536)."
+              },
+              "help": {
+                "text": "Commit the script to the repository (or the plugin) and run that file, or download a pinned version and verify its SHA-256 before running it. Review hooks before trusting a project.",
+                "markdown": "**Why:** Hooks in project settings and plugins run shell commands on the developer's machine. A hook that pipes curl or wget into a shell runs whatever the server returns that day, with no review and no integrity check; a malicious repository can use this to run code when the project is opened (Check Point, CVE-2025-59536).\n\n**Fix:** Commit the script to the repository (or the plugin) and run that file, or download a pinned version and verify its SHA-256 before running it. Review hooks before trusting a project."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-494"
+                ]
+              }
+            },
+            {
+              "id": "config.claude.permissions_bypass",
+              "name": "ConfigClaudePermissionsBypass",
+              "shortDescription": {
+                "text": "Project settings skip Claude Code permission prompts"
+              },
+              "fullDescription": {
+                "text": "defaultMode bypassPermissions, an allow rule for every Bash command, or enableAllProjectMcpServers lets the agent run any command or project MCP server without asking. In a shared project file it applies to everyone who opens the repository, including a repository an attacker prepared."
+              },
+              "help": {
+                "text": "Remove the setting from project files. Allow specific commands, such as Bash(npm run test *), and approve MCP servers one by one. Use bypassPermissions only in a disposable container or VM, set from user settings or the command line.",
+                "markdown": "**Why:** defaultMode bypassPermissions, an allow rule for every Bash command, or enableAllProjectMcpServers lets the agent run any command or project MCP server without asking. In a shared project file it applies to everyone who opens the repository, including a repository an attacker prepared.\n\n**Fix:** Remove the setting from project files. Allow specific commands, such as Bash(npm run test *), and approve MCP servers one by one. Use bypassPermissions only in a disposable container or VM, set from user settings or the command line."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "config.mcp.unpinned_launcher",
+              "name": "ConfigMcpUnpinnedLauncher",
+              "shortDescription": {
+                "text": "MCP server launched from a package without a pinned version"
+              },
+              "fullDescription": {
+                "text": "npx -y and uvx download and run the newest release of the package at every start. If the package or its publisher account is compromised, the next start runs the attacker's code with access to your files and tokens."
+              },
+              "help": {
+                "text": "Pin an exact version, for example npx -y some-mcp-server@1.4.2 or uvx some-mcp-server==1.4.2, and update it deliberately after reviewing the release.",
+                "markdown": "**Why:** npx -y and uvx download and run the newest release of the package at every start. If the package or its publisher account is compromised, the next start runs the attacker's code with access to your files and tokens.\n\n**Fix:** Pin an exact version, for example npx -y some-mcp-server@1.4.2 or uvx some-mcp-server==1.4.2, and update it deliberately after reviewing the release."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-829"
+                ]
+              }
+            },
+            {
+              "id": "config.mcp.secret_inline",
+              "name": "ConfigMcpSecretInline",
+              "shortDescription": {
+                "text": "Credential written into .mcp.json"
+              },
+              "fullDescription": {
+                "text": ".mcp.json is meant to be committed and shared, so a key or token in a server's env, args or headers is visible to everyone with the repository and stays in its history."
+              },
+              "help": {
+                "text": "Reference an environment variable instead, for example \"GITHUB_TOKEN\": \"${GITHUB_TOKEN}\", and set it in your shell or a secrets manager. Rotate the credential if it was ever committed.",
+                "markdown": "**Why:** .mcp.json is meant to be committed and shared, so a key or token in a server's env, args or headers is visible to everyone with the repository and stays in its history.\n\n**Fix:** Reference an environment variable instead, for example \"GITHUB_TOKEN\": \"${GITHUB_TOKEN}\", and set it in your shell or a secrets manager. Rotate the credential if it was ever committed."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "config.claude.env_leak",
+              "name": "ConfigClaudeEnvLeak",
+              "shortDescription": {
+                "text": "Credential written into the env block of Claude Code settings"
+              },
+              "fullDescription": {
+                "text": "The env block of a settings file is passed to every session and its subprocesses, and a project settings file is usually committed, so a literal key there is shared with everyone who has the repository."
+              },
+              "help": {
+                "text": "Remove the value from the settings file and export it in your shell or a secrets manager instead. Rotate the credential if it was ever committed.",
+                "markdown": "**Why:** The env block of a settings file is passed to every session and its subprocesses, and a project settings file is usually committed, so a literal key there is shared with everyone who has the repository.\n\n**Fix:** Remove the value from the settings file and export it in your shell or a secrets manager instead. Rotate the credential if it was ever committed."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "9.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
               "id": "secret.aws_access_key_id",
               "name": "SecretAwsAccessKeyId",
               "shortDescription": {
@@ -878,7 +1008,7 @@
       "results": [
         {
           "ruleId": "secret.github_token",
-          "ruleIndex": 24,
+          "ruleIndex": 29,
           "level": "error",
           "message": {
             "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."

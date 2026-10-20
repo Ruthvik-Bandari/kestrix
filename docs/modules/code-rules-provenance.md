@@ -173,6 +173,46 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cwe.mitre.org/data/definitions/94.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `config.claude.hook_remote_exec`
+
+- CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
+- Documentation: <https://code.claude.com/docs/en/hooks>
+- Documentation: <https://code.claude.com/docs/en/settings>
+- Documentation: <https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/>
+- Documentation: <https://nvd.nist.gov/vuln/detail/CVE-2025-59536>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `config.claude.permissions_bypass`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://code.claude.com/docs/en/permissions>
+- Documentation: <https://code.claude.com/docs/en/settings>
+- Documentation: <https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `config.mcp.unpinned_launcher`
+
+- CWE: [CWE-829](https://cwe.mitre.org/data/definitions/829.html)
+- Documentation: <https://code.claude.com/docs/en/mcp>
+- Documentation: <https://docs.npmjs.com/cli/v10/commands/npx>
+- Documentation: <https://docs.astral.sh/uv/guides/tools/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `config.mcp.secret_inline`
+
+- CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)
+- Documentation: <https://code.claude.com/docs/en/mcp>
+- Documentation: <https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `config.claude.env_leak`
+
+- CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)
+- Documentation: <https://code.claude.com/docs/en/settings>
+- Documentation: <https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/>
+- Documentation: <https://nvd.nist.gov/vuln/detail/CVE-2026-21852>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `secret.aws_access_key_id`
 
 - CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)

@@ -24,6 +24,7 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Literal
 
+from .agent_config import check_config, config_kind
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
 from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, count, fingerprint, ordered
@@ -41,6 +42,7 @@ _SUPPRESSION = re.compile(r"(?:#|//)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
+_CONFIG_SECRET_RULES = frozenset({"config.mcp.secret_inline", "config.claude.env_leak"})
 
 
 def scan(
@@ -129,9 +131,18 @@ def scan_text(
             hits.extend(result)
         else:
             skip = SkippedFile(path=candidate.rel, reason=result)
+    elif config_kind(candidate.rel) is not None:
+        result = check_config(text, candidate.rel)
+        if isinstance(result, list):
+            hits.extend(result)
+        else:
+            skip = SkippedFile(path=candidate.rel, reason=result)
     hits.extend(check_secrets(text))
     if active is not None:
         hits = [item for item in hits if item.rule_id in active]
+    config_secret_lines = {item.line for item in hits if item.rule_id in _CONFIG_SECRET_RULES}
+    if config_secret_lines:  # one finding per credential: the config rule names where it sits
+        hits = [i for i in hits if not (i.rule_id.startswith("secret.") and i.line in config_secret_lines)]
     suppressions, notes = _suppressions(text, candidate.rel)
     findings = []
     suppressed = 0

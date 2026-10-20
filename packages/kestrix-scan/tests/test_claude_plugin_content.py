@@ -13,13 +13,16 @@ from typing import Any
 
 import pytest
 from cli_support import REPO
+from code_samples import fake
 
 import kestrix_scan as kestrix
 from kestrix_scan import plugin
+from kestrix_scan.analyze import scan_text
 from kestrix_scan.cli import COMMANDS as CLI_COMMANDS
 from kestrix_scan.cli import _scan_parser
 from kestrix_scan.python_rules import check_python
 from kestrix_scan.registry import RULES
+from kestrix_scan.walk import Candidate
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -239,6 +242,28 @@ def test_fix_playbook_examples_fire_before_and_not_after(generator: ModuleType, 
     assert isinstance(before_hits, list) and isinstance(after_hits, list)
     assert rule_id in {hit.rule_id for hit in before_hits}
     assert after_hits == []
+
+
+@pytest.mark.parametrize("rule_id", [rule.id for rule in RULES.values() if rule.language == "config"])
+def test_fix_playbook_config_examples_fire_before_and_not_after(
+    generator: ModuleType, rule_id: str, tmp_path: Path
+) -> None:
+    name, before, after = generator.CONFIG_EXAMPLES[rule_id]
+    before = before.replace(generator.SECRET_PLACEHOLDER, fake("github_token"))
+    candidate = Candidate(path=tmp_path / name, rel=name)
+    before_findings, _, _, before_skip = scan_text(before, candidate)
+    after_findings, _, _, after_skip = scan_text(after, candidate)
+    assert before_skip is None and after_skip is None
+    assert rule_id in {finding.rule_id for finding in before_findings}
+    assert after_findings == []
+
+
+def test_fix_playbook_refuses_a_config_rule_without_an_example(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delitem(generator.CONFIG_EXAMPLES, "config.mcp.unpinned_launcher")
+    with pytest.raises(SystemExit, match=r"missing \['config.mcp.unpinned_launcher'\]"):
+        generator.render()
 
 
 def test_fix_playbook_refuses_a_rule_without_an_example(generator: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:

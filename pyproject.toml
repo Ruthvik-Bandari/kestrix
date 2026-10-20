@@ -101,6 +101,7 @@ modules = [
     "kestrix_scan",
     "kestrix_scan.__main__",
     "kestrix_scan.about",
+    "kestrix_scan.agent_config",
     "kestrix_scan.analyze",
     "kestrix_scan.cli",
     "kestrix_scan.config",
