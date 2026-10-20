@@ -1,0 +1,24 @@
+app.py
+  9:12  HIGH  py.sql.string_built  CWE-89
+      SQL text is built with string formatting or concatenation.
+      fix: Use bound parameters: cursor.execute('SELECT * FROM t WHERE id = ?', (item_id,)), or the placeholders of your driver or ORM.
+  13:5  HIGH  py.subprocess.shell_true  CWE-78
+      subprocess.run runs a built command through the shell (shell=True).
+      fix: Pass the command as a list of arguments without shell=True, for example subprocess.run(['git', 'log', ref], check=True). Use shlex.quote only when a shell is unavoidable.
+  17:12  MEDIUM  py.crypto.weak_hash  CWE-328
+      MD5/SHA-1 hash created.
+      fix: Use hashlib.sha256 (or hashlib.blake2b). For passwords use a slow KDF such as hashlib.scrypt. If the hash is only a checksum or an identifier, pass usedforsecurity=False.
+
+settings_local.py
+  3:17  CRITICAL  secret.github_token  CWE-798
+      Possible github token hard-coded in the file (github_token:ghp_…).
+      fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets.
+
+static/notes.js
+  3:11  HIGH  js.dom.xss_sink  CWE-79
+      .innerHTML = receives location (line 3), which an attacker can set through a link.
+      trace: 3 location (source) → 3 reaches .innerHTML =
+      fix: Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.
+
+5 finding(s): 1 critical, 3 high, 1 medium, 0 low in 4 file(s); 0 suppressed, 0 in baseline, 0 skipped; fail-on high.
+Rule-based pattern analysis on this machine. Rules miss things and can be wrong; no detection rate is claimed. No findings means no rule fired, not that the code is secure.

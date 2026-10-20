@@ -16,6 +16,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Plugin submission kit.** `scripts/build_plugin_repo.py` generates `dist/claude-plugin-repo/`, the standalone
+  repository for the Claude Code plugin (plugin at the root, a self-hosted marketplace, README, PRIVACY, SECURITY,
+  CHANGELOG, NOTICE, a `claude plugin eval` suite and a no-network test), and refuses a tree that breaks the directory's
+  pre-submission checklist. [docs/plugin-submission.md](docs/plugin-submission.md) has the form values, disclosed
+  behaviors, checklist evidence and owner steps; [docs/demo/](docs/demo/README.md) is a scripted demo whose expected
+  hook output is generated and tested.
+
 - **Code scanner benchmark and scorecard (roadmap item 3 of
   [docs/research/competitive-landscape-2026-10.md](docs/research/competitive-landscape-2026-10.md)).**
   `uv run python -m bench.run` downloads OWASP BenchmarkPython at a pinned commit into the git-ignored

@@ -1,0 +1,15 @@
+Kestrix plugin for Claude Code
+Copyright 2026 Ruthvik Bandari
+
+This repository is generated from the Kestrix source tree (scripts/build_plugin_repo.py) and holds the
+same plugin files that ship inside the kestrix-scan package on PyPI.
+
+The fixing-security-findings skill is generated from the kestrix-scan rule registry. The rules were
+written for Kestrix from their CWE entries and the language, library and standard documentation cited
+per rule. No rule text, pattern or code from other scanners is included.
+
+No advisory data is included. The install guard reads a local OSV index that the user builds with
+`kestrix-scan db update` (https://osv.dev); its messages quote advisory ids and summaries from that
+data, which OSV redistributes under each source's license (GitHub Advisory Database, PyPI Advisory
+Database, OSS-Fuzz and EEF: CC-BY 4.0; OpenSSF Malicious Packages: Apache-2.0; Global Security
+Database: CC0 1.0).
