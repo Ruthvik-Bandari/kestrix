@@ -159,6 +159,26 @@ _READERS = frozenset(
     }
 )  # fmt: skip
 _MUTABLE_DISPLAYS = (ast.List, ast.Set, ast.Dict, ast.ListComp, ast.SetComp, ast.DictComp)
+_BINDING_TYPES: frozenset[type[ast.AST]] = frozenset(
+    {
+        ast.Import,
+        ast.ImportFrom,
+        ast.Delete,
+        ast.ExceptHandler,
+        ast.MatchAs,
+        ast.MatchStar,
+        ast.MatchMapping,
+        ast.Assign,
+        ast.AnnAssign,
+        ast.NamedExpr,
+        ast.AugAssign,
+        ast.For,
+        ast.AsyncFor,
+        ast.comprehension,
+        ast.withitem,
+        ast.arg,
+    }
+)
 _MAX_CONST_TEXT = 10_000  # longest string the constant evaluator builds
 _LLM_CWE = {taint.CODE: "CWE-94", taint.SHELL: "CWE-78", taint.SQL: "CWE-89", taint.PATH: "CWE-22"}
 _LLM_WHAT = {taint.CODE: "code", taint.SHELL: "command", taint.SQL: "query", taint.PATH: "path"}
@@ -296,58 +316,69 @@ class _Checker:
 
     def _index(self) -> None:
         nodes = list(ast.walk(self.tree))
+        binders: list[ast.AST] = []
+        branches: list[ast.If | ast.While] = []
         for node in nodes:
             for child in ast.iter_child_nodes(node):
                 self.parents[child] = node
-            if isinstance(node, ast.Import):
+            if type(node) is ast.Name:
+                if type(node.ctx) is ast.Store:
+                    self.defined.add(node.id)
+                continue
+            if type(node) is ast.Call:
+                self._index_call(node)
+                continue
+            if type(node) in _BINDING_TYPES:
+                binders.append(node)
+            if type(node) is ast.Import:
                 for alias in node.names:
                     top = alias.name.split(".")[0]
                     self.aliases[alias.asname or top] = alias.name if alias.asname else top
                     self.imported.add(top)
-            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-                for alias in node.names:
-                    self.aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
-                self.imported.add(node.module.split(".")[0])
+            elif type(node) is ast.ImportFrom:
+                if node.module and node.level == 0:
+                    for alias in node.names:
+                        self.aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+                    self.imported.add(node.module.split(".")[0])
             elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 self.defined.add(node.name)
-            elif isinstance(node, ast.ClassDef):
+            elif type(node) is ast.ClassDef:
                 self.defined.add(node.name)
                 self.classes[node.name] = node
-            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
-                self.defined.add(node.id)
-            if isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Store | ast.Del):
-                base = node.value
-                if isinstance(base, ast.Name):
-                    self.mutated.add(base.id)
-            elif (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr in _MUTATORS
-                and isinstance(node.func.value, ast.Name)
-            ):
-                self.mutated.add(node.func.value.id)
-            if isinstance(node, ast.Call) and not self._reader(node.func):
-                for value in [*node.args, *(kw.value for kw in node.keywords)]:
-                    inner = value.value if isinstance(value, ast.Starred) else value
-                    if isinstance(inner, ast.Name):
-                        self.escaped.add(inner.id)
+            elif type(node) is ast.Subscript:
+                if type(node.ctx) is not ast.Load and type(node.value) is ast.Name:
+                    self.mutated.add(node.value.id)
+            elif isinstance(node, ast.If | ast.While):
+                branches.append(node)
             elif isinstance(node, ast.Global | ast.Nonlocal):
                 self.unstable.update(node.names)
-        for node in nodes:
+        for node in binders:
             self._bind(node)
         # A branch that cannot run: drop its assignments, then bind again, so names it assigns stay literal.
-        for node in nodes:
-            if isinstance(node, ast.If | ast.While) and (truth := self.truth(node.test)) is not None:
-                skipped = node.orelse if truth else node.body
-                if isinstance(node, ast.While) and truth:
-                    continue
-                for stmt in skipped:
-                    self.dead.update(ast.walk(stmt))
+        for branch in branches:
+            if (truth := self.truth(branch.test)) is None or (isinstance(branch, ast.While) and truth):
+                continue
+            for stmt in branch.orelse if truth else branch.body:
+                self.dead.update(ast.walk(stmt))
         if self.dead:
             self.bindings = {}
-            for node in nodes:
+            for node in binders:
                 if node not in self.dead:
                     self._bind(node)
+
+    def _index_call(self, node: ast.Call) -> None:
+        """Names whose contents the call may change: the receiver of a mutating method, or an argument."""
+        func = node.func
+        if type(func) is ast.Attribute and func.attr in _MUTATORS and type(func.value) is ast.Name:
+            self.mutated.add(func.value.id)
+        if not self._reader(func):
+            for value in node.args:
+                inner = value.value if type(value) is ast.Starred else value
+                if type(inner) is ast.Name:
+                    self.escaped.add(inner.id)
+            for keyword in node.keywords:
+                if type(keyword.value) is ast.Name:
+                    self.escaped.add(keyword.value.id)
 
     def _reader(self, func: ast.expr) -> bool:
         if isinstance(func, ast.Name):
