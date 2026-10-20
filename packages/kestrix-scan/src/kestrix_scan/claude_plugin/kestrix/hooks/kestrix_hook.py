@@ -2,8 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """Claude Code hooks of the Kestrix plugin.
 
-Usage (from ``hooks/hooks.json``): ``python3 kestrix_hook.py session-start|pre-tool-use|post-tool-use|stop``
+Usage (from ``hooks/hooks.json``): ``python3 kestrix_hook.py session-start|pre-tool-use|install-guard|post-tool-use|stop``
 with the hook JSON on stdin.
+
+- ``install-guard`` (PreToolUse on Bash): when the command looks like a package install (``pip``,
+  ``uv``, ``npm``, ``pnpm`` or ``yarn``), passes the payload to ``kestrix-scan scan --hook``, which checks
+  the named packages against the local OSV index, and relays its reply: a ``deny`` for a known
+  malicious package, or a non-blocking warning for a known-vulnerable pinned version. No index, a
+  missing scanner, ``KESTRIX_INSTALL_GUARD=0`` or any error means no output, so the command runs.
 
 - ``pre-tool-use`` snapshots the file a Write, Edit, MultiEdit or NotebookEdit is about to
   change: once per session (``before-first/``, for the Stop gate) and before every change
@@ -55,6 +61,8 @@ SAME_FINDINGS_BLOCKS = 2  # unchanged findings after this many blocks: warn inst
 MAX_SNAPSHOT_BYTES = 1024 * 1024  # the scanner skips larger files
 MAX_STOP_FILES = 200
 SCAN_TIMEOUT_S = 8.0  # inside the 10 s hook timeout in hooks.json
+GUARD_TIMEOUT_S = 8.0  # inside the 10 s install-guard timeout in hooks.json
+_INSTALL_HINT = re.compile(r"\b(?:pip[0-9.]*|uv|npm|pnpm|yarn)\b.*\b(?:install|add|i)\b", re.S)
 STOP_SCAN_TIMEOUT_S = 25.0  # inside the 30 s Stop hook timeout
 SESSION_TTL_S = 14 * 24 * 3600
 CONFIG_FILE = ".kestrix.json"
@@ -311,6 +319,31 @@ def post_tool_use(raw: bytes, payload: dict[str, Any]) -> None:
         _emit(reply)
 
 
+def install_guard(payload: dict[str, Any]) -> None:
+    """Relay the scanner's PreToolUse decision for a package install; anything else prints nothing."""
+    if os.environ.get("KESTRIX_INSTALL_GUARD", "").strip() == "0":
+        return
+    tool_input = payload.get("tool_input")
+    command = tool_input.get("command") if isinstance(tool_input, dict) else None
+    if not isinstance(command, str) or not _INSTALL_HINT.search(command):
+        return
+    scanner = _scanner()
+    if scanner is None:
+        return
+    request = {**payload, "hook_event_name": "PreToolUse", "tool_name": "Bash"}
+    result = _run([*scanner, "--hook"], stdin=json.dumps(request).encode(), cwd=_cwd(payload), timeout=GUARD_TIMEOUT_S)
+    if result is None or result.returncode != 0:
+        return
+    out = result.stdout.decode("utf-8", "replace").strip()
+    try:
+        reply = json.loads(out) if out else None
+    except ValueError:
+        return
+    output = reply.get("hookSpecificOutput") if isinstance(reply, dict) else None
+    if isinstance(output, dict) and output.get("hookEventName") == "PreToolUse":
+        _emit({"hookSpecificOutput": output})
+
+
 def _load_config(directory: str) -> dict[str, Any]:
     path = os.path.join(directory, CONFIG_FILE)
     try:
@@ -464,6 +497,8 @@ def main(argv: list[str]) -> int:
         raw, payload = read
         if event == "pre-tool-use":
             pre_tool_use(payload)
+        elif event == "install-guard":
+            install_guard(payload)
         elif event == "post-tool-use":
             post_tool_use(raw, payload)
         elif event == "stop":

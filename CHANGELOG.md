@@ -6,6 +6,14 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Offline dependency scanning in `kestrix-scan` (roadmap item 5 of
+  [docs/research/competitive-landscape-2026-10.md](docs/research/competitive-landscape-2026-10.md)).**
+  `kestrix-scan db update` downloads the OSV PyPI and npm exports, including the OpenSSF malicious-packages
+  feed, into a local index; scans then report `dep.vulnerable` and `dep.malicious` findings in Python and npm
+  lockfiles without network access, and the Claude Code plugin gains an install guard that denies a known
+  malicious `pip`/`uv`/`npm`/`pnpm`/`yarn` install. See
+  [docs/modules/code.md](docs/modules/code.md#dependencies) and
+  [docs/claude-plugin.md](docs/claude-plugin.md#pretooluse-on-bash-the-install-guard).
 - **`kestrix-scan`, the code scanner as its own package (ADR 0006,
   [packages/kestrix-scan](packages/kestrix-scan/README.md)).** `pip install kestrix-scan` installs the scanner
   and the Claude Code plugin with no dependencies on Python 3.11+ (`tomli` on 3.10). Its own changelog is

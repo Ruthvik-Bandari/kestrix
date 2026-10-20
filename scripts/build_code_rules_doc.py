@@ -29,7 +29,7 @@ def rules_table() -> str:
         "| --- | --- | --- | --- | --- | --- |",
     ]
     for rule in RULES.values():
-        scope = "Python" if rule.language == "python" else "any text file"
+        scope = {"python": "Python", "dependency": "lockfiles"}.get(rule.language, "any text file")
         rows.append(f"| `{rule.id}` | {scope} | {rule.cwe} | {rule.severity} | {rule.confidence} | {rule.title} |")
     return "\n".join(rows)
 

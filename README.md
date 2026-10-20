@@ -8,7 +8,7 @@
 
 ### Scan your code: `kestrix-scan`
 
-A small, fast scanner for insecure Python code and hard-coded secrets, with **no dependencies** on Python
+A small, fast scanner for insecure Python code, hard-coded secrets and vulnerable or malicious dependencies, with **no dependencies** on Python
 3.11 and newer (only `tomli` on 3.10). It works in the terminal, CI, pre-commit and pytest, and inside Claude
 Code, where it has Claude fix what it finds as it writes code.
 
@@ -17,6 +17,7 @@ pip install kestrix-scan
 kestrix-scan src                          # exit 1 on high or critical findings
 kestrix-scan init --ci github --pre-commit   # [tool.kestrix] config, SARIF upload workflow, pre-commit hook
 kestrix-scan install-claude-plugin        # the Claude Code plugin: scan every file Claude writes
+kestrix-scan db update                    # download the OSV data once (the only network step); lockfiles are then checked offline
 ```
 
 Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](packages/kestrix-scan/README.md).
@@ -250,6 +251,10 @@ Kestrix reads your code as data (Python through the standard-library `ast`, neve
 - **Any text file:** AWS, GitHub, Slack, Stripe, Google, Anthropic and OpenAI-style keys, private keys,
   JWTs, and high-entropy values assigned to names like `password` or `api_key`. Reports show only the
   kind and the first four characters, never the secret.
+- **Lockfiles:** pinned versions in `requirements*.txt`, `uv.lock`, `poetry.lock`, `pdm.lock`,
+  `Pipfile.lock`, `package-lock.json`, `yarn.lock` and `pnpm-lock.yaml` with known vulnerabilities
+  (`dep.vulnerable`) or reported as malware (`dep.malicious`), checked against a local OSV index that
+  `kestrix-scan db update` downloads. Scans themselves stay offline.
 
 Every finding has a rule id, CWE, severity, confidence, location, why it matters and a fix. Exit codes are
 0 (nothing at or above `--fail-on`), 1 (findings) and 2 (usage error). Output is text, JSON or SARIF 2.1.0

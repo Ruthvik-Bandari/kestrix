@@ -192,3 +192,19 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)
 - Documentation: <https://docs.python.org/3/library/os.html#os.environ>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `dep.vulnerable`
+
+- CWE: [CWE-1395](https://cwe.mitre.org/data/definitions/1395.html)
+- Documentation: <https://ossf.github.io/osv-schema/>
+- Documentation: <https://google.github.io/osv.dev/data/>
+- Documentation: <https://peps.python.org/pep-0440/>
+- Documentation: <https://semver.org/spec/v2.0.0.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `dep.malicious`
+
+- CWE: [CWE-506](https://cwe.mitre.org/data/definitions/506.html)
+- Documentation: <https://github.com/ossf/malicious-packages>
+- Documentation: <https://ossf.github.io/osv-schema/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
