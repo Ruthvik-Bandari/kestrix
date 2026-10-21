@@ -1,6 +1,17 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { ApiError } from "../lib/api";
 import { downloadText } from "../lib/download";
 import { Icon, type IconName } from "./Icon";
@@ -14,16 +25,12 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
 
 export function PageHeader({ title, lede, aside }: { title: string; lede: ReactNode; aside?: ReactNode }) {
   return (
-    <header className="relative mb-8 flex flex-col gap-4 pb-6 md:flex-row md:items-end md:justify-between">
+    <header className="mb-8 flex flex-col gap-4 border-b border-line pb-6 md:flex-row md:items-end md:justify-between">
       <div className="max-w-[68ch]">
-        <h1 className="display holo-text pb-1 text-[clamp(2rem,4.4vw,2.75rem)]">{title}</h1>
-        <p className="mt-3 text-[1.0625rem] text-ink-2">{lede}</p>
+        <h1 className="display text-[clamp(1.625rem,3.2vw,2.125rem)] leading-[1.2] text-ink">{title}</h1>
+        <p className="mt-3 text-base text-ink-2">{lede}</p>
       </div>
       {aside ? <div className="flex flex-wrap items-center gap-2">{aside}</div> : null}
-      <span
-        className="absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,var(--h1),var(--h2)_35%,var(--h3)_65%,transparent)] opacity-70"
-        aria-hidden="true"
-      />
     </header>
   );
 }
@@ -31,11 +38,66 @@ export function PageHeader({ title, lede, aside }: { title: string; lede: ReactN
 export function SectionTitle({ children, id, aside }: { children: ReactNode; id?: string; aside?: ReactNode }) {
   return (
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-      <h2 id={id} className="text-xl font-bold tracking-[-0.02em]">
+      <h2 id={id} className="text-xl font-semibold tracking-[-0.015em]">
         {children}
       </h2>
       {aside}
     </div>
+  );
+}
+
+/** Solid content panel: 12px radius, 1px divider line, 20-24px padding, no elevation. */
+export function Panel({
+  children,
+  className,
+  as: Tag = "div",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "div" | "section" | "article" | "aside";
+}) {
+  return <Tag className={cx("panel p-5 sm:p-6", className)}>{children}</Tag>;
+}
+
+// Buttons --------------------------------------------------------------------
+
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+
+/**
+ * Button primitive. Primary is the solid accent action (44px target); secondary is a quiet
+ * border; ghost is text only. `pending` keeps the button focusable (aria-disabled, aria-busy),
+ * swaps the label for `pendingLabel` and ignores clicks, so it never drops keyboard focus.
+ */
+export function Button({
+  variant = "primary",
+  size = "md",
+  pending = false,
+  pendingLabel,
+  className,
+  children,
+  onClick,
+  type = "button",
+  disabled,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: ButtonVariant;
+  size?: "sm" | "md" | "lg";
+  pending?: boolean;
+  pendingLabel?: ReactNode;
+}) {
+  return (
+    <button
+      {...rest}
+      type={type}
+      disabled={disabled}
+      aria-disabled={pending ? true : undefined}
+      aria-busy={pending ? true : undefined}
+      className={cx("btn", `btn-${variant}`, size === "sm" && "btn-sm", size === "lg" && "btn-lg", className)}
+      onClick={pending ? (e) => { e.preventDefault(); } : onClick}
+    >
+      {pending ? <Spinner /> : null}
+      {pending && pendingLabel ? pendingLabel : children}
+    </button>
   );
 }
 
@@ -48,7 +110,7 @@ export function Badge({ tone, children, icon }: { tone: Tone; children: ReactNod
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.8125rem] leading-5 font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[0.8125rem] leading-5 font-medium whitespace-nowrap",
         style.soft,
       )}
     >
@@ -61,8 +123,8 @@ export function Badge({ tone, children, icon }: { tone: Tone; children: ReactNod
 /** Status pill with a live dot, used for system state (engine, AI key). */
 export function StatusPill({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-ink shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md">
-      <span className={cx("size-2 rounded-full shadow-[0_0_8px_currentColor]", tones[tone].mark, tones[tone].text)} aria-hidden="true" />
+    <span className="inline-flex items-center gap-2 rounded-md border border-line bg-surface-solid px-2.5 py-1 text-[0.8125rem] font-medium text-ink">
+      <span className={cx("size-2 rounded-full", tones[tone].mark)} aria-hidden="true" />
       {children}
     </span>
   );
@@ -87,7 +149,7 @@ export function Verdict({
 }) {
   const style = tones[tone];
   return (
-    <div className={cx("flex gap-3 rounded-2xl px-4 py-4 shadow-[inset_0_0_0_1px_var(--line),inset_0_1px_0_var(--glass-hi)] backdrop-blur-md sm:px-5", style.soft)}>
+    <div className={cx("flex gap-3 rounded-xl border border-line px-4 py-4 sm:px-5", style.soft)}>
       <Icon name={icon ?? style.icon} size={22} className="mt-0.5 flex-none" />
       <div className="min-w-0 text-ink">
         <p id={titleId} className={cx("text-base leading-snug font-semibold", style.text)}>
@@ -176,7 +238,7 @@ function errorDetail(error: unknown): string {
 export function ErrorState({ error, children }: { error: unknown; children?: ReactNode }) {
   const reason = error instanceof ApiError ? error.reason : null;
   return (
-    <div role="alert" className="flex gap-3 rounded-2xl bg-crit-bg px-4 py-4 shadow-[inset_0_0_0_1px_var(--line)] backdrop-blur-md sm:px-5">
+    <div role="alert" className="flex gap-3 rounded-xl border border-line bg-crit-bg px-4 py-4 sm:px-5">
       <Icon name="xCircle" size={22} className="mt-0.5 flex-none text-crit" />
       <div className="min-w-0">
         <p className="font-semibold text-crit">{errorTitle(error)}</p>
@@ -203,9 +265,9 @@ export function Disclosure({
   defaultOpen?: boolean;
 }) {
   return (
-    <details className="group rounded-xl border border-line bg-surface shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md" open={defaultOpen}>
+    <details className="group rounded-xl border border-line bg-surface-solid" open={defaultOpen}>
       <summary className="flex min-h-11 list-none items-center gap-2 rounded-xl px-4 py-2 font-medium text-ink select-none hover:bg-inset [&::-webkit-details-marker]:hidden">
-        <Icon name="chevronDown" size={16} className="-rotate-90 text-ink-3 transition-transform duration-150 group-open:rotate-0" />
+        <Icon name="chevronDown" size={16} className="-rotate-90 text-ink-3 transition-transform duration-150 motion-reduce:transition-none group-open:rotate-0" />
         {summary}
       </summary>
       <div className="border-t border-line px-4 py-4">{children}</div>
@@ -252,7 +314,7 @@ export function CopyButton({ text, label, className }: { text: string; label: st
 export function CodeBlock({ children, label, maxHeight = "24rem" }: { children: string; label: string; maxHeight?: string }) {
   return (
     <pre
-      className="overflow-auto rounded-xl border border-line bg-inset p-3 leading-relaxed whitespace-pre text-ink"
+      className="overflow-auto rounded-lg border border-line bg-inset p-3 leading-relaxed whitespace-pre text-ink"
       style={{ maxHeight }}
       tabIndex={0}
       role="region"
@@ -288,19 +350,33 @@ export function Field({
   error,
   children,
   htmlFor,
+  optional = false,
 }: {
   label: ReactNode;
   hint?: ReactNode;
   error?: string | null;
   htmlFor: string;
   children: ReactNode;
+  /** Appends a muted "(optional)" to the persistent label. */
+  optional?: boolean;
 }) {
+  const describedBy = [hint ? `${htmlFor}-hint` : null, error ? `${htmlFor}-error` : null].filter(Boolean).join(" ");
+  // Associate hint and error with a single control unless the caller already did.
+  const only = Children.count(children) === 1 ? Children.toArray(children)[0] : null;
+  const control =
+    only && isValidElement(only)
+      ? cloneElement(only as ReactElement<Record<string, unknown>>, {
+          "aria-describedby": (only.props as Record<string, unknown>)["aria-describedby"] ?? (describedBy || undefined),
+          "aria-invalid": (only.props as Record<string, unknown>)["aria-invalid"] ?? (error ? true : undefined),
+        })
+      : children;
   return (
     <div>
       <label className="label" htmlFor={htmlFor}>
         {label}
+        {optional ? <span className="ml-1 font-normal text-ink-2">(optional)</span> : null}
       </label>
-      {children}
+      {control}
       {hint ? (
         <p id={`${htmlFor}-hint`} className="hint mt-1.5">
           {hint}
@@ -343,11 +419,11 @@ export function Switch({
           aria-describedby={description ? `${id}-desc` : undefined}
         />
         <span
-          className="pointer-events-none absolute inset-0 rounded-full border border-line-strong bg-inset transition-colors duration-150 peer-checked:border-transparent peer-checked:bg-[linear-gradient(120deg,var(--btn-a),var(--btn-b))] peer-checked:shadow-[0_0_14px_-2px_var(--glow)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-(--focus)"
+          className="pointer-events-none absolute inset-0 rounded-full border border-line-strong bg-inset transition-colors duration-150 motion-reduce:transition-none peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-(--focus)"
           aria-hidden="true"
         />
         <span
-          className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink-3 transition-transform duration-150 peer-checked:translate-x-4 peer-checked:bg-white"
+          className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-ink-3 transition-transform duration-150 peer-checked:translate-x-4 peer-checked:bg-on-accent"
           aria-hidden="true"
         />
       </span>

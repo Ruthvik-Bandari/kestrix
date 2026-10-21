@@ -23,173 +23,173 @@
   src: url("@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
 }
 
+
 /*
- * Tokens. Light neutrals are warm ivory; dark neutrals are deep navy, the night sky the
- * threat-field background is drawn on.
- * The brand hue stays 352, signal magenta.
- * The accent is reserved for primary actions, the current location and focus.
- * Status hues (critical 25, high 50, medium 85, low 245, ok 150) always ship with
- * an icon and a label; they never carry meaning by color alone.
- */
-/*
- * Holographic refresh: the tokens below supersede the palette described above. Neutrals are
- * cool lavender (light) and deep indigo space (dark); the accent is violet 295, and the
- * iridescent stops --h1..--h4 (cyan, violet, magenta, amber) drive gradients, glow and
- * the 3D centerpiece. Text never sits on a raw gradient: gradient text is display-size only
- * and uses darker stops in light mode so it keeps AA contrast for large text.
+ * Tokens: graphite / ivory / green (docs/design/2026-10-21-redesign/DESIGN.md).
+ * Light neutrals are warm ivory, dark neutrals are graphite green. The accent is for actions,
+ * the current location and focus. Status hues (crit, high, med, low, ok) always ship with an
+ * icon and a label; they never carry meaning by color alone. Critical and High share the red
+ * family on purpose and are told apart by their labels and icons.
+ * Every text/background pair below was checked for 4.5:1 (marks and control borders 3:1).
+ * Surfaces are solid: no glass, glow, sheen or iridescent gradients in routine UI. The legacy
+ * names --h1..--h4, --holo-text, --glow, --glass-hi, --btn-a and --btn-b stay so
+ * existing components keep compiling; they now resolve to solid green, ink or nothing.
  */
 :root {
   color-scheme: light;
-  --bg: oklch(0.975 0.012 292);
-  --bg-deep: oklch(0.95 0.02 300);
-  --rail: oklch(0.96 0.016 292);
-  --surface: oklch(1 0 0 / 0.72);
-  --surface-solid: oklch(0.995 0.004 292);
-  --inset: oklch(0.945 0.02 292 / 0.8);
-  --line: oklch(0.5 0.08 295 / 0.18);
-  --line-strong: oklch(0.6 0.04 290);
-  --ink: oklch(0.21 0.035 285);
-  --ink-2: oklch(0.37 0.035 285);
-  --ink-3: oklch(0.46 0.03 285);
-  --accent: oklch(0.5 0.22 295);
-  --accent-hover: oklch(0.45 0.22 295);
-  --on-accent: oklch(1 0 0);
-  --accent-text: oklch(0.46 0.21 295);
-  --accent-soft: oklch(0.935 0.04 300);
-  --focus: oklch(0.47 0.25 300);
+  --bg: #f5f6f2;
+  --bg-deep: #f5f6f2;
+  --rail: #eef1eb;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --inset: #edf1eb;
+  --line: #d8e0d6;
+  --line-strong: #7d8d82;
+  --ink: #162320;
+  --ink-2: #586860;
+  --ink-3: #5f6f66;
+  --accent: #0c6b4b;
+  --accent-hover: #075338;
+  --on-accent: #ffffff;
+  --accent-text: #0c6b4b;
+  --accent-soft: #e1efe6;
+  --focus: #0c6b4b;
 
-  --h1: oklch(0.52 0.12 215);
-  --h2: oklch(0.48 0.23 292);
-  --h3: oklch(0.52 0.23 345);
-  --h4: oklch(0.56 0.16 50);
-  --holo-text: linear-gradient(100deg, var(--h1) 0%, var(--h2) 40%, var(--h3) 75%, var(--h4) 100%);
-  --glass-hi: oklch(1 0 0 / 0.85);
-  --glow: oklch(0.6 0.2 300 / 0.35);
-  --sheen: oklch(1 0 0 / 0.55);
+  /* Legacy decorative stops, now one solid green family. */
+  --h1: #0c6b4b;
+  --h2: #075338;
+  --h3: #0c6b4b;
+  --h4: #075338;
+  --holo-text: var(--ink);
+  --glass-hi: transparent;
+  --glow: transparent;
 
-  --crit: oklch(0.5 0.19 25);
-  --crit-mark: oklch(0.58 0.21 25);
-  --crit-bg: oklch(0.96 0.025 25 / 0.9);
-  --high: oklch(0.5 0.14 48);
-  --high-mark: oklch(0.66 0.17 50);
-  --high-bg: oklch(0.962 0.03 55 / 0.9);
-  --med: oklch(0.47 0.1 75);
-  --med-mark: oklch(0.68 0.14 75);
-  --med-bg: oklch(0.966 0.045 90 / 0.9);
-  --low: oklch(0.47 0.12 250);
-  --low-mark: oklch(0.6 0.13 250);
-  --low-bg: oklch(0.96 0.022 250 / 0.9);
-  --ok: oklch(0.46 0.11 155);
-  --ok-mark: oklch(0.6 0.14 155);
-  --ok-bg: oklch(0.96 0.03 155 / 0.9);
+  --crit: #a12c35;
+  --crit-mark: #c23a43;
+  --crit-bg: #fff1ef;
+  --high: #8f3a0b;
+  --high-mark: #c4501d;
+  --high-bg: #fff0e3;
+  --med: #805000;
+  --med-mark: #b87a0a;
+  --med-bg: #fff4db;
+  --low: #1d5a9a;
+  --low-mark: #3b7bc4;
+  --low-bg: #eaf2fb;
+  --ok: #14623e;
+  --ok-mark: #1f8a58;
+  --ok-bg: #e9f5ec;
 
-  --diff-add-bg: oklch(0.95 0.045 155);
-  --diff-del-bg: oklch(0.95 0.035 25);
-  --shadow: 0 1px 2px oklch(0.3 0.06 290 / 0.08), 0 16px 40px -14px oklch(0.35 0.12 295 / 0.22);
-  --btn-a: oklch(0.49 0.22 285);
-  --btn-b: oklch(0.51 0.23 335);
+  --diff-add-bg: #e1f2e6;
+  --diff-del-bg: #fbe6e3;
+  --shadow: 0 1px 2px rgb(22 35 32 / 0.06), 0 12px 32px -12px rgb(22 35 32 / 0.2);
+  /* Fill for the few components that still hard-code white text on --btn-a/--btn-b. */
+  --btn-a: #0c6b4b;
+  --btn-b: #0c6b4b;
+  --danger-solid: #a12c35;
+  --danger-solid-hover: #84232b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: oklch(0.145 0.042 284);
-    --bg-deep: oklch(0.11 0.035 290);
-    --rail: oklch(0.165 0.045 284);
-    --surface: oklch(0.225 0.05 286 / 0.66);
-    --surface-solid: oklch(0.21 0.048 286);
-    --inset: oklch(0.28 0.055 288 / 0.62);
-    --line: oklch(0.62 0.08 292 / 0.24);
-    --line-strong: oklch(0.7 0.06 292 / 0.55);
-    --ink: oklch(0.97 0.008 285);
-    --ink-2: oklch(0.86 0.02 285);
-    --ink-3: oklch(0.77 0.028 285);
-    --accent: oklch(0.76 0.15 300);
-    --accent-hover: oklch(0.82 0.12 300);
-    --on-accent: oklch(0.17 0.03 300);
-    --accent-text: oklch(0.84 0.12 300);
-    --accent-soft: oklch(0.34 0.1 300 / 0.55);
-    --focus: oklch(0.88 0.14 195);
+    --bg: #101918;
+    --bg-deep: #101918;
+    --rail: #131f1b;
+    --surface: #172421;
+    --surface-solid: #172421;
+    --inset: #20322d;
+    --line: #354a40;
+    --line-strong: #789285;
+    --ink: #edf4ed;
+    --ink-2: #afc0b6;
+    --ink-3: #9fb2a7;
+    --accent: #8ce4bd;
+    --accent-hover: #b0efcf;
+    --on-accent: #10271c;
+    --accent-text: #8ce4bd;
+    --accent-soft: #1f3a30;
+    --focus: #c6ef9b;
 
-    --h1: oklch(0.86 0.13 200);
-    --h2: oklch(0.76 0.17 295);
-    --h3: oklch(0.76 0.2 342);
-    --h4: oklch(0.86 0.14 75);
-    --holo-text: linear-gradient(100deg, var(--h1) 0%, var(--h2) 38%, var(--h3) 68%, var(--h4) 100%);
-    --glass-hi: oklch(1 0 0 / 0.08);
-    --glow: oklch(0.66 0.22 300 / 0.5);
-    --sheen: oklch(1 0 0 / 0.12);
+    --h1: #8ce4bd;
+    --h2: #b0efcf;
+    --h3: #8ce4bd;
+    --h4: #b0efcf;
 
-    --crit: oklch(0.82 0.11 22);
-    --crit-mark: oklch(0.68 0.2 22);
-    --crit-bg: oklch(0.3 0.08 18 / 0.75);
-    --high: oklch(0.84 0.11 55);
-    --high-mark: oklch(0.74 0.15 52);
-    --high-bg: oklch(0.3 0.06 52 / 0.75);
-    --med: oklch(0.88 0.12 90);
-    --med-mark: oklch(0.82 0.14 85);
-    --med-bg: oklch(0.3 0.05 85 / 0.75);
-    --low: oklch(0.84 0.08 240);
-    --low-mark: oklch(0.7 0.12 240);
-    --low-bg: oklch(0.3 0.06 250 / 0.75);
-    --ok: oklch(0.85 0.12 160);
-    --ok-mark: oklch(0.74 0.14 160);
-    --ok-bg: oklch(0.29 0.06 165 / 0.75);
+    --crit: #ffb4b8;
+    --crit-mark: #ff7a82;
+    --crit-bg: #3b2024;
+    --high: #ffc09a;
+    --high-mark: #ff9a5c;
+    --high-bg: #3a2418;
+    --med: #efcd8b;
+    --med-mark: #e0b04a;
+    --med-bg: #3a2d16;
+    --low: #a9cdf5;
+    --low-mark: #6aa7ea;
+    --low-bg: #1b2c40;
+    --ok: #9ce5bb;
+    --ok-mark: #4fc787;
+    --ok-bg: #193c2b;
 
-    --diff-add-bg: oklch(0.32 0.07 155 / 0.8);
-    --diff-del-bg: oklch(0.32 0.08 20 / 0.8);
-    --shadow: 0 1px 2px oklch(0 0 0 / 0.35), 0 18px 48px -12px oklch(0.06 0.06 290 / 0.6);
+    --diff-add-bg: #1c3c2c;
+    --diff-del-bg: #422226;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
+    --btn-a: #17805a;
+    --btn-b: #17805a;
+    --danger-solid: #a12c35;
+    --danger-solid-hover: #84232b;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: oklch(0.145 0.042 284);
-  --bg-deep: oklch(0.11 0.035 290);
-  --rail: oklch(0.165 0.045 284);
-  --surface: oklch(0.225 0.05 286 / 0.66);
-  --surface-solid: oklch(0.21 0.048 286);
-  --inset: oklch(0.28 0.055 288 / 0.62);
-  --line: oklch(0.62 0.08 292 / 0.24);
-  --line-strong: oklch(0.7 0.06 292 / 0.55);
-  --ink: oklch(0.97 0.008 285);
-  --ink-2: oklch(0.86 0.02 285);
-  --ink-3: oklch(0.77 0.028 285);
-  --accent: oklch(0.76 0.15 300);
-  --accent-hover: oklch(0.82 0.12 300);
-  --on-accent: oklch(0.17 0.03 300);
-  --accent-text: oklch(0.84 0.12 300);
-  --accent-soft: oklch(0.34 0.1 300 / 0.55);
-  --focus: oklch(0.88 0.14 195);
+  --bg: #101918;
+  --bg-deep: #101918;
+  --rail: #131f1b;
+  --surface: #172421;
+  --surface-solid: #172421;
+  --inset: #20322d;
+  --line: #354a40;
+  --line-strong: #789285;
+  --ink: #edf4ed;
+  --ink-2: #afc0b6;
+  --ink-3: #9fb2a7;
+  --accent: #8ce4bd;
+  --accent-hover: #b0efcf;
+  --on-accent: #10271c;
+  --accent-text: #8ce4bd;
+  --accent-soft: #1f3a30;
+  --focus: #c6ef9b;
 
-  --h1: oklch(0.86 0.13 200);
-  --h2: oklch(0.76 0.17 295);
-  --h3: oklch(0.76 0.2 342);
-  --h4: oklch(0.86 0.14 75);
-  --holo-text: linear-gradient(100deg, var(--h1) 0%, var(--h2) 38%, var(--h3) 68%, var(--h4) 100%);
-  --glass-hi: oklch(1 0 0 / 0.08);
-  --glow: oklch(0.66 0.22 300 / 0.5);
-  --sheen: oklch(1 0 0 / 0.12);
+  --h1: #8ce4bd;
+  --h2: #b0efcf;
+  --h3: #8ce4bd;
+  --h4: #b0efcf;
 
-  --crit: oklch(0.82 0.11 22);
-  --crit-mark: oklch(0.68 0.2 22);
-  --crit-bg: oklch(0.3 0.08 18 / 0.75);
-  --high: oklch(0.84 0.11 55);
-  --high-mark: oklch(0.74 0.15 52);
-  --high-bg: oklch(0.3 0.06 52 / 0.75);
-  --med: oklch(0.88 0.12 90);
-  --med-mark: oklch(0.82 0.14 85);
-  --med-bg: oklch(0.3 0.05 85 / 0.75);
-  --low: oklch(0.84 0.08 240);
-  --low-mark: oklch(0.7 0.12 240);
-  --low-bg: oklch(0.3 0.06 250 / 0.75);
-  --ok: oklch(0.85 0.12 160);
-  --ok-mark: oklch(0.74 0.14 160);
-  --ok-bg: oklch(0.29 0.06 165 / 0.75);
+  --crit: #ffb4b8;
+  --crit-mark: #ff7a82;
+  --crit-bg: #3b2024;
+  --high: #ffc09a;
+  --high-mark: #ff9a5c;
+  --high-bg: #3a2418;
+  --med: #efcd8b;
+  --med-mark: #e0b04a;
+  --med-bg: #3a2d16;
+  --low: #a9cdf5;
+  --low-mark: #6aa7ea;
+  --low-bg: #1b2c40;
+  --ok: #9ce5bb;
+  --ok-mark: #4fc787;
+  --ok-bg: #193c2b;
 
-  --diff-add-bg: oklch(0.32 0.07 155 / 0.8);
-  --diff-del-bg: oklch(0.32 0.08 20 / 0.8);
-  --shadow: 0 1px 2px oklch(0 0 0 / 0.35), 0 18px 48px -12px oklch(0.06 0.06 290 / 0.6);
+  --diff-add-bg: #1c3c2c;
+  --diff-del-bg: #422226;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
+  --btn-a: #17805a;
+  --btn-b: #17805a;
+  --danger-solid: #a12c35;
+  --danger-solid-hover: #84232b;
 }
 
 @theme inline {
@@ -231,6 +231,12 @@
   --color-ok-mark: var(--ok-mark);
   --color-ok-bg: var(--ok-bg);
 
+  /* Panels are 12px; the old 16px and 24px steps collapse onto it. Controls are 6px. */
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+  /* Blur is gone from routine UI; callers that still say backdrop-blur-md get none. */
+  --blur-md: 0px;
+
   --shadow-panel: var(--shadow);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -246,18 +252,13 @@
   }
   body {
     margin: 0;
-    /* Two soft iridescent nebulae, fixed so they read as depth behind the glass. */
-    background:
-      radial-gradient(60rem 36rem at 88% -8%, color-mix(in oklch, var(--h2) 16%, transparent), transparent 70%),
-      radial-gradient(48rem 32rem at -6% 104%, color-mix(in oklch, var(--h1) 13%, transparent), transparent 70%),
-      radial-gradient(36rem 24rem at 50% 50%, color-mix(in oklch, var(--h3) 5%, transparent), transparent 70%),
-      linear-gradient(180deg, var(--bg), var(--bg-deep));
-    background-attachment: fixed;
+    background: var(--bg);
     font-family: var(--font-sans);
     font-size: 0.9375rem;
     line-height: 1.55;
     min-width: 320px;
     overflow-x: clip;
+    font-variant-numeric: normal;
   }
   h1,
   h2,
@@ -269,7 +270,7 @@
     text-wrap: pretty;
   }
   ::selection {
-    background: color-mix(in oklch, var(--h2) 35%, transparent);
+    background: var(--accent-soft);
     color: var(--ink);
   }
   :focus-visible {
@@ -290,24 +291,15 @@
 }
 
 @layer components {
-  /* Display type: bold, tight, optionally iridescent. */
+  /* Display type: solid colour, tight, never a gradient. */
   .display {
-    font-weight: 700;
-    letter-spacing: -0.035em;
-    line-height: 1.02;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
   }
+  /* Legacy name: headings stay solid ink (--holo-text resolves to var(--ink)). */
   .holo-text {
-    background: var(--holo-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    -webkit-text-fill-color: transparent;
-  }
-  /* Animated wordmark: a mirrored gradient so the slow shift never shows a seam. */
-  .holo-text-live {
-    background-image: linear-gradient(100deg, var(--h1), var(--h2), var(--h3), var(--h4), var(--h3), var(--h2), var(--h1));
-    background-size: 300% 100%;
-    animation: holo-shift 14s linear infinite;
+    color: var(--holo-text);
   }
   .eyebrow {
     display: inline-flex;
@@ -315,7 +307,7 @@
     gap: 0.5rem;
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--accent-text);
   }
@@ -326,108 +318,94 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 2.5rem;
-    padding: 0 1.05rem;
-    border-radius: 0.7rem;
+    min-height: 2.75rem;
+    padding: 0 1.125rem;
+    border-radius: 6px;
     border: 1px solid transparent;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1;
     white-space: nowrap;
     cursor: pointer;
     transition:
-      background-color 180ms var(--ease-out-quart),
-      border-color 180ms var(--ease-out-quart),
-      box-shadow 220ms var(--ease-out-quart),
-      color 180ms var(--ease-out-quart),
-      filter 180ms var(--ease-out-quart);
+      background-color 150ms var(--ease-out-quart),
+      border-color 150ms var(--ease-out-quart),
+      color 150ms var(--ease-out-quart);
   }
+  .btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  /* Disabled and pending are shown by fill and text, not by fading: the label stays readable. */
   .btn:disabled,
   .btn[aria-disabled="true"] {
     cursor: not-allowed;
-    opacity: 0.5;
+    background: var(--inset);
+    border-color: var(--line);
+    color: var(--ink-3);
   }
-  .btn:focus-visible {
-    outline-offset: 3px;
-    box-shadow: 0 0 0 6px color-mix(in oklch, var(--focus) 28%, transparent);
+  .btn[aria-busy="true"] {
+    cursor: progress;
   }
-  /* Primary: deep violet-to-magenta glass with a lit top edge and a soft glow. White text
-     on stops at L 0.49-0.51 keeps better than 5:1 in both themes. */
   .btn-primary {
-    background: linear-gradient(120deg, var(--btn-a), var(--btn-b));
-    color: oklch(1 0 0);
-    border-color: oklch(1 0 0 / 0.18);
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.28),
-      0 8px 24px -8px var(--glow);
+    background: var(--accent);
+    color: var(--on-accent);
   }
-  .btn-primary:not(:disabled):hover {
-    filter: brightness(1.08) saturate(1.1);
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.32),
-      0 10px 32px -6px var(--glow);
-  }
-  .btn-primary:focus-visible {
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.28),
-      0 0 0 6px color-mix(in oklch, var(--focus) 30%, transparent);
+  .btn-primary:not(:disabled):not([aria-disabled="true"]):hover {
+    background: var(--accent-hover);
   }
   .btn-secondary {
-    background: var(--surface);
+    background: var(--surface-solid);
     color: var(--ink);
     border-color: var(--line-strong);
-    box-shadow: inset 0 1px 0 var(--glass-hi);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
   }
-  .btn-secondary:not(:disabled):hover {
-    border-color: color-mix(in oklch, var(--h2) 70%, var(--line-strong));
-    box-shadow:
-      inset 0 1px 0 var(--glass-hi),
-      0 6px 22px -10px var(--glow);
+  .btn-secondary:not(:disabled):not([aria-disabled="true"]):hover {
+    background: var(--inset);
   }
   .btn-ghost {
     background: transparent;
     color: var(--ink-2);
   }
-  .btn-ghost:not(:disabled):hover {
+  .btn-ghost:not(:disabled):not([aria-disabled="true"]):hover {
     background: var(--inset);
     color: var(--ink);
   }
+  .btn-ghost:disabled,
+  .btn-ghost[aria-disabled="true"] {
+    background: transparent;
+    border-color: transparent;
+  }
   .btn-sm {
-    min-height: 2rem;
-    padding: 0 0.7rem;
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
     font-size: 0.8125rem;
-    border-radius: 0.55rem;
   }
   .btn-lg {
     min-height: 3.25rem;
     padding: 0 1.5rem;
     font-size: 1rem;
-    border-radius: 0.95rem;
   }
   /* Destructive and irreversible (account deletion): solid critical red, white text. */
   .btn-danger {
-    background: oklch(0.5 0.19 25);
-    color: oklch(1 0 0);
-    border-color: oklch(1 0 0 / 0.18);
+    background: var(--danger-solid);
+    color: #fff;
   }
-  .btn-danger:not(:disabled):hover {
-    filter: brightness(1.08);
+  .btn-danger:not(:disabled):not([aria-disabled="true"]):hover {
+    background: var(--danger-solid-hover);
   }
 
   .field {
     width: 100%;
-    background: var(--surface);
+    background: var(--surface-solid);
     color: var(--ink);
     border: 1px solid var(--line-strong);
-    border-radius: 0.65rem;
-    padding: 0.5625rem 0.75rem;
+    border-radius: 6px;
+    padding: 0.625rem 0.75rem;
+    min-height: 2.75rem;
     font-size: 0.9375rem;
-    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.06);
     transition:
-      border-color 160ms var(--ease-out-quart),
-      box-shadow 160ms var(--ease-out-quart);
+      border-color 150ms var(--ease-out-quart),
+      background-color 150ms var(--ease-out-quart);
   }
   .field::placeholder {
     color: var(--ink-3);
@@ -437,12 +415,19 @@
   }
   .field:focus-visible {
     outline: 2px solid var(--focus);
-    outline-offset: 0;
-    border-color: transparent;
-    box-shadow: 0 0 0 5px color-mix(in oklch, var(--focus) 22%, transparent);
+    outline-offset: 1px;
+    border-color: var(--focus);
+    border-radius: 6px;
+  }
+  .field:disabled {
+    background: var(--inset);
+    color: var(--ink-3);
+    cursor: not-allowed;
   }
   .field[aria-invalid="true"] {
     border-color: var(--crit-mark);
+    border-width: 2px;
+    padding: calc(0.625rem - 1px) calc(0.75rem - 1px);
   }
   textarea.field {
     font-family: var(--font-mono);
@@ -451,79 +436,33 @@
     resize: vertical;
   }
 
-  /* Glass: translucent fill, backdrop blur, a lit top edge, and a 1px iridescent rim
-     drawn by a masked pseudo-element so the gradient never tints the fill. */
+  /* Panels: solid surface, 1px divider line, 12px radius, no elevation. .glass is a legacy alias. */
   .panel,
   .glass {
     position: relative;
-    background: var(--surface);
+    background: var(--surface-solid);
     border: 1px solid var(--line);
-    border-radius: 1rem;
-    box-shadow:
-      inset 0 1px 0 var(--glass-hi),
-      var(--shadow);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    backdrop-filter: blur(16px) saturate(140%);
-  }
-  .panel::before,
-  .glass::before,
-  .holo-rim::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--h1) 75%, transparent),
-      transparent 32%,
-      transparent 62%,
-      color-mix(in oklch, var(--h3) 65%, transparent) 88%,
-      color-mix(in oklch, var(--h4) 60%, transparent)
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box exclude,
-      linear-gradient(#000 0 0);
-    pointer-events: none;
-    opacity: 0.75;
+    border-radius: 12px;
   }
   .holo-rim {
     position: relative;
   }
 
-  /* Home launcher: a large tile per tool, the icon in a soft glass square. Calm: the tile lifts
-     a little and its rim brightens on hover and focus, nothing else moves. */
+  /* Home launcher tile: solid, the border darkens on hover and focus, nothing moves. */
   .launcher-tile {
     min-height: 9.5rem;
-    transition:
-      transform 160ms ease,
-      box-shadow 160ms ease,
-      border-color 160ms ease;
+    transition: border-color 150ms var(--ease-out-quart);
   }
   .launcher-tile:hover {
-    transform: translateY(-2px);
     border-color: var(--line-strong);
   }
   .launcher-tile:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 3px;
   }
-  .launcher-tile:hover::before,
-  .launcher-tile:focus-visible::before {
-    opacity: 1;
-  }
   .launcher-icon {
-    background:
-      linear-gradient(145deg, color-mix(in oklch, var(--h1) 16%, transparent), color-mix(in oklch, var(--h3) 12%, transparent)),
-      var(--inset);
+    background: var(--inset);
     border: 1px solid var(--line);
-    box-shadow:
-      inset 0 1px 0 var(--glass-hi),
-      0 10px 24px -14px var(--glow);
   }
 
   .label {
@@ -551,6 +490,7 @@
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
+    transition: color 150ms var(--ease-out-quart);
   }
   .link:hover {
     text-decoration-thickness: 2px;
@@ -560,6 +500,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
   }
   .data-table th {
     text-align: left;
@@ -592,10 +533,10 @@
   }
 
   .reveal {
-    animation: reveal 260ms var(--ease-out-quart) both;
+    animation: reveal 180ms var(--ease-out-quart) both;
   }
 
-  /* Numbered step bubble with an iridescent ring. */
+  /* Numbered step bubble: solid, 1px ring. */
   .step-dot {
     display: inline-flex;
     flex: none;
@@ -606,11 +547,10 @@
     border-radius: 999px;
     font-size: 0.8125rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     color: var(--ink);
-    background:
-      linear-gradient(var(--surface-solid), var(--surface-solid)) padding-box,
-      conic-gradient(from 200deg, var(--h1), var(--h2), var(--h3), var(--h4), var(--h1)) border-box;
-    border: 2px solid transparent;
+    background: var(--surface-solid);
+    border: 1px solid var(--line-strong);
   }
 }
 
@@ -619,12 +559,12 @@
 @media (prefers-reduced-motion: no-preference) {
   [data-reveal="pending"] {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(16px);
   }
   [data-reveal] {
     transition:
-      opacity 800ms var(--ease-out-expo),
-      transform 800ms var(--ease-out-expo);
+      opacity 240ms var(--ease-out-quart),
+      transform 240ms var(--ease-out-quart);
     transition-delay: var(--reveal-delay, 0ms);
   }
 }
@@ -632,7 +572,7 @@
 @keyframes reveal {
   from {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
 }
 
@@ -642,11 +582,6 @@
   }
 }
 
-@keyframes holo-shift {
-  to {
-    background-position: 150% 0;
-  }
-}
 
 /* Flow diagrams on the landing page. The resting state is the meaningful one, so with
    reduced motion (animations cut to 1ms) every diagram still reads correctly. */
@@ -661,9 +596,7 @@
     box-shadow: inset 0 0 0 1px var(--line);
   }
   12% {
-    box-shadow:
-      inset 0 0 0 1px color-mix(in oklch, var(--h1) 80%, transparent),
-      0 0 18px -4px color-mix(in oklch, var(--h1) 70%, transparent);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 }
 @keyframes drop-in {
@@ -714,15 +647,13 @@
   .glass {
     border: 1px solid CanvasText;
   }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    border-color: GrayText;
+    color: GrayText;
+  }
   .holo-text {
     color: CanvasText;
-    -webkit-text-fill-color: CanvasText;
-    background: none;
-  }
-  .panel::before,
-  .glass::before,
-  .holo-rim::before {
-    display: none;
   }
 }
 
@@ -737,27 +668,16 @@
   width: 100vw;
   height: 100vh;
   pointer-events: none;
+  /* The binary-rain canvas is retired from routine UI; ThreatField is removed in a later phase. */
+  display: none;
 }
 .veil-content {
-  --veil: 72%;
-  background: color-mix(in oklch, var(--bg) var(--veil), transparent);
+  --veil: 100%;
+  background: var(--bg);
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 var(--glass-hi);
-  backdrop-filter: blur(6px) saturate(130%);
-  -webkit-backdrop-filter: blur(6px) saturate(130%);
 }
 .veil-rail {
-  background: color-mix(in oklch, var(--rail) 78%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-}
-:root[data-theme="dark"] .veil-content {
-  --veil: 66%;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .veil-content {
-    --veil: 66%;
-  }
+  background: var(--rail);
 }
 
 /* Holographic floor: a perspective grid under the landing hero. Decorative. */
@@ -765,6 +685,7 @@
   position: absolute;
   inset: auto -20% 0 -20%;
   height: 52%;
+  display: none;
   pointer-events: none;
   transform: perspective(520px) rotateX(62deg);
   transform-origin: 50% 100%;
@@ -792,7 +713,7 @@
   height: 2px;
   transform-origin: 0 50%;
   transform: scaleX(0);
-  background: linear-gradient(90deg, var(--h1), var(--h2), var(--h3), var(--h4));
+  background: var(--accent);
 }
 @supports (animation-timeline: scroll()) {
   .scroll-progress {
@@ -848,16 +769,14 @@
   font-size: clamp(4.5rem, 13vw, 10rem);
   line-height: 0.8;
   color: transparent;
-  -webkit-text-stroke: 1.5px color-mix(in oklch, var(--h2) 55%, transparent);
-  background: linear-gradient(160deg, color-mix(in oklch, var(--h1) 30%, transparent), transparent 70%);
-  -webkit-background-clip: text;
-  background-clip: text;
+  -webkit-text-stroke: 1.5px var(--line-strong);
 }
 .chapter h2 {
   scroll-margin-top: 6rem;
 }
 
 .stage-glow::before {
+  display: none;
   content: "";
   position: absolute;
   inset: 6% 4% -4%;
@@ -878,10 +797,6 @@
 
 .compare-stage {
   border: 1px solid var(--line-strong);
-  box-shadow:
-    inset 0 1px 0 var(--glass-hi),
-    var(--shadow),
-    0 40px 90px -40px var(--glow);
   background: var(--surface-solid);
 }
 .compare-with {
@@ -911,10 +826,7 @@
   position: absolute;
   inset: 0 auto 0 -1.5px;
   width: 3px;
-  background: linear-gradient(180deg, var(--h1), var(--h2), var(--h3), var(--h4));
-  box-shadow:
-    0 0 14px 2px color-mix(in oklch, var(--h1) 55%, transparent),
-    0 0 40px 6px color-mix(in oklch, var(--h2) 30%, transparent);
+  background: var(--accent);
 }
 .compare-knob {
   position: absolute;
@@ -926,9 +838,8 @@
   padding: 0.55rem 0.6rem;
   border-radius: 999px;
   color: white;
-  background: linear-gradient(120deg, var(--btn-a), var(--btn-b));
-  border: 1px solid oklch(1 0 0 / 0.35);
-  box-shadow: 0 8px 26px -6px var(--glow);
+  background: var(--btn-a);
+  border: 1px solid var(--line-strong);
   /* Centered on the line mid-way; tucked fully inside the stage at either end. */
   transform: translate(calc(-50% + (50 - var(--scan-n, 0)) * 1%), -50%);
 }
@@ -956,36 +867,14 @@
 }
 
 .scene-pane {
-  background:
-    radial-gradient(40rem 22rem at 100% 0%, color-mix(in oklch, var(--h2) 7%, transparent), transparent 70%),
-    var(--surface-solid);
+  background: var(--surface-solid);
 }
 .scene-pane-with {
-  background:
-    linear-gradient(color-mix(in oklch, var(--h1) 9%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, var(--h1) 9%, transparent) 1px, transparent 1px),
-    radial-gradient(44rem 26rem at 0% 0%, color-mix(in oklch, var(--h1) 14%, transparent), transparent 70%),
-    radial-gradient(36rem 22rem at 100% 100%, color-mix(in oklch, var(--h3) 10%, transparent), transparent 70%),
-    var(--surface-solid);
-  background-size:
-    28px 28px,
-    28px 28px,
-    auto,
-    auto,
-    auto;
+  background: var(--surface-solid);
 }
 .device {
   background: var(--bg);
   border: 1px solid var(--line-strong);
-  box-shadow:
-    inset 0 1px 0 var(--glass-hi),
-    0 24px 50px -28px oklch(0.2 0.08 290 / 0.45);
-}
-.scene-pane-with .device {
-  box-shadow:
-    inset 0 1px 0 var(--glass-hi),
-    0 0 0 1px color-mix(in oklch, var(--h1) 35%, transparent),
-    0 24px 60px -24px color-mix(in oklch, var(--h1) 45%, transparent);
 }
 
 .xray-mark {
@@ -994,9 +883,7 @@
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   background: color-mix(in oklch, var(--mark) 14%, transparent);
-  box-shadow:
-    0 0 0 2px var(--mark),
-    0 0 18px -2px var(--mark);
+  box-shadow: 0 0 0 2px var(--mark);
 }
 .xray-crit {
   --mark: var(--crit-mark);
@@ -1014,9 +901,7 @@
   --mark: var(--line-strong);
 }
 .pin {
-  box-shadow:
-    0 0 0 2px var(--surface-solid),
-    0 4px 12px -2px oklch(0 0 0 / 0.35);
+  box-shadow: 0 0 0 2px var(--surface-solid);
 }
 
 .stamp {
@@ -1024,13 +909,11 @@
   color: var(--crit);
   border-color: var(--crit-mark);
   background: color-mix(in oklch, var(--crit-bg) 80%, transparent);
-  box-shadow: 0 10px 30px -14px var(--crit-mark);
 }
 .stamp-ok {
   color: var(--ok);
   border-color: var(--ok-mark);
   background: color-mix(in oklch, var(--ok-bg) 80%, transparent);
-  box-shadow: 0 10px 30px -14px var(--ok-mark);
 }
 .stamp-high {
   color: var(--high);
@@ -1050,9 +933,8 @@
 }
 
 .terminal {
-  background: linear-gradient(160deg, oklch(0.2 0.05 285), oklch(0.15 0.04 290));
-  border: 1px solid oklch(1 0 0 / 0.12);
-  box-shadow: 0 30px 70px -30px oklch(0.15 0.1 290 / 0.7);
+  background: #101918;
+  border: 1px solid #354a40;
 }
 .terminal code {
   font-size: inherit;
@@ -1064,13 +946,13 @@
   border: 1.5px solid var(--line-strong);
   background: var(--surface-solid);
   transition:
-    height 300ms var(--ease-out-expo),
-    background 300ms;
+    height 180ms var(--ease-out-quart),
+    background 150ms;
 }
 .rail-dot.is-active {
   height: 28px;
   border-color: transparent;
-  background: linear-gradient(180deg, var(--h1), var(--h2), var(--h3));
+  background: var(--accent);
 }
 
 .doc-icon .doc-page,
@@ -1080,7 +962,7 @@
 }
 .doc-icon.is-peeled .doc-page {
   transform: rotate(-8deg) translate(-6px, -4px);
-  box-shadow: 0 0 0 2px var(--crit-mark), 0 18px 40px -16px var(--crit-mark);
+  box-shadow: 0 0 0 2px var(--crit-mark);
 }
 .doc-icon.is-peeled .doc-fold {
   transform: translate(4px, -6px) rotate(14deg);
@@ -1089,7 +971,6 @@
   background:
     radial-gradient(closest-side, var(--surface-solid) 78%, transparent 80%),
     conic-gradient(var(--crit-mark) calc(var(--grade, 35) * 1%), var(--inset) 0);
-  box-shadow: 0 0 40px -10px var(--crit-mark);
 }
 .url-host {
   border-radius: 6px;
