@@ -759,7 +759,11 @@ def int8_state(model: Any) -> dict[str, Any]:
 
 
 def _cast(value: Any, *, half: bool) -> Any:
-    if hasattr(value, "is_floating_point") and value.is_floating_point():
+    import torch
+
+    # A quantized state dict also holds non-tensor entries (packed params, torch.dtype objects whose
+    # is_floating_point is a bool attribute, not a method); only float tensors are cast.
+    if isinstance(value, torch.Tensor) and value.is_floating_point():
         return value.half() if half else value.float()
     return value
 
