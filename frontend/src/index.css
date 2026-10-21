@@ -32,7 +32,7 @@
  * family on purpose and are told apart by their labels and icons.
  * Every text/background pair below was checked for 4.5:1 (marks and control borders 3:1).
  * Surfaces are solid: no glass, glow, sheen or iridescent gradients in routine UI. The legacy
- * names --h1..--h4, --holo-text, --glow, --glass-hi, --btn-a and --btn-b stay so
+ * names --h1..--h4, --holo-text, --glow and --glass-hi stay so
  * existing components keep compiling; they now resolve to solid green, ink or nothing.
  */
 :root {
@@ -83,9 +83,6 @@
   --diff-add-bg: #e1f2e6;
   --diff-del-bg: #fbe6e3;
   --shadow: 0 1px 2px rgb(22 35 32 / 0.06), 0 12px 32px -12px rgb(22 35 32 / 0.2);
-  /* Fill for the few components that still hard-code white text on --btn-a/--btn-b. */
-  --btn-a: #0c6b4b;
-  --btn-b: #0c6b4b;
   --danger-solid: #a12c35;
   --danger-solid-hover: #84232b;
 }
@@ -135,8 +132,6 @@
     --diff-add-bg: #1c3c2c;
     --diff-del-bg: #422226;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
-    --btn-a: #17805a;
-    --btn-b: #17805a;
     --danger-solid: #a12c35;
     --danger-solid-hover: #84232b;
   }
@@ -186,8 +181,6 @@
   --diff-add-bg: #1c3c2c;
   --diff-del-bg: #422226;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
-  --btn-a: #17805a;
-  --btn-b: #17805a;
   --danger-solid: #a12c35;
   --danger-solid-hover: #84232b;
 }
@@ -240,6 +233,14 @@
   --shadow-panel: var(--shadow);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The public hero is graphite in both themes (docs/design/2026-10-21-redesign/DESIGN.md). */
+@theme {
+  --color-hero: #101918;
+  --color-hero-ink: #edf4ed;
+  --color-hero-muted: #afc0b6;
+  --color-lime: #c6ef9b;
 }
 
 @layer base {
@@ -385,6 +386,55 @@
     padding: 0 1.5rem;
     font-size: 1rem;
   }
+  /* Graphite scope (landing header and hero): the same text, line and focus colors in light and dark.
+     Lime is the accent here only; inside the app the accent stays green. */
+  .graphite {
+    background: #101918;
+    color: #edf4ed;
+    --ink: #edf4ed;
+    --ink-2: #afc0b6;
+    --ink-3: #9fb2a7;
+    --line: #354a40;
+    --line-strong: #789285;
+    --accent-text: #c6ef9b;
+    --focus: #c6ef9b;
+  }
+  .btn-lime {
+    background: #c6ef9b;
+    color: #10271c;
+  }
+  .btn-lime:hover {
+    background: #d9f5b8;
+  }
+  .btn-outline-light {
+    background: transparent;
+    color: #edf4ed;
+    border-color: #789285;
+  }
+  .btn-outline-light:hover {
+    background: rgb(237 244 237 / 0.1);
+  }
+  /* The featured report always reads in the light palette, over graphite, in both themes. */
+  .report-card {
+    --surface-solid: #ffffff;
+    --inset: #edf1eb;
+    --ink: #162320;
+    --ink-2: #586860;
+    --line: #d8e0d6;
+    --line-strong: #7d8d82;
+    --crit: #a12c35;
+    --crit-bg: #fff1ef;
+    --high: #8f3a0b;
+    --high-bg: #fff0e3;
+    --med: #805000;
+    --med-bg: #fff4db;
+    --low: #1d5a9a;
+    --low-bg: #eaf2fb;
+    background: #f9faf6;
+    color: #162320;
+    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.6);
+  }
+
   /* Destructive and irreversible (account deletion): solid critical red, white text. */
   .btn-danger {
     background: var(--danger-solid);
@@ -554,21 +604,6 @@
   }
 }
 
-/* Scroll storytelling: sections rise in once they enter the viewport (lib/useReveal.ts).
-   Only with motion allowed; otherwise everything is simply visible. */
-@media (prefers-reduced-motion: no-preference) {
-  [data-reveal="pending"] {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  [data-reveal] {
-    transition:
-      opacity 240ms var(--ease-out-quart),
-      transform 240ms var(--ease-out-quart);
-    transition-delay: var(--reveal-delay, 0ms);
-  }
-}
-
 @keyframes reveal {
   from {
     opacity: 0.35;
@@ -582,52 +617,6 @@
   }
 }
 
-
-/* Flow diagrams on the landing page. The resting state is the meaningful one, so with
-   reduced motion (animations cut to 1ms) every diagram still reads correctly. */
-@keyframes flow-dash {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-@keyframes chip-scan {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
-  12% {
-    box-shadow: inset 0 0 0 1px var(--accent);
-  }
-}
-@keyframes drop-in {
-  0% {
-    transform: translateY(-14px);
-    opacity: 0;
-  }
-  30%,
-  100% {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes scan-beam {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(260%);
-  }
-}
-@keyframes float {
-  50% {
-    transform: translateY(-8px);
-  }
-}
-@keyframes grid-drift {
-  to {
-    background-position: 0 48px;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -678,458 +667,4 @@
 }
 .veil-rail {
   background: var(--rail);
-}
-
-/* Holographic floor: a perspective grid under the landing hero. Decorative. */
-.holo-grid {
-  position: absolute;
-  inset: auto -20% 0 -20%;
-  height: 52%;
-  display: none;
-  pointer-events: none;
-  transform: perspective(520px) rotateX(62deg);
-  transform-origin: 50% 100%;
-  background-image:
-    linear-gradient(color-mix(in oklch, var(--h2) 38%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, var(--h1) 30%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
-  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 85%);
-  mask-image: linear-gradient(to top, #000 10%, transparent 85%);
-  opacity: 0.6;
-  animation: grid-drift 3.2s linear infinite;
-}
-
-/*
- * Landing story: "without vs with Kestrix" scenes (features/landing). The Kestrix state wipes
- * in from the left; --scan (0-100%) is how far. Scene animations run only in the interactive
- * comparison, only in a revealed chapter and only in the state that is on screen, so the
- * static reduced-motion layout never animates.
- */
-.scroll-progress {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  transform-origin: 0 50%;
-  transform: scaleX(0);
-  background: var(--accent);
-}
-@supports (animation-timeline: scroll()) {
-  .scroll-progress {
-    animation: scroll-progress linear both;
-    animation-timeline: scroll(root);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scroll-progress {
-    display: none;
-  }
-}
-@keyframes scroll-progress {
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.scroll-cue-mouse {
-  display: block;
-  width: 1.375rem;
-  height: 2.125rem;
-  border: 2px solid var(--line-strong);
-  border-radius: 999px;
-  position: relative;
-}
-.scroll-cue-mouse > span {
-  position: absolute;
-  left: 50%;
-  top: 0.4rem;
-  width: 4px;
-  height: 7px;
-  margin-left: -2px;
-  border-radius: 2px;
-  background: var(--accent);
-  animation: cue 1.8s var(--ease-out-quart) infinite;
-}
-@keyframes cue {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  70% {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-.chapter-number {
-  font-size: clamp(4.5rem, 13vw, 10rem);
-  line-height: 0.8;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--line-strong);
-}
-.chapter h2 {
-  scroll-margin-top: 6rem;
-}
-
-.stage-glow::before {
-  display: none;
-  content: "";
-  position: absolute;
-  inset: 6% 4% -4%;
-  z-index: -1;
-  border-radius: 3rem;
-  background: conic-gradient(
-    from 120deg,
-    color-mix(in oklch, var(--h1) 26%, transparent),
-    color-mix(in oklch, var(--h2) 26%, transparent),
-    color-mix(in oklch, var(--h3) 22%, transparent),
-    color-mix(in oklch, var(--h4) 18%, transparent),
-    color-mix(in oklch, var(--h1) 26%, transparent)
-  );
-  filter: blur(60px);
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.compare-stage {
-  border: 1px solid var(--line-strong);
-  background: var(--surface-solid);
-}
-.compare-with {
-  clip-path: inset(0 calc(100% - var(--scan)) 0 0);
-  transition: clip-path 900ms var(--ease-out-expo);
-}
-/* Fully scanned: lift the Kestrix state above the drag surface but let pointer events pass
-   through it, except on its own controls (such as "Show all findings"). */
-.compare-with.is-settled {
-  z-index: 31;
-  pointer-events: none;
-}
-.compare-with.is-settled :is(button, a, summary, [role="button"]) {
-  pointer-events: auto;
-}
-.compare-stage.is-dragging .compare-with,
-.compare-stage.is-dragging .compare-beam {
-  transition: none;
-}
-.compare-beam {
-  left: var(--scan);
-  width: 0;
-  transition: left 900ms var(--ease-out-expo);
-}
-.compare-beam::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 -1.5px;
-  width: 3px;
-  background: var(--accent);
-}
-.compare-knob {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0.55rem 0.6rem;
-  border-radius: 999px;
-  color: white;
-  background: var(--btn-a);
-  border: 1px solid var(--line-strong);
-  /* Centered on the line mid-way; tucked fully inside the stage at either end. */
-  transform: translate(calc(-50% + (50 - var(--scan-n, 0)) * 1%), -50%);
-}
-.compare-stage:has(.compare-range:focus-visible) .compare-knob {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-.compare-range {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 0;
-  background: transparent;
-  opacity: 0;
-  cursor: ew-resize;
-}
-.compare-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 1px;
-  height: 1px;
-}
-.compare-range::-moz-range-thumb {
-  width: 1px;
-  height: 1px;
-  border: 0;
-}
-
-.scene-pane {
-  background: var(--surface-solid);
-}
-.scene-pane-with {
-  background: var(--surface-solid);
-}
-.device {
-  background: var(--bg);
-  border: 1px solid var(--line-strong);
-}
-
-.xray-mark {
-  --mark: var(--crit-mark);
-  border-radius: 6px;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  background: color-mix(in oklch, var(--mark) 14%, transparent);
-  box-shadow: 0 0 0 2px var(--mark);
-}
-.xray-crit {
-  --mark: var(--crit-mark);
-}
-.xray-high {
-  --mark: var(--high-mark);
-}
-.xray-med {
-  --mark: var(--med-mark);
-}
-.xray-low {
-  --mark: var(--low-mark);
-}
-.xray-neutral {
-  --mark: var(--line-strong);
-}
-.pin {
-  box-shadow: 0 0 0 2px var(--surface-solid);
-}
-
-.stamp {
-  transform: rotate(-5deg);
-  color: var(--crit);
-  border-color: var(--crit-mark);
-  background: color-mix(in oklch, var(--crit-bg) 80%, transparent);
-}
-.stamp-ok {
-  color: var(--ok);
-  border-color: var(--ok-mark);
-  background: color-mix(in oklch, var(--ok-bg) 80%, transparent);
-}
-.stamp-high {
-  color: var(--high);
-  border-color: var(--high-mark);
-  background: color-mix(in oklch, var(--high-bg) 80%, transparent);
-}
-
-.fake-cursor-ring {
-  position: absolute;
-  left: -14px;
-  top: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 2px solid var(--h1);
-  opacity: 0;
-}
-
-.terminal {
-  background: #101918;
-  border: 1px solid #354a40;
-}
-.terminal code {
-  font-size: inherit;
-}
-
-.rail-dot {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid var(--line-strong);
-  background: var(--surface-solid);
-  transition:
-    height 180ms var(--ease-out-quart),
-    background 150ms;
-}
-.rail-dot.is-active {
-  height: 28px;
-  border-color: transparent;
-  background: var(--accent);
-}
-
-.doc-icon .doc-page,
-.doc-icon .doc-fold {
-  transition: transform 900ms var(--ease-out-expo);
-  transform-origin: 0% 100%;
-}
-.doc-icon.is-peeled .doc-page {
-  transform: rotate(-8deg) translate(-6px, -4px);
-  box-shadow: 0 0 0 2px var(--crit-mark);
-}
-.doc-icon.is-peeled .doc-fold {
-  transform: translate(4px, -6px) rotate(14deg);
-}
-.grade-ring {
-  background:
-    radial-gradient(closest-side, var(--surface-solid) 78%, transparent 80%),
-    conic-gradient(var(--crit-mark) calc(var(--grade, 35) * 1%), var(--inset) 0);
-}
-.url-host {
-  border-radius: 6px;
-  background: color-mix(in oklch, var(--crit-mark) 14%, transparent);
-  box-shadow: 0 0 0 2px var(--crit-mark);
-}
-.eye-read {
-  color: var(--ink);
-  border-radius: 6px;
-  background: linear-gradient(90deg, color-mix(in oklch, var(--h4) 40%, transparent), color-mix(in oklch, var(--h4) 40%, transparent)) no-repeat
-    0 100% / 100% 40%;
-}
-.demo-site.is-scanned {
-  background: color-mix(in oklch, var(--h1) 5%, transparent);
-}
-.scan-sweep {
-  background: linear-gradient(180deg, transparent, color-mix(in oklch, var(--h1) 22%, transparent) 50%, transparent);
-  background-size: 100% 40%;
-  background-repeat: no-repeat;
-  background-position: 0 -60%;
-}
-.event-hit {
-  background: color-mix(in oklch, var(--crit-mark) 10%, transparent);
-}
-
-/* Motion: only in the interactive comparison, in a revealed chapter, in the visible state. */
-@media (prefers-reduced-motion: no-preference) {
-  [data-reveal="shown"] .compare-stage .compare-layer[data-visible="true"] {
-    & .story-step,
-    & .outcome-card,
-    & .finding-row,
-    & .event-row {
-      animation: scene-rise 700ms var(--ease-out-expo) both;
-    }
-    & .stamp {
-      animation: stamp-in 650ms var(--ease-out-expo) 250ms both;
-    }
-    & .event-hit {
-      animation:
-        scene-rise 700ms var(--ease-out-expo) both,
-        alert-flash 1.6s ease-in-out 1.4s 2;
-    }
-    & .missed {
-      animation: missed 2.4s ease-in-out infinite;
-    }
-    & .fake-cursor {
-      animation: cursor-drift 5.5s var(--ease-out-quart) 600ms infinite both;
-    }
-    & .fake-cursor-ring {
-      animation: cursor-click 5.5s linear 600ms infinite;
-    }
-    & .entropy-bar {
-      transform-origin: 50% 100%;
-      animation: bar-grow 900ms var(--ease-out-expo) both;
-    }
-    & .meter-fill {
-      transform-origin: 0 50%;
-      animation: bar-grow-x 1.2s var(--ease-out-expo) both;
-    }
-    & .scan-sweep {
-      animation: sweep 2.8s linear infinite;
-    }
-    & .eye-read {
-      animation: eye 3s ease-in-out infinite;
-    }
-    & .opened-window {
-      animation: scene-rise 600ms var(--ease-out-expo) 3.2s both;
-    }
-  }
-  .live-dot {
-    animation: live 1.6s ease-in-out infinite;
-  }
-}
-@keyframes scene-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-}
-@keyframes stamp-in {
-  from {
-    opacity: 0;
-    transform: rotate(-12deg) scale(1.7);
-  }
-}
-@keyframes alert-flash {
-  50% {
-    box-shadow: inset 4px 0 0 var(--crit-mark);
-    background: color-mix(in oklch, var(--crit-mark) 24%, transparent);
-  }
-}
-@keyframes missed {
-  50% {
-    opacity: 0.45;
-  }
-}
-@keyframes cursor-drift {
-  0% {
-    transform: translate(-170px, -120px);
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  40%,
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  92% {
-    opacity: 1;
-  }
-}
-@keyframes cursor-click {
-  0%,
-  44% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  48% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  52% {
-    opacity: 0;
-    transform: scale(1.4);
-  }
-  54% {
-    opacity: 1;
-    transform: scale(0.6);
-  }
-  60%,
-  100% {
-    opacity: 0;
-    transform: scale(1.6);
-  }
-}
-@keyframes bar-grow {
-  from {
-    transform: scaleY(0);
-  }
-}
-@keyframes bar-grow-x {
-  from {
-    transform: scaleX(0);
-  }
-}
-@keyframes sweep {
-  to {
-    background-position: 0 160%;
-  }
-}
-@keyframes eye {
-  50% {
-    background-size: 100% 70%;
-  }
-}
-@keyframes live {
-  50% {
-    opacity: 0.35;
-  }
 }

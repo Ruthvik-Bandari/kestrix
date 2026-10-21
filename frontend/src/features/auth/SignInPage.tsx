@@ -11,12 +11,13 @@ export default function SignInPage() {
   useTitle("Sign in");
   const [params] = useSearchParams();
   const next = safeNext(params.get("next")) ?? dashboardPath();
+  const intent = params.get("intent") === "signup" ? "signup" : "login";
 
   return (
     <PublicShell action={false}>
       <BrandMark size={40} />
       <h1 className="display mt-5 text-[clamp(2rem,6vw,2.75rem)]">Sign in to Kestrix</h1>
-      <AuthCard next={next} className="mt-7" />
+      <AuthCard next={next} initialIntent={intent} className="mt-7" />
     </PublicShell>
   );
 }

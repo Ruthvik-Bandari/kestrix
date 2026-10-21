@@ -287,22 +287,23 @@ describe("history setting", () => {
 });
 
 describe("landing header", () => {
-  it("gives a signed-out visitor the auth card and a small Log in link, and no dashboard button", async () => {
+  it("gives a signed-out visitor Log in and Sign up in the header, and no dashboard button or auth form", async () => {
     hosted({}, { signed_in: false });
     renderApp("/");
-    await screen.findByRole("heading", { level: 1, name: "Kestrix" });
+    await screen.findByRole("heading", { level: 1, name: "See the risk. Understand the evidence." });
     const header = screen.getAllByRole("banner")[0] as HTMLElement;
     expect((await within(header).findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
-    expect(await screen.findByRole("tablist", { name: "Log in or sign up" })).toBeTruthy();
-    expect(screen.queryAllByRole("link", { name: /open the dashboard/i })).toHaveLength(0);
+    expect(within(header).getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/signin?intent=signup");
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryAllByRole("link", { name: /open workbench|open the dashboard/i })).toHaveLength(0);
   });
 
-  it("gives a signed-in visitor exactly one Open the dashboard", async () => {
+  it("gives a signed-in visitor Open workbench in the header and the hero", async () => {
     hosted();
     renderApp("/");
     const header = screen.getAllByRole("banner")[0] as HTMLElement;
-    expect((await within(header).findByRole("link", { name: /open the dashboard/i })).getAttribute("href")).toBe("/app");
-    expect(screen.getAllByRole("link", { name: /open the dashboard/i })).toHaveLength(1);
+    expect((await within(header).findByRole("link", { name: /open workbench/i })).getAttribute("href")).toBe("/app");
+    expect(await screen.findAllByRole("link", { name: /open workbench/i })).toHaveLength(3);
     expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
     expect(screen.queryByRole("tablist")).toBeNull();
   });

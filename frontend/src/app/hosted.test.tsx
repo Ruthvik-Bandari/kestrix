@@ -63,19 +63,25 @@ describe("hosted routing", () => {
   it("shows the landing page at / with Log in, and the dashboard under /app", async () => {
     hostedServer({ signed_in: false });
     renderApp("/");
-    expect(await screen.findByRole("heading", { level: 1, name: "Kestrix" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "See the risk. Understand the evidence." })).toBeTruthy();
     expect((await screen.findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
-    expect((await screen.findByRole("link", { name: "Continue with Google" })).getAttribute("href")).toBe(
-      `/api/auth/login/google?next=${encodeURIComponent("/app")}`,
-    );
+    // The sign-in form lives on /signin; the landing page only leads there.
+    expect(screen.queryByRole("link", { name: "Continue with Google" })).toBeNull();
   });
 
-  it("labels local-only chapters on the landing page", async () => {
+  it("labels the local-only tools on the landing page", async () => {
     hostedServer({ signed_in: false });
     renderApp("/");
-    await screen.findByRole("heading", { level: 1, name: "Kestrix" });
+    await screen.findByRole("heading", { level: 1, name: "See the risk. Understand the evidence." });
     // Detection repair and Bitcoin
-    expect(screen.getAllByText("Available in the desktop app")).toHaveLength(2);
+    expect(screen.getAllByText("Run locally").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("In your browser").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("opens the Sign up tab on /signin from the landing page's Sign up", async () => {
+    hostedServer({ signed_in: false });
+    renderApp("/signin?intent=signup");
+    expect((await screen.findByRole("tab", { name: "Sign up" })).getAttribute("aria-selected")).toBe("true");
   });
 
   it("sends signed-out visitors from /app pages to /signin and back", async () => {

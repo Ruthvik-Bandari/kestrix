@@ -3,29 +3,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { describe, expect, it, vi } from "vitest";
-import { dashboardPath, landingPath } from "../../app/paths";
-import { REPO_URL } from "../../lib/site";
-import { chapters } from "./content";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
+import { setMode } from "../../lib/mode";
+import { REPO_URL, site } from "../../lib/site";
+import { fakeServer, HOSTED_HEALTH, SIGNED_IN } from "../../test/fakeServer";
 import LandingPage from "./LandingPage";
-import { FINDINGS_SHOWN } from "./parts";
 import { emailSample } from "./samples";
 
-function mockMedia(matching: string[]) {
-  vi.spyOn(window, "matchMedia").mockImplementation(
-    (query: string) =>
-      ({
-        matches: matching.includes(query),
-        media: query,
-        onchange: null,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-        dispatchEvent: () => false,
-      }) as MediaQueryList,
-  );
-}
+afterEach(() => {
+  setMode("local");
+  vi.unstubAllGlobals();
+});
 
 function renderLanding() {
   return render(
@@ -37,125 +26,208 @@ function renderLanding() {
   );
 }
 
-function compareRoot(toggle: HTMLElement): HTMLElement {
-  const root = toggle.closest<HTMLElement>("[data-compare]");
-  if (!root) throw new Error("comparison root missing");
-  return root;
+function renderHosted(signedIn: boolean) {
+  setMode("hosted");
+  fakeServer({
+    "GET /api/health": { body: HOSTED_HEALTH },
+    "GET /api/auth/me": { body: signedIn ? SIGNED_IN : { signed_in: false } },
+    "GET /api/auth/providers": { body: { providers: ["google", "github"] } },
+  });
+  return renderLanding();
 }
 
-describe("LandingPage", () => {
-  it("shows the wordmark, the headline and one way into the dashboard", () => {
+function row(name: string): HTMLElement {
+  const link = screen.getByRole("link", { name: new RegExp(`^${name}`) });
+  return link;
+}
+
+describe("LandingPage in local mode", () => {
+  it("states the proposition and has one workbench action in the header and the hero", () => {
     renderLanding();
-    expect(screen.getByRole("heading", { level: 1, name: "Kestrix" })).toBeTruthy();
-    expect(screen.getByText("Same inbox. Same file. Two endings.")).toBeTruthy();
-    const open = screen.getAllByRole("link", { name: /open the dashboard/i });
-    expect(open).toHaveLength(1);
-    expect(open[0]?.getAttribute("href")).toBe(dashboardPath());
-    expect(within(screen.getByRole("banner")).getByRole("link", { name: /open the dashboard/i })).toBe(open[0]);
-    expect(screen.getByRole("link", { name: /start the story/i }).getAttribute("href")).toBe(`#${chapters[0]?.id ?? ""}`);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("See the risk. Understand the evidence.");
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("link", { name: /open workbench/i }).getAttribute("href")).toBe(dashboardPath());
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section");
+    if (!hero) throw new Error("hero missing");
+    expect(within(hero).getByRole("link", { name: /open workbench/i }).getAttribute("href")).toBe(dashboardPath());
+    expect(within(hero).getByRole("link", { name: "Explore an example" }).getAttribute("href")).toBe("#example");
+    expect(document.getElementById("example")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /log in|sign up|get started/i })).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 
-  it("renders every chapter with its comparison and real output", () => {
+  it("links the public logo to the landing page", () => {
     renderLanding();
-    expect(chapters).toHaveLength(6);
-    for (const chapter of chapters) {
-      const heading = screen.getByRole("heading", { level: 2, name: chapter.title });
-      const section = heading.closest("section");
-      if (!section) throw new Error(`${chapter.id} section missing`);
-      expect(within(section).getByRole("group", { name: /^Compare / })).toBeTruthy();
-      expect(within(section).getByRole("group", { name: "Without Kestrix" })).toBeTruthy();
-      expect(within(section).getByRole("group", { name: "With Kestrix" })).toBeTruthy();
-      expect(within(section).getByText(`samples/${chapter.sample.name}.json`)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Kestrix home" }).getAttribute("href")).toBe(landingPath());
+  });
+
+  it("shows the report card from the bundled sample, labelled synthetic", () => {
+    renderLanding();
+    const card = screen.getByRole("article", { name: "Example email report" });
+    const { report, message } = emailSample;
+    expect(within(card).getByText("Malicious")).toBeTruthy();
+    expect(within(card).getByText(String(report.findings.length))).toBeTruthy();
+    expect(within(card).getByText(message.subject)).toBeTruthy();
+    expect(within(card).getByText(`From ${message.from_address}`)).toBeTruthy();
+    const items = within(within(card).getByRole("list", { name: "Top findings" })).getAllByRole("listitem");
+    expect(items).toHaveLength(3);
+    for (const [index, item] of items.entries()) {
+      expect(within(item).getByText(report.findings[index]?.title ?? "")).toBeTruthy();
+      expect(within(item).getByText("High")).toBeTruthy();
     }
-    expect(screen.getByRole("heading", { level: 2, name: "Run it yourself." })).toBeTruthy();
-    expect(screen.getByText("pip install kestrix")).toBeTruthy();
-    expect(screen.getByText(/coming soon/i)).toBeTruthy();
+    expect(within(card).getByText("5 high · 4 medium · 2 other")).toBeTruthy();
+    expect(within(card).getByText("Synthetic example")).toBeTruthy();
+    expect(screen.getByText("Synthetic example · actual analyzer output")).toBeTruthy();
   });
 
-  it("toggles every comparison from the keyboard-operable buttons", () => {
+  it("groups the tools and labels each one for local mode", () => {
     renderLanding();
-    const toggles = screen.getAllByRole("group", { name: /^Compare / });
-    expect(toggles).toHaveLength(6);
-    for (const toggle of toggles) {
-      const root = compareRoot(toggle);
-      const withButton = within(toggle).getByRole("button", { name: "With Kestrix" });
-      const withoutButton = within(toggle).getByRole("button", { name: "Without Kestrix" });
-      expect(root.dataset.side).toBe("without");
-      expect(withoutButton.getAttribute("aria-pressed")).toBe("true");
-      withButton.focus();
-      expect(document.activeElement).toBe(withButton);
-      fireEvent.click(withButton); // Enter and Space on a focused native button dispatch click
-      expect(root.dataset.side).toBe("with");
-      expect(withButton.getAttribute("aria-pressed")).toBe("true");
-      fireEvent.click(withoutButton);
-      expect(root.dataset.side).toBe("without");
+    const everyday = screen.getByRole("list", { name: "Everyday checks" });
+    const deeper = screen.getByRole("list", { name: "For deeper investigation" });
+    expect(within(everyday).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(deeper).getAllByRole("listitem")).toHaveLength(3);
+    const expected: [string, string, string][] = [
+      ["Email", "mail", "In the workbench"],
+      ["Website", "webcheck", "In the workbench"],
+      ["File & link", "forensics", "In the workbench"],
+      ["Detection repair", "detect", "In the workbench"],
+      ["Code & Claude", "code", "Setup guide"],
+      ["Bitcoin", "bitcoin", "In the workbench"],
+    ];
+    for (const [name, page, label] of expected) {
+      const link = row(name);
+      expect(link.getAttribute("href")).toBe(dashboardPath(page));
+      expect(within(link).getByText(label)).toBeTruthy();
     }
   });
 
-  it("drives every comparison with the slider on fine pointers", () => {
-    mockMedia(["(pointer: fine) and (min-width: 640px)"]);
+  it("explains input, evidence and decision once each", () => {
     renderLanding();
-    const sliders = screen.getAllByRole("slider");
-    expect(sliders).toHaveLength(6);
-    for (const slider of sliders) {
-      const root = compareRoot(slider);
-      fireEvent.pointerDown(slider);
-      fireEvent.change(slider, { target: { value: "80" } });
-      fireEvent.pointerUp(slider);
-      expect(root.dataset.side).toBe("with");
-      expect(slider.getAttribute("aria-valuetext")).toBe("80% with Kestrix, 20% without");
-      fireEvent.change(slider, { target: { value: "10" } });
-      expect(root.dataset.side).toBe("without");
-    }
+    const steps = within(screen.getByRole("heading", { level: 2, name: /less guesswork/i }).closest("section") ?? document.body)
+      .getAllByRole("listitem");
+    expect(steps).toHaveLength(3);
+    expect(steps.map((s) => s.querySelector("h3")?.textContent)).toEqual([
+      "Bring one thing to check",
+      "Read what was found",
+      "Decide what comes next",
+    ]);
   });
 
-  it("shows exactly the sample's findings in the email's Kestrix view", () => {
+  it("splits the data handling between running locally and the hosted workspace", () => {
     renderLanding();
-    const section = screen.getByRole("heading", { level: 2, name: chapters[0]?.title ?? "" }).closest("section");
-    if (!section) throw new Error("email section missing");
-    const withView = within(section).getByRole("group", { name: "With Kestrix" });
-    const titles = () =>
-      within(within(withView).getByRole("list", { name: "Email findings" }))
-        .getAllByRole("listitem")
-        .map((item) => item.querySelector("[data-finding-title]")?.textContent);
-    const all = emailSample.report.findings.map((f) => f.title);
-    // The most severe few first, so both states of the scene stay about as tall.
-    expect(titles()).toEqual(all.slice(0, FINDINGS_SHOWN));
-    const more = within(withView).getByRole("button", { name: `Show all ${String(all.length)} findings` });
-    expect(more.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(more);
-    expect(more.getAttribute("aria-expanded")).toBe("true");
-    expect(titles()).toEqual(all);
-    expect(within(withView).getByText(emailSample.report.verdict)).toBeTruthy();
-    expect(within(withView).getByText(`${String(emailSample.report.findings.length)} reasons`, { exact: false })).toBeTruthy();
+    const section = screen.getByRole("heading", { level: 2, name: /choose the setup/i }).closest("section");
+    if (!section) throw new Error("trust section missing");
+    expect(within(section).getByRole("heading", { level: 3, name: /run locally/i })).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 3, name: /hosted workspace/i })).toBeTruthy();
+    expect(within(section).getByText(/raw uploads are not stored/i)).toBeTruthy();
+    expect(within(section).getByText(/heuristics, not probabilities/i)).toBeTruthy();
+    expect(within(section).getByRole("link", { name: /privacy notice/i }).getAttribute("href")).toBe(PRIVACY_PATH);
   });
 
-  it("shows both states statically, without a fake cursor, under reduced motion", () => {
-    mockMedia(["(prefers-reduced-motion: reduce)", "(pointer: fine) and (min-width: 640px)"]);
-    const { container } = renderLanding();
-    expect(container.querySelectorAll('[data-compare="static"]')).toHaveLength(6);
-    expect(container.querySelectorAll('[data-compare="interactive"]')).toHaveLength(0);
-    expect(screen.queryAllByRole("slider")).toHaveLength(0);
-    expect(screen.queryAllByTestId("fake-cursor")).toHaveLength(0);
-    expect(screen.getAllByRole("group", { name: "With Kestrix" })).toHaveLength(6);
-  });
-
-  it("animates the fake cursor only in the visible Without state", () => {
+  it("does not present an unpublished PyPI package as installable", () => {
     renderLanding();
-    expect(screen.getAllByTestId("fake-cursor").length).toBeGreaterThan(0);
+    expect(screen.queryByText("pip install kestrix")).toBeNull();
+    expect(screen.getByText(/PyPI release pending/i)).toBeTruthy();
+    expect(screen.getByText(`uv tool install "git+${REPO_URL}"`)).toBeTruthy();
   });
 
-  it("keeps the attribution and the repository link in the footer, once", () => {
+  it("keeps the attribution, docs, repository and license links in the footer, once", () => {
     renderLanding();
     const footer = screen.getByRole("contentinfo");
     expect(within(footer).getByText("Kestrix by Ruthvik Bandari")).toBeTruthy();
     expect(screen.getAllByText(/Ruthvik Bandari/)).toHaveLength(1);
     expect(within(footer).getByRole("link", { name: "GitHub repository" }).getAttribute("href")).toBe(REPO_URL);
+    expect(within(footer).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe(site.docsUrl);
+    expect(within(footer).getByRole("link", { name: "License (Apache-2.0)" })).toBeTruthy();
+    expect(within(footer).getByRole("link", { name: "Privacy" }).getAttribute("href")).toBe(PRIVACY_PATH);
+    expect(within(footer).getByRole("link", { name: "Terms" })).toBeTruthy();
   });
 
-  it("has no sign-in in local mode", () => {
+  it("makes no unsupported claims", () => {
+    const { container } = renderLanding();
+    const text = container.textContent;
+    expect(text).not.toMatch(/contained|guarantee|certified|accuracy|customers|real-time|monitoring/i);
+  });
+});
+
+describe("LandingPage mobile menu", () => {
+  it("opens with the same destinations, closes on Escape and returns focus to the button", () => {
     renderLanding();
-    expect(screen.queryByRole("link", { name: /log in|sign in/i })).toBeNull();
+    const button = screen.getByRole("button", { name: "Menu" });
+    const menu = document.getElementById(button.getAttribute("aria-controls") ?? "");
+    if (!menu) throw new Error("menu missing");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(menu.hidden).toBe(true);
+    fireEvent.click(button);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(menu.hidden).toBe(false);
+    const links = within(menu).getAllByRole("link");
+    expect(links.map((l) => l.textContent)).toEqual(["Tools", "Example", "Privacy", "Docs"]);
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["#tools", "#example", PRIVACY_PATH, dashboardPath("docs")]);
+    links[0]?.focus();
+    fireEvent.keyDown(links[0] ?? menu, { key: "Escape" });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(menu.hidden).toBe(true);
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("closes when a link is chosen", () => {
+    renderLanding();
+    const button = screen.getByRole("button", { name: "Menu" });
+    fireEvent.click(button);
+    const menu = document.getElementById(button.getAttribute("aria-controls") ?? "");
+    if (!menu) throw new Error("menu missing");
+    fireEvent.click(within(menu).getByRole("link", { name: "Privacy" }));
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("LandingPage on the hosted service", () => {
+  it("offers Log in, Sign up and Get started while signed out, and no dashboard shortcut", async () => {
+    renderHosted(false);
+    const header = screen.getByRole("banner");
+    expect((await within(header).findByRole("link", { name: "Log in" })).getAttribute("href")).toBe(SIGNIN_PATH);
+    expect(within(header).getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe(SIGNUP_PATH);
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section");
+    if (!hero) throw new Error("hero missing");
+    expect(within(hero).getByRole("link", { name: /get started/i }).getAttribute("href")).toBe(SIGNUP_PATH);
+    expect(screen.queryByRole("link", { name: /open workbench/i })).toBeNull();
     expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
+  it("sends a signed-in visitor to the workbench from the header and the hero", async () => {
+    renderHosted(true);
+    const header = screen.getByRole("banner");
+    const open = await within(header).findByRole("link", { name: /open workbench/i });
+    expect(open.getAttribute("href")).toBe("/app");
+    expect(within(header).queryByRole("link", { name: "Log in" })).toBeNull();
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section");
+    if (!hero) throw new Error("hero missing");
+    expect((await within(hero).findByRole("link", { name: /open workbench/i })).getAttribute("href")).toBe("/app");
+    expect(within(hero).queryByRole("link", { name: /get started/i })).toBeNull();
+  });
+
+  it("labels each tool for the hosted service", async () => {
+    renderHosted(false);
+    await screen.findByRole("link", { name: "Log in" });
+    const expected: [string, string, string][] = [
+      ["Email", "mail", "In your browser"],
+      ["Website", "webcheck", "In your browser"],
+      ["File & link", "forensics", "In your browser"],
+      ["Detection repair", "detect", "Run locally"],
+      ["Code & Claude", "code", "Setup guide"],
+      ["Bitcoin", "bitcoin", "Run locally"],
+    ];
+    for (const [name, page, label] of expected) {
+      const link = row(name);
+      expect(link.getAttribute("href")).toBe(`/app/${page}`);
+      expect(within(link).getByText(label)).toBeTruthy();
+    }
+  });
+
+  it("links the docs on the repository, since the app's docs sit behind sign-in", async () => {
+    renderHosted(false);
+    await screen.findByRole("link", { name: "Log in" });
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: "Docs" }).getAttribute("href")).toBe(site.docsUrl);
   });
 });

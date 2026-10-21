@@ -63,13 +63,13 @@ function ProviderButtons({ next, intent, enabled }: { next: string; intent: Inte
 }
 
 /**
- * Hosted mode: Log in / Sign up with Google or GitHub, on the landing hero and on /signin.
+ * Hosted mode: Log in / Sign up with Google or GitHub, on /signin (the landing page's Log in and Sign up lead there).
  * Sign up needs the terms checkbox first and tells the server (`intent=signup`), which records when
  * the terms were accepted. A signed-in visitor sees a way into the dashboard instead.
  */
-export function AuthCard({ next, className }: { next: string; className?: string }) {
+export function AuthCard({ next, className, initialIntent = "login" }: { next: string; className?: string; initialIntent?: Intent }) {
   const me = useMe();
-  const [intent, setIntent] = useState<Intent>("login");
+  const [intent, setIntent] = useState<Intent>(initialIntent);
   const [agreed, setAgreed] = useState(false);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const id = useId();

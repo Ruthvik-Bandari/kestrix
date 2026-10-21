@@ -65,3 +65,6 @@ export function signInPath(next?: string | null): string {
   const target = safeNext(next);
   return target ? `${SIGNIN_PATH}?next=${encodeURIComponent(target)}` : SIGNIN_PATH;
 }
+
+/** The sign-in page opened on its Sign up tab; the landing page's "Get started" and "Sign up" go here. */
+export const SIGNUP_PATH = `${SIGNIN_PATH}?intent=signup`;

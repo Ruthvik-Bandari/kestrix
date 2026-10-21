@@ -34,22 +34,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("landing hero auth card", () => {
-  it("is on the hosted landing page with Log in selected and only the enabled providers", async () => {
-    renderHosted("/", { signed_in: false }, ["github"]);
+describe("sign-in page auth card", () => {
+  it("is on the sign-in page with Log in selected and only the enabled providers", async () => {
+    renderHosted("/signin", { signed_in: false }, ["github"]);
     const section = await card();
     expect(within(section).getByRole("heading", { level: 2, name: "Use Kestrix in your browser" })).toBeTruthy();
     expect(within(section).getByRole("tab", { name: "Log in" }).getAttribute("aria-selected")).toBe("true");
     const github = await within(section).findByRole("link", { name: "Continue with GitHub" });
     expect(github.getAttribute("href")).toBe("/api/auth/login/github?next=%2Fapp");
     expect(within(section).queryByText(/google/i)).toBeNull();
-    // The rest of the story is still there.
-    expect(screen.getByRole("heading", { level: 1, name: "Kestrix" })).toBeTruthy();
-    expect(screen.getAllByText("Available in the desktop app")).toHaveLength(2);
+    expect(screen.getByRole("heading", { level: 1, name: "Sign in to Kestrix" })).toBeTruthy();
   });
 
   it("is a keyboard-accessible tablist", async () => {
-    renderHosted("/");
+    renderHosted("/signin");
     const section = await card();
     const login = within(section).getByRole("tab", { name: "Log in" });
     const signup = within(section).getByRole("tab", { name: "Sign up" });
@@ -74,7 +72,7 @@ describe("landing hero auth card", () => {
   });
 
   it("keeps Sign up disabled until the terms are accepted, then passes intent=signup", async () => {
-    renderHosted("/");
+    renderHosted("/signin");
     const section = await card();
     await within(section).findByRole("link", { name: "Continue with Google" });
     fireEvent.click(within(section).getByRole("tab", { name: "Sign up" }));
@@ -118,7 +116,7 @@ describe("landing hero auth card", () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    await screen.findByRole("heading", { level: 1, name: "Kestrix" });
+    await screen.findByRole("heading", { level: 1, name: "See the risk. Understand the evidence." });
     expect(screen.queryByRole("tablist")).toBeNull();
   });
 });

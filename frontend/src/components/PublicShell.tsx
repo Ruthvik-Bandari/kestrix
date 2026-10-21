@@ -9,7 +9,6 @@ import { site } from "../lib/site";
 import { BrandMark } from "./BrandMark";
 import { Icon } from "./Icon";
 import { ThemeSwitch } from "./ThemeSwitch";
-import { ThreatField } from "./ThreatField";
 import { cx } from "./ui";
 
 /** Links to the privacy notice and terms, shown in every footer. */
@@ -119,7 +118,6 @@ export function PublicShell({
 }) {
   return (
     <div className="relative isolate flex min-h-dvh flex-col">
-      <ThreatField />
       <a
         href="#public-main"
         className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"

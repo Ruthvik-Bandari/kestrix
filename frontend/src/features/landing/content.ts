@@ -1,103 +1,72 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import type { ComponentType } from "react";
-import { BitcoinScene } from "./scenes/BitcoinScene";
-import { DetectScene } from "./scenes/DetectScene";
-import { EmailScene } from "./scenes/EmailScene";
-import { FileScene } from "./scenes/FileScene";
-import { UrlScene } from "./scenes/UrlScene";
-import { WebScene } from "./scenes/WebScene";
-import { bitcoinSample, detectSample, emailSample, fileSample, urlSample, webcheckSample } from "./samples";
+import { pageAvailable } from "../../app/paths";
+import { toolFor, type ToolPage } from "../../app/tools";
+import { isHosted } from "../../lib/mode";
 
 /*
- * Landing copy. Every claim here must match docs/modules/*.md and docs/security-model.md:
- * no accuracy rates, certifications or behavior the code does not have.
+ * Landing copy. Every claim here must match docs/modules/*.md, docs/security-model.md and
+ * docs/hosted.md: no accuracy rates, customers, certifications, live feeds or guarantees. The
+ * only numbers on the page come from the bundled synthetic email sample (samples/email.json).
  */
 
-/*
- * Every "with Kestrix" value comes from samples/*.json (real output on synthetic
- * inputs). The "without" side is a scenario, phrased as one: no time savings, percentages, user
- * counts or accuracy figures anywhere on the page.
- */
-
-export interface Chapter {
-  id: string;
-  nav: string;
-  number: string;
-  kicker: string;
-  title: string;
-  lede: string;
-  /** The dashboard page this chapter's tool lives on (app/paths.ts decides where it is served). */
-  page: string;
-  sample: { name: string; data: { provenance: string } };
-  Scene: ComponentType;
+export interface LandingTool {
+  page: ToolPage;
+  name: string;
+  line: string;
 }
 
-export const chapters: Chapter[] = [
+/** Tools for the question in front of you. */
+export const everydayTools: LandingTool[] = [
+  { page: "mail", name: "Email", line: "Check a saved email for phishing, impersonation and fake invoices." },
+  { page: "webcheck", name: "Website", line: "Grade HTTPS, the certificate, security headers and cookies, with a fix for each problem." },
+  { page: "forensics", name: "File & link", line: "See what a file really is and whether a link shows phishing signs, without opening either." },
+];
+
+/** Specialist tools: some run only on your own computer, some are setup guides. */
+export const deeperTools: LandingTool[] = [
+  { page: "detect", name: "Detection repair", line: "Find why a Sigma rule misses attacks and test the smallest fix on labeled events." },
+  { page: "code", name: "Code & Claude", line: "Scan code for security mistakes, and have Claude Code check what it writes." },
+  { page: "bitcoin", name: "Bitcoin", line: "See which addresses show a public key a future quantum computer could target." },
+];
+
+export type Availability = "In your browser" | "In the workbench" | "Run locally" | "Setup guide";
+
+/** Where a tool can be used in this mode: guides in both modes, live tools only where the server serves them. */
+export function availability(page: ToolPage): Availability {
+  if (!toolFor(page).live) return "Setup guide";
+  if (!pageAvailable(page)) return "Run locally";
+  return isHosted() ? "In your browser" : "In the workbench";
+}
+
+export const steps = [
   {
-    id: "invoice",
-    nav: "Email",
-    number: "01",
-    kicker: "Email check",
-    title: "The invoice that wasn’t",
-    lede: "A bank-detail change from a supplier you know, with the invoice attached. Read it the way you normally would, then drag the beam across it.",
-    page: "mail",
-    sample: { name: "email", data: emailSample },
-    Scene: EmailScene,
+    label: "Input",
+    title: "Bring one thing to check",
+    text: "A saved email, a website, a file or a link. Pick the tool, add the input and run the check.",
   },
   {
-    id: "quiet-rule",
-    nav: "Detection",
-    number: "02",
-    kicker: "Detection repair",
-    title: "The rule that went quiet",
-    lede: "A detection rule stops matching after a log pipeline renames one field. No error, no alert, nothing to notice. Same events, replayed on the real engine.",
-    page: "detect",
-    sample: { name: "detect", data: detectSample },
-    Scene: DetectScene,
+    label: "Evidence",
+    title: "Read what was found",
+    text: "Every finding has a severity, a plain-language reason and the evidence behind it.",
   },
   {
-    id: "not-a-pdf",
-    nav: "File",
-    number: "03",
-    kicker: "Forensics · file",
-    title: "Not a PDF",
-    lede: "The icon says PDF. The name says PDF. The first two bytes say something else.",
-    page: "forensics",
-    sample: { name: "file", data: fileSample },
-    Scene: FileScene,
-  },
-  {
-    id: "lying-link",
-    nav: "Link",
-    number: "04",
-    kicker: "Forensics · link",
-    title: "The link that lies",
-    lede: "One character decides where this link really goes. Most people never look past the first name they recognise.",
-    page: "forensics",
-    sample: { name: "url", data: urlSample },
-    Scene: UrlScene,
-  },
-  {
-    id: "attacker-view",
-    nav: "Website",
-    number: "05",
-    kicker: "Web check",
-    title: "Your site, as an attacker sees it",
-    lede: "A sign-in page that works fine for visitors. The protections that matter live in headers nobody sees.",
-    page: "webcheck",
-    sample: { name: "webcheck", data: webcheckSample },
-    Scene: WebScene,
-  },
-  {
-    id: "exposed-key",
-    nav: "Bitcoin",
-    number: "06",
-    kicker: "Bitcoin quantum risk",
-    title: "Coins with an exposed key",
-    lede: "Some address types publish their public key, the part a future quantum computer would need. The list in your wallet doesn’t tell you which.",
-    page: "bitcoin",
-    sample: { name: "bitcoin", data: bitcoinSample },
-    Scene: BitcoinScene,
+    label: "Decision",
+    title: "Decide what comes next",
+    text: "You get a verdict and its limits. Scores are heuristics, not probabilities, and a clean result means no checks fired.",
   },
 ];
+
+export const trust = {
+  local: [
+    "Email, file and link checks run on the Kestrix server on your own computer. It only answers requests from that computer, and there are no accounts.",
+    "A website check connects to the site you enter. The optional Bitcoin chain lookup and the optional AI review are separate network actions you turn on.",
+    "Reports are kept for 30 days by default, and you can turn history off.",
+  ],
+  hosted: [
+    "Email, website, file and link checks are processed on the server. A website check connects from the server to the public site you enter.",
+    "Raw uploads are not stored. Reports are kept 30 days by default, encrypted, and removed when you turn history off or delete your account.",
+    "Detection repair and Bitcoin run on your own computer only.",
+  ],
+  limits: "Results are heuristics, not probabilities. A clean result means none of the checks fired, not that something is safe.",
+};

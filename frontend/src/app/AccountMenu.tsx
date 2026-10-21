@@ -83,7 +83,7 @@ export function AccountMenu() {
     <section aria-label="Account" className="space-y-3 text-[0.8125rem]">
       <div className="flex items-center gap-2.5">
         <span
-          className="flex size-9 flex-none items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--btn-a),var(--btn-b))] text-[0.9375rem] font-bold text-white"
+          className="flex size-9 flex-none items-center justify-center rounded-full bg-accent text-[0.9375rem] font-bold text-on-accent"
           aria-hidden="true"
         >
           {(user.display_name || user.email).slice(0, 1).toUpperCase()}

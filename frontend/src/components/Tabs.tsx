@@ -75,7 +75,7 @@ export function Tabs<K extends string>({
               className={cx(
                 "min-h-9 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150",
                 selected
-                  ? "bg-[linear-gradient(120deg,var(--btn-a),var(--btn-b))] text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_6px_18px_-8px_var(--glow)]"
+                  ? "bg-accent text-on-accent"
                   : "text-ink-2 hover:bg-inset hover:text-ink",
               )}
             >
