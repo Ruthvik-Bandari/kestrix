@@ -37,6 +37,10 @@ matches `--trusted-authserv-id`.
 | `mail.sender.return_path_mismatch` | low | `Return-Path` is in another organization than `From`. Mailing lists and email service providers do this routinely. |
 | `mail.sender.display_name_spoof` | high | The display name contains an email address or a domain outside the From organization. A bare word counts as a domain only with a common or two-letter top-level domain, so `invoice.pdf` does not. |
 | `mail.sender.display_name_brand` | high | The display name contains the name of a protected domain (its first label, three characters or more) and `From` is outside that domain's organization. |
+| `mail.sender.random_domain` | low | A label of the From domain looks machine-generated (see **Machine-generated names** below). |
+| `mail.sender.outdated_mailer` | low | `X-Mailer` names a mail program discontinued long ago (`Outlook Express`, `Microsoft Internet Mail`, `Netscape Messenger` or `Communicator`, `Eudora`). Spam tools forge these; the header is easy to set, so it is a hint only. |
+
+**Machine-generated names.** A host label (the top-level domain excluded, hyphenated labels judged piece by piece, punycode skipped) of 8 characters or more reads as machine-generated when it switches between letters and digits three or more times, as in `q7vk2mx9r4tz8wn3`, or has six consonants in a row. It is lexical only: a pronounceable random name such as `velomarquintasy` passes, and some click trackers and CDNs also use generated names.
 
 ## Look-alike domains (`lookalike`)
 
@@ -65,6 +69,8 @@ Links are read as text only, never visited.
 | `mail.links.shortener` | low | The host is on a fixed list of URL shorteners such as `bit.ly`. |
 | `mail.links.redirect_param` | low | A query parameter's value is another `http(s)://` or `//` URL. |
 | `mail.links.insecure_login` | low | An `http:` link whose path contains `login`, `logon`, `signin`, `verify` or `password`. |
+| `mail.links.random_host` | low | A link host has a machine-generated label (see **Machine-generated names** under Sender). Reported once per host. |
+| `mail.links.plain_http` | low | At least half of the message's web links use `http:` rather than `https:`. Reported once per message, with the count as evidence (for example `2 of 2 web links use http`). |
 
 ## Attachments (`attachments`)
 
@@ -79,7 +85,7 @@ Attachments are hashed and sniffed, never opened or extracted.
 | `mail.attachments.encrypted_archive` | medium | A ZIP member is encrypted. Mail filters cannot scan it. |
 | `mail.attachments.archive_dangerous_member` | high | A ZIP member has a high-risk extension from the list above. |
 
-## Intent (`intent`, English-only heuristic)
+## Intent (`intent`, heuristic; English, plus Russian for gambling and prize offers)
 
 | `id` | Severity | Raised for phrases such as |
 | --- | --- | --- |
@@ -88,6 +94,9 @@ Attachments are hashed and sniffed, never opened or extracted.
 | `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
 | `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
 | `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
+| `mail.intent.gambling_offer` | medium | "free spins", "no deposit bonus", "100 FS" (upper case only), "casino bonus"; in Russian "фриспины", "бесплатные спины", "без депозита", "бонус на депозит". |
+| `mail.intent.prize_claim` | medium | "you have won", "claim your prize", "lottery winner"; in Russian "вы выиграли", "ваш приз", "получите выигрыш". |
+| `mail.intent.hidden_text` | low | The subject and text together hold 20 or more invisible characters (zero-width spaces and joiners, soft hyphens, word joiners, byte-order marks). The evidence gives the count and the most common one, for example `120 invisible characters, mostly U+200C`. Newsletters pad their preview line with a few; spam uses long runs. |
 | `mail.intent.bec_pattern` | high | `payment_change` or `gift_cards` together with `urgency` or `secrecy`. The evidence names the families, for example `gift_cards with secrecy`. |
 
 ## Plain-language hints

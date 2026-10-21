@@ -97,6 +97,10 @@ Comments in parentheses and quoted strings are handled. `ARC` results are not ju
 | `mail.sender.return_path_mismatch` | low | `Return-Path` is in another organization than `From`. Mailing lists and email service providers do this routinely. |
 | `mail.sender.display_name_spoof` | high | The display name contains an email address or a domain outside the From organization. A bare word counts as a domain only with a common or two-letter top-level domain, so `invoice.pdf` does not. |
 | `mail.sender.display_name_brand` | high | The display name contains the name of a protected domain (its first label, three characters or more) and `From` is outside that domain's organization. |
+| `mail.sender.random_domain` | low | A label of the From domain looks machine-generated (see **Machine-generated names** below). |
+| `mail.sender.outdated_mailer` | low | `X-Mailer` names a mail program discontinued long ago (`Outlook Express`, `Microsoft Internet Mail`, `Netscape Messenger` or `Communicator`, `Eudora`). Spam tools forge these; the header is easy to set, so it is a hint only. |
+
+**Machine-generated names.** A host label (the top-level domain excluded, hyphenated labels judged piece by piece, punycode skipped) of 8 characters or more reads as machine-generated when it switches between letters and digits three or more times, as in `q7vk2mx9r4tz8wn3`, or has six consonants in a row. It is lexical only: a pronounceable random name such as `velomarquintasy` passes, and some click trackers and CDNs also use generated names.
 
 **Organization.** Two domains are in the same organization when their last two labels match, or their last three under a short list of two-label suffixes such as `co.uk`. This approximates DMARC relaxed alignment without the full Public Suffix List, so some domains are grouped incorrectly. Domains are compared lower-cased in their ASCII (punycode) form and shown decoded.
 
@@ -135,6 +139,8 @@ Links come from HTML `<a href>` anchors (with their visible text) and from `http
 | `mail.links.shortener` | low | The host is on a fixed list of URL shorteners such as `bit.ly`. |
 | `mail.links.redirect_param` | low | A query parameter's value is another `http(s)://` or `//` URL. |
 | `mail.links.insecure_login` | low | An `http:` link whose path contains `login`, `logon`, `signin`, `verify` or `password`. |
+| `mail.links.random_host` | low | A link host has a machine-generated label (see **Machine-generated names** under Sender). Reported once per host. |
+| `mail.links.plain_http` | low | At least half of the message's web links use `http:` rather than `https:`. Reported once per message, with the count as evidence (for example `2 of 2 web links use http`). |
 
 ## Attachments
 
@@ -151,7 +157,7 @@ A part is an attachment when it has a file name, is marked as an attachment, or 
 
 ## Intent
 
-The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks for the wording of business email compromise (BEC) and credential phishing in the subject and the decoded text (HTML visible text, scripts skipped, within the 5 MiB scan budget). It is a heuristic: small, curated, case-insensitive English phrase lists. It misses paraphrases and other languages, and ordinary mail can use the same words. The subject and each text part are searched separately, so a phrase never spans two of them. Each family is reported at most once, with the first matched phrase as evidence.
+The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks for the wording of business email compromise (BEC), credential phishing and spam offers in the subject and the decoded text (HTML visible text, scripts skipped, within the 5 MiB scan budget). It is a heuristic: small, curated, case-insensitive phrase lists, in English for every family and also in Russian for the gambling and prize families. It misses paraphrases and other languages, and ordinary mail can use the same words. The subject and each text part are searched separately, so a phrase never spans two of them. Each family is reported at most once, with the first matched phrase as evidence.
 
 | `id` | Severity | Raised for phrases such as |
 | --- | --- | --- |
@@ -160,6 +166,9 @@ The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks fo
 | `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
 | `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
 | `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
+| `mail.intent.gambling_offer` | medium | "free spins", "no deposit bonus", "100 FS" (upper case only), "casino bonus"; in Russian "фриспины", "бесплатные спины", "без депозита", "бонус на депозит". |
+| `mail.intent.prize_claim` | medium | "you have won", "claim your prize", "lottery winner"; in Russian "вы выиграли", "ваш приз", "получите выигрыш". |
+| `mail.intent.hidden_text` | low | The subject and text together hold 20 or more invisible characters (zero-width spaces and joiners, soft hyphens, word joiners, byte-order marks). The evidence gives the count and the most common one, for example `120 invisible characters, mostly U+200C`. Newsletters pad their preview line with a few; spam uses long runs. |
 | `mail.intent.bec_pattern` | high | `payment_change` or `gift_cards` together with `urgency` or `secrecy`. The evidence names the families, for example `gift_cards with secrecy`. |
 
 ## Dashboard

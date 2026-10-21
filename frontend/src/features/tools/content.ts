@@ -102,7 +102,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       limits: [
         "A `clean` verdict means none of the checks fired, not that the message is safe.",
         "Detection and false-positive rates have not been measured, so none are claimed.",
-        "The scam phrase lists are small, curated and English only; paraphrases and other languages are missed.",
+        "The scam phrase lists are small and curated: English, plus Russian for gambling and prize offers. Paraphrases and other languages are missed.",
         "The look-alike table is a curated subset of the Unicode confusables list, and organizations are grouped without the full Public Suffix List.",
         "The heuristic score orders messages for attention. It is not a probability.",
       ],

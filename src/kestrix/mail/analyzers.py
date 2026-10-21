@@ -52,6 +52,15 @@ _TOKEN = re.compile(r"[a-z0-9]+")
 _WHITESPACE_AND_CONTROLS = re.compile(r"[\x00-\x20\x7f]+")
 MAX_LINK_FINDINGS = 50
 MIN_BRAND_LABEL = 3
+# A host label reads as machine-generated when it is long and either switches between letters and digits
+# three or more times (``q7vk2mx9r4tz8wn3``) or has a run of six consonants (``xkqwtzbn``).
+MIN_RANDOM_LABEL = 8
+_LETTER_DIGIT_SWITCH = re.compile(r"(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])")
+_CONSONANT_RUN = re.compile(r"[b-df-hj-np-tv-xz]{6}")
+# Mail programs discontinued long ago. Spam tools still forge them in X-Mailer.
+_OUTDATED_MAILER = re.compile(
+    r"outlook express|microsoft internet mail|netscape (?:messenger|communicator)|eudora", re.IGNORECASE
+)
 
 
 # --- shared helpers -----------------------------------------------------------------------
@@ -344,6 +353,30 @@ def analyze_sender(msg: ParsedMessage, protected_domains: frozenset[str] = froze
             )
         )
     findings.extend(_display_name_findings(sender.display_name, sender.domain, protected_domains))
+    generated = random_label(sender.domain)
+    if generated is not None:
+        findings.append(
+            _finding(
+                "mail.sender.random_domain",
+                "low",
+                "Sender's domain looks machine-generated",
+                "Spam and phishing campaigns register throwaway domains with random-looking names. Some bulk mail "
+                "services also use generated names, so this is a weak signal on its own.",
+                f"From domain {sender.domain} (label {generated})",
+            )
+        )
+    mailer = msg.mailer
+    if mailer is not None and (old := _OUTDATED_MAILER.search(mailer)) is not None:
+        findings.append(
+            _finding(
+                "mail.sender.outdated_mailer",
+                "low",
+                "Claims to come from a mail program discontinued years ago",
+                f"The X-Mailer header names {old.group(0)}, which has not been sold or updated for many years. Bulk "
+                "spam tools often forge an old mail program here. It is a hint, not proof: the header is easy to set.",
+                f"X-Mailer {mailer}",
+            )
+        )
     return findings
 
 
@@ -387,6 +420,23 @@ def _display_name_findings(display: str, from_domain: str, protected_domains: fr
     return []
 
 
+def random_label(domain: str) -> str | None:
+    """The first label of ``domain`` (TLD excluded) that reads as machine-generated, or None.
+
+    Hyphenated labels are judged piece by piece. This is lexical only: a pronounceable random name such as
+    ``velomarquintasy`` passes, and a few real brands with digits in their names can trip it.
+    """
+    for label in domain.lower().split(".")[:-1]:
+        if label.startswith("xn--"):  # punycode is judged by mail.links.punycode_host
+            continue
+        for piece in label.split("-"):
+            if len(piece) < MIN_RANDOM_LABEL:
+                continue
+            if len(_LETTER_DIGIT_SWITCH.findall(piece)) >= 3 or _CONSONANT_RUN.search(piece):
+                return label
+    return None
+
+
 # --- links --------------------------------------------------------------------------------
 
 
@@ -403,7 +453,35 @@ def analyze_links(msg: ParsedMessage) -> list[Finding]:
             findings.append(finding)
             if len(findings) >= MAX_LINK_FINDINGS:
                 return findings
+    plain = _plain_http_finding(msg)
+    if plain is not None:
+        findings.append(plain)
     return findings
+
+
+def _plain_http_finding(msg: ParsedMessage) -> Finding | None:
+    """One finding when at least half of the message's web links use plain HTTP."""
+    schemes = [scheme for link in msg.links if (scheme := _web_scheme(link.href)) is not None]
+    plain = schemes.count("http")
+    if not plain or plain * 2 < len(schemes):
+        return None
+    return _finding(
+        "mail.links.plain_http",
+        "low",
+        "Links use plain HTTP instead of HTTPS",
+        "Almost every legitimate sender links over HTTPS today. Unencrypted links are common in spam and throwaway "
+        "campaigns, and anyone on the network path can change what they open.",
+        f"{plain} of {len(schemes)} web links use http",
+    )
+
+
+def _web_scheme(href: str) -> str | None:
+    try:
+        parts = urlsplit(href.strip())
+        scheme = parts.scheme.lower()
+        return scheme if scheme in {"http", "https"} and parts.hostname else None
+    except ValueError:
+        return None
 
 
 def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, Finding]]:
@@ -490,6 +568,16 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
             "Link host uses internationalized (punycode) letters",
             "Letters from other alphabets can imitate a familiar domain, for example a Cyrillic letter that looks like a Latin 'a'.",
             f"host {host} (displayed as {display})",
+        )
+    generated = None if _is_ip(host) else random_label(host)
+    if generated is not None:
+        hit(
+            "mail.links.random_host",
+            "low",
+            "Link goes to a machine-generated host name",
+            "Random-looking host names such as 'q7vk2mx9r4tz8wn3' are typical of throwaway spam and phishing "
+            "infrastructure. Some click trackers use them too, so this is a weak signal on its own.",
+            f"host {host} (label {generated})",
         )
     if host in _SHORTENERS:
         hit(

@@ -75,7 +75,7 @@ describe("LandingPage in local mode", () => {
       expect(within(item).getByText(report.findings[index]?.title ?? "")).toBeTruthy();
       expect(within(item).getByText("High")).toBeTruthy();
     }
-    expect(within(card).getByText("5 high · 4 medium · 2 other")).toBeTruthy();
+    expect(within(card).getByText("5 high · 4 medium · 3 other")).toBeTruthy();
     expect(within(card).getByText("Synthetic example")).toBeTruthy();
     expect(screen.getByText("Synthetic example · actual analyzer output")).toBeTruthy();
   });

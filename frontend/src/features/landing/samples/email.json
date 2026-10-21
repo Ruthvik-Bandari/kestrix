@@ -90,6 +90,13 @@
         "evidence": "Updated bank details"
       },
       {
+        "id": "mail.links.plain_http",
+        "analyzer": "links",
+        "severity": "low",
+        "title": "Links use plain HTTP instead of HTTPS",
+        "evidence": "2 of 2 web links use http"
+      },
+      {
         "id": "mail.intent.urgency",
         "analyzer": "intent",
         "severity": "low",

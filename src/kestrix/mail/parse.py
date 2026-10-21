@@ -45,6 +45,7 @@ MAX_ARCHIVE_MEMBERS = 1000
 MAX_HREF_CHARS = 2048
 MAX_LINK_TEXT_CHARS = 300
 MAX_NAME_CHARS = 255
+MAX_MAILER_CHARS = 200
 HEAD_BYTES = 8
 
 # Headers that only a message has; a blob with none of these (and no From) is not a message.
@@ -116,6 +117,7 @@ class ParsedMessage:
     subject: str | None
     date: str | None
     message_id: str | None
+    mailer: str | None
     authentication_results: tuple[str, ...]
     received_count: int
     texts: tuple[str, ...]
@@ -160,6 +162,7 @@ def _parsed(raw: bytes, msg: EmailMessage) -> ParsedMessage:
         subject=_header(msg, "subject"),
         date=_header(msg, "date"),
         message_id=_header(msg, "message-id"),
+        mailer=_cut(_header(msg, "x-mailer"), MAX_MAILER_CHARS),
         authentication_results=tuple(_all_headers(msg, "authentication-results")),
         received_count=len(msg.get_all("received") or []),
         texts=tuple(collector.texts),
@@ -442,6 +445,10 @@ def _zip_listing(data: bytes) -> Archive:
         encrypted = encrypted or bool(flags & _FLAG_ENCRYPTED)
         offset += _CDH_SIZE + name_len + extra_len + comment_len
     return Archive(encrypted=encrypted, members=tuple(members), incomplete=total > len(members))
+
+
+def _cut(value: str | None, limit: int) -> str | None:
+    return None if value is None else value[:limit]
 
 
 def _header(msg: EmailMessage, name: str) -> str | None:

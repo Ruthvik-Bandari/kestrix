@@ -289,13 +289,15 @@ def test_punycode_link() -> None:
 )
 def test_single_link_checks(href: str, finding_id: str, severity: str) -> None:
     report = link_report(f'<a href="{href}">here</a>')
-    assert ids(report) == [finding_id]
+    # A lone http:// link is also all of the message's web links over plain HTTP.
+    plain = ["mail.links.plain_http"] if href.startswith("http:") else []
+    assert ids(report) == [finding_id, *plain]
     assert severity_of(report, finding_id) == severity
 
 
 def test_plain_text_links_are_checked() -> None:
     report = analyze(message(text="Reset at http://203.0.113.9/login now"))
-    assert set(ids(report)) == {"mail.links.ip_host", "mail.links.insecure_login"}
+    assert set(ids(report)) == {"mail.links.ip_host", "mail.links.insecure_login", "mail.links.plain_http"}
 
 
 def test_link_findings_are_deduplicated_and_capped() -> None:
