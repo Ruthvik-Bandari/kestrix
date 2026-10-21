@@ -1,0 +1,94 @@
+{
+  "feature_set": {
+    "exclude_analyzers": [],
+    "exclude_ids": [],
+    "name": "all"
+  },
+  "interactions": [
+    {
+      "ids": [
+        "mail.links.random_host",
+        "mail.links.plain_http"
+      ],
+      "weight": 0.0
+    }
+  ],
+  "intercept": -1.558993,
+  "kind": "kestrix-mail-weights-candidate",
+  "l2": 1e-05,
+  "note": "Candidate only: not wired into kestrix.mail. Score is a logit-scale sum, not a probability.",
+  "schema_version": 1,
+  "score": "intercept + sum of the weights of the finding ids present + interaction weights when both ids are present",
+  "targets": {
+    "basis": "pooled",
+    "far_malicious": 0.01,
+    "far_suspicious": 0.05
+  },
+  "thresholds": {
+    "malicious": 2.588268,
+    "suspicious": 0.324718
+  },
+  "training": {
+    "balance": "cell",
+    "code_sha": "64a8307+worktree-cc81ddbac4dd",
+    "cv_folds": 5,
+    "dev_feature_files_sha256": "f9780731e05d8f1b5588d0a2748f73ad6bf18551d36285e8775320e611635bb7",
+    "dev_training_ids_sha256": "1cdfc1823345611d92bbdc28ac1bbcdcde7bd062983d6afe3cf145c7ad027ee3",
+    "groups": 288,
+    "ham": 16743,
+    "l2_grid": [
+      1e-05,
+      0.0001,
+      0.001,
+      0.01,
+      0.1
+    ],
+    "messages": 24359,
+    "min_support": 5,
+    "n_features": 34,
+    "positives": 7616,
+    "seed": 0,
+    "split_manifest_sha256": "5350dff91c544428ebf2216380f04e9d66f9469334c7487b00dbc78385986152",
+    "trained_at": "2026-10-21T18:36:03+00:00"
+  },
+  "unlearned_ids": [
+    "mail.attachments.macro_office",
+    "mail.intent.gambling_offer",
+    "mail.lookalike.mixed_script"
+  ],
+  "weights": {
+    "mail.attachments.archive_dangerous_member": 4.312753,
+    "mail.attachments.dangerous_type": 5.791607,
+    "mail.auth.dkim_fail": 3.9391,
+    "mail.auth.dkim_not_aligned": 4.901395,
+    "mail.auth.dmarc_fail": 2.729593,
+    "mail.auth.missing": 0.0,
+    "mail.auth.no_dmarc_with_failure": 1.47311,
+    "mail.auth.spf_fail": 3.372465,
+    "mail.auth.spf_softfail": 5.15162,
+    "mail.intent.bec_pattern": 0.0,
+    "mail.intent.credential_request": 5.499513,
+    "mail.intent.hidden_text": 3.85893,
+    "mail.intent.payment_change": 2.922139,
+    "mail.intent.prize_claim": 2.110651,
+    "mail.intent.secrecy": 1.934685,
+    "mail.intent.urgency": 1.400601,
+    "mail.links.insecure_login": 0.0,
+    "mail.links.ip_host": 3.464399,
+    "mail.links.plain_http": 1.298971,
+    "mail.links.punycode_host": 2.002114,
+    "mail.links.random_host": 0.0,
+    "mail.links.redirect_param": 0.923499,
+    "mail.links.script_scheme": 0.510722,
+    "mail.links.sender_domain_mismatch": 6.05161,
+    "mail.links.sender_domain_redirect": 2.311927,
+    "mail.links.shortener": 2.090765,
+    "mail.links.text_href_mismatch": 1.837929,
+    "mail.links.userinfo": 3.108382,
+    "mail.sender.display_name_spoof": 1.249631,
+    "mail.sender.outdated_mailer": 2.22364,
+    "mail.sender.random_domain": 3.005055,
+    "mail.sender.reply_to_mismatch": 0.116417,
+    "mail.sender.return_path_mismatch": 0.0
+  }
+}

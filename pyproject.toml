@@ -41,6 +41,9 @@ hosted = [
     "cryptography>=46,<47",
     "pyjwt>=2.10,<3",
 ]
+research = [
+    "numpy>=1.26",
+]
 
 [project.scripts]
 kestrix = "kestrix.cli:app"
@@ -102,6 +105,9 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 # C6 research training/evaluation: seeded experiment RNG (not security), long training loops, metric helpers.
 "src/kestrixvul/train.py" = ["S311", "PLR0915", "PLR0917"]
 "src/kestrixvul/evaluate.py" = ["S311", "PLR0917"]
+# Email benchmark: seeded synthetic-message generator (not security), positional metric helpers.
+"src/kestrixmailbench/*.py" = ["PLR0917"]
+"src/kestrixmailbench/synthetic.py" = ["S311", "PLR0917"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -138,7 +144,7 @@ modules = [
     "kestrix_scan.walk",
 ]
 strict = true
-packages = ["kestrix", "kestrixbench", "bench", "kestrixvul"]
+packages = ["kestrix", "kestrixbench", "bench", "kestrixvul", "kestrixmailbench"]
 # The deliberately vulnerable benchmark cases are data for the scanners, not project code.
 exclude = ["^bench/cases/"]
 mypy_path = "src"

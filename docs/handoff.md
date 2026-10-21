@@ -45,6 +45,17 @@ The Playwright sweep covered:
 
 **Next action:** the owner reviews the site locally. Deployment, the PyPI release (which must ship the built bundle in the wheel) and making the repo public are separate, owner-approved steps.
 
+## Email accuracy benchmark (2026-10-21, branch `feat/mailbench`, not merged)
+
+Research package `src/kestrixmailbench/` (not in the wheel), jobs `hpc/mail_*`, tests `tests/mailbench/`, write-up `docs/research/mail-benchmark.md`, aggregates `docs/data/mail/`.
+
+- **State:** acquire, build, features (16-task array), dev-metrics and learn have run on the cluster for Nazario, SpamAssassin, Enron (20,000-message seeded sample) and a synthetic source. Dev numbers and learned candidate weights exist. **The locked test has not been run** (`hpc/mail_locked.sbatch`, claims `LOCKED_EVAL.json` once). Nothing is wired into `kestrix.mail`.
+- **Data location:** raw messages only in `/scratch/bandari.ru/kestrix/mailbench/` (0700/0600). `/scratch` is purged on the first Tuesday of each month (next **2026-11-03**); `raw/` is re-fetchable with `hpc/mail_acquire.sh` from the manifest, but `work/` and `features/` must then be rebuilt (`mail_chain.sh full`, about 30 minutes plus queue time) and the split reproduces from the seed. Aggregates are committed in `docs/data/mail/`.
+- **Code on the cluster:** synced by tar over ssh from the worktree; `~/kestrix/GIT_SHA` is untouched and `~/kestrix/MAILBENCH_SHA` records HEAD plus a hash of the synced files. `bash hpc/setup_env.sh mail` adds numpy (the `research` extra) to the CPU environment.
+- **TREC 2007:** not available yet (owner is applying); add a `Source` in `src/kestrixmailbench/sources.py`.
+- **Next action:** owner reviews `docs/research/mail-benchmark.md`, chooses the weights file(s), then the one-time locked evaluation:
+  `sbatch hpc/mail_locked.sbatch --name mail-v1 --weights <reports>/mail-weights-content.json --weights <reports>/mail-weights-content_noera.json`.
+
 ## Completed
 
 - Kestrix 0.1.0 package, dashboard and documentation (`0b76c16`, `8798c97`, `911b87a`).

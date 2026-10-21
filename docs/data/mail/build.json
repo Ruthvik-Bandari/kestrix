@@ -1,0 +1,115 @@
+{
+  "dropped_by_reason": {
+    "enron": {
+      "duplicate_near": 2576,
+      "input_too_large": 22,
+      "over_sample_cap": 7402
+    },
+    "nazario": {
+      "duplicate_exact": 6,
+      "duplicate_near": 2908,
+      "input_too_large": 3,
+      "invalid_input": 1
+    },
+    "spamassassin": {
+      "duplicate_exact": 184,
+      "duplicate_near": 3080,
+      "input_too_large": 6,
+      "invalid_input": 1
+    },
+    "synthetic": {
+      "duplicate_near": 5
+    }
+  },
+  "enron_sample": 20000,
+  "generated_at": "2026-10-21T17:09:18+00:00",
+  "groups": 436,
+  "kept": {
+    "enron/ham": 20000,
+    "nazario/phishing": 9089,
+    "spamassassin/ham": 4293,
+    "spamassassin/spam": 1784,
+    "synthetic/ham": 120,
+    "synthetic/phishing": 210,
+    "synthetic/spam": 55
+  },
+  "kept_by_year": {
+    "enron/ham": {
+      "1997": 24,
+      "1998": 5,
+      "1999": 470,
+      "2000": 7688,
+      "2001": 10430,
+      "2002": 1364,
+      "2004": 3,
+      "unknown": 16
+    },
+    "nazario/phishing": {
+      "1999": 1,
+      "2000": 3,
+      "2001": 4,
+      "2002": 7,
+      "2003": 19,
+      "2004": 53,
+      "2005": 829,
+      "2006": 1321,
+      "2007": 1400,
+      "2008": 361,
+      "2009": 290,
+      "2010": 550,
+      "2011": 408,
+      "2012": 332,
+      "2013": 261,
+      "2014": 189,
+      "2015": 270,
+      "2016": 436,
+      "2017": 274,
+      "2018": 247,
+      "2019": 209,
+      "2020": 147,
+      "2021": 91,
+      "2022": 203,
+      "2023": 315,
+      "2024": 361,
+      "2025": 433,
+      "unknown": 75
+    },
+    "spamassassin/ham": {
+      "2002": 4292,
+      "unknown": 1
+    },
+    "spamassassin/spam": {
+      "1993": 1,
+      "1997": 1,
+      "1998": 1,
+      "1999": 1,
+      "2000": 4,
+      "2001": 136,
+      "2002": 1571,
+      "2003": 1,
+      "2020": 2,
+      "unknown": 66
+    },
+    "synthetic/ham": {
+      "2026": 120
+    },
+    "synthetic/phishing": {
+      "2026": 210
+    },
+    "synthetic/spam": {
+      "2026": 55
+    }
+  },
+  "kept_total": 35551,
+  "limit_per_file": null,
+  "meta_sha256": "d20e33e64cf74f7e76fa51468abb6a42647f47da72e841b86a6c5669e5a8e6d0",
+  "read": {
+    "enron": 30000,
+    "nazario": 12007,
+    "spamassassin": 9348,
+    "synthetic": 390
+  },
+  "schema_version": 1,
+  "seed": "kestrixmail-v1",
+  "shards": 16
+}
