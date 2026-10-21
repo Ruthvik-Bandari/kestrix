@@ -229,7 +229,10 @@ lookup, `vul_extend.sbatch split`, `fetch_vul_audit_models.sh` and `vul_audit.sb
 `work/split-v2.jsonl`, `work/negatives.jsonl`, `audit/` and `licenses/licenses.csv` to `/work` (or another
 persistent private location) before the purge to skip the rebuild.
 
-### Training hardware (next stage)
+### Training hardware (slice C6)
 
 Training will run on H200: the `gpu` partition offers `--gres=gpu:h200:N` with an 8 h limit. The existing
 `/scratch/$USER/kestrix/venv-gpu` (torch 2.6.0+cu124) works on H200 (smoke job 11258264).
+
+Training and evaluation (slice C6): see [the plan's "Training" section](../../research/code-vuln-ml-plan.md#training-slice-c6).
+The training code reads only `train` and `dev`. `test` and `test_extension` are read once, by `evaluate.py --locked`.

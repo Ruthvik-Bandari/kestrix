@@ -34,6 +34,11 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | `hpc/vul_build.sbatch [candidates\|split]` | `short` | 2 CPU, 32 GB, 4 h | `candidates`: PrimeVul relabelling, deduplication, repository list for the local license lookup; `split`: license import and the frozen split manifest. No training |
 | `hpc/vul_extend.sbatch targets\|extract\|split\|audit` | `short` | 2 CPU, 16 GB, 4 h | Extends the C5 pool without touching the frozen test split: `targets` lists the GHSA fix commits CVEfixes and MoreFixes lack (plus the pool commits, for negatives); `extract` labels the fetched commits, deduplicates them against the pool and lists new repositories for the license lookup; `split` merges the licenses, writes split manifest v2, samples negatives and the audit packets; `audit` imports the AI audit verdicts |
 | `hpc/vul_mine.sh` | transfer node | n/a | Fetches the listed fix commits: anonymous HTTPS partial clones (`--filter=blob:none --depth=2`), then only the needed blobs; 8 repositories at a time, one git request per second, backoff on errors, 300 s per git call, 500 MB per repository, resumable. No GitHub API calls |
+| `hpc/fetch_vul_student_model.sh` | transfer node | n/a | C6 student base model (UniXcoder-base, pinned revision, Apache-2.0) with `MANIFEST.sha256` |
+| `hpc/vul_smoke.sbatch` | `gpu`, H200 | 8 CPU, 64 GB, 20 min | C6 smoke: teacher 20 steps on 200 examples, student 20 steps, dev evaluation on 100 examples |
+| `hpc/vul_train_teacher.sbatch` | `gpu`, H200 | 8 CPU, 96 GB, 6 h | C6 teacher LoRA (Qwen2.5-Coder-7B, bf16); `--array=1-3` for three seeds |
+| `hpc/vul_train_student.sbatch --teacher-run ID` | `gpu`, A100 | 8 CPU, 48 GB, 3 h | C6 student distillation, permissive pool only; fp32 and int8 state dicts |
+| `hpc/vul_eval.sbatch [--split test --locked]` | `gpu`, H200 | 8 CPU, 96 GB, 8 h | C6 metrics and baselines on dev; `--locked` runs the held-out test once (`reports/LOCKED_EVAL.json`) |
 
 The cluster has no Docker, so jobs run Elasticsearch from Elastic's official tarball with its
 bundled JDK. That is the same 8.19.3 release the local Docker image pins by digest. The engine

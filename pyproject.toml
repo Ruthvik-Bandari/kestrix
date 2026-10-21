@@ -95,6 +95,9 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 "scripts/**" = ["PLR0915", "PLR0917"]
 ".claude/hooks/**" = ["S603", "PLW1510"]  # the hook's own test runs the hook script with a fixed argument list
 "src/kestrix/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter
+# C6 research training/evaluation: seeded experiment RNG (not security), long training loops, metric helpers.
+"src/kestrixvul/train.py" = ["S311", "PLR0915", "PLR0917"]
+"src/kestrixvul/evaluate.py" = ["S311", "PLR0917"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -138,5 +141,5 @@ mypy_path = "src"
 
 [[tool.mypy.overrides]]
 # GPU-only research dependencies (the "gpu" group), not installed in CI.
-module = ["torch", "transformers", "peft"]
+module = ["torch", "transformers", "peft", "safetensors", "safetensors.torch"]
 ignore_missing_imports = true

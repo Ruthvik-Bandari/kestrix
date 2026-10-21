@@ -107,6 +107,94 @@ So the `kestrix[ml]` extra downloads a pinned Hugging Face revision and checks i
   - Renaming identifiers flips predictions in 17–26% of cases ([study](https://arxiv.org/abs/2312.12575)).
   - Test with renaming and with dead code inserted.
 
+## Training (slice C6)
+
+Code: `src/kestrixvul/train.py` and `src/kestrixvul/evaluate.py` (research only, not in the wheel; torch is
+imported lazily). Jobs: `hpc/vul_smoke.sbatch`, `hpc/vul_train_teacher.sbatch`, `hpc/vul_train_student.sbatch`,
+`hpc/vul_eval.sbatch`. Logs go to `/scratch/$USER/kestrix/vul/logs/`, runs to `/scratch/$USER/kestrix/vul/runs/<run-id>/`.
+Status, 2026-10-20: code and tests written, smoke job submitted; no full run yet, so no results.
+
+**Data.** `work/split-v2.jsonl` (falling back to `work/split.jsonl`; the job fails with a clear message if neither
+exists) and `work/negatives.jsonl`. Train examples are the vulnerable before-functions, their patched
+after-functions (label 0) and `negative_unchanged` functions, 3 per vulnerable record by default (`--neg-ratio`,
+seeded by a fixed data seed, so every training seed sees the same data). Dev serves early stopping (a dev sample
+with 5 negatives per vulnerable record) and the threshold only. The training code refuses `test` and
+`test_extension` (`HeldOutSplitError`, tested). `--view filtered` drops the audit strata below 0.80 label accuracy.
+The records carry no file text, so the optional file context in the prompt is empty for now.
+
+**Teacher.** Qwen2.5-Coder-7B-Instruct at revision `c03e6d358207e414f1eca0bb1891e29f1db0e242` (Apache-2.0).
+LoRA r=16, alpha 32, on all attention and MLP projections; bf16 with no quantization; gradient checkpointing; up to
+4,096 tokens (function code truncated beyond that). The prompt asks for `{"vulnerable": bool, "cwe": "CWE-xxx" | null}`,
+and the assistant turn is opened with `{"vulnerable":`.
+
+- **The score** is the logit of the next token ` true` minus that of ` false`, read from the pretrained
+  language-model head. It is trained with binary cross-entropy.
+- **Why the token logit rather than a new classification head:**
+  - before training, the scorer *is* the zero-shot model, so the zero-shot baseline and the teacher differ only
+    by the adapters;
+  - with about 1,500 positives, starting from the model's own prior beats training a random head;
+  - cross-entropy on that logit is a proper scoring rule, so `sigmoid(score)` is a probability estimate.
+    The evaluation also fits Platt scaling on dev and reports calibration error before and after it.
+- **CWE.** A linear head on the same hidden state ranks the 25 most frequent training CWEs (loss weight 0.2).
+- **Runs.** Three seeds (one array task each) for 2 epochs, with dev PR-AUC every 200 optimizer steps (effective
+  batch 16) and early stopping after 3 evaluations without gain. The run keeps the best checkpoint.
+- **Soft labels.** At the end, the best teacher scores the permissive train pool (8 negatives per vulnerable
+  record) for the student.
+
+**Student.** `microsoft/unixcoder-base` at revision `5604afdc964f6c53782a6813140ade5216b99006`. Its license is
+Apache-2.0 by the Hugging Face license tag and the model card, checked 2026-10-20, so ModernBERT was not needed.
+
+- **Model.** The encoder takes up to 512 tokens and feeds a vulnerability head and a CWE head on the first token.
+- **Training data.** Only the permissive-license train pool (SPDX class `permissive` from `licenses/licenses.csv`).
+  The job aborts if any other example reaches it.
+- **Loss.** 0.5 times BCE on the hard labels, plus 0.5 times T² times BCE against the teacher's soft labels
+  (the mean logit of the given teacher runs, T = 2), plus 0.2 times CWE cross-entropy.
+- **Exports.**
+  - `student_fp32.pt`: a plain PyTorch state dict;
+  - `student_int8.pt`: dynamic int8 `Linear` layers, with the other tensors in fp16.
+  The evaluation measures their size and CPU latency.
+
+**Evaluation** (`evaluate.py`). By default it scores all of dev, at the manifest's realistic prevalence.
+
+- **Systems:**
+  - each teacher run;
+  - zero-shot Qwen-7B (the same scorer with no adapters);
+  - the student;
+  - the kestrix-scan rules on the function text (a function with a finding inside it is positive; the score is the
+    finding count, a heuristic);
+  - bag-of-words logistic regression (hashed unigrams and bigrams, standard library only: scikit-learn is not
+    installed in `venv-gpu`);
+  - function length;
+  - random.
+- **Metrics:**
+  - PR-AUC, and F1 at the dev-best-F1 threshold;
+  - macro precision@k and recall@k per repository (k = 1, 5, 10);
+  - VD-S, the miss rate at FPR at most 0.5%, 1% and 5%;
+  - pairwise outcomes on vulnerable/patched pairs;
+  - CWE top-1 and top-3 on true positives;
+  - ECE in 10 bins, raw and after Platt scaling;
+  - rules OR model and rules AND model against rules alone, with the precision gain;
+  - 95% bootstrap intervals with 1,000 resamples of whole repositories.
+- **Views:** `full` and `filtered`, plus `audit_confirmed` on dev.
+- **The held-out test.** `--split test --locked` adds `test` and `test_extension`. It first creates
+  `reports/LOCKED_EVAL.json` exclusively and refuses if the file exists, so the test runs once. A crash leaves
+  the marker without a `finished` time; deleting it is a deliberate owner decision.
+
+Commands, from the login node in `~/kestrix` after syncing the code:
+
+```bash
+ssh explorer-xfer 'cd ~/kestrix && setsid nohup bash -l hpc/fetch_vul_student_model.sh \
+  > /scratch/$USER/kestrix/vul/logs/fetch-student-model.log 2>&1 < /dev/null &'   # once
+sbatch hpc/vul_smoke.sbatch                          # 20 min: teacher, student (if fetched), dev eval
+sbatch --array=1-3 hpc/vul_train_teacher.sbatch      # seeds 1-3 -> runs/teacher-seed<S>-<array job>
+sbatch hpc/vul_train_student.sbatch --teacher-run teacher-seed1-<J> --teacher-run teacher-seed2-<J> \
+  --teacher-run teacher-seed3-<J>                    # -> runs/student-seed1-<job>
+sbatch hpc/vul_eval.sbatch --name dev-c6 --zero-shot --teacher-run teacher-seed1-<J> \
+  --teacher-run teacher-seed2-<J> --teacher-run teacher-seed3-<J> --student-run student-seed1-<K>
+# once, after the model version is chosen on dev:
+sbatch hpc/vul_eval.sbatch --split test --locked --name test-c6 --teacher-run <best> --student-run <student>
+```
+
 ## Expectations
 
 Published results on realistic, project-disjoint data are low:
