@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
-import { setCsrfToken } from "../lib/api";
+import { cancelRefresh, setCsrfToken } from "../lib/api";
 import { setMode } from "../lib/mode";
 
 afterEach(() => {
@@ -10,6 +10,7 @@ afterEach(() => {
   // Hosted-mode tests switch the mode and hold a CSRF token; every test starts local.
   setMode("local");
   setCsrfToken(null);
+  cancelRefresh();
 });
 
 // jsdom implements neither matchMedia nor canvas drawing; the decorative background needs both.

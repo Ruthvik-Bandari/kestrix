@@ -3,6 +3,7 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { dashboardPath, pageAvailable, SIGNIN_PATH } from "../../app/paths";
+import { AuthCard } from "../auth/AuthCard";
 import { BrandMark } from "../../components/BrandMark";
 import { HoloGlobe } from "../../components/HoloGlobe";
 import { Icon } from "../../components/Icon";
@@ -106,6 +107,8 @@ function Header({ signInUrl, active }: { signInUrl: string | null; active: strin
 
 function Hero({ signInUrl }: { signInUrl: string | null }) {
   const first = chapters[0]?.id ?? "";
+  // Hosted: the Log in / Sign up card sits beside the globe (above it on narrow screens).
+  const authCard = isHosted();
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
       <div className="holo-grid -z-10" aria-hidden="true" />
@@ -139,8 +142,8 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
               Open the dashboard
               <Icon name="arrowRight" size={18} />
             </Link>
-            {/* Hosted accounts: a "Sign in" button appears here once signInUrl is configured. */}
-            {signInUrl ? (
+            {/* A "Sign in" button appears here once signInUrl is configured; hosted mode has the card instead. */}
+            {signInUrl && !authCard ? (
               <Link to={signInUrl} className="btn btn-ghost btn-lg">
                 Sign in
               </Link>
@@ -151,9 +154,22 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
             Every verdict, finding and count on this page is real Kestrix output on synthetic examples. Open “Real output” under any scene to see the JSON.
           </p>
         </div>
-        <div className="relative mx-auto w-full max-w-[34rem]">
+        <div className="relative mx-auto w-full max-w-[34rem] lg:max-w-none">
+          {authCard ? (
+            <AuthCard
+              next={dashboardPath()}
+              className="relative z-20 mx-auto mb-8 w-full max-w-[26rem] lg:absolute lg:top-1/2 lg:left-0 lg:mb-0 lg:w-[20rem] lg:-translate-y-1/2"
+            />
+          ) : null}
+          <div className={cx("relative mx-auto w-full max-w-[34rem]", authCard && "lg:mr-0 lg:w-[72%] lg:translate-x-6 xl:translate-x-12")}>
           <HoloGlobe />
-          <ul className="absolute inset-x-0 bottom-1 flex flex-wrap justify-center gap-2 text-[0.8125rem] font-medium">
+          <ul
+            className={cx(
+              "absolute inset-x-0 bottom-1 flex flex-wrap justify-center gap-2 text-[0.8125rem] font-medium",
+              // Beside the card: stack the chips at the globe's lower right, clear of the card.
+              authCard && "lg:inset-x-auto lg:right-0 lg:bottom-2 lg:flex-col lg:items-end",
+            )}
+          >
             <li className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-ink-2">
               <Icon name="octagon" size={14} className="text-crit-mark" />
               Threat found
@@ -167,6 +183,7 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
               Contained
             </li>
           </ul>
+          </div>
         </div>
       </div>
       <a
