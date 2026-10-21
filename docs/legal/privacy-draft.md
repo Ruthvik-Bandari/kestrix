@@ -36,7 +36,7 @@ Your browser also remembers your light or dark theme choice and which help panel
 - Files and emails you upload are analyzed in a separate, short-lived process on our server. While an upload is received and analyzed it is held in memory, and an upload larger than 1 MB may be spooled briefly to temporary disk storage; it is deleted as soon as the analysis ends. Uploads are never written to our database and are not kept after the analysis.
 - The report is sent back to your browser. Unless you have turned history off, we also keep an encrypted copy of the report for 30 days (see Your result history).
 - Links you check in forensics are examined as text; Kestrix does not visit them.
-- For a website check, our server sends one request to the site you enter (following up to five redirects) plus one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. Apart from your result history, we do not store the address you checked or the result; our logs keep only a keyed hash of the site's host name (see Logs).
+- For a website check, our server sends read-only GET requests to the site you enter: one page if you choose "Just this page", otherwise up to 50 pages (the page you enter, pages it links to, its sitemap and six common login addresses) plus up to 15 more for the sitemap and redirects, and one secure-connection handshake. That site sees the request coming from our server, identified as Kestrix. Apart from your result history, we do not store the address you checked or the result; our logs keep only a keyed hash of the site's host name (see Logs).
 
 ## Your result history
 
@@ -76,7 +76,7 @@ If an account is used to abuse the service, we can disable it: it can no longer 
 
 - Google and GitHub, when you choose to sign in with them. Their own privacy policies apply to your use of their sign-in.
 - Our hosting provider, which runs the server and stores the account database: [hosting provider to be named by the owner].
-- The website you choose to check receives one request from our server.
+- The website you choose to check receives read-only requests from our server: one, or up to 65 for a whole-site check.
 
 We do not sell or share your data with anyone else, and we show no ads.
 

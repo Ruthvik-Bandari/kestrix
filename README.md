@@ -187,8 +187,10 @@ kestrix forensics url "https://xn--pple-43d.com/login"
 kestrix webcheck scan https://your-site.example
 ```
 
-The check sends one GET request (following up to five redirects, each re-validated) and makes one TLS
-handshake. It does not crawl, fuzz or scan ports. It covers:
+By default the check covers the whole site: up to 50 read-only GET requests to the page you name, the pages it
+links to, its sitemap's pages and six common login addresses (each request and redirect re-validated), and one
+TLS handshake. `--page-only` sends one GET request (following up to five redirects) instead. It never submits
+forms, logs in, follows links to other sites, fuzzes or scans ports. It covers:
 
 - **HTTPS and TLS:** HTTPS enforcement, TLS version, and certificate validity, expiry and hostname.
 - **Headers:** HSTS, CSP (including `unsafe-inline` and wildcard sources), clickjacking protection,

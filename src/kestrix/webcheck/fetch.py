@@ -1,6 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""Network side of the web check: one GET (plus up to five redirects) and one TLS handshake.
+"""Network side of the web check: GET requests with redirects, and one TLS handshake.
+
+``fetch`` sends one GET (plus up to five redirects). The whole-site scan (``crawl.py``) calls it once
+per page, with ``stay_on`` (a redirect that leaves the site is reported, not followed) and a shared
+:class:`RequestBudget`. No cookie is ever sent back, not even between the hops of one redirect chain.
 
 Every hop is validated with :func:`kestrix.core.netguard.check_url` and the request is
 sent to the validated IP address (Host header and TLS SNI keep the real hostname), so a
@@ -14,13 +18,14 @@ cannot hold the check open. The TLS probe has its own deadline of the same lengt
 
 from __future__ import annotations
 
+import http.cookiejar
 import socket
 import ssl
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import httpcore
@@ -53,6 +58,59 @@ _VERIFY_CODES = {
 GENERIC_UNREACHABLE = "the site could not be reached"
 
 TlsProbe = Callable[[str, str, int, float], TlsInfo]
+Origin = tuple[str, str, int]  # scheme, lower-case host, port: what "the same site" means
+
+
+def origin_of(url: str) -> Origin:
+    parts = urlsplit(url)
+    try:
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+    except ValueError:
+        port = 0
+    return parts.scheme, (parts.hostname or "").lower(), port
+
+
+@dataclass
+class RequestBudget:
+    """GET requests a whole-site scan may still send. ``pages`` is for the first request to each page
+    (the start page, linked and sitemap pages, login probes); ``extra`` is for the sitemap and for every
+    redirect hop. ``sent`` counts every request actually sent."""
+
+    pages: int
+    extra: int
+    sent: int = 0
+
+    def take_page(self) -> bool:
+        if self.pages <= 0:
+            return False
+        self.pages -= 1
+        return True
+
+    def take_extra(self) -> bool:
+        if self.extra <= 0:
+            return False
+        self.extra -= 1
+        return True
+
+
+class _NoCookies(http.cookiejar.CookiePolicy):
+    """Accept and return no cookie, so a response can never make a later request carry one."""
+
+    netscape = True
+    rfc2965 = False
+    hide_cookie2 = False
+
+    def set_ok(self, cookie: http.cookiejar.Cookie, request: Any) -> bool:
+        return False
+
+    def return_ok(self, cookie: http.cookiejar.Cookie, request: Any) -> bool:
+        return False
+
+    def domain_return_ok(self, domain: str, request: Any) -> bool:
+        return False
+
+    def path_return_ok(self, path: str, request: Any) -> bool:
+        return False
 
 
 def user_agent(abuse_contact: str | None = None) -> str:
@@ -70,6 +128,9 @@ class FetchResult:
     final_ip: str = ""
     final_port: int = 443
     body: bytes = b""  # final response only, at most MAX_BODY_BYTES; parsed for the site profile
+    # Set when a redirect was not followed: it leaves the site (``stay_on``) or the budget is spent.
+    not_followed: Literal["off_site", "budget"] | None = None
+    redirect_to: str = ""
 
 
 def _is_tls_error(exc: BaseException) -> bool:
@@ -158,6 +219,70 @@ def _deadline_transport(deadline: float) -> httpx.HTTPTransport:
     return transport
 
 
+def _request(target: httpx.URL, ip: str, host: str, agent: str, timeout: float) -> httpx.Request:
+    """A GET with no body, no cookie and no credentials, sent to the validated ``ip``."""
+    return httpx.Request(
+        "GET",
+        target.copy_with(host=ip),
+        headers={
+            "Host": target.netloc.decode(),
+            "User-Agent": agent,
+            "Accept": "text/html,*/*",
+            # Uncompressed, so the bounded body read is the real page size.
+            "Accept-Encoding": "identity",
+        },
+        extensions={"sni_hostname": host, "timeout": httpx.Timeout(timeout).as_dict()},
+    )
+
+
+def _send(
+    client: httpx.Client, request: httpx.Request, host: str, left: Callable[[], float], generic_errors: bool
+) -> tuple[httpx.Response, bytes] | None:
+    """Send ``request`` and read at most MAX_BODY_BYTES of the body; ``None`` when TLS setup failed."""
+
+    def unreachable(detail: str) -> Rejected:
+        return Rejected(Reason.TARGET_UNREACHABLE, GENERIC_UNREACHABLE if generic_errors else detail)
+
+    def upstream(exc: httpx.HTTPError) -> Rejected:
+        return unreachable("") if generic_errors else Rejected(Reason.UPSTREAM_ERROR, type(exc).__name__)
+
+    try:
+        resp = client.send(request, stream=True)
+    except httpx.ConnectError as exc:
+        if _is_tls_error(exc):
+            return None
+        raise unreachable(f"cannot connect to {host}") from None
+    except httpx.TimeoutException:
+        raise unreachable(f"{host} timed out") from None
+    except httpx.HTTPError as exc:
+        raise upstream(exc) from None
+    body = bytearray()
+    try:
+        for chunk in resp.iter_raw():  # raw, never decompressed: no decompression bombs
+            body += chunk[: MAX_BODY_BYTES - len(body)]
+            if len(body) >= MAX_BODY_BYTES:
+                break
+            left()
+    except httpx.TimeoutException:
+        raise unreachable(f"{host} timed out") from None
+    except httpx.HTTPError as exc:
+        raise upstream(exc) from None
+    finally:
+        resp.close()
+    return resp, bytes(body)
+
+
+def _stop_reason(
+    next_url: str, stay_on: Origin | None, budget: RequestBudget | None, *, last: bool
+) -> Literal["off_site", "budget"] | None:
+    """Why a redirect to ``next_url`` must not be followed, if it must not."""
+    if stay_on is not None and origin_of(next_url) != stay_on:
+        return "off_site"
+    if budget is not None and not last and not budget.take_extra():
+        return "budget"
+    return None
+
+
 def _port_allowed(url: str, allowed_ports: frozenset[int]) -> None:
     parts = urlsplit(url)
     try:
@@ -178,11 +303,15 @@ def fetch(
     timeout: float = TIMEOUT_S,
     allowed_ports: frozenset[int] | None = None,
     generic_errors: bool = False,
+    stay_on: Origin | None = None,
+    budget: RequestBudget | None = None,
 ) -> FetchResult:
     """GET ``url`` and follow up to five redirects within ``timeout`` seconds in total.
 
     ``allowed_ports`` restricts every hop's port; ``generic_errors`` reports every
-    connection-level failure with one message. The hosted service sets both.
+    connection-level failure with one message. The hosted service sets both. With ``stay_on`` a
+    redirect to another origin is not followed; with ``budget`` each redirect hop must take one of its
+    ``extra`` requests, and every request sent is counted in ``budget.sent``.
     """
     deadline = time.monotonic() + timeout
 
@@ -199,51 +328,20 @@ def fetch(
     with httpx.Client(
         transport=transport or _deadline_transport(deadline), follow_redirects=False, trust_env=False
     ) as client:
-        for _ in range(MAX_REDIRECTS + 1):
+        client.cookies.jar.set_policy(_NoCookies())
+        for hop in range(MAX_REDIRECTS + 1):
             if allowed_ports is not None:
                 _port_allowed(url, allowed_ports)
             host, port, ips = check_url(url, allow_private=allow_private, resolve_timeout=left())
             target = httpx.URL(url)
-            request = httpx.Request(
-                "GET",
-                target.copy_with(host=ips[0]),
-                headers={
-                    "Host": target.netloc.decode(),
-                    "User-Agent": agent,
-                    "Accept": "text/html,*/*",
-                    # Uncompressed, so the bounded body read is the real page size.
-                    "Accept-Encoding": "identity",
-                },
-                extensions={"sni_hostname": host, "timeout": httpx.Timeout(left()).as_dict()},
-            )
+            request = _request(target, ips[0], host, agent, left())
             started = time.monotonic()
-            try:
-                resp = client.send(request, stream=True)
-            except httpx.ConnectError as exc:
-                if _is_tls_error(exc):
-                    return FetchResult(url, None, {}, chain, host, ips[0], port)
-                raise unreachable(f"cannot connect to {host}") from None
-            except httpx.TimeoutException:
-                raise unreachable(f"{host} timed out") from None
-            except httpx.HTTPError as exc:
-                if generic_errors:
-                    raise unreachable("") from None
-                raise Rejected(Reason.UPSTREAM_ERROR, type(exc).__name__) from None
-            body = bytearray()
-            try:
-                for chunk in resp.iter_raw():  # raw, never decompressed: no decompression bombs
-                    body += chunk[: MAX_BODY_BYTES - len(body)]
-                    if len(body) >= MAX_BODY_BYTES:
-                        break
-                    left()
-            except httpx.TimeoutException:
-                raise unreachable(f"{host} timed out") from None
-            except httpx.HTTPError as exc:
-                if generic_errors:
-                    raise unreachable("") from None
-                raise Rejected(Reason.UPSTREAM_ERROR, type(exc).__name__) from None
-            finally:
-                resp.close()
+            if budget is not None:
+                budget.sent += 1
+            sent = _send(client, request, host, left, generic_errors)
+            if sent is None:  # the TLS handshake with the site failed
+                return FetchResult(url, None, {}, chain, host, ips[0], port)
+            resp, body = sent
             chain.append(
                 Hop(
                     url=url,
@@ -252,11 +350,17 @@ def fetch(
                     elapsed_ms=round((time.monotonic() - started) * 1000),
                 )
             )
+            result = FetchResult(url, resp.status_code, _headers(resp), chain, host, ips[0], port, bytes(body))
             location = resp.headers.get("location")
             if resp.status_code in _REDIRECTS and location:
-                url = str(target.join(location))
+                next_url = str(target.join(location))
+                stop = _stop_reason(next_url, stay_on, budget, last=hop == MAX_REDIRECTS)
+                if stop:
+                    result.not_followed, result.redirect_to = stop, next_url
+                    return result
+                url = next_url
                 continue
-            return FetchResult(url, resp.status_code, _headers(resp), chain, host, ips[0], port, bytes(body))
+            return result
     raise Rejected(Reason.UPSTREAM_ERROR, f"more than {MAX_REDIRECTS} redirects")
 
 

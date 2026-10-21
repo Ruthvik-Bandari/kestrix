@@ -38,7 +38,7 @@ def main() -> int:
     failures = 0
     for url, (statuses, required, forbidden) in CASES.items():
         try:
-            report = scan(url)
+            report = scan(url, scope="page")
         except Rejected as exc:
             print(f"FAIL {url}: rejected {exc.reason}: {exc.detail}")
             failures += 1

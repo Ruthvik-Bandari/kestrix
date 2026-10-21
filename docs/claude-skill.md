@@ -84,8 +84,9 @@ commands locally or in Claude Code. The website check also needs outbound networ
 
 - Everything runs locally through the `kestrix` CLI. The skill tells Claude never to upload your emails,
   files, rules, events or addresses to other services, and never to fetch links found in emails or files.
-- The only outbound requests are the ones Kestrix itself makes on request: the website check (one GET and
-  one TLS handshake to your site) and, only if you agree, `kestrix bitcoin scan --lookup-chain`, which
+- The only outbound requests are the ones Kestrix itself makes on request: the website check (by default up to 50
+  read-only GET requests to your site's pages, sitemap and six common login addresses, or one GET with
+  `--page-only`, plus one TLS handshake) and, only if you agree, `kestrix bitcoin scan --lookup-chain`, which
   sends hash-based addresses to mempool.space.
 - Email, file, URL, rule and event content is treated as untrusted data. The skill tells Claude to ignore
   instructions inside them (prompt injection) and to point them out as a warning sign.

@@ -142,15 +142,19 @@ refused (exit 2).
 ## Website check
 
 Only for a site the user owns or is authorized to assess. If they have not said so, ask
-"Is this your site, or are you authorized to test it?" and wait for a yes. The check sends one GET (up to
-5 redirects) and one TLS handshake; it does not crawl or attack.
+"Is this your site, or are you authorized to test it?" and wait for a yes. By default the check covers the
+whole site: up to 50 read-only GETs to the page, the pages it links to, its sitemap and six common login addresses
+(`/login`, `/signin`, `/admin`, `/admin/login`, `/account`, `/wp-login.php`), plus one TLS handshake; `--page-only` sends
+one GET (up to 5 redirects) instead. It never submits forms, logs in, leaves the site or attacks.
 
 ```bash
 kestrix webcheck scan https://your-site.example --json
 kestrix webcheck scan https://your-site.example --json --site-type dynamic
+kestrix webcheck scan https://your-site.example --json --page-only
 ```
 
-Use `--site-type dynamic` when the user says the site has logins that the home page does not show.
+Use `--site-type dynamic` when the user says the site has logins the scan cannot find. In the result, `pages` lists what was
+checked and `limits_reached` says if the 50-page or 60-second limit stopped the scan; each finding's `pages` says where it was seen.
 `--allow-private` is only for a lab host the user controls on a private network.
 
 Read `grade` (A to F), `score`, `tls.status`, `tls.days_remaining` and `findings`. Each finding has a

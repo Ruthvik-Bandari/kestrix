@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..core.errors import Reason, Rejected
-from .models import Report
+from .models import Report, Scope
 from .profile import SiteKind
 from .scan import scan
 
@@ -28,11 +28,15 @@ class ScanBody(BaseModel):
         default=None,
         description="What the owner knows the site is (static, static_api, dynamic). It can raise, never lower, the detected profile.",
     )
+    scope: Scope = Field(
+        default="site",
+        description="'site' checks the start page, linked and sitemap pages and common login addresses (up to 50 pages); 'page' checks only the start page.",
+    )
 
 
 @router.post("", response_model=Report)
 def webcheck(body: ScanBody) -> Report:
-    return scan(body.url, allow_private=body.allow_private, site_type=body.site_type)
+    return scan(body.url, allow_private=body.allow_private, site_type=body.site_type, scope=body.scope)
 
 
 class HostedScanBody(ScanBody):
@@ -43,10 +47,15 @@ class HostedScanBody(ScanBody):
     )
 
 
-def hosted_router(agent: str, audit: Callable[[Request, str], None]) -> APIRouter:
+def hosted_router(
+    agent: str,
+    audit: Callable[[Request, str], None],
+    site_scan_retry: Callable[[Request], int | None] = lambda _request: None,
+) -> APIRouter:
     """The hosted-service variant: public targets on ports 80 and 443 only, an authorization
     confirmation per scan, a User-Agent that names an abuse contact, one generic message for
-    connection failures, and ``audit(request, url)`` called before each scan."""
+    connection failures, and ``audit(request, url)`` called before each scan. ``site_scan_retry(request)``
+    records a whole-site scan and returns the seconds to wait when the user's site-scan limit is used up."""
     hosted = APIRouter(prefix="/api/webcheck", tags=["webcheck"])
 
     @hosted.post("", response_model=Report)
@@ -55,11 +64,18 @@ def hosted_router(agent: str, audit: Callable[[Request, str], None]) -> APIRoute
             raise Rejected(Reason.INVALID_INPUT, "the hosted service checks public websites only")
         if not body.authorized:
             raise Rejected(Reason.INVALID_INPUT, "confirm that you own or are authorized to test this site")
+        if body.scope == "site" and (retry := site_scan_retry(request)) is not None:
+            raise Rejected(
+                Reason.RATE_LIMITED,
+                f"whole-site checks are limited to a few per hour; try again in {retry} seconds, "
+                "or check just this page",
+            )
         audit(request, body.url)
         return scan(
             body.url,
             allow_private=False,
             site_type=body.site_type,
+            scope=body.scope,
             agent=agent,
             allowed_ports=HOSTED_PORTS,
             generic_errors=True,

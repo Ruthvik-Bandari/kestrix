@@ -146,14 +146,15 @@ export const toolContent: Record<ToolPage, ToolContent> = {
     reference: reference({
       what: [
         "The website check grades how well a site protects its visitors at the connection and browser level: HTTPS, the TLS certificate, security headers and cookie flags.",
-        "It sends one GET request (following up to five redirects) and makes one TLS handshake. It does not crawl, fuzz, log in or scan ports.",
+        "By default it checks the whole site: up to 50 read-only GET requests to the page you name, the pages it links to, the pages in its sitemap and six common login addresses, plus one TLS handshake. \"Just this page\" sends one GET request (following up to five redirects) instead. It never submits a form, logs in, follows a link to another site, fuzzes or scans ports.",
       ],
       how: [
         "Validate the target: only public addresses, on every redirect, unless you pass `--allow-private` for a host you own.",
-        "Connect to the validated IP address, with the real host name in the `Host` header and TLS SNI. The whole chain has 10 seconds.",
+        "Connect to the validated IP address, with the real host name in the `Host` header and TLS SNI. Each page, with its redirects, has 10 seconds.",
+        "For a whole-site check, collect the pages to fetch: links on the start page, the sitemap's addresses, then `/login`, `/signin`, `/admin`, `/admin/login`, `/account` and `/wp-login.php`. Only the same scheme, host and port; files such as images and PDFs are skipped. Fetch them one at a time with a short pause, at most 50 pages and 60 seconds.",
         "Make one verified TLS handshake and record the protocol, issuer and expiry.",
-        "Profile the site from the page it fetched: `static`, `static_api` or `dynamic`.",
-        "Check headers and cookies, then grade: start at 100, subtract 25 per high, 10 per medium and 4 per low finding; F whenever the site is not HTTPS or TLS is not ok.",
+        "Profile the site from the pages it fetched: `static`, `static_api` or `dynamic`. The most sensitive page sets the kind and is named in the reason.",
+        "Check headers and cookies on each page, merge findings by id (the most severe instance wins and lists its pages), then grade: start at 100, subtract 25 per high, 10 per medium and 4 per low finding; F whenever the site is not HTTPS or TLS is not ok.",
       ],
       helps: [
         "Every finding comes with a recommendation you can apply.",
@@ -167,7 +168,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       ],
       limits: [
         "It cannot find application bugs such as SQL injection.",
-        "One response is checked: headers set only on other pages, or only for logged-in users, are not seen.",
+        "Only pages reachable without logging in are seen: headers set only for logged-in users are not. Pages found only through JavaScript, forms or beyond the 50-page limit are not checked.",
+        "It tries six common login addresses; a login at any other address is found only if a page links to it. Declare the site type if you know better.",
         "Only the first resolved address is contacted, and certificate revocation is not checked.",
         "The grade is a summary for prioritizing fixes, not a compliance rating. A good grade is not proof of security.",
         "On the hosted service only ports 80 and 443 can be checked.",
@@ -178,10 +180,11 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       install: [{ command: INSTALL_KESTRIX }],
       verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
-        { title: "Check a site", command: "kestrix webcheck scan https://your-site.example" },
+        { title: "Check a whole site (up to 50 pages)", command: "kestrix webcheck scan https://your-site.example" },
+        { title: "Check only the page you name", command: "kestrix webcheck scan https://your-site.example --page-only" },
         {
           title: "Say what the site is, if the page doesn't show it",
-          detail: "For example a login behind a link. A declaration can raise the profile, never lower it.",
+          detail: "For example a login the scan cannot find. A declaration can raise the profile, never lower it.",
           command: "kestrix webcheck scan https://your-site.example --site-type dynamic",
         },
         {

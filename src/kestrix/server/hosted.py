@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
@@ -62,6 +63,9 @@ IP_LIMITS = {
 }
 # Per signed-in user, for every state-changing history request.
 HISTORY_LIMIT = ("history", 120, HOUR)
+# Per signed-in user, for whole-site website checks on top of the webcheck limit above. One site scan
+# sends up to 65 requests, so this keeps one account to about 325 requests an hour to the sites it names.
+SITE_SCAN_LIMIT = ("webcheck_site", 5, HOUR)
 LOGIN_PREFIX = "/api/auth/login/"
 BUSY_RETRY_S = 5
 
@@ -91,7 +95,20 @@ def _busy(status: int, detail: str) -> JSONResponse:
 
 def user_limit_keys(user_id: int) -> set[str]:
     """Every per-user rate-limit key of this user (cleared when the account is deleted)."""
-    return {f"{bucket}:{user_id}" for bucket, _, _ in (*USER_LIMITS.values(), HISTORY_LIMIT)}
+    return {f"{bucket}:{user_id}" for bucket, _, _ in (*USER_LIMITS.values(), HISTORY_LIMIT, SITE_SCAN_LIMIT)}
+
+
+def site_scan_counter(limiter: RateLimiter) -> Callable[[Request], int | None]:
+    """Count one whole-site website check for the signed-in user; the seconds to wait once the limit is used up."""
+
+    def count(request: Request) -> int | None:
+        session = current_session(request)
+        if session is None:  # the gate has already refused requests without a session
+            return None
+        bucket, limit, window = SITE_SCAN_LIMIT
+        return limiter.hit(f"{bucket}:{session.user_id}", limit, window)
+
+    return count
 
 
 def _hidden_cross_site(request: Request) -> bool:

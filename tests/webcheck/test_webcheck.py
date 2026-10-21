@@ -186,7 +186,7 @@ def test_scan_follows_redirect_and_pins_ip(fake_dns):
             ("site.test", "/home"): (200, {k: v[0] for k, v in GOOD.items()}),
         }
     )
-    report = scan("http://site.test/", transport=tx, probe=ok_probe)
+    report = scan("http://site.test/", transport=tx, probe=ok_probe, scope="page")
     assert report.final_url == "https://site.test/home"
     assert [h.status_code for h in report.redirect_chain] == [301, 200]
     assert all(r.url.host == "93.184.216.34" for r in seen)  # connected to the validated IP
@@ -235,7 +235,7 @@ def test_url_validation():
 
 def test_private_targets_allowed_on_request(fake_dns):
     tx, _ = transport({("127.0.0.1:8080", "/"): (200, {})})
-    report = scan("http://127.0.0.1:8080/", allow_private=True, transport=tx, probe=ok_probe)
+    report = scan("http://127.0.0.1:8080/", allow_private=True, transport=tx, probe=ok_probe, scope="page")
     assert report.grade == "F"
     assert "https.not_used" in ids(report.findings)
 
@@ -243,8 +243,8 @@ def test_private_targets_allowed_on_request(fake_dns):
 def test_api_and_cli(monkeypatch):
     from kestrix.webcheck import api, cli
 
-    monkeypatch.setattr(api, "scan", lambda url, allow_private, site_type: _fake_report())
-    monkeypatch.setattr(cli, "scan", lambda url, allow_private, site_type: _fake_report())
+    monkeypatch.setattr(api, "scan", lambda url, allow_private, site_type, scope: _fake_report())
+    monkeypatch.setattr(cli, "scan", lambda url, allow_private, site_type, scope: _fake_report())
     app = FastAPI()
     app.include_router(api.router)
     body = TestClient(app).post("/api/webcheck", json={"url": "https://site.test"}).json()
@@ -274,7 +274,7 @@ def _fake_report():
 def test_cli_rejected_exit_code(monkeypatch):
     from kestrix.webcheck import cli
 
-    def boom(url, allow_private, site_type):
+    def boom(url, allow_private, site_type, scope):
         raise Rejected(Reason.TARGET_NOT_ALLOWED, "private")
 
     monkeypatch.setattr(cli, "scan", boom)
@@ -306,5 +306,5 @@ CONFORMANCE = {
 def test_conformance_pages(fake_dns, page):
     headers, expected = CONFORMANCE[page]
     tx, _ = transport({("site.test", "/"): (200, [(k, v) for k, vals in headers.items() for v in vals])})
-    report = scan("https://site.test/", transport=tx, probe=ok_probe)
+    report = scan("https://site.test/", transport=tx, probe=ok_probe, scope="page")
     assert ids(report.findings) == expected

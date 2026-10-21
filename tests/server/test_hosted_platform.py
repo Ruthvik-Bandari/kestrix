@@ -254,6 +254,16 @@ def test_webcheck_requires_the_authorization_confirmation(hosted, providers, fak
     assert fake_scan[0][1]["allow_private"] is False
 
 
+def test_webcheck_scope_defaults_to_the_whole_site_and_is_validated(hosted, providers, fake_scan):
+    sign_in(hosted, providers)
+    headers = csrf(hosted)
+    body = {"url": "https://site.example", "authorized": True}
+    assert hosted.post("/api/webcheck", json=body, headers=headers).status_code == 200
+    assert hosted.post("/api/webcheck", json={**body, "scope": "page"}, headers=headers).status_code == 200
+    assert hosted.post("/api/webcheck", json={**body, "scope": "all"}, headers=headers).status_code == 422
+    assert [call[1]["scope"] for call in fake_scan] == ["site", "page"]
+
+
 def test_webcheck_refuses_private_targets_in_hosted_mode(hosted, providers, fake_scan):
     sign_in(hosted, providers)
     body = {"url": "http://10.0.0.1/", "authorized": True, "allow_private": True}
@@ -275,11 +285,25 @@ def test_webcheck_names_the_abuse_contact(hosted_env, monkeypatch, providers, fa
 def test_webcheck_is_rate_limited_per_user(hosted, providers, fake_scan):
     sign_in(hosted, providers)
     headers = csrf(hosted)
-    body = {"url": "https://site.example", "authorized": True}
+    body = {"url": "https://site.example", "authorized": True, "scope": "page"}
     for _ in range(20):
         assert hosted.post("/api/webcheck", json=body, headers=headers).status_code == 200
     resp = hosted.post("/api/webcheck", json=body, headers=headers)
     assert resp.status_code == 429 and "retry-after" in resp.headers
+
+
+def test_whole_site_checks_have_a_tighter_hourly_limit(hosted, providers, fake_scan):
+    """One site scan sends up to 65 requests, so an account gets 5 an hour; single-page checks go on."""
+    sign_in(hosted, providers)
+    headers = csrf(hosted)
+    body = {"url": "https://site.example", "authorized": True}
+    for _ in range(5):
+        assert hosted.post("/api/webcheck", json=body, headers=headers).status_code == 200
+    resp = hosted.post("/api/webcheck", json=body, headers=headers)
+    assert resp.status_code == 429 and resp.json()["reason"] == "rate_limited"
+    assert "check just this page" in resp.json()["detail"]
+    assert hosted.post("/api/webcheck", json={**body, "scope": "page"}, headers=headers).status_code == 200
+    assert [call[1]["scope"] for call in fake_scan] == ["site"] * 5 + ["page"]
 
 
 # Logs

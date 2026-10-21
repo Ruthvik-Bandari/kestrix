@@ -225,6 +225,9 @@ export interface WebFinding {
   /** Set when the site profile changed the severity: the checklist severity and why. */
   baseline_severity?: Severity | null;
   context?: string | null;
+  /** Whole-site scans: the paths it was seen on (at most 20) and how many pages in all. Absent on older reports. */
+  pages?: string[] | null;
+  pages_total?: number | null;
 }
 
 export type SiteKind = "static" | "static_api" | "dynamic";
@@ -234,6 +237,8 @@ export interface SiteProfile {
   detected: SiteKind;
   declared: SiteKind | null;
   reasons: string[];
+  /** The page that set the kind, in a whole-site scan with more than one page. */
+  decided_by?: string | null;
   evidence: {
     html: boolean;
     forms: number;
@@ -246,7 +251,28 @@ export interface SiteProfile {
     third_party_script_hosts: string[];
     iframes: number;
     api_markers: number;
+    login_links?: string[];
   };
+}
+
+export type WebScope = "site" | "page";
+export type WebPageOutcome =
+  | "checked"
+  | "not_html"
+  | "http_error"
+  | "redirects_off_site"
+  | "blocked"
+  | "failed"
+  | "duplicate";
+
+export interface WebPage {
+  path: string;
+  found_via: "start" | "link" | "sitemap" | "probe";
+  outcome: WebPageOutcome;
+  status_code: number | null;
+  kind: SiteKind | null;
+  finding_ids: string[];
+  detail: string | null;
 }
 
 export type TlsStatus =
@@ -280,6 +306,13 @@ export interface WebReport {
   findings: WebFinding[];
   timings: { total_ms: number; http_ms: number; tls_ms: number };
   profile?: SiteProfile | null;
+  /** Absent on reports saved before whole-site scans: those checked one page. */
+  scope?: WebScope;
+  pages?: WebPage[];
+  requests_sent?: number;
+  limits_reached?: ("page_cap" | "deadline" | "request_budget")[];
+  links_skipped?: number;
+  sitemap_entries?: number;
 }
 
 // Forensics ------------------------------------------------------------------

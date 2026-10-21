@@ -55,7 +55,7 @@ from .auth import AuthService, current_session
 from .auth_api import auth_router
 from .history import LOCAL_USER, HistoryCipher, HistoryRecorder, HistoryStore
 from .history_api import history_router
-from .hosted import AccessLog, HostedGate
+from .hosted import AccessLog, HostedGate, site_scan_counter
 from .isolation import Isolator, Limits
 from .ratelimit import RateLimiter
 from .settings import HostedSettings, Settings, load_settings
@@ -332,7 +332,7 @@ def create_app(
 
         for router in (
             hosted_forensics_router(isolator, hosted.max_file_bytes),
-            hosted_webcheck_router(user_agent(hosted.abuse_contact), audit_webcheck),
+            hosted_webcheck_router(user_agent(hosted.abuse_contact), audit_webcheck, site_scan_counter(limiter)),
             hosted_mail_router(isolator, hosted.max_mail_bytes),
             auth_router(auth, limiter, history),
             history_router(history, _request_user),

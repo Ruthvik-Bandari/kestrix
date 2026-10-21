@@ -339,7 +339,7 @@ def webcheck_sample() -> dict[str, Any]:
     thread.start()
     try:
         url = f"http://127.0.0.1:{server.server_address[1]}/"
-        report = scan_site(url, allow_private=True)
+        report = scan_site(url, allow_private=True, scope="page")  # the sample shows one page
     finally:
         server.shutdown()
         server.server_close()

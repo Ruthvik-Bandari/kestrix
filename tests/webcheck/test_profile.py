@@ -48,7 +48,7 @@ def test_declaration_can_raise_but_never_lower():
     assert (raised.kind, raised.detected) == ("dynamic", "static")
     refused = profile_site(HTML, LOGIN, "https://site.test/", declared="static")
     assert refused.kind == "dynamic"
-    assert any("using dynamic" in r for r in refused.reasons)
+    assert any("You chose 'pages only', but this page has a password field" in r for r in refused.reasons)
 
 
 def test_hostile_markup_is_counted_not_run():
@@ -106,3 +106,27 @@ def test_scan_of_a_static_portfolio_grades_in_context(fake_dns):
     assert seen[-1].headers["accept-encoding"] == "identity"  # bounded read sees the real page size
     declared = scan("https://site.test/", transport=httpx.MockTransport(handler), probe=ok_probe, site_type="dynamic")
     assert declared.score < report.score  # the owner's "it has a login" restores full severity
+
+
+def test_site_profile_is_the_most_sensitive_page_and_names_it():
+    from kestrix.webcheck.profile import assess_page, combine_pages
+
+    pages = [
+        ("/", assess_page(HTML, STATIC, "https://site.test/", "The home page")),
+        ("/contact", assess_page(HTML, b"<form><input name='m'></form>", "https://site.test/contact", "/contact")),
+        ("/admin", assess_page(HTML, LOGIN, "https://site.test/admin", "/admin")),
+        ("/staff", assess_page(HTML, LOGIN, "https://site.test/staff", "/staff")),
+    ]
+    site = combine_pages(pages)
+    assert (site.kind, site.decided_by) == ("dynamic", "/admin")  # the first of equally sensitive pages
+    assert site.reasons == ["/admin has a password field"]
+    assert site.evidence.password_fields == 2 and site.evidence.forms == 3
+    plain = combine_pages(pages[:1], declared="dynamic")
+    assert plain.kind == "dynamic" and plain.decided_by is None
+    assert plain.reasons[-1] == "You said this site has logins, so it was checked as a site with logins."
+    lowered = combine_pages(pages[1:2], declared="static")
+    assert lowered.kind == "static_api"
+    assert lowered.reasons[-1] == (
+        "You chose 'pages only', but /contact has a form with 1 input field(s) but no login or cookie, "
+        "so it was checked as a site with a form."
+    )

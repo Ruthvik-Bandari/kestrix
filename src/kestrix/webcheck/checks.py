@@ -458,11 +458,14 @@ def check_tls(tls: TlsInfo) -> list[Finding]:
 
 
 def evaluate(headers: Headers, final_scheme: str, tls: TlsInfo) -> list[Finding]:
+    return check_https(final_scheme) + check_tls(tls) + evaluate_page(headers, final_scheme)
+
+
+def evaluate_page(headers: Headers, final_scheme: str) -> list[Finding]:
+    """The findings that come from one response's headers (HTTPS and TLS are about the whole site)."""
     https = final_scheme == "https"
     return (
-        check_https(final_scheme)
-        + check_tls(tls)
-        + check_hsts(headers, https)
+        check_hsts(headers, https)
         + check_cookies(headers, https)
         + check_csp(headers)
         + check_framing(headers)
@@ -480,7 +483,7 @@ _BY_PROFILE: dict[str, dict[str, Severity]] = {
     "framing.unprotected": {"static": "info", "static_api": "low"},
     "referrer.weak": {"static": "info"},
 }
-_KIND_TEXT = {"static": "static site", "static_api": "static site with a backend", "dynamic": "dynamic site"}
+_KIND_TEXT = {"static": "static site", "static_api": "site that sends form or API data", "dynamic": "dynamic site"}
 _CSP_IDS = frozenset({"csp.missing", "csp.report_only", "csp.no_script_restriction"})
 _RANK: dict[Severity, int] = {"info": 0, "low": 1, "medium": 2, "high": 3}
 
@@ -488,7 +491,7 @@ _RANK: dict[Severity, int] = {"info": 0, "low": 1, "medium": 2, "high": 3}
 def apply_profile(findings: list[Finding], profile: SiteProfile) -> list[Finding]:
     """Re-weigh context-dependent findings for the site profile, recording the original severity."""
     out = []
-    why = "; ".join(profile.reasons)
+    why = "; ".join(r.rstrip(".") for r in profile.reasons)
     for f in findings:
         target = _BY_PROFILE.get(f.id, {}).get(profile.kind)
         # Third-party scripts are exactly what a CSP constrains, so a static site that loads them keeps the CSP severity.
@@ -500,3 +503,18 @@ def apply_profile(findings: list[Finding], profile: SiteProfile) -> list[Finding
         context = f"{f.severity.capitalize()} on sites with logins or sessions; {target} here, a {_KIND_TEXT[profile.kind]} ({why})."
         out.append(f.model_copy(update={"severity": target, "baseline_severity": f.severity, "context": context}))
     return out
+
+
+def merge_findings(pages: list[tuple[str, list[Finding]]], *, max_pages: int = 20) -> list[Finding]:
+    """One finding per id across pages (``(path, findings)`` in crawl order). The most severe instance
+    supplies the text (the first one on a tie) and the finding lists the paths it was seen on."""
+    seen: dict[str, list[tuple[str, Finding]]] = {}
+    for path, findings in pages:
+        for f in findings:
+            seen.setdefault(f.id, []).append((path, f))
+    merged = []
+    for items in seen.values():
+        worst = max((f for _, f in items), key=lambda f: _RANK[f.severity])  # max keeps the first on a tie
+        paths = list(dict.fromkeys(path for path, _ in items))
+        merged.append(worst.model_copy(update={"pages": paths[:max_pages], "pages_total": len(paths)}))
+    return merged

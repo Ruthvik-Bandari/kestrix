@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setMode } from "../../lib/mode";
 import type { WebReport } from "../../lib/types";
-import WebcheckPage, { HOSTED_NOTICE, NOTICE } from "./WebcheckPage";
+import WebcheckPage, { HOSTED_NOTICE_PAGE, HOSTED_NOTICE_SITE, NOTICE_PAGE, NOTICE_SITE } from "./WebcheckPage";
 
 function renderPage() {
   const client = new QueryClient({
@@ -33,7 +33,7 @@ describe("web check authorization gate", () => {
     const scan = screen.getByRole<HTMLButtonElement>("button", {
       name: /^scan/i,
     });
-    expect(screen.getByText(NOTICE)).toBeTruthy();
+    expect(screen.getByText(NOTICE_SITE)).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText(/website address/i), {
       target: { value: "example.com" },
@@ -87,6 +87,7 @@ describe("web check authorization gate", () => {
       url: "https://example.com",
       allow_private: false,
       site_type: null,
+      scope: "site",
     });
   });
 });
@@ -94,7 +95,7 @@ describe("web check authorization gate", () => {
 describe("site profile", () => {
   it("sends a declared site type and shows the profile and weighed findings", async () => {
     const report = {
-      notice: NOTICE,
+      notice: NOTICE_SITE,
       requested_url: "https://site.test/",
       final_url: "https://site.test/",
       status_code: 200,
@@ -125,11 +126,12 @@ describe("site profile", () => {
         },
       ],
       timings: { total_ms: 1, http_ms: 1, tls_ms: 0 },
+      scope: "site",
       profile: {
         kind: "static",
         detected: "static",
         declared: null,
-        reasons: ["no forms, cookies or API calls on this page"],
+        reasons: ["None of the 3 pages checked has a form, a cookie or an API call"],
         evidence: {
           html: true,
           forms: 0,
@@ -194,7 +196,7 @@ describe("web check on the hosted service", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     renderPage();
-    expect(screen.getByText(HOSTED_NOTICE)).toBeTruthy();
+    expect(screen.getByText(HOSTED_NOTICE_SITE)).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /private and local/i })).toBeNull();
     const scan = screen.getByRole<HTMLButtonElement>("button", { name: /^scan/i });
     fireEvent.change(screen.getByLabelText(/website address/i), { target: { value: "example.com" } });
@@ -205,7 +207,7 @@ describe("web check on the hosted service", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
     const body: unknown = JSON.parse(bodies[0] ?? "null");
-    expect(body).toEqual({ url: "https://example.com", site_type: null, authorized: true });
+    expect(body).toEqual({ url: "https://example.com", site_type: null, scope: "site", authorized: true });
     // A 429 shows the server's detail and when to retry.
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Too many requests for now");
@@ -216,7 +218,7 @@ describe("web check on the hosted service", () => {
 
 function webReport(extra: Partial<WebReport> = {}): WebReport {
   return {
-    notice: NOTICE,
+    notice: NOTICE_PAGE,
     requested_url: "https://site.test/",
     final_url: "https://site.test/",
     status_code: 200,
@@ -291,9 +293,117 @@ describe("web check result", () => {
 
   it("keeps the authorization checkbox and notice visible, with optional settings collapsed", () => {
     renderPage();
-    expect(screen.getByText(NOTICE)).toBeTruthy();
+    expect(screen.getByText(NOTICE_SITE)).toBeTruthy();
     const details = screen.getByText("Optional settings").closest("details");
     expect(details?.open).toBe(false);
     expect(details?.contains(screen.getByRole("checkbox", { name: /i own this site/i }))).toBe(false);
+  });
+});
+
+
+describe("whole-site scope", () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  });
+
+  it("defaults to the whole site, shows the notice for the chosen scope and sends it", async () => {
+    const fetchMock = vi.fn(() => new Promise<Response>(() => undefined));
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    expect(screen.getByRole<HTMLInputElement>("radio", { name: /whole site \(up to 50 pages\)/i }).checked).toBe(true);
+    expect(screen.getByText(NOTICE_SITE)).toBeTruthy();
+    expect(NOTICE_SITE).toContain("up to 50 read-only GET requests");
+    fireEvent.click(screen.getByRole("radio", { name: /just this page/i }));
+    expect(screen.getByText(NOTICE_PAGE)).toBeTruthy();
+    expect(screen.queryByText(NOTICE_SITE)).toBeNull();
+    scanSite("site.test");
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((JSON.parse(init.body as string) as { scope: string }).scope).toBe("page");
+  });
+
+  it("keeps the hosted wording for each scope", () => {
+    setMode("hosted");
+    renderPage();
+    expect(screen.getByText(HOSTED_NOTICE_SITE).textContent).toContain("Kestrix's server, not your computer");
+    fireEvent.click(screen.getByRole("radio", { name: /just this page/i }));
+    expect(screen.getByText(HOSTED_NOTICE_PAGE).textContent).toContain("Kestrix's server, not your computer");
+  });
+
+  it("shows an indeterminate state naming the host while pages are checked", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)));
+    renderPage();
+    scanSite("https://portfolio.test/");
+    expect((await screen.findAllByText("Checking up to 50 pages on portfolio.test…")).length).toBeGreaterThan(0);
+    expect(document.querySelector("[role=progressbar]")).toBeNull(); // no invented percentage
+  });
+
+  const siteReport = (): WebReport =>
+    webReport({
+      scope: "site",
+      requests_sent: 9,
+      links_skipped: 3,
+      limits_reached: ["page_cap"],
+      pages: [
+        { path: "/", found_via: "start", outcome: "checked", status_code: 200, kind: "static", finding_ids: ["csp.missing"], detail: null },
+        { path: "/blog", found_via: "sitemap", outcome: "checked", status_code: 200, kind: "static", finding_ids: [], detail: null },
+        { path: "/admin/login", found_via: "probe", outcome: "checked", status_code: 200, kind: "dynamic", finding_ids: [], detail: null },
+        { path: "/login", found_via: "probe", outcome: "http_error", status_code: 404, kind: null, finding_ids: [], detail: null },
+        { path: "/go", found_via: "link", outcome: "redirects_off_site", status_code: 302, kind: null, finding_ids: [], detail: "redirects to other.example (not followed)" },
+      ],
+      profile: {
+        kind: "dynamic",
+        detected: "dynamic",
+        declared: null,
+        decided_by: "/admin/login",
+        reasons: ["/admin/login has a password field"],
+        evidence: { html: true, forms: 1, post_forms: 1, password_fields: 1, input_fields: 2, cookies: 0, scripts_inline: 0, scripts_external: 0, third_party_script_hosts: [], iframes: 0, api_markers: 0 },
+      },
+      findings: [
+        { id: "csp.missing", severity: "medium", title: "Content-Security-Policy missing", explanation: "No CSP.", recommendation: "Add a CSP header.", evidence: null, context: null, pages: ["/", "/blog", "/admin/login"], pages_total: 25 },
+      ],
+    });
+
+  it("lists the pages checked, what failed and which limit was hit", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(siteReport()))));
+    renderPage();
+    scanSite();
+    expect(await screen.findByRole("heading", { name: "Pages checked" })).toBeTruthy();
+    const rows = [...document.querySelectorAll("section[aria-labelledby=pages-title] tbody tr")].map((r) => r.textContent);
+    expect(rows).toHaveLength(5);
+    expect(rows[2]).toContain("/admin/login");
+    expect(rows[2]).toContain("Login address tried");
+    expect(rows[3]).toContain("404");
+    expect(rows[4]).toContain("Redirects off-site, not followed");
+    expect(rows[4]).toContain("redirects to other.example (not followed)");
+    expect(screen.getByText(/3 pages checked of 5 pages requested · 9 requests sent/)).toBeTruthy();
+    expect(screen.getByText(/Stopped at the 50-page limit/)).toBeTruthy();
+    expect(screen.getByText(/3 links not followed/)).toBeTruthy();
+    // The profile names the page that made the site dynamic.
+    expect(screen.getByText("/admin/login", { selector: "span.font-mono" })).toBeTruthy();
+    expect(screen.getByText("/admin/login has a password field.")).toBeTruthy();
+  });
+
+  it("shows how many pages each finding was seen on, with the paths in a disclosure", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(siteReport()))));
+    renderPage();
+    scanSite();
+    const summary = await screen.findByText("On 25 pages");
+    const details = summary.closest("details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect([...details.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["/", "/blog", "/admin/login", "and 22 more"]);
+  });
+
+  it("renders a report saved before whole-site scans, as a single page", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(webReport()))));
+    renderPage();
+    scanSite();
+    expect(await screen.findByRole("heading", { level: 2, name: "Grade C" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Pages checked" })).toBeNull();
+    expect(screen.queryByText(/On \d+ pages?/)).toBeNull();
+    expect(screen.getByText(/Only this page was checked/)).toBeTruthy();
   });
 });

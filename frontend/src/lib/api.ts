@@ -23,6 +23,7 @@ import type {
   SiteKind,
   UrlReport,
   WebReport,
+  WebScope,
 } from "./types";
 
 /** Every failed request becomes an ApiError carrying the server's `{reason, detail}`. */
@@ -272,11 +273,30 @@ export const api = {
   parseRule: (rule: string) => post<ParsedRule>("/api/detect/parse", { rule }),
   runRule: (body: RunBody) => post<DetectReport>("/api/detect/run", body),
 
-  webcheck: (url: string, allowPrivate: boolean, siteType: SiteKind | null = null) =>
-    post<WebReport>("/api/webcheck", { url, allow_private: allowPrivate, site_type: siteType }),
+  webcheck: (
+    url: string,
+    allowPrivate: boolean,
+    siteType: SiteKind | null = null,
+    scope: WebScope = "site",
+  ) =>
+    post<WebReport>("/api/webcheck", {
+      url,
+      allow_private: allowPrivate,
+      site_type: siteType,
+      scope,
+    }),
   /** The hosted service's body: public targets only, with the user's authorization confirmation. */
-  webcheckHosted: (url: string, siteType: SiteKind | null = null) =>
-    post<WebReport>("/api/webcheck", { url, site_type: siteType, authorized: true }),
+  webcheckHosted: (
+    url: string,
+    siteType: SiteKind | null = null,
+    scope: WebScope = "site",
+  ) =>
+    post<WebReport>("/api/webcheck", {
+      url,
+      site_type: siteType,
+      scope,
+      authorized: true,
+    }),
 
   analyzeFile: (file: File) => {
     const form = new FormData();

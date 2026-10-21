@@ -4,6 +4,8 @@ Each finding has `id`, `severity`, `title`, `explanation`, `recommendation` (the
 gives; prefer quoting it), `evidence` (header values cut to 200 characters; cookie values are never
 echoed), and `baseline_severity` / `context` when the severity was lowered for the site profile.
 Source: `src/kestrix/webcheck/checks.py`. The Fix column repeats the tool's recommendation.
+In a whole-site scan (the default) each id appears once, at its most severe, with `pages` (where it was seen, at most 20) and
+`pages_total`; HTTPS and TLS findings are about the whole site and carry no page list.
 
 ## Grade
 
@@ -13,10 +15,11 @@ C 70+, D 60+, otherwise F. The grade is forced to F when the final URL is not HT
 
 ## Site profile
 
-`profile.kind` is `static`, `static_api` or `dynamic` (password field or cookie). On `static` sites
+`profile.kind` is `static`, `static_api` or `dynamic` (a password field or cookie on any checked page; in a whole-site scan the
+most sensitive page sets it and `profile.decided_by` names it). On `static` sites
 `csp.missing`, `csp.report_only` and `csp.no_script_restriction` drop to low (they stay medium when scripts
 load from a third-party host) and `framing.unprotected` and `referrer.weak` drop to info; on `static_api`
-`framing.unprotected` drops to low. Nothing else changes. `--site-type` can raise the profile, never lower it.
+`framing.unprotected` drops to low. Nothing else changes. `--site-type` can raise the profile, never lower it. A single-page scan (`--page-only`) judges that page only.
 
 ## HTTPS and TLS
 

@@ -102,6 +102,7 @@ describe("api client error paths", () => {
       url: "https://example.com",
       allow_private: true,
       site_type: null,
+      scope: "site",
     });
   });
 });

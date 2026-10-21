@@ -54,9 +54,13 @@ Exit 0 analysed, 2 rejected (over 25 MiB, not an email message, too deeply neste
 | `redirect_chain[]` | `url`, `address`, `status_code`, `elapsed_ms`. |
 | `tls` | `host`, `status`, `detail`, `protocol`, `issuer`, `not_after`, `days_remaining`. |
 | `grade`, `score` | A to F and 0 to 100. |
-| `findings[]` | `id`, `severity`, `title`, `explanation`, `recommendation`, `evidence`, `baseline_severity`, `context`. |
+| `findings[]` | `id`, `severity`, `title`, `explanation`, `recommendation`, `evidence`, `baseline_severity`, `context`; whole-site scans add `pages` (at most 20 paths) and `pages_total`. |
 | `timings` | `total_ms`, `http_ms`, `tls_ms`. |
-| `profile` | `kind`, `detected`, `declared`, `reasons`, `evidence`; `null` when headers were not checked. |
+| `profile` | `kind`, `detected`, `declared`, `reasons` (plain sentences), `decided_by` (the page that set the kind), `evidence`; `null` when headers were not checked. |
+| `scope` | `site` (the default: up to 50 pages) or `page` (`--page-only`). The fields above about the URL, status and TLS describe the start page. |
+| `pages[]` | Whole-site scans: `path`, `found_via` (`start`, `link`, `sitemap`, `probe`), `outcome` (`checked`, `not_html`, `http_error`, `redirects_off_site`, `blocked`, `failed`, `duplicate`), `status_code`, `kind`, `finding_ids`, `detail`. |
+| `requests_sent`, `limits_reached` | GETs sent; `page_cap`, `deadline` or `request_budget` when the scan stopped early. |
+| `links_skipped`, `sitemap_entries` | Links not fetched (other sites, files) and addresses read from `/sitemap.xml`. |
 
 Exit 0 completed (even with grade F), 2 URL or target refused, 3 unreachable.
 

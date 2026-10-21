@@ -172,9 +172,9 @@ The route is in [`webcheck/api.py`](../src/kestrix/webcheck/api.py); behavior an
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /api/webcheck` | `{"url": string (1 to 2,048 characters), "allow_private": bool = false, "site_type": "static" \| "static_api" \| "dynamic" \| null = null}` | `Report`: `notice`, `requested_url`, `final_url`, `status_code`, `headers_checked`, `redirect_chain`, `tls`, `grade`, `score`, `findings` (each may carry `baseline_severity` and `context`), `timings`, `profile` |
+| `POST /api/webcheck` | `{"url": string (1 to 2,048 characters), "allow_private": bool = false, "site_type": "static" \| "static_api" \| "dynamic" \| null = null, "scope": "site" \| "page" = "site"}` | `Report`: `notice`, `requested_url`, `final_url`, `status_code`, `headers_checked`, `redirect_chain`, `tls`, `grade`, `score`, `findings` (each may carry `baseline_severity`, `context`, and in a whole-site scan `pages` and `pages_total`), `timings`, `profile`, `scope`, `pages`, `requests_sent`, `limits_reached`, `links_skipped`, `sitemap_entries` |
 
-A target that resolves to a non-public address returns 403 `target_not_allowed` unless `allow_private` is true. A host name that is not a valid DNS name returns 400 `invalid_url`. Connection failures, DNS failures and timeouts (the whole check has 10 seconds) return 502 `target_unreachable`; too many redirects, a broken response and other HTTP failures return 502 `upstream_error`.
+A target that resolves to a non-public address returns 403 `target_not_allowed` unless `allow_private` is true. A host name that is not a valid DNS name returns 400 `invalid_url`. `scope: "site"` (the default) checks up to 50 pages, with at most 15 extra requests and 60 seconds for the pages after the start page; `scope: "page"` sends one GET plus redirects ([what is sent and never done](modules/webcheck.md#whole-site-scan)). Only a failure of the start page is an error response; a page that fails is listed in `pages`. Connection failures, DNS failures and timeouts of the start page (its fetch has 10 seconds) return 502 `target_unreachable`; too many redirects, a broken response and other HTTP failures return 502 `upstream_error`.
 
 ## Bitcoin
 
@@ -241,7 +241,7 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 - **Analyses run in a worker process** with 10 seconds of CPU, 384 MiB of address space (on Linux) and 20 seconds of wall-clock time. An analysis stopped by these limits returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`.
 - **Sign-in from other sites.** `GET /api/auth/login/{provider}` with `Sec-Fetch-Site: cross-site` is refused with 403 `cross_site_request` unless it is a top-level navigation (`Sec-Fetch-Mode: navigate` and `Sec-Fetch-Dest: document`); refused requests do not count against the limit.
 - **Health.** `GET /api/health` adds `"mode": "hosted"` and lists only `["forensics", "webcheck", "mail"]`.
-- **Website check.** `POST /api/webcheck` also takes `"authorized": bool` and refuses unknown keys. `authorized` must be `true` ("I own or am authorized to test this site") and `allow_private` must be `false`; otherwise 400 `invalid_input`. Only ports 80 and 443 can be checked, on the first request and every redirect (403 `target_not_allowed`), and every connection failure, timeout or broken response is reported as 502 `target_unreachable` with the detail `the site could not be reached`.
+- **Website check.** `POST /api/webcheck` also takes `"authorized": bool` and refuses unknown keys. `authorized` must be `true` ("I own or am authorized to test this site") and `allow_private` must be `false`; otherwise 400 `invalid_input`. `scope` is accepted as in local mode. Only ports 80 and 443 can be checked, on the first request, every redirect and every page of a whole-site scan (403 `target_not_allowed` for the start page; a later page is listed as `blocked`), and every connection failure, timeout or broken response is reported as 502 `target_unreachable` with the detail `the site could not be reached`.
 
 | Route | Public | Request | Response |
 | --- | --- | --- | --- |

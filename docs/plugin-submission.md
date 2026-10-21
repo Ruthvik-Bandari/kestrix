@@ -95,7 +95,7 @@ Everything the plugin runs, reads, writes or fetches. The README and PRIVACY.md 
 6. **Network:** none from hooks or the code-security skills. The only network command is the user-run
    `kestrix-scan db update` (OSV exports from `storage.googleapis.com`).
 7. **The `kestrix-security` skill** may ask Claude to run commands of the separate Kestrix workbench that use the
-   network when the user asks for them: `kestrix webcheck scan` (one GET and TLS handshake to the user's site),
+   network when the user asks for them: `kestrix webcheck scan` (up to 50 read-only GETs to the user's site, or one with `--page-only`, and a TLS handshake),
    `kestrix bitcoin scan --lookup-chain` (addresses and the user's IP to mempool.space, after the user agrees), and
    `kestrix detect engine-up` (Docker pulls the pinned Elasticsearch image). It tells Claude to offer, not run, an
    install of the workbench (`uv tool install kestrix`).
