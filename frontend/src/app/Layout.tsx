@@ -132,7 +132,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
                   {({ isActive }) => (
                     <>
                       <Icon name={item.icon} size={18} className={isActive ? "text-accent-text" : "text-ink-3"} />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span className="min-w-0 flex-1 py-1.5 leading-snug break-words">{item.label}</span>
                       {item.local ? " " : null}
                       {item.local ? (
                         <span className="text-[0.6875rem] font-medium text-ink-3">
