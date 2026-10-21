@@ -3,14 +3,16 @@
 """Server mode and hosted-mode settings, read from the environment (ADR 0004).
 
 ``KESTRIX_MODE=local`` (the default) needs nothing else. ``KESTRIX_MODE=hosted`` needs a
-public https origin, a session pepper, a JWT signing secret (ADR 0007), the ``kestrix[hosted]``
-extra and at least one sign-in provider; a missing or
+public https origin, a session pepper, a JWT signing secret (ADR 0007), a result-history
+encryption key (ADR 0008), the ``kestrix[hosted]`` extra and at least one sign-in provider; a missing or
 malformed value raises :class:`SettingsError` so the server refuses to start rather than
 run with a weaker configuration. Secret values are kept out of ``repr``.
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import hmac
 import importlib.util
@@ -29,12 +31,16 @@ MIN_PEPPER_BYTES = 32
 MIN_JWT_SECRET_BYTES = 32
 MIN_LOG_SALT_BYTES = 16
 MAX_ABUSE_CONTACT = 200
+HISTORY_KEY_BYTES = 32
+HISTORY_KEY_HINT = 'generate one with: python -c "import base64,os;print(base64.b64encode(os.urandom(32)).decode())"'
 # Read once at start-up; ``kestrix serve-hosted`` then removes them from the process environment
 # so no child process (analysis workers, a restarted fork server) can inherit them.
 SECRET_ENV = (
     "KESTRIX_SESSION_PEPPER",
     "KESTRIX_JWT_SECRET",
     "KESTRIX_JWT_SECRET_PREVIOUS",
+    "KESTRIX_HISTORY_KEY",
+    "KESTRIX_HISTORY_KEY_PREVIOUS",
     "KESTRIX_LOG_SALT",
     "KESTRIX_GOOGLE_CLIENT_SECRET",
     "KESTRIX_GITHUB_CLIENT_SECRET",
@@ -66,6 +72,9 @@ class HostedSettings:
     jwt_secret: bytes = field(repr=False)
     # Accepted only to verify access tokens signed before a secret rotation.
     jwt_secret_previous: bytes | None = field(default=None, repr=False)
+    # AES-256-GCM key for stored result reports (ADR 0008); the previous one only decrypts.
+    history_key: bytes = field(default=b"", repr=False)
+    history_key_previous: bytes | None = field(default=None, repr=False)
     providers: Mapping[str, OAuthClient] = field(default_factory=dict)
     trust_proxy_headers: bool = False
     # A header that the platform's proxy always overwrites with the client address (Fly: Fly-Client-IP).
@@ -170,6 +179,34 @@ def _jwt_secrets(env: Mapping[str, str], pepper: bytes) -> tuple[bytes, bytes | 
     return secret, previous
 
 
+def _history_key(env: Mapping[str, str], name: str, *, required: bool) -> bytes | None:
+    value = env.get(name, "").strip()
+    if not value:
+        if required:
+            raise SettingsError(
+                f"hosted mode needs {name}, {HISTORY_KEY_BYTES} random bytes in base64; {HISTORY_KEY_HINT}"
+            )
+        return None
+    try:
+        key = base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError):
+        key = b""
+    if len(key) != HISTORY_KEY_BYTES:
+        raise SettingsError(f"{name} must be exactly {HISTORY_KEY_BYTES} bytes in base64; {HISTORY_KEY_HINT}")
+    return key
+
+
+def _history_keys(env: Mapping[str, str]) -> tuple[bytes, bytes | None]:
+    key = _history_key(env, "KESTRIX_HISTORY_KEY", required=True)
+    assert key is not None
+    previous = _history_key(env, "KESTRIX_HISTORY_KEY_PREVIOUS", required=False)
+    if importlib.util.find_spec("cryptography") is None:
+        raise SettingsError("hosted mode needs the hosted extra: pip install 'kestrix[hosted]'")
+    if previous is not None and hmac.compare_digest(key, previous):
+        raise SettingsError("KESTRIX_HISTORY_KEY_PREVIOUS must differ from KESTRIX_HISTORY_KEY")
+    return key, previous
+
+
 def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = None) -> Settings:
     """Read the settings; ``mode`` overrides ``KESTRIX_MODE`` (``kestrix serve-hosted`` forces hosted)."""
     env = os.environ if env is None else env
@@ -192,6 +229,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
     # but reveals nothing about the pepper.
     log_salt = salt_value or hmac.new(pepper, b"kestrix-log-salt", hashlib.sha256).digest()
     jwt_secret, jwt_secret_previous = _jwt_secrets(env, pepper)
+    history_key, history_key_previous = _history_keys(env)
     db_value = env.get("KESTRIX_DB", "").strip()
     return Settings(
         mode="hosted",
@@ -203,6 +241,8 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
             log_salt=log_salt,
             jwt_secret=jwt_secret,
             jwt_secret_previous=jwt_secret_previous,
+            history_key=history_key,
+            history_key_previous=history_key_previous,
             providers=_providers(env),
             trust_proxy_headers=_flag(env, "KESTRIX_TRUST_PROXY_HEADERS"),
             client_ip_header=_client_ip_header(env),

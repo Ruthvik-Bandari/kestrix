@@ -96,7 +96,8 @@ def test_local_only_modules_are_not_found(hosted, providers, method, path):
 
 def test_only_hosted_routes_are_mounted(hosted):
     paths = hosted.app.openapi()["paths"]  # generated in-process; not served over HTTP
-    assert not [p for p in paths if p.startswith(("/api/detect", "/api/bitcoin", "/api/settings"))]
+    local_only = [p for p in paths if p.startswith(("/api/detect", "/api/bitcoin", "/api/settings"))]
+    assert local_only == ["/api/settings/history"]  # the result-history setting is per user (ADR 0008)
     assert "/api/auth/me" in paths and "/api/webcheck" in paths
 
 

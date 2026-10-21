@@ -20,6 +20,9 @@ from fastapi.testclient import TestClient
 ORIGIN = "https://kestrix.example"
 PEPPER = "pepper-" + "q" * 40
 JWT_SECRET = "jwt-secret-" + "k" * 40
+# 32 bytes in base64 (KESTRIX_HISTORY_KEY, ADR 0008); a second key for rotation tests.
+HISTORY_KEY = base64.b64encode(b"history-key-for-tests-0123456789"[:32]).decode()
+HISTORY_KEY_2 = base64.b64encode(b"another-history-key-for-tests-01"[:32]).decode()
 ACCESS, REFRESH = "__Host-kx_at", "__Host-kx_rt"
 GOOGLE_ID, GOOGLE_SECRET = "google-client-id.apps.example", "google-client-secret-value"
 GITHUB_ID, GITHUB_SECRET = "github-client-id", "github-client-secret-value"

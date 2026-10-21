@@ -38,6 +38,7 @@ dependencies = [
 ai = ["anthropic>=0.75"]
 exif = ["pillow>=11"]
 hosted = [
+    "cryptography>=46,<47",
     "pyjwt>=2.10,<3",
 ]
 

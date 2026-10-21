@@ -177,6 +177,7 @@ jobs:
             -e KESTRIX_PUBLIC_ORIGIN="https://$HOST" \
             -e KESTRIX_SESSION_PEPPER=ci-only-pepper-not-a-secret-0123456789abcdef \
             -e KESTRIX_JWT_SECRET=ci-only-jwt-secret-not-a-secret-0123456789abcdef \
+            -e KESTRIX_HISTORY_KEY=Y2ktb25seS1oaXN0b3J5LWtleS1ub3QtYS1zZWNyZXQ= \
             -e KESTRIX_GITHUB_CLIENT_ID=ci-dummy-id -e KESTRIX_GITHUB_CLIENT_SECRET=ci-dummy-secret \
             kestrix:ci
           for _ in $(seq 30); do

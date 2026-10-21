@@ -17,6 +17,10 @@ the public origin's host, compares ``Origin`` with the public origin, adds HSTS,
 ``server/hosted.py`` requires sign-in, CSRF tokens, rate limits and concurrency caps; analyses run
 in limited worker processes (``server/isolation.py``); detect, bitcoin, the Anthropic-key
 settings and the OpenAPI schema are not served.
+
+In both modes ``HistoryRecorder`` (innermost) keeps the report of each successful analysis for 30
+days (``server/history.py``, ADR 0008): encrypted per user on the hosted service, in the user's own
+config folder locally.
 """
 
 from __future__ import annotations
@@ -49,6 +53,8 @@ from ..webcheck.api import router as webcheck_router
 from ..webcheck.fetch import user_agent
 from .auth import AuthService, current_session
 from .auth_api import auth_router
+from .history import LOCAL_USER, HistoryCipher, HistoryRecorder, HistoryStore
+from .history_api import history_router
 from .hosted import AccessLog, HostedGate
 from .isolation import Isolator, Limits
 from .ratelimit import RateLimiter
@@ -210,6 +216,25 @@ class KeyUpdate(BaseModel):
     key: str | None = Field(default=None, min_length=20, max_length=512)
 
 
+def history_path(db_path: Path) -> Path:
+    """The hosted history database, beside the accounts database: ``kestrix.db`` -> ``kestrix-history.db``."""
+    return db_path.with_name(f"{db_path.stem}-history{db_path.suffix}")
+
+
+def _scope_user(scope: Scope) -> int | None:
+    """The signed-in user of a hosted request, set by ``HostedGate`` (None: not signed in)."""
+    state = scope.get("state")
+    session = state.get("session") if isinstance(state, dict) else None
+    return getattr(session, "user_id", None)
+
+
+def _request_user(request: Request) -> int:
+    session = current_session(request)
+    if session is None:  # the gate already refuses this; kept so the routes are safe on their own
+        raise Rejected(Reason.SIGN_IN_REQUIRED, "sign in first")
+    return session.user_id
+
+
 def create_app(
     extra_hosts: frozenset[str] = frozenset(),
     *,
@@ -226,6 +251,8 @@ def create_app(
     auth: AuthService | None = None
     limiter: RateLimiter | None = None
     if hosted is None:
+        history = HistoryStore(config.config_dir() / "history.sqlite3")
+        app.add_middleware(HistoryRecorder, history=history, user_of=lambda _scope: LOCAL_USER)
         app.add_middleware(_StreamedBodyLimit)
         app.add_middleware(_LocalOnly, allowed_hosts=LOOPBACK_HOSTS | extra_hosts)
     else:
@@ -233,6 +260,10 @@ def create_app(
         limiter = RateLimiter()
         auth = AuthService(hosted, Store(hosted.db_path), transport=provider_transport)
         app.state.auth = auth
+        history = HistoryStore(
+            history_path(hosted.db_path), HistoryCipher(hosted.history_key, hosted.history_key_previous)
+        )
+        app.add_middleware(HistoryRecorder, history=history, user_of=_scope_user)
         app.add_middleware(_StreamedBodyLimit, body_limits=limits)
         app.add_middleware(HostedGate, auth=auth, limiter=limiter)
         app.add_middleware(
@@ -272,6 +303,7 @@ def create_app(
 
         for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
             app.include_router(router)
+        app.include_router(history_router(history, lambda _request: LOCAL_USER))
     else:
         assert hosted is not None and limiter is not None
         isolator = Isolator(Limits(hosted.analysis_cpu_s, hosted.analysis_memory_bytes, hosted.analysis_wall_s))
@@ -302,7 +334,8 @@ def create_app(
             hosted_forensics_router(isolator, hosted.max_file_bytes),
             hosted_webcheck_router(user_agent(hosted.abuse_contact), audit_webcheck),
             hosted_mail_router(isolator, hosted.max_mail_bytes),
-            auth_router(auth, limiter),
+            auth_router(auth, limiter, history),
+            history_router(history, _request_user),
         ):
             app.include_router(router)
 
@@ -324,4 +357,5 @@ def create_app(
             status_code=503,
         )
 
+    app.state.history = history
     return app

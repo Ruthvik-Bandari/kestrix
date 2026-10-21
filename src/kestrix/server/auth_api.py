@@ -31,6 +31,7 @@ from .auth import (
     Tokens,
     current_session,
 )
+from .history import HistoryStore
 from .hosted import user_limit_keys
 from .ratelimit import RateLimiter
 
@@ -59,7 +60,7 @@ def _clear_tokens(response: Response) -> None:
     _clear_cookie(response, REFRESH_COOKIE, "strict")
 
 
-def auth_router(auth: AuthService, limiter: RateLimiter) -> APIRouter:  # noqa: PLR0915 - one statement list per route
+def auth_router(auth: AuthService, limiter: RateLimiter, history: HistoryStore) -> APIRouter:  # noqa: PLR0915 - one statement list per route
     router = APIRouter(prefix="/api/auth", tags=["auth"])
 
     @router.get("/providers")
@@ -151,11 +152,12 @@ def auth_router(auth: AuthService, limiter: RateLimiter) -> APIRouter:  # noqa: 
 
     @router.delete("/account", status_code=204)
     def delete_account(request: Request) -> Response:
-        """Delete the signed-in user, every refresh family of that user and their rate-limit counters.
-        Requires ``X-CSRF-Token``."""
+        """Delete the signed-in user, every refresh family of that user, their result history and their
+        rate-limit counters. Requires ``X-CSRF-Token``."""
         session = current_session(request)
         if session is None:  # the gate already refuses this; kept so the route is safe on its own
             raise Rejected(Reason.SIGN_IN_REQUIRED, "sign in first")
+        history.forget_user(session.user_id)
         auth.delete_account(session)
         limiter.forget(user_limit_keys(session.user_id))
         response = Response(status_code=204)

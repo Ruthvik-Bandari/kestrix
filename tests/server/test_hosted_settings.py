@@ -10,13 +10,14 @@ from kestrix.core import config
 from kestrix.server.app import create_app
 from kestrix.server.settings import SettingsError, load_settings
 
-from .hosted_support import GOOGLE_ID, GOOGLE_SECRET, JWT_SECRET, ORIGIN, PEPPER
+from .hosted_support import GOOGLE_ID, GOOGLE_SECRET, HISTORY_KEY, JWT_SECRET, ORIGIN, PEPPER
 
 BASE = {
     "KESTRIX_MODE": "hosted",
     "KESTRIX_PUBLIC_ORIGIN": ORIGIN,
     "KESTRIX_SESSION_PEPPER": PEPPER,
     "KESTRIX_JWT_SECRET": JWT_SECRET,
+    "KESTRIX_HISTORY_KEY": HISTORY_KEY,
     "KESTRIX_GOOGLE_CLIENT_ID": GOOGLE_ID,
     "KESTRIX_GOOGLE_CLIENT_SECRET": GOOGLE_SECRET,
 }

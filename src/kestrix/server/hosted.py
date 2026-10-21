@@ -4,7 +4,8 @@
 
 ``HostedGate`` runs after the Host / Origin checks and decides, per request:
 
-1. routes of modules that stay local-only (detect, bitcoin, Anthropic-key settings) are 404;
+1. routes of modules that stay local-only (detect, bitcoin, Anthropic-key settings) are 404; the
+   result-history setting (``/api/settings/history``) is served;
 2. a sign-in start from another site is refused (403) unless it is a top-level navigation,
    so a page cannot burn a visitor's sign-in allowance with hidden requests;
 3. sign-in and token-refresh routes are rate-limited per client IP (IPv6 per /64);
@@ -18,6 +19,7 @@
    concurrent analyses and website checks (503 ``busy``), and is rate-limited per user (429
    ``rate_limited``). All three answer at once with ``Retry-After``; nothing waits in a queue or
    holds a worker thread.
+8. result-history writes (``/api/history``, ``/api/settings/history``) are rate-limited per user.
 
 ``AccessLog`` writes one line per request with the method, the route template (never the
 query string), the status, the duration and a salted hash of the user id. It never sees
@@ -40,6 +42,8 @@ from .ratelimit import RateLimiter, client_ip, ip_key
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 LOCAL_ONLY_PREFIXES = ("/api/detect", "/api/bitcoin", "/api/settings")
+HOSTED_SETTINGS = frozenset({"/api/settings/history"})
+HISTORY_WRITE_PREFIXES = ("/api/history", "/api/settings/history")
 PUBLIC_API = frozenset({"/api/health", "/api/auth/providers", "/api/auth/me", "/api/auth/logout", "/api/auth/refresh"})
 PUBLIC_API_PREFIXES = ("/api/auth/login/", "/api/auth/callback/")
 HOUR, TEN_MINUTES = 3600, 600
@@ -56,6 +60,8 @@ IP_LIMITS = {
     "/api/auth/callback/": ("callback", 10, TEN_MINUTES),
     "/api/auth/refresh": ("refresh", 60, TEN_MINUTES),
 }
+# Per signed-in user, for every state-changing history request.
+HISTORY_LIMIT = ("history", 120, HOUR)
 LOGIN_PREFIX = "/api/auth/login/"
 BUSY_RETRY_S = 5
 
@@ -85,7 +91,7 @@ def _busy(status: int, detail: str) -> JSONResponse:
 
 def user_limit_keys(user_id: int) -> set[str]:
     """Every per-user rate-limit key of this user (cleared when the account is deleted)."""
-    return {f"{bucket}:{user_id}" for bucket, _, _ in USER_LIMITS.values()}
+    return {f"{bucket}:{user_id}" for bucket, _, _ in (*USER_LIMITS.values(), HISTORY_LIMIT)}
 
 
 def _hidden_cross_site(request: Request) -> bool:
@@ -111,7 +117,7 @@ class HostedGate(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path, method = request.url.path, request.method
-        if _under(path, LOCAL_ONLY_PREFIXES):
+        if _under(path, LOCAL_ONLY_PREFIXES) and path not in HOSTED_SETTINGS:
             return _deny("not_found", "this route is not available on the hosted service", 404)
         if path.startswith(LOGIN_PREFIX) and _hidden_cross_site(request):
             return _deny("cross_site_request", "sign-in must be started from a link, not loaded by another site", 403)
@@ -142,6 +148,11 @@ class HostedGate(BaseHTTPMiddleware):
         if method not in SAFE_METHODS and session is not None:
             if not self.auth.csrf_ok(session.csrf_token, request.headers.get("x-csrf-token")):
                 return _deny(Reason.CSRF_FAILED, "missing or invalid X-CSRF-Token header", 403)
+            if _under(path, HISTORY_WRITE_PREFIXES):
+                bucket, limit, window = HISTORY_LIMIT
+                retry = self.limiter.hit(f"{bucket}:{session.user_id}", limit, window)
+                if retry is not None:
+                    return _rate_limited(retry)
             rule = USER_LIMITS.get(path)
             if rule is not None and method == "POST":
                 return await self._module_work(request, call_next, session.user_id, rule)

@@ -135,6 +135,7 @@ def test_hosted_upload_caps_are_lower_than_local():
             "KESTRIX_PUBLIC_ORIGIN": ORIGIN,
             "KESTRIX_SESSION_PEPPER": "p" * 40,
             "KESTRIX_JWT_SECRET": "j" * 40,
+            "KESTRIX_HISTORY_KEY": "A" * 43 + "=",
             "KESTRIX_GITHUB_CLIENT_ID": "id",
             "KESTRIX_GITHUB_CLIENT_SECRET": "secret",
         }
