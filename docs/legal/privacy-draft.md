@@ -2,7 +2,7 @@
 
 > Draft — to be reviewed by the owner before launch. Not legal advice.
 
-_Draft of October 19, 2026_
+_Draft of October 21, 2026_
 
 This notice covers the hosted Kestrix website, where you sign in with Google or GitHub and use the website check, file and link forensics, and the email check in your browser. It does not cover the open-source Kestrix you install on your own computer, which has no accounts and sends nothing to us.
 
@@ -15,18 +15,19 @@ When you sign in, we store one account record with:
 - the sign-in provider you used (Google or GitHub) and that provider's identifier for your account;
 - your verified email address;
 - your display name;
-- when the account was created and when you last signed in, and, if we disable it for abuse, when that happened.
+- when the account was created and when you last signed in, when you agreed to the terms of use if you signed up with the Sign up option, and, if we disable it for abuse, when that happened.
 
 We do not store passwords, and we do not keep the access tokens Google or GitHub give us; they are used once during sign-in and discarded. We ask Google only for your basic profile and email (openid, email, profile) and GitHub only for your profile and email addresses (read:user, user:email).
 
 ## Sessions and cookies
 
-We set two cookies, both needed to sign you in. We use no advertising, analytics or tracking cookies.
+We set three cookies, all needed to sign you in. We use no advertising, analytics or tracking cookies.
 
-- __Host-kx_session keeps you signed in. It ends after 7 days without use or 30 days after sign-in, whichever comes first, and is deleted when you sign out. We store only a keyed hash of it, not the cookie value.
+- __Host-kx_at shows that you are signed in. It lasts 15 minutes and is renewed automatically while you use the site.
+- __Host-kx_rt renews __Host-kx_at. It is replaced every time it is used and stops working 7 days after its last use or 30 days after sign-in, whichever comes first, or when you sign out. We store only a keyed hash of it, not the cookie value.
 - __Host-kx_login lasts 10 minutes and exists only while a sign-in is in progress, to make sure the sign-in finishes in the browser that started it.
 
-While a sign-in is in progress we also keep a short record of the attempt (which provider, security codes for the exchange, and the page to return to). It expires after 10 minutes and is deleted when used.
+While a sign-in is in progress we also keep a short record of the attempt (which provider, security codes for the exchange, the page to return to, and whether you chose Log in or Sign up). It expires after 10 minutes and is deleted when used.
 
 Your browser also remembers your light or dark theme choice and which help panels you closed. That stays on your device and is never sent to us.
 
@@ -47,15 +48,15 @@ Logs never contain file contents, file names, email messages, email addresses, t
 
 ## Rate limits
 
-To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts and 10 returns from Google or GitHub per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.
+To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts, 10 returns from Google or GitHub and 60 sign-in renewals per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.
 
 ## How long we keep your data, and deleting it
 
-Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and every session immediately. Signing out deletes that session.
+Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and ends every sign-in immediately. Signing out ends that sign-in at once.
 
 Backups: our hosting provider keeps daily snapshots of the storage volume that holds the account database, for 14 days. After you delete your account, its record can remain in those snapshots until they expire, at most 14 days later.
 
-If an account is used to abuse the service, we can disable it: it can no longer sign in and its sessions end. The account record, with the time it was disabled, stays until it is deleted.
+If an account is used to abuse the service, we can disable it: it can no longer sign in and its sign-ins end within 30 seconds. The account record, with the time it was disabled, stays until it is deleted.
 
 ## Who else is involved
 
@@ -67,7 +68,7 @@ We do not sell or share your data with anyone else, and we show no ads.
 
 ## Security
 
-The site is served only over HTTPS. Session cookies are Secure and HttpOnly, every change you make needs a per-session security token, and the session identifiers in our database are stored only as keyed hashes. No system is perfectly secure, but we design Kestrix to keep as little as possible.
+The site is served only over HTTPS. Sign-in cookies are Secure and HttpOnly, every change you make needs a per-sign-in security token, and the renewal tokens in our database are stored only as keyed hashes. No system is perfectly secure, but we design Kestrix to keep as little as possible.
 
 ## Children
 

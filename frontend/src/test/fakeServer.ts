@@ -47,4 +47,5 @@ export const SIGNED_IN = {
   signed_in: true,
   user: { display_name: "Ada Lovelace", email: "ada@mail.example", provider: "google" },
   csrf_token: "csrf-token-1",
+  access_expires_at: Math.floor(Date.now() / 1000) + 900,
 };

@@ -47,8 +47,8 @@ python3 scripts/check_claude_pack.py && python3 .claude/hooks/test_protect_paths
 - Outbound requests are opt-in and pass `core/netguard.check_url`; webcheck connects to the
   validated IP.
 - Local mode (default) is loopback-only (Host allowlist, cross-site write refusal, body caps), no accounts.
-  Hosted mode (`KESTRIX_MODE=hosted`, ADR 0004) adds Google/GitHub sign-in, sessions, CSRF and rate
-  limits, serves only webcheck, forensics and mail, and never stores uploads; see `docs/hosted.md`.
+  Hosted mode (`KESTRIX_MODE=hosted`, ADR 0004) adds Google/GitHub sign-in, JWT access + rotating refresh
+  tokens (ADR 0007), CSRF and rate limits, serves only webcheck, forensics and mail, and never stores uploads; see `docs/hosted.md`.
 - Secrets come from the environment or the 0600 `secrets.json`; never logged, returned or
   written to evidence.
 - Bundled cases are synthetic. Never read `data/raw/` or `data/locked/`; no real telemetry in tests.

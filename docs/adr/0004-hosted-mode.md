@@ -32,6 +32,9 @@ Running Kestrix for strangers changes the threat model:
 
 ### Accounts and sessions
 
+> Amended by [ADR 0007](0007-jwt-access-and-rotating-refresh-tokens.md): the opaque session cookie below is
+> replaced by JWT access tokens and rotating refresh tokens. The rest of this section still applies.
+
 - **Users table:** internal id, provider, the provider's subject id, verified email, display name, created and
   last-login times, and when an operator disabled the account for abuse (`disabled_at`). Nothing else. Ids are
   never reused (`AUTOINCREMENT`).
@@ -130,3 +133,5 @@ Before launch, the site needs a privacy notice and terms of use that state exact
   upload caps, ports 80 and 443 only for website checks, the higher sign-in limit with cross-site refusal and
   IPv6 /64 keys, account disabling and host-hash logging, deletion hardening, no OpenAPI schema and
   `Cache-Control: no-store` on the hosted API. The text above describes the result.
+- 2026-10-21: sessions replaced by JWT access tokens and rotating refresh tokens, and a Sign up intent that records
+  `terms_accepted_at`; see [ADR 0007](0007-jwt-access-and-rotating-refresh-tokens.md).

@@ -25,7 +25,7 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-const UPDATED = "Draft of October 19, 2026";
+const UPDATED = "Draft of October 21, 2026";
 const CONTACT = "[contact email to be added by the owner]";
 
 export const privacy: LegalDoc = {
@@ -45,7 +45,7 @@ export const privacy: LegalDoc = {
             "the sign-in provider you used (Google or GitHub) and that provider's identifier for your account;",
             "your verified email address;",
             "your display name;",
-            "when the account was created and when you last signed in, and, if we disable it for abuse, when that happened.",
+            "when the account was created and when you last signed in, when you agreed to the terms of use if you signed up with the Sign up option, and, if we disable it for abuse, when that happened.",
           ],
         },
         {
@@ -57,16 +57,17 @@ export const privacy: LegalDoc = {
       heading: "Sessions and cookies",
       blocks: [
         {
-          p: "We set two cookies, both needed to sign you in. We use no advertising, analytics or tracking cookies.",
+          p: "We set three cookies, all needed to sign you in. We use no advertising, analytics or tracking cookies.",
         },
         {
           ul: [
-            "__Host-kx_session keeps you signed in. It ends after 7 days without use or 30 days after sign-in, whichever comes first, and is deleted when you sign out. We store only a keyed hash of it, not the cookie value.",
+            "__Host-kx_at shows that you are signed in. It lasts 15 minutes and is renewed automatically while you use the site.",
+            "__Host-kx_rt renews __Host-kx_at. It is replaced every time it is used and stops working 7 days after its last use or 30 days after sign-in, whichever comes first, or when you sign out. We store only a keyed hash of it, not the cookie value.",
             "__Host-kx_login lasts 10 minutes and exists only while a sign-in is in progress, to make sure the sign-in finishes in the browser that started it.",
           ],
         },
         {
-          p: "While a sign-in is in progress we also keep a short record of the attempt (which provider, security codes for the exchange, and the page to return to). It expires after 10 minutes and is deleted when used.",
+          p: "While a sign-in is in progress we also keep a short record of the attempt (which provider, security codes for the exchange, the page to return to, and whether you chose Log in or Sign up). It expires after 10 minutes and is deleted when used.",
         },
         {
           p: "Your browser also remembers your light or dark theme choice and which help panels you closed. That stays on your device and is never sent to us.",
@@ -104,7 +105,7 @@ export const privacy: LegalDoc = {
       heading: "Rate limits",
       blocks: [
         {
-          p: "To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts and 10 returns from Google or GitHub per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.",
+          p: "To keep the service available and to prevent abuse, we count requests: 20 website checks per account per hour, 120 analyses per account per hour, one check or analysis at a time per account, and 20 sign-in starts, 10 returns from Google or GitHub and 60 sign-in renewals per network address per 10 minutes (for IPv6, per /64 network). The counters live only in the server's memory and are not stored.",
         },
       ],
     },
@@ -112,13 +113,13 @@ export const privacy: LegalDoc = {
       heading: "How long we keep your data, and deleting it",
       blocks: [
         {
-          p: "Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and every session immediately. Signing out deletes that session.",
+          p: "Your account record stays until you delete it. Choose Delete account in the account menu: it removes your account record and ends every sign-in immediately. Signing out ends that sign-in at once.",
         },
         {
           p: "Backups: our hosting provider keeps daily snapshots of the storage volume that holds the account database, for 14 days. After you delete your account, its record can remain in those snapshots until they expire, at most 14 days later.",
         },
         {
-          p: "If an account is used to abuse the service, we can disable it: it can no longer sign in and its sessions end. The account record, with the time it was disabled, stays until it is deleted.",
+          p: "If an account is used to abuse the service, we can disable it: it can no longer sign in and its sign-ins end within 30 seconds. The account record, with the time it was disabled, stays until it is deleted.",
         },
       ],
     },
@@ -141,7 +142,7 @@ export const privacy: LegalDoc = {
       heading: "Security",
       blocks: [
         {
-          p: "The site is served only over HTTPS. Session cookies are Secure and HttpOnly, every change you make needs a per-session security token, and the session identifiers in our database are stored only as keyed hashes. No system is perfectly secure, but we design Kestrix to keep as little as possible.",
+          p: "The site is served only over HTTPS. Sign-in cookies are Secure and HttpOnly, every change you make needs a per-sign-in security token, and the renewal tokens in our database are stored only as keyed hashes. No system is perfectly secure, but we design Kestrix to keep as little as possible.",
         },
       ],
     },

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""Hosted-mode sign-in (Google OIDC, GitHub OAuth), sessions, CSRF and account deletion."""
+"""Hosted-mode sign-in (Google OIDC, GitHub OAuth), refresh families, CSRF and account deletion.
+
+The access-token (JWT) checks themselves are in ``test_hosted_tokens.py``."""
 
 import hashlib
 import sqlite3
@@ -15,6 +17,7 @@ from fastapi.testclient import TestClient
 from kestrix.server.auth import AuthFailed, ProviderClient, pkce_challenge, safe_next
 
 from .hosted_support import (
+    ACCESS,
     GITHUB_ACCESS,
     GITHUB_EMAIL,
     GITHUB_ID,
@@ -22,7 +25,11 @@ from .hosted_support import (
     GOOGLE_EMAIL,
     GOOGLE_ID,
     GOOGLE_SECRET,
+    REFRESH,
+    cookie_value,
     csrf,
+    refresh,
+    set_cookie,
     sign_in,
     start_login,
 )
@@ -34,10 +41,6 @@ DAY = 24 * 3600
 def db_rows(env, sql, *args):
     with sqlite3.connect(env["KESTRIX_DB"]) as db:
         return db.execute(sql, args).fetchall()
-
-
-def session_cookie(resp: httpx.Response) -> str:
-    return next(v for v in resp.headers.get_list("set-cookie") if v.startswith("__Host-kx_session="))
 
 
 # Google
@@ -59,7 +62,7 @@ def test_google_login_redirect_carries_pkce_state_and_nonce(hosted):
 def test_google_sign_in_happy_path(hosted, providers, hosted_env):
     resp = sign_in(hosted, providers, "google", next="/app/mail")
     assert resp.status_code == 303
-    assert resp.headers["location"] == "/app/mail"
+    assert resp.headers["location"] == "/app/mail?welcome=created"  # a new account, created through Log in
     form = providers.form()
     assert [str(r.url) for r in providers.requests] == ["https://oauth2.googleapis.com/token"]
     assert form["grant_type"] == "authorization_code"
@@ -74,6 +77,7 @@ def test_google_sign_in_happy_path(hosted, providers, hosted_env):
     assert body["signed_in"] is True
     assert body["user"] == {"display_name": "Ada Lovelace", "email": GOOGLE_EMAIL, "provider": "google"}
     assert len(body["csrf_token"]) >= 43
+    assert body["access_expires_at"] == int(providers.clock.now) + 900
 
 
 def test_pkce_verifier_sent_matches_the_challenge(hosted, providers):
@@ -85,12 +89,25 @@ def test_pkce_verifier_sent_matches_the_challenge(hosted, providers):
     assert pkce_challenge(verifier) == query["code_challenge"]
 
 
-def test_session_cookie_attributes(hosted, providers):
-    cookie = session_cookie(sign_in(hosted, providers)).lower()
-    attributes = {part.strip().split("=")[0] for part in cookie.split(";")}
-    assert {"secure", "httponly", "path", "samesite", "max-age"} <= attributes
-    assert "path=/;" in cookie + ";" and "samesite=lax" in cookie
-    assert "domain" not in attributes
+def _attributes(cookie: str) -> dict[str, str]:
+    parts = [part.strip() for part in cookie.split(";")[1:]]
+    return {part.split("=", 1)[0].lower(): part.split("=", 1)[1] if "=" in part else "" for part in parts}
+
+
+@pytest.mark.parametrize("via", ["sign-in", "refresh"])
+def test_token_cookie_attributes(hosted, providers, clock, via):
+    resp = sign_in(hosted, providers)
+    if via == "refresh":
+        clock.advance(60)
+        resp = refresh(hosted)
+    access, refresh_cookie = _attributes(set_cookie(resp, ACCESS)), _attributes(set_cookie(resp, REFRESH))
+    for attributes in (access, refresh_cookie):
+        assert {"secure", "httponly"} <= set(attributes) and attributes["path"] == "/"
+        assert "domain" not in attributes
+    assert access["samesite"].lower() == "lax" and access["max-age"] == "900"
+    assert refresh_cookie["samesite"].lower() == "strict"
+    expected = 30 * DAY - (60 if via == "refresh" else 0)  # up to the family's absolute end
+    assert refresh_cookie["max-age"] == str(expected)
 
 
 def _flow(hosted, providers, **overrides):
@@ -115,7 +132,7 @@ def _flow(hosted, providers, **overrides):
 def test_bad_id_tokens_fail_closed(hosted, providers, overrides):
     resp = _flow(hosted, providers, **overrides)
     assert resp.status_code == 303 and resp.headers["location"] == FAILED
-    assert "__Host-kx_session=" not in resp.headers.get("set-cookie", "")
+    assert ACCESS not in resp.headers.get("set-cookie", "") and REFRESH not in resp.headers.get("set-cookie", "")
     assert hosted.get("/api/auth/me").json() == {"signed_in": False}
 
 
@@ -141,7 +158,7 @@ def test_state_is_single_use(hosted, providers):
     params = {"code": "c", "state": query["state"]}
     hosted.cookies.set("__Host-kx_login", query["state"], domain="kestrix.example")
     first = hosted.get("/api/auth/callback/google", params=params, follow_redirects=False)
-    assert first.headers["location"] == "/app"
+    assert first.headers["location"] == "/app?welcome=created"
     hosted.cookies.set("__Host-kx_login", query["state"], domain="kestrix.example")
     replay = hosted.get("/api/auth/callback/google", params=params, follow_redirects=False)
     assert replay.headers["location"] == FAILED
@@ -206,7 +223,7 @@ def test_github_sign_in_happy_path(hosted, providers, hosted_env):
     resp = hosted.get(
         "/api/auth/callback/github", params={"code": "gh", "state": query["state"]}, follow_redirects=False
     )
-    assert resp.headers["location"] == "/app"
+    assert resp.headers["location"] == "/app?welcome=created"
     form = providers.form()
     assert form["client_id"] == GITHUB_ID and form["client_secret"] == GITHUB_SECRET
     assert pkce_challenge(form["code_verifier"]) == query["code_challenge"]
@@ -243,24 +260,49 @@ def test_github_without_a_verified_primary_email_fails(hosted, providers, emails
 def test_open_redirects_are_refused(hosted, providers, target):
     assert safe_next(target) is None
     resp = sign_in(hosted, providers, next=target)
-    assert resp.headers["location"] == "/app"
+    assert resp.headers["location"] == "/app?welcome=created"
 
 
 def test_relative_next_is_kept():
     assert safe_next("/app/webcheck?tab=1") == "/app/webcheck?tab=1"
 
 
-# Sessions
+# Log in and Sign up intents
 
 
-def test_session_id_is_stored_only_as_a_keyed_hash(hosted, providers, hosted_env):
-    raw = session_cookie(sign_in(hosted, providers)).split(";")[0].split("=", 1)[1]
+def test_sign_up_records_terms_acceptance_for_a_new_account(hosted, providers, clock, hosted_env):
+    resp = sign_in(hosted, providers, next="/app/mail", intent="signup")
+    assert resp.headers["location"] == "/app/mail"  # agreed to the terms already: no welcome note
+    assert db_rows(hosted_env, "SELECT terms_accepted_at FROM users") == [(int(clock.now),)]
+
+
+def test_log_in_creating_an_account_adds_the_one_time_welcome(hosted, providers, hosted_env):
+    resp = sign_in(hosted, providers, next="/app/webcheck?tab=1")
+    assert resp.headers["location"] == "/app/webcheck?tab=1&welcome=created"
+    assert db_rows(hosted_env, "SELECT terms_accepted_at FROM users") == [(None,)]
+    assert sign_in(hosted, providers).headers["location"] == "/app"  # only once: the account exists now
+
+
+@pytest.mark.parametrize("intent", ["signup", "login", "admin"])
+def test_an_existing_account_just_signs_in(hosted, providers, hosted_env, intent):
+    sign_in(hosted, providers)
+    resp = sign_in(hosted, providers, intent=intent)
+    assert resp.headers["location"] == "/app"
+    assert db_rows(hosted_env, "SELECT COUNT(*), MAX(terms_accepted_at) FROM users") == [(1, None)]
+
+
+# Refresh families
+
+
+def test_refresh_token_is_stored_only_as_a_keyed_hash(hosted, providers, hosted_env):
+    raw = cookie_value(sign_in(hosted, providers), REFRESH)
+    sid = db_rows(hosted_env, "SELECT id FROM sessions")[0][0]
     hosted.app.state.auth.store.close()  # flush the WAL into the main file
     db_path = Path(hosted_env["KESTRIX_DB"])
     data = b"".join(p.read_bytes() for p in db_path.parent.iterdir())
     assert raw.encode() not in data
     assert hashlib.sha256(raw.encode()).hexdigest().encode() not in data  # keyed, not a bare hash
-    assert hosted.app.state.auth._csrf_token(raw).encode() not in data
+    assert hosted.app.state.auth.csrf_token(sid).encode() not in data  # derived, never stored
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
@@ -270,42 +312,98 @@ def test_database_file_and_directory_are_private(hosted, hosted_env):
     assert stat.S_IMODE(db_path.parent.stat().st_mode) == 0o700
 
 
-def test_idle_expiry(hosted, providers, clock, hosted_env):
+def test_refresh_rotates_both_tokens_and_keeps_the_family(hosted, providers, clock, hosted_env):
+    first = sign_in(hosted, providers)
+    headers = csrf(hosted)
+    clock.advance(600)
+    second = refresh(hosted, headers)
+    assert second.status_code == 200
+    assert second.json() == {"access_expires_at": int(clock.now) + 900}
+    assert second.headers["cache-control"] == "no-store"
+    assert cookie_value(second, REFRESH) != cookie_value(first, REFRESH)
+    assert cookie_value(second, ACCESS) != cookie_value(first, ACCESS)
+    assert csrf(hosted) == headers  # same family, same CSRF token
+    assert db_rows(hosted_env, "SELECT COUNT(*), MAX(last_used_at) FROM sessions") == [(1, int(clock.now))]
+    assert db_rows(hosted_env, "SELECT COUNT(*) FROM rotated_refresh_tokens") == [(1,)]
+
+
+def test_reusing_a_rotated_refresh_token_revokes_the_family(hosted, providers, clock, hosted_env, caplog):
+    stolen = cookie_value(sign_in(hosted, providers), REFRESH)
+    headers = csrf(hosted)
+    assert refresh(hosted, headers).status_code == 200  # the user's browser rotates it
+    attacker = TestClient(hosted.app, base_url=str(hosted.base_url))
+    attacker.cookies.set(REFRESH, stolen, domain="kestrix.example")
+    reused = refresh(attacker, headers)
+    assert reused.status_code == 401 and reused.json()["reason"] == "sign_in_required"
+    assert db_rows(hosted_env, "SELECT revoked_at FROM sessions") == [(int(clock.now),)]
+    assert "refresh token reuse detected; family revoked user=" in caplog.text
+    # The whole family is gone at once: the user's current access and refresh tokens no longer work.
+    assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+    assert refresh(hosted, headers).status_code == 401
+
+
+def test_refresh_needs_the_csrf_token_of_its_family(hosted, providers):
+    sign_in(hosted, providers)
+    assert hosted.post("/api/auth/refresh").status_code == 403
+    wrong = hosted.post("/api/auth/refresh", headers={"x-csrf-token": "x" * 43})
+    assert wrong.status_code == 403 and wrong.json()["reason"] == "csrf_failed"
+    assert refresh(hosted).status_code == 200  # nothing was rotated by the refused attempts
+
+
+def test_refresh_without_a_refresh_cookie_is_401_and_clears_cookies(hosted):
+    resp = hosted.post("/api/auth/refresh", headers={"x-csrf-token": "x"})
+    assert resp.status_code == 401 and resp.json()["reason"] == "sign_in_required"
+    assert 'kx_rt=""' in resp.headers["set-cookie"]
+
+
+def test_refresh_is_rate_limited_per_ip(hosted):
+    for _ in range(60):
+        assert hosted.post("/api/auth/refresh").status_code == 401
+    limited = hosted.post("/api/auth/refresh")
+    assert limited.status_code == 429 and limited.json()["reason"] == "rate_limited"
+    assert int(limited.headers["retry-after"]) > 0
+
+
+def test_me_offers_a_refresh_when_the_access_token_is_gone(hosted, providers, clock):
+    sign_in(hosted, providers)
+    signed_in = hosted.get("/api/auth/me").json()
+    hosted.cookies.delete(ACCESS, domain="kestrix.example")  # the browser drops it after Max-Age
+    assert hosted.get("/api/auth/me").json() == {
+        "signed_in": False,
+        "refreshable": True,
+        "csrf_token": signed_in["csrf_token"],
+    }
+    clock.advance(30 * DAY)
+    assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+
+
+def test_idle_expiry(hosted, providers, clock):
     sign_in(hosted, providers)
     clock.advance(7 * DAY - 60)
-    assert hosted.get("/api/auth/me").json()["signed_in"]  # still within 7 days; refreshed
+    assert refresh(hosted).status_code == 200  # still within 7 days of the last refresh
     clock.advance(7 * DAY - 60)
-    assert hosted.get("/api/auth/me").json()["signed_in"]
+    assert refresh(hosted).status_code == 200
+    headers = csrf(hosted)
     clock.advance(7 * DAY)
+    assert refresh(hosted, headers).status_code == 401
     assert hosted.get("/api/auth/me").json() == {"signed_in": False}
-    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions") == [(0,)]
 
 
 def test_absolute_expiry_despite_activity(hosted, providers, clock):
     sign_in(hosted, providers)
+    headers = csrf(hosted)
     for _ in range(4):
         clock.advance(6 * DAY)
-        assert hosted.get("/api/auth/me").json()["signed_in"]
+        assert refresh(hosted, headers).status_code == 200
     clock.advance(6 * DAY + 1)  # day 30
-    assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+    assert refresh(hosted, headers).status_code == 401
 
 
-def test_last_seen_slides_at_most_every_five_minutes(hosted, providers, clock, hosted_env):
-    sign_in(hosted, providers)
-    (created,) = db_rows(hosted_env, "SELECT last_seen_at FROM sessions")[0]
-    clock.advance(120)
-    hosted.get("/api/auth/me")
-    assert db_rows(hosted_env, "SELECT last_seen_at FROM sessions") == [(created,)]
-    clock.advance(240)
-    hosted.get("/api/auth/me")
-    assert db_rows(hosted_env, "SELECT last_seen_at FROM sessions") == [(created + 360,)]
-
-
-def test_signing_in_again_rotates_the_session(hosted, providers, hosted_env):
-    first = session_cookie(sign_in(hosted, providers))
-    second = session_cookie(sign_in(hosted, providers))
-    assert first.split(";")[0] != second.split(";")[0]
-    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions") == [(1,)]
+def test_signing_in_again_starts_a_new_family(hosted, providers, hosted_env):
+    first = cookie_value(sign_in(hosted, providers), REFRESH)
+    second = cookie_value(sign_in(hosted, providers), REFRESH)
+    assert first != second
+    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions WHERE revoked_at IS NULL") == [(1,)]
     assert db_rows(hosted_env, "SELECT COUNT(*) FROM users") == [(1,)]
 
 
@@ -321,7 +419,7 @@ def test_state_changing_requests_need_the_csrf_header(hosted, providers):
     assert hosted.post("/api/forensics/url", json=url, headers=csrf(hosted)).status_code == 200
 
 
-def test_csrf_token_from_another_session_is_refused(hosted, providers, hosted_env):
+def test_csrf_token_from_another_family_is_refused(hosted, providers):
     sign_in(hosted, providers)
     old_token = csrf(hosted)
     sign_in(hosted, providers)
@@ -329,24 +427,39 @@ def test_csrf_token_from_another_session_is_refused(hosted, providers, hosted_en
     assert resp.status_code == 403
 
 
-def test_logout_needs_csrf_and_ends_the_session(hosted, providers, hosted_env):
-    sign_in(hosted, providers)
+def test_logout_needs_csrf_and_revokes_the_family_at_once(hosted, providers, hosted_env):
+    access = cookie_value(sign_in(hosted, providers), ACCESS)
     headers = csrf(hosted)
     assert hosted.post("/api/auth/logout").status_code == 403
     resp = hosted.post("/api/auth/logout", headers=headers)
     assert resp.status_code == 204
-    assert 'kx_session=""' in resp.headers["set-cookie"] and "max-age=0" in resp.headers["set-cookie"].lower()
-    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions") == [(0,)]
+    cleared = " ".join(resp.headers.get_list("set-cookie")).lower()
+    assert 'kx_at=""' in cleared and 'kx_rt=""' in cleared and cleared.count("max-age=0") == 2
+    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions WHERE revoked_at IS NOT NULL") == [(1,)]
     assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+    # The access token is still unexpired, but its family is revoked: refused immediately.
+    hosted.cookies.set(ACCESS, access, domain="kestrix.example")
+    assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+    assert hosted.post("/api/forensics/url", json={"url": "https://a.example"}, headers=headers).status_code == 401
+
+
+def test_logout_with_an_expired_access_token_uses_the_refresh_family(hosted, providers, clock, hosted_env):
+    sign_in(hosted, providers)
+    headers = csrf(hosted)
+    clock.advance(1000)
+    assert hosted.post("/api/auth/logout").status_code == 403
+    assert hosted.post("/api/auth/logout", headers=headers).status_code == 204
+    assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions WHERE revoked_at IS NOT NULL") == [(1,)]
 
 
 def test_logout_without_a_session_is_harmless(hosted):
     assert hosted.post("/api/auth/logout").status_code == 204
 
 
-def test_account_deletion_needs_csrf_and_removes_user_and_all_sessions(hosted, providers, hosted_env):
+def test_account_deletion_needs_csrf_and_removes_user_and_all_families(hosted, providers, hosted_env):
     other_device = TestClient(hosted.app, base_url=str(hosted.base_url))
     sign_in(other_device, providers)
+    assert other_device.get("/api/auth/me").json()["signed_in"]  # its family is now in the cache
     sign_in(hosted, providers)
     assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions") == [(2,)]
     assert hosted.delete("/api/auth/account").status_code == 403
@@ -354,6 +467,7 @@ def test_account_deletion_needs_csrf_and_removes_user_and_all_sessions(hosted, p
     assert db_rows(hosted_env, "SELECT COUNT(*) FROM users") == [(0,)]
     assert db_rows(hosted_env, "SELECT COUNT(*) FROM sessions") == [(0,)]
     assert other_device.get("/api/auth/me").json() == {"signed_in": False}
+    assert other_device.post("/api/auth/refresh", headers={"x-csrf-token": "x"}).status_code == 401
 
 
 def test_account_deletion_needs_a_session(hosted):

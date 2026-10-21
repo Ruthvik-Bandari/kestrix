@@ -11,6 +11,7 @@ import { cx, Skeleton } from "../components/ui";
 import { isHosted } from "../lib/mode";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
 import { AccountMenu } from "./AccountMenu";
+import { WelcomeNote } from "./WelcomeNote";
 import { dashboardPath, landingPath, pageAvailable } from "./paths";
 
 // Pages are dashboard-relative; the hosted service drops the local-only ones (paths.ts).
@@ -226,6 +227,7 @@ export function Layout() {
 
       <main id="main" ref={mainRef} tabIndex={-1} className="relative z-10 min-w-0 px-3 pt-5 pb-16 outline-none sm:px-5 lg:px-8 lg:pt-8">
         <div className="veil-content mx-auto max-w-[72rem] rounded-3xl px-4 py-6 sm:px-6 lg:px-9 lg:py-9">
+          <WelcomeNote />
           <Suspense fallback={<PageFallback />}>
             <Outlet />
           </Suspense>

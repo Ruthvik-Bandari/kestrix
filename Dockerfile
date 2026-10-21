@@ -22,7 +22,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: build the wheel and a virtual environment holding only the locked runtime dependencies
-# (no dev or gpu groups, no ai or exif extras).
+# and the hosted extra (PyJWT, ADR 0007); no dev or gpu groups, no ai or exif extras.
 FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.11.16@sha256:440fd6477af86a2f1b38080c539f1672cd22acb1b1a47e321dba5158ab08864d /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
@@ -33,7 +33,7 @@ WORKDIR /build
 COPY pyproject.toml uv.lock README.md LICENSE NOTICE ./
 # The workspace member kestrix-scan (ADR 0006): its metadata for the export, its sources for the build.
 COPY packages/kestrix-scan/pyproject.toml packages/kestrix-scan/README.md packages/kestrix-scan/LICENSE packages/kestrix-scan/NOTICE ./packages/kestrix-scan/
-RUN uv export --frozen --no-dev --no-emit-workspace --format requirements-txt --output-file /build/requirements.txt \
+RUN uv export --frozen --no-dev --extra hosted --no-emit-workspace --format requirements-txt --output-file /build/requirements.txt \
  && uv venv /opt/kestrix --python /usr/local/bin/python3.12 \
  && uv pip install --python /opt/kestrix/bin/python --require-hashes --no-deps -r /build/requirements.txt
 COPY src/kestrix ./src/kestrix

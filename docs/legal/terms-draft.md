@@ -2,7 +2,7 @@
 
 > Draft — to be reviewed by the owner before launch. Not legal advice.
 
-_Draft of October 19, 2026_
+_Draft of October 21, 2026_
 
 These terms cover the hosted Kestrix website. The open-source Kestrix software is licensed separately under the Apache License 2.0; these terms do not change that license.
 

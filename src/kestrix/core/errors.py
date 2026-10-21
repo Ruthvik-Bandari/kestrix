@@ -44,6 +44,7 @@ class Reason(TextEnum):
     INVALID_INPUT = "invalid_input"
     # Hosted mode: accounts, CSRF and abuse limits
     SIGN_IN_REQUIRED = "sign_in_required"
+    TOKEN_EXPIRED = "token_expired"  # noqa: S105 - a reason code, not a credential
     CSRF_FAILED = "csrf_failed"
     RATE_LIMITED = "rate_limited"
     BUSY = "busy"

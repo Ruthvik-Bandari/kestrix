@@ -89,7 +89,7 @@ Kestrix errors use one envelope:
 | Status | `reason` |
 | --- | --- |
 | 400 | Any rejected input not listed below, for example `invalid_input`, `invalid_url`, `invalid_rule`, `unsupported_modifier`, `invalid_mapping`, `invalid_fixture`, `malformed_yaml`, `engine_error`, `index_count_mismatch` |
-| 401 | `sign_in_required` (hosted mode only) |
+| 401 | `sign_in_required`, `token_expired` (hosted mode only) |
 | 403 | `target_not_allowed`, `cross_site_request` from the middleware, and `csrf_failed` (hosted mode only) |
 | 404 | `not_found`, for an unknown path under `/api/` |
 | 413 | `input_too_large` |
@@ -214,9 +214,11 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 - **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and every `/api/` response carries `Cache-Control: no-store`.
 - **No API schema.** `GET /api/openapi.json` is not served (401 without a session, 404 with one).
 - **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not.
-- **Sign-in required.** Every `/api/` route except `GET /api/health` and the `/api/auth/*` routes marked public below returns 401 `sign_in_required` without a valid session cookie.
-- **CSRF.** A signed-in `POST`, `PUT`, `PATCH` or `DELETE` must send `X-CSRF-Token` with the token from `GET /api/auth/me`, else 403 `csrf_failed`.
-- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 20 sign-in starts and 10 callbacks per client IP (IPv6: per /64) per 10 minutes.
+- **Sign-in required.** Every `/api/` route except `GET /api/health` and the `/api/auth/*` routes marked public below needs a valid access token (the `__Host-kx_at` cookie, [ADR 0007](adr/0007-jwt-access-and-rotating-refresh-tokens.md)). Without one it returns 401 with one of two reasons:
+  - `token_expired`: the access token has expired (its signature and claims are otherwise valid), or it is missing while a `__Host-kx_rt` refresh cookie is present. Call `POST /api/auth/refresh` once, then retry.
+  - `sign_in_required`: no usable token (missing, forged, wrong key, issuer or audience, a revoked or ended family). Sign in again.
+- **CSRF.** A signed-in `POST`, `PUT`, `PATCH` or `DELETE`, and every `POST /api/auth/refresh`, must send `X-CSRF-Token` with the token from `GET /api/auth/me`, else 403 `csrf_failed`. The token stays the same across refreshes.
+- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 20 sign-in starts, 10 callbacks and 60 refreshes per client IP (IPv6: per /64) per 10 minutes.
 - **One request at a time.** A user's second website check or analysis while the first is still running gets 429 `busy` with `Retry-After: 5`. When the service already runs 2 analyses or 8 website checks, the next one gets 503 `busy` with `Retry-After: 5`. Neither counts against the hourly limits, and nothing is queued.
 - **Uploads.** `POST /api/forensics/file` and `POST /api/mail/analyze` accept at most 10 MiB of file or message (10 MiB plus 64 KiB of request body); more gives 413 `input_too_large`.
 - **Analyses run in a worker process** with 10 seconds of CPU, 384 MiB of address space (on Linux) and 20 seconds of wall-clock time. An analysis stopped by these limits returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`.
@@ -227,14 +229,16 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 | Route | Public | Request | Response |
 | --- | --- | --- | --- |
 | `GET /api/auth/providers` | Yes | none | `{"providers": ["google", "github"]}`: the providers configured on this server |
-| `GET /api/auth/login/{provider}` | Yes | Optional `?next=` a same-origin path starting with `/` (not `//`, no backslashes, control characters or spaces); anything else is ignored | 302 to the provider's authorization page, with a 10-minute `__Host-kx_login` cookie. An unknown or disabled provider gives 404. |
-| `GET /api/auth/callback/{provider}` | Yes | The provider's `code` and `state` | 303 to `next` (default `/app`) with the `__Host-kx_session` cookie. Any failure gives 303 to `/welcome?signin=failed` with no detail. |
-| `GET /api/auth/me` | Yes | none | `{"signed_in": false}`, or `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string}`. Sent with `Cache-Control: no-store`. |
-| `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when signed in | 204. Deletes the session and clears the cookie. |
-| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every session of that user and their rate-limit counters, then clears the cookie. |
+| `GET /api/auth/login/{provider}` | Yes | Optional `?next=` a same-origin path starting with `/` (not `//`, no backslashes, control characters or spaces); anything else is ignored. Optional `intent=signup` from the Sign up tab; any other value means log in | 302 to the provider's authorization page, with a 10-minute `__Host-kx_login` cookie. An unknown or disabled provider gives 404. |
+| `GET /api/auth/callback/{provider}` | Yes | The provider's `code` and `state` | 303 to `next` (default `/app`) with the `__Host-kx_at` (access, 15 minutes) and `__Host-kx_rt` (refresh) cookies. A new account created with `intent=signup` records `terms_accepted_at`; one created without it gets `welcome=created` added to `next`. Any failure gives 303 to `/welcome?signin=failed` with no detail. |
+| `GET /api/auth/me` | Yes | none | `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string, "access_expires_at": epoch seconds}`; without a usable access token but with a live refresh family, `{"signed_in": false, "refreshable": true, "csrf_token": string}`; else `{"signed_in": false}`. Never rotates anything. Sent with `Cache-Control: no-store`. |
+| `POST /api/auth/refresh` | Yes | `X-CSRF-Token`; the `__Host-kx_rt` cookie | 200 `{"access_expires_at": epoch seconds}` with new `__Host-kx_at` and `__Host-kx_rt` cookies (the refresh token rotates). 403 `csrf_failed` without the family's token. 401 `sign_in_required`, clearing both cookies, for a missing, unknown or ended family, or for a refresh token that was already rotated, which also revokes its whole family. |
+| `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when there is a family to end (from the access token, else the refresh cookie) | 204. Revokes the refresh family, so its access tokens stop working at once, and clears both cookies. |
+| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every refresh family of that user and their rate-limit counters, then clears both cookies. |
 
 ```json
 {"reason": "sign_in_required", "detail": "sign in to use this feature"}
+{"reason": "token_expired", "detail": "your sign-in needs refreshing; call POST /api/auth/refresh"}
 {"reason": "csrf_failed", "detail": "missing or invalid X-CSRF-Token header"}
 {"reason": "rate_limited", "detail": "too many requests; try again in 1200 seconds"}
 {"reason": "busy", "detail": "your previous check is still running; try again when it finishes"}

@@ -27,7 +27,14 @@ export interface SignedInUser {
   provider: AuthProvider;
 }
 
-export type Me = { signed_in: false } | { signed_in: true; user: SignedInUser; csrf_token: string };
+/**
+ * Hosted mode (ADR 0007). Signed in: the CSRF token and when the access token expires (epoch seconds).
+ * Signed out but `refreshable`: the access token is gone or expired while the refresh token still
+ * works; the CSRF token is included so the page can call POST /api/auth/refresh.
+ */
+export type Me =
+  | { signed_in: false; refreshable?: boolean; csrf_token?: string }
+  | { signed_in: true; user: SignedInUser; csrf_token: string; access_expires_at: number };
 
 export interface Settings {
   anthropic_key_configured: boolean;

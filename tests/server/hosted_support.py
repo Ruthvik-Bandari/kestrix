@@ -19,6 +19,8 @@ from fastapi.testclient import TestClient
 
 ORIGIN = "https://kestrix.example"
 PEPPER = "pepper-" + "q" * 40
+JWT_SECRET = "jwt-secret-" + "k" * 40
+ACCESS, REFRESH = "__Host-kx_at", "__Host-kx_rt"
 GOOGLE_ID, GOOGLE_SECRET = "google-client-id.apps.example", "google-client-secret-value"
 GITHUB_ID, GITHUB_SECRET = "github-client-id", "github-client-secret-value"
 GOOGLE_EMAIL, GITHUB_EMAIL = "ada@mail.example", "octo@mail.example"
@@ -114,6 +116,20 @@ def sign_in(client: TestClient, providers: FakeProviders, provider: str = "googl
 
 
 def csrf(client: TestClient) -> dict[str, str]:
+    """The CSRF header for the client's family (from ``/api/auth/me``, signed in or refreshable)."""
     me = client.get("/api/auth/me").json()
-    assert me["signed_in"]
+    assert me["signed_in"] or me.get("refreshable"), me
     return {"x-csrf-token": me["csrf_token"]}
+
+
+def set_cookie(resp: httpx.Response, name: str) -> str:
+    """The full ``Set-Cookie`` header the response sent for ``name``."""
+    return next(v for v in resp.headers.get_list("set-cookie") if v.startswith(f"{name}="))
+
+
+def cookie_value(resp: httpx.Response, name: str) -> str:
+    return set_cookie(resp, name).split(";")[0].split("=", 1)[1]
+
+
+def refresh(client: TestClient, headers: dict[str, str] | None = None) -> httpx.Response:
+    return client.post("/api/auth/refresh", headers=csrf(client) if headers is None else headers)

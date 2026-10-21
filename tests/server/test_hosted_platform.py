@@ -15,7 +15,19 @@ from kestrix.server.settings import Settings
 from kestrix.webcheck import api as webcheck_api
 from kestrix.webcheck.models import Report, Timings, TlsInfo
 
-from .hosted_support import GOOGLE_ACCESS, GOOGLE_EMAIL, ORIGIN, csrf, sign_in
+from .hosted_support import (
+    ACCESS,
+    GOOGLE_ACCESS,
+    GOOGLE_EMAIL,
+    JWT_SECRET,
+    ORIGIN,
+    PEPPER,
+    REFRESH,
+    cookie_value,
+    csrf,
+    refresh,
+    sign_in,
+)
 
 URL_BODY = {"url": "http://paypa1-login.example.top/verify"}
 
@@ -272,10 +284,20 @@ def test_webcheck_is_rate_limited_per_user(hosted, providers, fake_scan):
 # Logs
 
 
-def test_logs_hold_no_personal_data_tokens_or_queries(hosted, providers, caplog):
-    caplog.set_level(logging.INFO, logger="kestrix")
+def test_logs_hold_no_personal_data_tokens_or_queries(hosted, providers, clock, caplog):
+    caplog.set_level(logging.DEBUG, logger="kestrix")
     resp = sign_in(hosted, providers, next="/app/secret-next-path")
-    raw_session = resp.headers["set-cookie"].split("__Host-kx_session=")[1].split(";")[0]
+    access, first_refresh = cookie_value(resp, ACCESS), cookie_value(resp, REFRESH)
+    token = csrf(hosted)
+    clock.advance(901)
+    rotated = refresh(hosted, token)
+    assert rotated.status_code == 200
+    new_access, new_refresh = cookie_value(rotated, ACCESS), cookie_value(rotated, REFRESH)
+    stolen = TestClient(hosted.app, base_url=ORIGIN)
+    stolen.cookies.set(REFRESH, first_refresh, domain="kestrix.example")
+    assert refresh(stolen, token).status_code == 401  # reuse: logged as a security event
+    hosted.cookies.clear()
+    sign_in(hosted, providers)
     token = csrf(hosted)
     hosted.post("/api/forensics/url?probe=query-value", json={"url": "https://leak.example/x"}, headers=token)
     hosted.post("/api/forensics/file", files={"file": ("secret-name.pdf", b"%PDF-1.4")}, headers=token)
@@ -286,10 +308,16 @@ def test_logs_hold_no_personal_data_tokens_or_queries(hosted, providers, caplog)
     assert any(line.startswith("POST /api/forensics/url 200 ") for line in lines)
     assert any(line.startswith("GET /api/auth/callback/{provider} 303 ") for line in lines)
     assert "reason=id_token_wrong_audience" in text
+    assert "refresh token reuse detected; family revoked user=" in text
     for secret in [
         GOOGLE_EMAIL,
         GOOGLE_ACCESS,
-        raw_session,
+        access,
+        first_refresh,
+        new_access,
+        new_refresh,
+        JWT_SECRET,
+        PEPPER,
         token["x-csrf-token"],
         "auth-code",
         "query-value",

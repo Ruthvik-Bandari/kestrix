@@ -40,7 +40,9 @@ All settings come from environment variables, which on a hosting platform should
 | --- | --- | --- |
 | `KESTRIX_MODE` | No | `local` (default) or `hosted`. `kestrix serve-hosted` forces `hosted`. |
 | `KESTRIX_PUBLIC_ORIGIN` | Yes | The public origin, such as `https://kestrix.example.org`. Must be `https://`, with no path, query or credentials. |
-| `KESTRIX_SESSION_PEPPER` | Yes | A secret of at least 32 bytes. Keys the session-id, CSRF and `state` hashes. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Changing it signs everyone out. |
+| `KESTRIX_SESSION_PEPPER` | Yes | A secret of at least 32 bytes. Keys the refresh-token, CSRF and `state` hashes. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Changing it signs everyone out. |
+| `KESTRIX_JWT_SECRET` | Yes | A different secret of at least 32 bytes that signs the access tokens (HS256, [ADR 0007](adr/0007-jwt-access-and-rotating-refresh-tokens.md)). Generate it the same way: `python -c "import secrets; print(secrets.token_urlsafe(48))"` (64 characters, 48 random bytes). It must differ from the pepper. |
+| `KESTRIX_JWT_SECRET_PREVIOUS` | No | The previous `KESTRIX_JWT_SECRET` during a rotation, at least 32 bytes. Accepted only to verify access tokens; new tokens use `KESTRIX_JWT_SECRET`. Remove it 15 minutes after the rotation, when the last old token has expired. |
 | `KESTRIX_GOOGLE_CLIENT_ID`, `KESTRIX_GOOGLE_CLIENT_SECRET` | One provider | Google sign-in. Enabled only when both are set; setting just one is an error. |
 | `KESTRIX_GITHUB_CLIENT_ID`, `KESTRIX_GITHUB_CLIENT_SECRET` | One provider | GitHub sign-in, with the same rule. |
 | `KESTRIX_DB` | No | SQLite file. Default: `hosted.sqlite3` in the config directory (`$KESTRIX_HOME`, else `~/.config/kestrix`). Put it on a persistent volume. |
@@ -77,10 +79,13 @@ Kestrix asks GitHub for `read:user user:email`, and Google for `openid email pro
 ```bash
 export KESTRIX_PUBLIC_ORIGIN=https://kestrix.example.org
 export KESTRIX_SESSION_PEPPER="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+export KESTRIX_JWT_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
 export KESTRIX_GOOGLE_CLIENT_ID=... KESTRIX_GOOGLE_CLIENT_SECRET=...
 export KESTRIX_DB=/data/kestrix/hosted.sqlite3
 kestrix serve-hosted            # listens on 0.0.0.0:$PORT (default 8000)
 ```
+
+Hosted mode needs the `hosted` extra (`pip install 'kestrix[hosted]'`, which adds PyJWT); the container image includes it. Without it, `serve-hosted` refuses to start and says so. Local mode never imports it.
 
 `serve-hosted` is a separate command rather than a `dashboard --hosted` flag. `dashboard` is built for one person on loopback: it opens a browser, defaults to `127.0.0.1`, and treats `--host` as an extra allowed name. Hosted mode needs none of that, binds every interface, and takes its allowed host from `KESTRIX_PUBLIC_ORIGIN`. Keeping the two apart means a typo in a local command cannot start the public service, and `kestrix dashboard` refuses to run when `KESTRIX_MODE=hosted` is set.
 
@@ -88,9 +93,10 @@ kestrix serve-hosted            # listens on 0.0.0.0:$PORT (default 8000)
 
 The browser flow:
 
-1. The page calls `GET /api/auth/providers` and links to `GET /api/auth/login/{provider}?next=/app`.
-2. After sign-in, the provider returns to `/api/auth/callback/{provider}`, which sets the session cookie and redirects to `next` (default `/app`). Any failure redirects to `/welcome?signin=failed`.
-3. The page calls `GET /api/auth/me` for the user and the `csrf_token`, and sends that token as `X-CSRF-Token` on every `POST`, `PUT`, `PATCH` and `DELETE`.
+1. The page calls `GET /api/auth/providers` and links to `GET /api/auth/login/{provider}?next=/app`, adding `&intent=signup` from the Sign up tab once the visitor has ticked the terms checkbox.
+2. After sign-in, the provider returns to `/api/auth/callback/{provider}`, which sets the access and refresh cookies and redirects to `next` (default `/app`). An account created through Log in (no `intent=signup`) gets `welcome=created` added to `next`, and the dashboard shows a one-time note linking to the terms. Any failure redirects to `/welcome?signin=failed`.
+3. The page calls `GET /api/auth/me` for the user, the `csrf_token` and `access_expires_at`, and sends the token as `X-CSRF-Token` on every `POST`, `PUT`, `PATCH` and `DELETE`.
+4. About a minute before `access_expires_at`, while the tab is visible, the page calls `POST /api/auth/refresh`. A request that gets 401 `token_expired` refreshes once (one refresh at a time, across tabs too) and is retried once; if the refresh fails, the page goes to `/signin`. A page opened after the access cookie lapsed gets `refreshable` from `/api/auth/me` and refreshes first.
 
 Routes and status codes are in [api.md](api.md#hosted-mode).
 
@@ -107,17 +113,24 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   - It still checks the claims: `iss` is `https://accounts.google.com` or `accounts.google.com`; `aud` is the client ID (with several audiences, `azp` must be the client ID too); `exp` is in the future; `iat` is within the last 15 minutes, allowing 5 minutes of clock skew; `nonce` matches the attempt; `email_verified` is `true`.
 - **GitHub identity.** The access token is used once for `GET /user` and `GET /user/emails`. Sign-in needs an email that is both primary and verified. The access token is not stored.
 - **Outbound requests.** Only to `accounts.google.com`, `oauth2.googleapis.com`, `github.com` and `api.github.com`, over `https` on port 443, with certificate verification, no redirects, no environment proxies, a 10-second timeout and a 64 KiB response cap. These are fixed provider hosts, so `netguard`'s private-address check is not used for them; the allowlist is the control.
-- **Accounts.** Users are keyed by `(provider, subject)`. The table holds the verified email, display name, two timestamps and, for a disabled account, when it was disabled. No passwords and no provider tokens. User ids are never reused (`AUTOINCREMENT`).
-- **Sessions.**
-  - The session id is 256 random bits. The database stores only HMAC-SHA256(pepper, id), so a copy of the database cannot be replayed as cookies.
-  - Cookie: `__Host-kx_session`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`.
-  - A session ends after 7 days without use or 30 days after sign-in, whichever comes first. The last-seen time is updated at most every 5 minutes.
-  - Signing in again replaces the browser's previous session. Expired rows are purged when someone signs in.
-  - A disabled account's sessions are deleted and refused.
+- **Accounts.** Users are keyed by `(provider, subject)`. The table holds the verified email, display name, two timestamps, when the terms were accepted (`terms_accepted_at`, for an account created through Sign up) and, for a disabled account, when it was disabled. No passwords and no provider tokens. User ids are never reused (`AUTOINCREMENT`).
+- **Access tokens** ([ADR 0007](adr/0007-jwt-access-and-rotating-refresh-tokens.md), [`server/tokens.py`](../src/kestrix/server/tokens.py)).
+  - A JWT signed with HS256 under `KESTRIX_JWT_SECRET`, with a `kid` header (a keyed hash of the secret). Claims: `iss` (the public origin), `aud` (`kestrix`), `sub` (the user id), `sid` (the refresh family), `iat`, `nbf`, `exp` (15 minutes) and `jti`; all are required.
+  - Verified with PyJWT with `algorithms=["HS256"]` pinned, so `alg: none`, HS384/HS512 and public-key algorithms are refused; an unknown `kid` is refused. The time claims allow 30 seconds of leeway.
+  - Cookie: `__Host-kx_at`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age=900`, no `Domain`.
+  - Every authenticated request then checks that the `sid` family is live and belongs to `sub`, through an in-process cache of at most 30 seconds per family. Logout, account deletion and reuse detection update the cache at once; a change made by another process (such as `kestrix hosted disable-user`) applies within 30 seconds.
+  - An expired token (or a missing one while a refresh cookie is present) gives 401 `token_expired`; a missing or invalid one gives 401 `sign_in_required`.
+- **Refresh tokens.**
+  - 256 random bits (`secrets.token_urlsafe(32)`). The database stores only HMAC-SHA256(pepper, token), so a copy of the database cannot be replayed as cookies.
+  - Cookie: `__Host-kx_rt`, `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age` up to the family's 30-day end, no `Domain`. `__Host-` requires `Path=/`, so the cookie is sent to every route; `SameSite=Strict` and the CSRF check on refresh cover that.
+  - A sign-in creates a family (`sid`). Each `POST /api/auth/refresh` rotates the refresh token and issues a new access token. A family ends 30 days after sign-in or 7 days after its last refresh.
+  - Presenting a refresh token that was already rotated revokes the whole family and logs `refresh token reuse detected; family revoked user=<user hash>`.
+  - Signing in again revokes the family named by the browser's refresh cookie. Ended families are purged when someone signs in.
+  - A disabled account's families are revoked and refused.
 - **CSRF.**
-  - The token is derived from the session id with the pepper, returned by `/api/auth/me`, and stored only as a keyed hash. It is compared in constant time.
-  - It is required on every state-changing request from a signed-in user, on top of the existing `Origin` / `Sec-Fetch-Site` refusal, which now compares against the public origin.
-- **Route gating.** Every `/api/` route is private unless it is on a short public list: health, providers, `me`, `logout`, `login` and `callback`. The OpenAPI schema is not served. A route added later is private by default. Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404.
+  - The token is derived from the family's `sid` with the pepper, returned by `/api/auth/me`, never stored, and compared in constant time. It stays the same across refreshes.
+  - It is required on every state-changing request from a signed-in user, and on `POST /api/auth/refresh` and `POST /api/auth/logout` (checked against the family named by the refresh cookie when the access token has expired), on top of the existing `Origin` / `Sec-Fetch-Site` refusal, which compares against the public origin.
+- **Route gating.** Every `/api/` route is private unless it is on a short public list: health, providers, `me`, `refresh`, `logout`, `login` and `callback`. The OpenAPI schema is not served. A route added later is private by default. Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404.
 - **Website check.**
   - Public targets only: `allow_private: true` is refused with 400, and `netguard` still applies to every hop.
   - Each scan needs `"authorized": true`, the user's confirmation that they own or are authorized to test the site.
@@ -125,10 +138,10 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
   - Only ports 80 and 443, on the first request and on every redirect, and one generic `target_unreachable` message for every connection-level failure, so the check cannot map open ports.
   - One scan sends at most 6 requests (the first and up to 5 redirects) and 1 TLS handshake. The fetch, DNS lookups included, has 10 seconds in total, enforced on every socket operation; the TLS handshake has its own 10 seconds.
 - **Uploads.** At most 10 MiB per file or message, refused while the body arrives. The multipart parser keeps an upload in memory up to 1 MiB and spills larger ones to an anonymous temporary file (Starlette's `SpooledTemporaryFile`, in `/tmp`), which is deleted when the request ends. Files and messages are never stored, and reports are not kept on the server.
-- **Analyses run in worker processes** ([`server/isolation.py`](../src/kestrix/server/isolation.py)). Each email check, file analysis and URL analysis runs in a fresh process forked from a fork server that was started with only `PATH`, locale, time-zone and temp-directory variables, so workers never see the pepper or client secrets; `kestrix serve-hosted` also removes the secret variables (`KESTRIX_SESSION_PEPPER`, `KESTRIX_LOG_SALT`, the client secrets) from its own environment once the settings are loaded, so a restarted fork server cannot inherit them either. A worker gets the input bytes and options, and returns JSON that the server validates against the report model (never a pickle). Limits: 10 seconds of CPU (`RLIMIT_CPU`), 384 MiB of address space on Linux (`RLIMIT_AS`; macOS does not enforce it), no core dumps, and 20 seconds of wall-clock time, after which the worker is killed. A stopped analysis returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`. In a container test a worker for a worst-case 9.9 MiB email peaked at 170 MiB RSS, about 70 MiB of it shared with the fork server.
+- **Analyses run in worker processes** ([`server/isolation.py`](../src/kestrix/server/isolation.py)). Each email check, file analysis and URL analysis runs in a fresh process forked from a fork server that was started with only `PATH`, locale, time-zone and temp-directory variables, so workers never see the pepper, the JWT secrets or client secrets; `kestrix serve-hosted` also removes the secret variables (`KESTRIX_SESSION_PEPPER`, `KESTRIX_JWT_SECRET`, `KESTRIX_JWT_SECRET_PREVIOUS`, `KESTRIX_LOG_SALT`, the client secrets) from its own environment once the settings are loaded, so a restarted fork server cannot inherit them either. A worker gets the input bytes and options, and returns JSON that the server validates against the report model (never a pickle). Limits: 10 seconds of CPU (`RLIMIT_CPU`), 384 MiB of address space on Linux (`RLIMIT_AS`; macOS does not enforce it), no core dumps, and 20 seconds of wall-clock time, after which the worker is killed. A stopped analysis returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`. In a container test a worker for a worst-case 9.9 MiB email peaked at 170 MiB RSS, about 70 MiB of it shared with the fork server.
 - **Concurrency.** One website check or analysis at a time per user (a second one gets 429 `busy`), and at most 2 analyses and 8 website checks across the service (then 503 `busy`). Both answer at once with `Retry-After: 5` and do not count against the hourly limits; requests never wait in a queue or hold a worker thread, so health checks and pages stay responsive.
 - **Logs.** One `kestrix.access` line per request: method, route template (`/api/auth/callback/{provider}`, never the query string), status, duration in ms, and the first 16 hex characters of HMAC-SHA256(log salt, user id). For unmatched paths, the path (without query) is logged instead of a template. Failed sign-ins add a `kestrix.auth` line with a fixed reason code, such as `id_token_wrong_audience`. Each website check adds a `kestrix.webcheck` line, `webcheck user=<user hash> host=<host hash>`, where the host hash is the first 16 hex characters of HMAC-SHA256(log salt, lower-cased host name); see [Abuse handling](#abuse-handling). An unexpected error logs `unexpected error <exception type> on <method>` and never a traceback, which could quote someone's upload. Bodies, file names, emails, URLs or host names being checked, cookies and tokens are never logged.
-- **Database file.** Created `0600`, in a directory created or tightened to `0700` when Kestrix owns it. All queries are parameterized. Deleted rows are overwritten (`PRAGMA secure_delete=ON`), and deleting an account also checkpoints and truncates the write-ahead log, so the email does not linger in the database files (volume snapshots keep it until they expire; see [deploy.md](deploy.md#backups)). A database created by an earlier preview of hosted mode, without `AUTOINCREMENT` ids or the `disabled_at` column, is refused at start-up with exit code 2 and a message: stop the service, move the file and its `-wal` and `-shm` files aside, and start again. Users sign in again to recreate their accounts.
+- **Database file.** Created `0600`, in a directory created or tightened to `0700` when Kestrix owns it. All queries are parameterized. Deleted rows are overwritten (`PRAGMA secure_delete=ON`), and deleting an account also checkpoints and truncates the write-ahead log, so the email does not linger in the database files (volume snapshots keep it until they expire; see [deploy.md](deploy.md#backups)). A database created by an earlier preview of hosted mode, without `AUTOINCREMENT` ids, the `disabled_at` or `terms_accepted_at` columns, or the refresh-family columns of ADR 0007, is refused at start-up with exit code 2 and a message: stop the service, move the file and its `-wal` and `-shm` files aside, and start again. Users sign in again to recreate their accounts.
 
 ## Abuse handling
 
@@ -136,7 +149,7 @@ Operator commands read the same `KESTRIX_*` variables as `kestrix serve-hosted`,
 
 | Command | What it does |
 | --- | --- |
-| `kestrix hosted disable-user --email ADDRESS` | Disables every account with that email (any provider, case-insensitive): it can no longer sign in, and its sessions are deleted. Exit code 1 if no account matches. |
+| `kestrix hosted disable-user --email ADDRESS` | Disables every account with that email (any provider, case-insensitive): it can no longer sign in, and its refresh families are revoked (a running server notices within 30 seconds). Exit code 1 if no account matches. |
 | `kestrix hosted enable-user --email ADDRESS` | Lets those accounts sign in again. |
 | `kestrix hosted hash-host HOST` | Prints the host hash that `kestrix.webcheck` log lines carry for a host name or URL, such as one named in an abuse report. Search the logs for it to find the user hash, and so the account, that checked it. |
 
@@ -154,10 +167,12 @@ The host hash changes when `KESTRIX_LOG_SALT` changes (or, without it, the peppe
   | `POST /api/forensics/file`, `/api/forensics/url`, `/api/mail/analyze` (one shared bucket) | 120 per hour | User |
   | `GET /api/auth/login/{provider}` | 20 per 10 minutes | Client IP (IPv6: its /64) |
   | `GET /api/auth/callback/{provider}` | 10 per 10 minutes | Client IP (IPv6: its /64) |
+  | `POST /api/auth/refresh` | 60 per 10 minutes | Client IP (IPv6: its /64) |
 
 - **Client IP behind a proxy.** By default the client IP is the socket peer, which behind a platform proxy is the proxy itself, so every visitor shares one sign-in limit. Set `KESTRIX_TRUST_PROXY_HEADERS=1` only when a proxy you control always appends the real client address to `X-Forwarded-For`. Kestrix then uses the right-most entry. Without such a proxy the header is attacker-controlled.
 - **Not yet in this slice.** The reviewed (non-draft) privacy notice and terms belong to a later slice of ADR 0004. The container image is in [deploy.md](deploy.md).
 - **Worker processes and the entry point.** Python's `multiprocessing` re-runs the server's entry script in each analysis worker, so the hosted server must be started from an import-safe entry point (`kestrix serve-hosted`, or any script with an `if __name__ == "__main__":` guard). Workers are a fork server's children, so they need `/tmp` for its socket.
 - **Uploads can touch disk.** An upload over 1 MiB is spooled to an anonymous file in `/tmp` while it is processed. On Fly.io `/tmp` is on the machine's root disk, not a tmpfs (see [deploy.md](deploy.md)).
-- **Session rows are purged opportunistically.** An expired session is refused and deleted when its cookie is next presented; otherwise its row stays until the next sign-in purges it.
-- **`GET` routes with side effects.** `login` stores a pending attempt and `callback` creates a session. Both are needed for OAuth and both are rate-limited.
+- **Refresh families are purged opportunistically.** An ended family is refused at once, and its row stays until the next sign-in purges it.
+- **Revocation across processes.** The 30-second family cache is per process. With one instance that only matters for operator commands; a second instance would need a shared revocation store.
+- **`GET` routes with side effects.** `login` stores a pending attempt and `callback` creates a refresh family. Both are needed for OAuth and both are rate-limited.

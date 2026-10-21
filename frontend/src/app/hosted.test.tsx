@@ -75,8 +75,11 @@ describe("hosted routing", () => {
     expect(github.getAttribute("href")).toBe("/api/auth/login/github?next=%2Fapp");
     expect(screen.queryByRole("link", { name: /google/i })).toBeNull();
     expect(screen.getByText(/analyzed and never stored/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "privacy notice" }).getAttribute("href")).toBe("/privacy");
-    expect(screen.getByRole("link", { name: "terms of use" }).getAttribute("href")).toBe("/terms");
+    // The same Log in / Sign up card as the landing page.
+    expect(screen.getByRole("tab", { name: "Log in" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
+    expect(screen.getByRole("link", { name: "Privacy notice" }).getAttribute("href")).toBe("/privacy");
+    expect(screen.getByRole("link", { name: "Terms of use" }).getAttribute("href")).toBe("/terms");
   });
 
   it("redirects /welcome to / keeping the sign-in failure, and the banner can be dismissed", async () => {
