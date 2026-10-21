@@ -17,7 +17,7 @@
 set -euo pipefail
 source "$HOME/kestrix/hpc/gpu_env.sh"
 export PATH="$HOME/.local/bin:$PATH" UV_OFFLINE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
-export PYTHONPATH="$HOME/kestrix/packages/kestrix-scan/src"
+export PYTHONPATH="$HOME/kestrix/src:$HOME/kestrix/packages/kestrix-scan/src"
 umask 077
 VUL="${KESTRIX_VUL:-/scratch/$USER/kestrix/vul}"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
