@@ -15,7 +15,7 @@ C 70+, D 60+, otherwise F. The grade is forced to F when the final URL is not HT
 
 ## Site profile
 
-`profile.kind` is `static`, `static_api` or `dynamic` (a password field or cookie on any checked page; in a whole-site scan the
+`profile.kind` is `static`, `static_api` or `dynamic` (a sign-in field, meaning a password, one-time-code or passkey field or a form posting from a login address, or a cookie on any checked page; in a whole-site scan the
 most sensitive page sets it and `profile.decided_by` names it). On `static` sites
 `csp.missing`, `csp.report_only` and `csp.no_script_restriction` drop to low (they stay medium when scripts
 load from a third-party host) and `framing.unprotected` and `referrer.weak` drop to info; on `static_api`

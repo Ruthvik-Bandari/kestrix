@@ -183,6 +183,16 @@ def test_a_redirect_to_a_page_already_checked_is_not_judged_twice(make_lab):
     assert pages["/admin/login"].outcome == "duplicate"
 
 
+def test_a_redirected_sign_in_page_is_named_where_it_landed(make_lab):
+    """A one-time-code sign-in reached through /admin: no password field, and the reason names /admin/login."""
+    code = "<form method='post'><input autocomplete='one-time-code' name='code'></form>"
+    lab = make_lab({"/": page("hi"), "/admin/login": page(code)})
+    lab.routes["/admin"] = (307, [("Location", "/admin/login")], b"")
+    profile = run(lab).profile
+    assert profile is not None and profile.kind == "dynamic"
+    assert profile.reasons[0] == "/admin/login has a sign-in field (such as a one-time code)"
+
+
 def test_a_hostile_sitemap_is_bounded(make_lab):
     locs = "".join(f"<loc>/p{i}</loc>" for i in range(100_000))
     bomb = (

@@ -130,3 +130,49 @@ def test_site_profile_is_the_most_sensitive_page_and_names_it():
         "You chose 'pages only', but /contact has a form with 1 input field(s) but no login or cookie, "
         "so it was checked as a site with a form."
     )
+
+
+# Passwordless and two-factor sign-ins have no password field; they still make a site one with logins.
+CODE_LOGIN = (
+    b"<form method='POST' action=''><input type='hidden' name='$ACTION_KEY'>"
+    b"<input type='text' inputmode='text' autocomplete='one-time-code' name='code' required></form>"
+)
+
+
+@pytest.mark.parametrize(
+    ("url", "body", "reason"),
+    [
+        ("https://site.test/verify", CODE_LOGIN, "This page has a sign-in field (such as a one-time code)"),
+        (
+            "https://site.test/",
+            b"<form><input name='email' autocomplete='username webauthn'></form>",
+            "This page has a sign-in field (such as a one-time code)",
+        ),
+        (
+            "https://site.test/",
+            b"<form><input name='totp'></form>",
+            "This page has a sign-in field (such as a one-time code)",
+        ),
+        (
+            "https://site.test/admin/login",
+            b"<form method='post'><input name='token'></form>",
+            "This page has a form that posts to the server from a login address",
+        ),
+    ],
+)
+def test_sign_ins_without_a_password_field_are_logins(url, body, reason):
+    profile = profile_site(HTML, body, url)
+    assert profile.kind == "dynamic"
+    assert profile.reasons[0] == reason
+
+
+@pytest.mark.parametrize(
+    ("url", "body"),
+    [
+        ("https://site.test/contact", b"<form method='post'><input name='code'><input name='email'></form>"),
+        ("https://site.test/", b"<form><input name='promo' autocomplete='off'></form>"),
+        ("https://site.test/admin/login", b"<form method='get'><input name='q'></form>"),
+    ],
+)
+def test_ordinary_forms_are_not_sign_ins(url, body):
+    assert profile_site(HTML, body, url).kind == "static_api"

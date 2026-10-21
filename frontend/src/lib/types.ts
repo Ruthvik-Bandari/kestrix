@@ -244,6 +244,8 @@ export interface SiteProfile {
     forms: number;
     post_forms: number;
     password_fields: number;
+    /** One-time code, passkey and other sign-in fields that are not password fields; absent on older reports. */
+    login_fields?: number;
     input_fields: number;
     cookies: number;
     scripts_inline: number;

@@ -9,7 +9,11 @@ fetched, with a bounded, non-executing parser (``html.parser``), and classifies 
 - ``static``: pages only, with no forms, cookies or sign of API calls;
 - ``static_api``: a backend but no accounts. That means data-entry forms (a contact form, say) or
   scripts that call APIs (``fetch``, XHR, ``/api/``, GraphQL), with no password field and no cookies;
-- ``dynamic``: accounts or sessions, meaning a password field or cookies.
+- ``dynamic``: accounts or sessions, meaning a login field or cookies. A login field is a password
+  field, a field the page marks for a password, one-time code or passkey (``autocomplete``), a field
+  named like a one-time code (``otp``, ``totp``, ``mfa``, ``passcode``), or any form that posts from
+  a login-like address such as ``/admin/login``: passwordless and two-factor sign-ins have no
+  password field.
 
 The page is untrusted data: nothing is executed, only tags, attributes and short inline-script
 markers are counted, and every input is size-bounded. Each page is assessed on its own; the site's
@@ -33,6 +37,8 @@ ORDER: dict[SiteKind, int] = {"static": 0, "static_api": 1, "dynamic": 2}
 MAX_PARSE_BYTES = 1024 * 1024
 MAX_INLINE_SCRIPT_CHARS = 200_000
 _LOGIN_PATH = re.compile(r"/(log-?in|sign-?in|account|admin|wp-login)\b", re.I)
+_LOGIN_AUTOCOMPLETE = frozenset({"current-password", "new-password", "one-time-code", "webauthn"})
+_CODE_FIELD_NAME = re.compile(r"^(?:otp|totp|mfa|2fa|passcode|one[-_]?time[-_]?(?:code|password))$", re.I)
 _API = re.compile(r"\bfetch\s*\(|XMLHttpRequest|axios\.|/api/|graphql|\bwss?://", re.I)
 
 
@@ -41,6 +47,7 @@ class Evidence(BaseModel):
     forms: int = 0
     post_forms: int = 0
     password_fields: int = 0
+    login_fields: int = 0  # other sign-in fields: one-time codes, passkeys, password autocomplete hints
     input_fields: int = 0
     cookies: int = 0
     scripts_inline: int = 0
@@ -77,6 +84,10 @@ class _Collector(HTMLParser):
         elif tag == "input":
             kind = a.get("type", "text").lower()
             self.ev.password_fields += kind == "password"
+            hints = set(a.get("autocomplete", "").lower().split())
+            self.ev.login_fields += kind != "password" and (
+                bool(hints & _LOGIN_AUTOCOMPLETE) or bool(_CODE_FIELD_NAME.match(a.get("name", "")))
+            )
             self.ev.input_fields += kind not in {"hidden", "submit", "button", "image", "reset"}
         elif tag in {"textarea", "select"}:
             self.ev.input_fields += 1
@@ -170,6 +181,14 @@ def assess_page(headers: dict[str, list[str]], body: bytes, final_url: str, subj
     reasons: list[str] = []
     if ev.password_fields:
         reasons.append(f"{subject} has " + _plural(ev.password_fields, "a password field", "{n} password fields"))
+    elif ev.login_fields:
+        reasons.append(
+            f"{subject} has "
+            + _plural(ev.login_fields, "a sign-in field", "{n} sign-in fields")
+            + " (such as a one-time code)"
+        )
+    elif ev.post_forms and _LOGIN_PATH.search(urlsplit(final_url).path):
+        reasons.append(f"{subject} has a form that posts to the server from a login address")
     if ev.cookies:
         reasons.append(f"{subject} " + _plural(ev.cookies, "sets a cookie", "sets {n} cookies"))
     detected: SiteKind = "dynamic" if reasons else "static"
@@ -241,6 +260,7 @@ def _sum_evidence(items: list[Evidence]) -> Evidence:
         "forms",
         "post_forms",
         "password_fields",
+        "login_fields",
         "input_fields",
         "cookies",
         "scripts_inline",

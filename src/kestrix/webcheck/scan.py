@@ -100,7 +100,13 @@ def scan(
         checked: list[tuple[str, bool, FetchResult]] = [(start_path, True, result)]
         checked += [(v.path, False, v.result) for v in found.visits if v.outcome == "checked" and v.result]
         assessed: list[tuple[str, PageProfile]] = [
-            (path, assess_page(r.headers, r.body, r.final_url, _subject(path, is_start)))
+            # A discovered page is named where it landed: "/admin/login has ...", not "/admin has ...".
+            (
+                path,
+                assess_page(
+                    r.headers, r.body, r.final_url, _subject(path if is_start else path_of(r.final_url), is_start)
+                ),
+            )
             for path, is_start, r in checked
         ]
         profile = combine_pages(assessed, site_type)

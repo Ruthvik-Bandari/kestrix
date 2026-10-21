@@ -148,7 +148,7 @@ const siteKindText: Record<
     dynamic: {
       label: "Dynamic site",
       explain:
-        "At least one page has a login (password field) or sets cookies.",
+        "At least one page has a login (a password, one-time code or passkey field, or a form at a login address) or sets cookies.",
     },
   },
   page: {
@@ -165,7 +165,7 @@ const siteKindText: Record<
     dynamic: {
       label: "Page with a login or cookies",
       explain:
-        "This page has a login (password field) or sets cookies. Other pages were not checked.",
+        "This page has a login (a password, one-time code or passkey field, or a form at a login address) or sets cookies. Other pages were not checked.",
     },
   },
 };
@@ -183,6 +183,7 @@ function ProfilePanel({
   const facts: [string, number][] = [
     [`Forms${where}`, ev.forms],
     [`Password fields${where}`, ev.password_fields],
+    [`Other sign-in fields${where}`, ev.login_fields ?? 0],
     [`Cookies set${where}`, ev.cookies],
     [
       `Scripts, inline and external${where}`,

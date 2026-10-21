@@ -93,7 +93,7 @@ A missing CSP or framing protection matters most where there is something to ste
 
 | Profile | Assigned when |
 | --- | --- |
-| `dynamic` | Accounts or sessions: a page has a password field or sets a cookie. |
+| `dynamic` | Accounts or sessions: a page has a sign-in field or sets a cookie. A sign-in field is a password field; a field whose `autocomplete` names `current-password`, `new-password`, `one-time-code` or `webauthn`; a field named `otp`, `totp`, `mfa`, `2fa`, `passcode` or `one-time-code`; or any form that posts from a login-like address (`/login`, `/signin`, `/account`, `/admin`, `/wp-login`). Passwordless and two-factor sign-ins have no password field, so the other kinds count too; they are reported in `evidence.login_fields`. |
 | `static_api` | A backend but no accounts: a data-entry form (a contact form, say), inline scripts that call APIs (`fetch`, XHR, `axios`, `/api/`, GraphQL, WebSockets), or a JSON response. |
 | `static` | Pages only: none of the above. |
 
