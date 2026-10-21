@@ -4,7 +4,46 @@ Maintained per session: overwrite these sections at the end of every Claude Code
 
 ## Current git SHA
 
-The tip of `main`, pushed to `origin/main` after every change (2026-10-15). The working tree is clean after the commit that adds this file.
+The tip of `main`, pushed to `origin/main` after every change. The working tree is clean after the commit that updates this file (2026-10-21).
+
+## Website and workbench redesign (2026-10-21)
+
+Implemented `docs/design/2026-10-21-redesign/` PLAN.md phases 1 to 8 on `main` (`a715b99` … the commit that updates this file):
+
+- **Tokens and theme (1):** graphite, ivory and green tokens. All text pairs measured at 4.5:1 or better.
+- **Landing (2):** one landing page with the real synthetic email example, replacing the six chapters.
+- **Theme and shell (3):**
+  - OLED-black dark theme, with code rain only behind the landing hero and `/signin` (owner's choice).
+  - Grouped, full-height rail and a task-first Home.
+- **Tool pages (4–5):** email, website and file/link pages have the input beside the report.
+- **Remaining pages (6):** docs, legal, guides, detection, Bitcoin, history, settings and sign-in.
+- **Public docs (7):** hosted `/docs` pages that anyone can read without signing in.
+- **Final review (8):** a sweep across both modes.
+
+**Owner rule:** use screen width efficiently. That means no page-wide wrapper card, prose about 68ch, and spare width put to work. On wide screens docs and legal pages carry an "On this page" list.
+
+**Install copy:**
+- Nothing is on PyPI yet.
+- `uv tool install "git+…"` gives the CLI, but its dashboard bundle is empty, because `server/static` is not committed.
+- The landing page and docs show the from-source build. A local from-source install shipped 44 bundle files and served the dashboard.
+
+**Checks run on the final build:**
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` / `typecheck` / `test` / `build` | clean; 214 tests |
+| `uv run pytest` | 2547 passed, 1 skipped (RLIMIT_AS, Linux only) |
+| `uv run pytest tests/server/test_hosted_spa.py` | 20 passed |
+| Playwright sweep, both modes, every route | 0 problems, 0 console errors |
+| `uv run mypy` | 3 pre-existing errors in `guardian.py` (anthropic stub); not run again after phase 7 |
+
+The Playwright sweep covered:
+- local mode: 18 routes plus saved reports;
+- hosted mode: 7 public and 11 app routes;
+- 360, 390, 768, 1024 and 1440px in light and dark;
+- 200% text, reduced motion, skip link, the anonymous `/app` redirect and the hosted detection guide having no live inputs.
+
+**Next action:** the owner reviews the site locally. Deployment, the PyPI release (which must ship the built bundle in the wheel) and making the repo public are separate, owner-approved steps.
 
 ## Completed
 

@@ -333,7 +333,9 @@
     font-weight: 600;
     font-size: 0.9375rem;
     line-height: 1;
-    white-space: nowrap;
+    /* Short labels stay on one line; at large text sizes they wrap rather than overflow. */
+    max-width: 100%;
+    text-wrap: balance;
     cursor: pointer;
     transition:
       background-color 150ms var(--ease-out-quart),

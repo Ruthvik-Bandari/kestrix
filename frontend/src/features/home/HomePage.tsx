@@ -171,7 +171,7 @@ function RecentResults() {
           </Link>
         </div>
       ) : (
-        <div className="panel px-4 py-1 sm:px-5">
+        <div className="panel overflow-x-auto px-4 py-1 sm:px-5">
           <table className="data-table max-sm:block">
             <caption className="sr-only">
               Your {Math.min(data.items.length, RECENT_SHOWN)} most recent saved
@@ -331,7 +331,7 @@ export default function HomePage() {
         </p>
       </header>
 
-      <div className="grid gap-x-10 gap-y-10 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-10 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-10">
           <Tasks />
           <RecentResults />
