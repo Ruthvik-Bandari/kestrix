@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { Link, NavLink, useParams } from "react-router";
-import { dashboardPath } from "../../app/paths";
+import { dashboardPath, landingPath } from "../../app/paths";
+import { tools } from "../../app/tools";
 import { Icon } from "../../components/Icon";
 import { cx, PageHeader } from "../../components/ui";
 import { useTitle } from "../../lib/useTitle";
-import { examples } from "../guides/examples";
-import { Command, ExampleOutput, Inline } from "../guides/parts";
-import { DOC_GROUPS, docPages, findDoc, type Block, type DocPage } from "./content";
+import { Command, Inline } from "../tools/parts";
+import { ToolGuide } from "../tools/ToolGuide";
+import type { Block } from "./blocks";
+import { DOC_GROUPS, docPages, findDoc, type DocPage } from "./content";
 
 function docPath(slug: string): string {
   return dashboardPath(slug ? `docs/${slug}` : "docs");
@@ -85,8 +87,31 @@ function BlockView({ block }: { block: Block }) {
       );
     case "code":
       return <Command command={block.code} label={block.label} />;
-    case "example":
-      return <ExampleOutput example={examples[block.example]} />;
+    case "tools":
+      return (
+        <ul className="space-y-2.5">
+          {tools.map((tool) => (
+            <li key={tool.page} className="flex gap-3">
+              <Icon name={tool.icon} size={18} className="mt-0.5 flex-none text-accent-text" />
+              <span>
+                <Link to={docPath(tool.page)} className="link font-semibold">
+                  {tool.name}
+                </Link>
+                : {tool.summary}
+              </span>
+            </li>
+          ))}
+        </ul>
+      );
+    case "landing":
+      return (
+        <p>
+          <Link to={landingPath()} className="link inline-flex items-center gap-1.5 font-semibold">
+            {block.text}
+            <Icon name="arrowRight" size={14} />
+          </Link>
+        </p>
+      );
   }
 }
 
@@ -105,6 +130,14 @@ function DocArticle({ page }: { page: DocPage }) {
             </div>
           </section>
         ))}
+        {page.tool ? (
+          <section aria-labelledby="docs-install" className="mt-9">
+            <h2 id="docs-install" className="mb-3 text-xl font-bold tracking-[-0.015em] text-ink">
+              Install and use
+            </h2>
+            <ToolGuide tool={page.tool} compact />
+          </section>
+        ) : null}
       </div>
     </article>
   );

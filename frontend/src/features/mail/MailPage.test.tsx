@@ -77,10 +77,11 @@ afterEach(() => {
 });
 
 describe("email check page", () => {
-  it("explains that the check is offline and how to save an .eml", () => {
+  it("says the check stays on this computer, links the docs and explains how to save an .eml", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: "Email check" })).toBeTruthy();
-    expect(screen.getByText(/nothing leaves it/i)).toBeTruthy();
+    expect(screen.getByText(/checked on this computer and never leaves it/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/mail");
     expect(screen.getByText("Download message")).toBeTruthy();
     expect(screen.getByRole<HTMLButtonElement>("button", { name: /check message/i }).disabled).toBe(true);
   });

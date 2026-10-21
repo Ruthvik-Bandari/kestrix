@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { dashboardPath, landingPath, PRIVACY_PATH, TERMS_PATH } from "../app/paths";
+import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, TERMS_PATH } from "../app/paths";
+import { isHosted } from "../lib/mode";
+import { useMe } from "../lib/queries";
 import { site } from "../lib/site";
 import { BrandMark } from "./BrandMark";
 import { Icon } from "./Icon";
@@ -28,8 +30,93 @@ export function LegalLinks({ className }: { className?: string }) {
   );
 }
 
+function DashboardLink() {
+  return (
+    <Link to={dashboardPath()} className="btn btn-primary btn-sm min-h-10">
+      <span className="hidden sm:inline">Open the dashboard</span>
+      <span className="sm:hidden">Dashboard</span>
+      <Icon name="arrowRight" size={15} />
+    </Link>
+  );
+}
+
+/** Hosted: "Log in" while signed out (the dashboard would only send you to sign-in), the dashboard once signed in. */
+function HostedAction() {
+  const me = useMe();
+  if (me.isPending) return null;
+  if (me.data?.signed_in === true) return <DashboardLink />;
+  return (
+    <Link to={SIGNIN_PATH} className="btn btn-ghost btn-sm min-h-10">
+      Log in
+    </Link>
+  );
+}
+
+/** The one header action on public pages. Local mode has no accounts, so it is always the dashboard. */
+export function HeaderAction() {
+  return isHosted() ? <HostedAction /> : <DashboardLink />;
+}
+
+/** The footer of every public page: the attribution, the legal and project links, and the theme. */
+export function SiteFooter() {
+  return (
+    <footer className="veil-rail relative z-10 border-t border-line">
+      <div className="mx-auto grid max-w-[80rem] gap-6 px-4 py-8 text-[0.875rem] sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <div>
+          <p className="flex items-center gap-2.5">
+            <BrandMark size={22} />
+            <span className="font-bold tracking-[-0.02em]">Kestrix by Ruthvik Bandari</span>
+          </p>
+          <p className="mt-3 max-w-[60ch] text-ink-2">
+            Use Kestrix only on systems, files and websites you own or are authorized to assess.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            <li>
+              <Link className="link" to={PRIVACY_PATH}>
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link className="link" to={TERMS_PATH}>
+                Terms
+              </Link>
+            </li>
+            <li>
+              <a className="link" href={site.repoUrl}>
+                GitHub repository
+              </a>
+            </li>
+            <li>
+              <a className="link" href={site.docsUrl}>
+                Documentation
+              </a>
+            </li>
+            <li>
+              <a className="link" href={site.licenseUrl}>
+                License (Apache-2.0)
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div className="w-full max-w-[16rem]">
+          <ThemeSwitch />
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 /** Chrome for pages outside the dashboard: sign-in, the legal pages and unknown addresses. */
-export function PublicShell({ children, width = "narrow" }: { children: ReactNode; width?: "narrow" | "wide" }) {
+export function PublicShell({
+  children,
+  width = "narrow",
+  action = true,
+}: {
+  children: ReactNode;
+  width?: "narrow" | "wide";
+  /** False on the sign-in page, whose card is the action. */
+  action?: boolean;
+}) {
   return (
     <div className="relative isolate flex min-h-dvh flex-col">
       <ThreatField />
@@ -45,10 +132,7 @@ export function PublicShell({ children, width = "narrow" }: { children: ReactNod
             <BrandMark size={28} />
             <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
           </Link>
-          <Link to={dashboardPath()} className="btn btn-secondary btn-sm min-h-10">
-            Open the dashboard
-            <Icon name="arrowRight" size={15} />
-          </Link>
+          {action ? <HeaderAction /> : null}
         </div>
       </header>
       <main
@@ -61,27 +145,7 @@ export function PublicShell({ children, width = "narrow" }: { children: ReactNod
       >
         {children}
       </main>
-      <footer className="veil-rail relative z-10 border-t border-line">
-        <div className="mx-auto grid max-w-[80rem] gap-6 px-4 py-8 text-[0.875rem] sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <div>
-            <p className="flex items-center gap-2.5">
-              <BrandMark size={22} />
-              <span className="font-bold tracking-[-0.02em]">Kestrix by Ruthvik Bandari</span>
-            </p>
-            <LegalLinks className="mt-3" />
-            <p className="mt-3 text-ink-3">
-              Open source under the{" "}
-              <a className="link" href={site.licenseUrl}>
-                Apache License 2.0
-              </a>
-              .
-            </p>
-          </div>
-          <div className="w-full max-w-[16rem]">
-            <ThemeSwitch />
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

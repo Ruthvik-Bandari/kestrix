@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
 import { ByteHistogram, byteLabel } from "../../components/charts/ByteHistogram";
 import { EntropyChart } from "../../components/charts/EntropyChart";
+import { DataNote } from "../../components/DataNote";
 import { Icon } from "../../components/Icon";
 import { Badge, CopyButton, cx, Disclosure, ErrorState, RawJson, SectionTitle, Spinner, Verdict } from "../../components/ui";
 import { severityTone, type Tone } from "../../components/tone";
@@ -343,12 +344,7 @@ export function FileAnalyzer() {
           }}
         />
       </label>
-      <p className="mt-3 flex gap-2 text-[0.875rem] text-ink-2">
-        <Icon name="lock" size={16} className="mt-0.5 flex-none text-ink-3" />
-        {isHosted()
-          ? "Files are analyzed on Kestrix's server and are never stored or sent anywhere else, and nothing is run. The report is kept in your Recent results for 30 days unless you turn history off."
-          : "Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else, and nothing is run. The report is kept in Recent results on this computer for 30 days."}
-      </p>
+      <DataNote subject="The file" className="mt-3" />
 
       <div aria-live="polite" className="sr-only">
         {analyze.isPending ? "Analyzing the file…" : analyze.isSuccess ? "Analysis finished. Results below." : ""}

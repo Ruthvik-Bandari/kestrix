@@ -3,42 +3,17 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
-import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 import { Icon } from "../../components/Icon";
-import { Badge, CopyButton, ErrorState, Field, PageHeader, RawJson, SectionTitle, Spinner, Switch, Verdict } from "../../components/ui";
+import { Badge, CopyButton, ErrorState, Field, RawJson, SectionTitle, Spinner, Switch, Verdict } from "../../components/ui";
 import { tones, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
 import { plural, satsToBtc } from "../../lib/format";
 import { scrollBehavior } from "../../lib/motion";
 import type { AddressAssessment, PublicTestnet, Risk, ScanResult } from "../../lib/types";
-import { isHosted } from "../../lib/mode";
-import { CliGuide } from "../guides/CliGuide";
-import { useTitle } from "../../lib/useTitle";
+import { ToolHeader } from "../tools/ToolHeader";
 import { Guardian } from "./Guardian";
 
 const MAX_ADDRESSES = 100;
-
-const howItWorks: HowItWorksContent = {
-  id: "bitcoin",
-  name: "Bitcoin quantum risk",
-  purpose:
-    "See which of your Bitcoin addresses have a public key visible on the blockchain, the first target for a future quantum computer, and how to move coins to an address that hides it.",
-  steps: [
-    "Paste up to 100 public addresses or public keys.",
-    "Kestrix decodes each one on this computer and verifies its checksum to find the address type.",
-    "It rates exposure: raw public keys and Taproot show the key, while hash-based addresses hide it until their first spend. An optional mempool.space lookup, off by default, checks whether that spend happened.",
-    "You get a risk level per address and a migration plan to follow in your own wallet.",
-  ],
-  usefulWhen: [
-    "You hold Bitcoin and want to know which coins are most exposed.",
-    "You need migration steps for an address type.",
-  ],
-  doesNot: [
-    "It never asks for private keys or seed phrases, and it cannot sign, send or move coins.",
-    "It does not predict when a large enough quantum computer might exist.",
-    "The migration steps hide your public key; they do not make coins quantum-proof.",
-  ],
-};
 
 const riskMeta: Record<Risk, { tone: Tone; label: string }> = {
   critical: { tone: "crit", label: "Critical" },
@@ -142,7 +117,6 @@ function Results({ result }: { result: ScanResult }) {
 }
 
 export default function BitcoinPage() {
-  useTitle("Bitcoin quantum risk");
   const [text, setText] = useState("");
   const [lookup, setLookup] = useState(false);
   const [testnet, setTestnet] = useState<PublicTestnet>("testnet4");
@@ -170,11 +144,7 @@ export default function BitcoinPage() {
 
   return (
     <>
-      <PageHeader
-        title="Bitcoin quantum risk"
-        lede="Find addresses whose public key is already visible on the blockchain, which a future quantum computer could use to take the coins, and get a plan to move them."
-      />
-      <HowItWorks content={howItWorks} />
+      <ToolHeader page="bitcoin" />
 
       <div className="mb-6 flex gap-3 rounded-xl border border-line bg-surface px-4 py-3">
         <Icon name="key" size={20} className="mt-0.5 flex-none text-accent-text" />
@@ -274,11 +244,6 @@ export default function BitcoinPage() {
           ))}
         </ul>
       </section>
-      {isHosted() ? null : (
-        <div className="mt-12">
-          <CliGuide tool="bitcoin" />
-        </div>
-      )}
     </>
   );
 }

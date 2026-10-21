@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
+import type { ToolPage } from "../../app/tools";
 import { webcheckSample } from "../landing/samples";
 
 /*
@@ -17,8 +18,6 @@ export interface Example {
   source: string;
 }
 
-export type ExampleId = "mail" | "webcheck" | "forensics" | "detect" | "code" | "claude-plugin" | "bitcoin";
-
 const webcheckExcerpt = JSON.stringify(
   {
     grade: webcheckSample.grade,
@@ -29,7 +28,8 @@ const webcheckExcerpt = JSON.stringify(
   2,
 );
 
-export const examples: Record<ExampleId, Example> = {
+/** One real output per tool, shown in its command-line guide. */
+export const examples: Record<ToolPage, Example> = {
   mail: {
     caption: "Checking a saved message",
     text: `$ kestrix mail analyze sample.eml

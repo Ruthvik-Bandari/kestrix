@@ -18,8 +18,6 @@ const TILES = [
   "Code scanner",
   "Claude Code plugin",
   "Bitcoin quantum risk",
-  "Docs",
-  "Recent results",
 ];
 
 const NOW = 1_792_000_000;
@@ -99,14 +97,13 @@ afterEach(() => {
 });
 
 describe("home launcher", () => {
-  it("shows every tool as a named link, without badges in local mode", async () => {
+  it("shows every tool, and only the tools, as a named link without badges in local mode", async () => {
     local();
     renderApp("/");
     const grid = await launcher();
     const links = within(grid).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual(TILES);
     expect(within(grid).getByRole("link", { name: "Code scanner" }).getAttribute("href")).toBe("/code");
-    expect(within(grid).getByRole("link", { name: "Recent results" }).getAttribute("href")).toBe("/history");
     expect(within(grid).queryByText("Run locally")).toBeNull();
   });
 
@@ -117,7 +114,7 @@ describe("home launcher", () => {
     for (const name of ["Detection repair", "Code scanner", "Claude Code plugin", "Bitcoin quantum risk"]) {
       expect(within(grid).getByRole("link", { name: `${name} Run locally` })).toBeTruthy();
     }
-    for (const name of ["Email check", "Web check", "File & link forensics", "Docs", "Recent results"]) {
+    for (const name of ["Email check", "Web check", "File & link forensics"]) {
       expect(within(grid).getByRole("link", { name }).getAttribute("href")).toMatch(/^\/app\//);
     }
   });
@@ -141,20 +138,20 @@ describe("home launcher", () => {
 });
 
 describe("local mode runs the tools", () => {
-  it("serves the live Bitcoin scanner with the command-line guide collapsed", async () => {
+  it("serves the live Bitcoin scanner with its summary and a link to the docs, not a second guide", async () => {
     local();
     renderApp("/bitcoin");
     expect(await screen.findByRole("heading", { level: 1, name: "Bitcoin quantum risk" })).toBeTruthy();
     expect(screen.getAllByRole("textbox").length).toBeGreaterThan(0);
-    const summary = screen.getByText("How to use it from the command line");
-    expect(summary.closest("details")?.open).toBe(false);
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/bitcoin");
+    expect(screen.queryByRole("heading", { name: "Troubleshooting" })).toBeNull();
   });
 
   it("serves the live detection repair page", async () => {
     local({ "GET /api/detect/engine": { body: { reachable: false, version: null, pinned_version: "8.19.3", pinned: false, image: "x" } } });
     renderApp("/detect");
     expect(await screen.findByRole("heading", { level: 1, name: "Detection repair" })).toBeTruthy();
-    expect(screen.getByText("How to use it from the command line")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/detect");
   });
 });
 
@@ -290,20 +287,23 @@ describe("history setting", () => {
 });
 
 describe("landing header", () => {
-  it("shows Sign in to a signed-out visitor", async () => {
+  it("gives a signed-out visitor the auth card and a small Log in link, and no dashboard button", async () => {
     hosted({}, { signed_in: false });
     renderApp("/");
     await screen.findByRole("heading", { level: 1, name: "Kestrix" });
     const header = screen.getAllByRole("banner")[0] as HTMLElement;
-    expect(within(header).getByRole("link", { name: "Sign in" })).toBeTruthy();
+    expect((await within(header).findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
+    expect(await screen.findByRole("tablist", { name: "Log in or sign up" })).toBeTruthy();
+    expect(screen.queryAllByRole("link", { name: /open the dashboard/i })).toHaveLength(0);
   });
 
-  it("shows only the dashboard button to a signed-in visitor", async () => {
+  it("gives a signed-in visitor exactly one Open the dashboard", async () => {
     hosted();
     renderApp("/");
-    await screen.findByText(/You are signed in as/);
     const header = screen.getAllByRole("banner")[0] as HTMLElement;
-    expect(within(header).queryByRole("link", { name: "Sign in" })).toBeNull();
-    expect(within(header).getByRole("link", { name: /open the dashboard/i }).getAttribute("href")).toBe("/app");
+    expect((await within(header).findByRole("link", { name: /open the dashboard/i })).getAttribute("href")).toBe("/app");
+    expect(screen.getAllByRole("link", { name: /open the dashboard/i })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 });

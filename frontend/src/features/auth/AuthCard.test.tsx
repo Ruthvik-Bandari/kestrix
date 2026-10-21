@@ -100,8 +100,8 @@ describe("landing hero auth card", () => {
     expect(within(section).getByRole("link", { name: "Continue with Google" }).getAttribute("href")).toBe("/api/auth/login/google?next=%2Fapp");
   });
 
-  it("offers the dashboard instead to a signed-in visitor", async () => {
-    renderHosted("/", SIGNED_IN);
+  it("offers the dashboard instead to a signed-in visitor on the sign-in page", async () => {
+    renderHosted("/signin", SIGNED_IN);
     const greeting = await screen.findByRole("heading", { level: 2, name: "Welcome back" });
     const section = greeting.closest("section") as HTMLElement;
     expect(within(section).getByText("Ada Lovelace")).toBeTruthy();

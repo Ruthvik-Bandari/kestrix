@@ -4,7 +4,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { BrandMark } from "../components/BrandMark";
 import { Icon, type IconName } from "../components/Icon";
-import { ThemeSwitch } from "../components/ThemeSwitch";
 import { ThreatField } from "../components/ThreatField";
 import { LegalLinks } from "../components/PublicShell";
 import { cx, Skeleton } from "../components/ui";
@@ -12,41 +11,33 @@ import { isHosted } from "../lib/mode";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
 import { AccountMenu } from "./AccountMenu";
 import { WelcomeNote } from "./WelcomeNote";
-import { dashboardPath, landingPath } from "./paths";
-import { runsLocallyOnly, tools, workspace } from "./tools";
+import { dashboardPath } from "./paths";
+import { tools } from "./tools";
 
 interface NavItem {
   to: string;
   label: string;
   icon: IconName;
   end?: boolean;
-  /** Hosted mode: the tool runs on your own computer; its page is a guide. */
-  local?: boolean;
 }
 
-function navGroups(): { label: string | null; items: NavItem[] }[] {
-  const hosted = isHosted();
+/** The workspace pages; the tools are icon shortcuts here and named tiles on Home. */
+function pages(): NavItem[] {
   return [
-    { label: null, items: [{ to: dashboardPath(), label: "Home", icon: "grid", end: true }] },
-    {
-      label: "Tools",
-      items: tools.map((tool) => ({
-        to: dashboardPath(tool.page),
-        label: tool.name,
-        icon: tool.icon,
-        local: hosted && runsLocallyOnly(tool),
-      })),
-    },
-    {
-      label: "Workspace",
-      items: [
-        ...workspace.map((item) => ({ to: dashboardPath(item.page), label: item.name, icon: item.icon })),
-        { to: dashboardPath("settings"), label: "Settings", icon: "settings" },
-        { to: landingPath(), label: "About Kestrix", icon: "sparkle", end: true },
-      ],
-    },
+    { to: dashboardPath(), label: "Home", icon: "grid", end: true },
+    { to: dashboardPath("docs"), label: "Docs", icon: "bookOpen" },
+    { to: dashboardPath("history"), label: "Recent results", icon: "history" },
+    { to: dashboardPath("settings"), label: "Settings", icon: "settings" },
   ];
 }
+
+const linkClass = (isActive: boolean) =>
+  cx(
+    "relative flex min-h-9 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors duration-150",
+    isActive
+      ? "glass text-ink before:opacity-100 after:absolute after:top-2 after:bottom-2 after:left-0 after:w-[3px] after:rounded-full after:bg-[linear-gradient(180deg,var(--h1),var(--h2),var(--h3))]"
+      : "text-ink-2 hover:bg-inset hover:text-ink",
+  );
 
 // Wordmark only; a white-label copy (say, for bramfordwend.example) still has to keep the NOTICE.
 function Brand() {
@@ -106,48 +97,46 @@ function SystemStatus() {
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="space-y-4">
-      {navGroups().map((group) => (
-        <div key={group.label ?? "home"}>
-          {group.label ? (
-            <p className="mb-1 px-3 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-3 uppercase" aria-hidden="true">
-              {group.label}
-            </p>
-          ) : null}
-          <ul className="space-y-0.5">
-            {group.items.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end ?? false}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    cx(
-                      "relative flex min-h-9 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors duration-150",
-                      isActive
-                        ? "glass text-ink before:opacity-100 after:absolute after:top-2 after:bottom-2 after:left-0 after:w-[3px] after:rounded-full after:bg-[linear-gradient(180deg,var(--h1),var(--h2),var(--h3))]"
-                        : "text-ink-2 hover:bg-inset hover:text-ink",
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Icon name={item.icon} size={18} className={isActive ? "text-accent-text" : "text-ink-3"} />
-                      <span className="min-w-0 flex-1 py-1.5 leading-snug break-words">{item.label}</span>
-                      {item.local ? " " : null}
-                      {item.local ? (
-                        <span className="text-[0.6875rem] font-medium text-ink-3">
-                          <span aria-hidden="true">Local</span>
-                          <span className="sr-only">(runs locally)</span>
-                        </span>
-                      ) : null}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      <ul className="space-y-0.5">
+        {pages().map((item) => (
+          <li key={item.to}>
+            <NavLink to={item.to} end={item.end ?? false} onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+              {({ isActive }) => (
+                <>
+                  <Icon name={item.icon} size={18} className={isActive ? "text-accent-text" : "text-ink-3"} />
+                  <span className="min-w-0 flex-1 py-1.5 leading-snug">{item.label}</span>
+                </>
+              )}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+      <div>
+        <p className="mb-1.5 px-3 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-3 uppercase" aria-hidden="true">
+          Tools
+        </p>
+        {/* One click to any tool from anywhere; the names are on the Home tiles and in each link's label. */}
+        <ul className="grid grid-cols-7 gap-0.5">
+          {tools.map((tool) => (
+            <li key={tool.page}>
+              <NavLink
+                to={dashboardPath(tool.page)}
+                onClick={onNavigate}
+                aria-label={tool.name}
+                title={tool.name}
+                className={({ isActive }) =>
+                  cx(
+                    "flex h-10 items-center justify-center rounded-lg transition-colors duration-150",
+                    isActive ? "glass text-accent-text" : "text-ink-3 hover:bg-inset hover:text-ink",
+                  )
+                }
+              >
+                <Icon name={tool.icon} size={19} />
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -157,7 +146,6 @@ function RailFooter() {
     <>
       {isHosted() ? <AccountMenu /> : null}
       {isHosted() ? <HostedStatus /> : <SystemStatus />}
-      <ThemeSwitch />
       <LegalLinks className="text-[0.8125rem]" />
     </>
   );

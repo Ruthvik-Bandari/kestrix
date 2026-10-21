@@ -27,11 +27,11 @@ function mockMedia(matching: string[]) {
   );
 }
 
-function renderLanding(props: { signInUrl?: string | null } = {}) {
+function renderLanding() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[landingPath()]}>
-        <LandingPage {...props} />
+        <LandingPage />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -44,15 +44,14 @@ function compareRoot(toggle: HTMLElement): HTMLElement {
 }
 
 describe("LandingPage", () => {
-  it("shows the wordmark, the headline and the calls to action", () => {
+  it("shows the wordmark, the headline and one way into the dashboard", () => {
     renderLanding();
     expect(screen.getByRole("heading", { level: 1, name: "Kestrix" })).toBeTruthy();
     expect(screen.getByText("Same inbox. Same file. Two endings.")).toBeTruthy();
     const open = screen.getAllByRole("link", { name: /open the dashboard/i });
-    expect(open.length).toBeGreaterThan(1);
-    open.forEach((link) => {
-      expect(link.getAttribute("href")).toBe(dashboardPath());
-    });
+    expect(open).toHaveLength(1);
+    expect(open[0]?.getAttribute("href")).toBe(dashboardPath());
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: /open the dashboard/i })).toBe(open[0]);
     expect(screen.getByRole("link", { name: /start the story/i }).getAttribute("href")).toBe(`#${chapters[0]?.id ?? ""}`);
   });
 
@@ -146,18 +145,17 @@ describe("LandingPage", () => {
     expect(screen.getAllByTestId("fake-cursor").length).toBeGreaterThan(0);
   });
 
-  it("keeps the attribution and the repository link in the footer", () => {
+  it("keeps the attribution and the repository link in the footer, once", () => {
     renderLanding();
     const footer = screen.getByRole("contentinfo");
     expect(within(footer).getByText("Kestrix by Ruthvik Bandari")).toBeTruthy();
+    expect(screen.getAllByText(/Ruthvik Bandari/)).toHaveLength(1);
     expect(within(footer).getByRole("link", { name: "GitHub repository" }).getAttribute("href")).toBe(REPO_URL);
   });
 
-  it("shows Sign in only when a sign-in URL is configured", () => {
-    const view = renderLanding();
-    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
-    view.unmount();
-    renderLanding({ signInUrl: "/auth/sign-in" });
-    expect(screen.getAllByRole("link", { name: "Sign in" })[0]?.getAttribute("href")).toBe("/auth/sign-in");
+  it("has no sign-in in local mode", () => {
+    renderLanding();
+    expect(screen.queryByRole("link", { name: /log in|sign in/i })).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 });

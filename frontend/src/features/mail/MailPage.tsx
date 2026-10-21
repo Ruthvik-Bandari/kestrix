@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMutation } from "@tanstack/react-query";
 import { useState, type DragEvent, type SubmitEvent } from "react";
+import { DataNote } from "../../components/DataNote";
 import { FileButton } from "../../components/FileButton";
-import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 import { Icon } from "../../components/Icon";
-import { cx, ErrorState, Field, PageHeader, Spinner, Verdict } from "../../components/ui";
+import { cx, ErrorState, Field, Spinner, Verdict } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { MailOptions } from "../../lib/types";
 import { isHosted } from "../../lib/mode";
-import { CliGuide } from "../guides/CliGuide";
-import { useTitle } from "../../lib/useTitle";
+import { ToolHeader } from "../tools/ToolHeader";
 import { MailReportView } from "./MailReportView";
 
 /** The server's message cap: 25 MB locally, 10 MB on the hosted service. */
@@ -20,37 +19,12 @@ export function maxMessage(): number {
 }
 export const MAX_PROTECTED_DOMAINS = 20;
 
-const howItWorks: HowItWorksContent = {
-  id: "mail",
-  name: "Email check",
-  purpose:
-    "Check a saved email for signs of phishing, impersonation and fake invoices before you click, reply or open anything.",
-  steps: [
-    "Save the message as an .eml file and drop it here. Optionally list domains you care about, such as your bank.",
-    "Kestrix reads the sender authentication results (SPF, DKIM, DMARC) your provider stamped on the message, and compares the sender's addresses and display name.",
-    "It looks for look-alike domains, deceptive links, risky attachments and the wording of payment and credential scams.",
-    "You get a verdict (clean, suspicious, malicious or insufficient evidence) with a reason for every finding.",
-  ],
-  usefulWhen: [
-    "An invoice or a bank-details change that feels off.",
-    "A sign-in or verify-your-account message.",
-    "An attachment you were not expecting.",
-  ],
-  doesNot: [
-    "It does not visit links, render the message or open attachments.",
-    "It is a set of heuristics, not a classifier: a clean verdict means no check fired.",
-    "Its scam-wording lists are English and miss paraphrases.",
-    "No detection or false-positive rates have been measured yet.",
-  ],
-};
-
 /** Split a comma- or space-separated list, lower-cased and without duplicates. */
 export function parseDomains(text: string): string[] {
   return [...new Set(text.split(/[\s,]+/).map((d) => d.trim().toLowerCase()).filter(Boolean))];
 }
 
 export default function MailPage() {
-  useTitle("Email check");
   const [file, setFile] = useState<File | null>(null);
   const [domains, setDomains] = useState("");
   const [authservId, setAuthservId] = useState("");
@@ -100,22 +74,10 @@ export default function MailPage() {
 
   return (
     <>
-      <PageHeader
-        title="Email check"
-        lede="Check a saved email for signs of phishing, impersonation and fake invoices. Every warning comes with the reason behind it."
-      />
-      <HowItWorks content={howItWorks} />
+      <ToolHeader page="mail" />
 
       <div className="mb-6 grid max-w-3xl gap-3 text-ink-2">
-        <p className="flex gap-2">
-          <Icon name="lock" size={16} className="mt-1 flex-none text-ink-3" />
-          <span>
-            {isHosted()
-              ? "The message is analyzed on Kestrix's server and never stored; only the report is kept in your Recent results, for 30 days unless you turn history off. "
-              : "The check runs offline on this computer and nothing leaves it; the report is kept in Recent results on this computer for 30 days. "}
-            Links are never visited, the message is never displayed as a web page, and attachments are never opened.
-          </span>
-        </p>
+        <DataNote subject="The message" />
         <p className="flex gap-2">
           <Icon name="info" size={16} className="mt-1 flex-none text-ink-3" />
           <span>
@@ -214,11 +176,6 @@ export default function MailPage() {
         </div>
       ) : null}
       {analyze.data ? <MailReportView report={analyze.data} /> : null}
-      {isHosted() ? null : (
-        <div className="mt-12">
-          <CliGuide tool="mail" />
-        </div>
-      )}
     </>
   );
 }

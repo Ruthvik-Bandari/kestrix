@@ -108,7 +108,7 @@ export default function HistoryPage() {
     <>
       <PageHeader
         title="Recent results"
-        lede={`Reports from your email, web, file and link checks, kept ${where} for 30 days. Uploaded files and emails are never stored, only the reports.`}
+        lede={`Reports from your email, web, file and link checks, kept ${where} for 30 days.`}
         aside={
           data && data.total > 0 ? (
             <button

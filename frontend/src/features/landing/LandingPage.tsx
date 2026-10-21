@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useSearchParams } from "react-router";
-import { dashboardPath, pageAvailable, SIGNIN_PATH } from "../../app/paths";
+import { dashboardPath, landingPath, pageAvailable } from "../../app/paths";
 import { AuthCard } from "../auth/AuthCard";
 import { BrandMark } from "../../components/BrandMark";
 import { HoloGlobe } from "../../components/HoloGlobe";
 import { Icon } from "../../components/Icon";
 import { Reveal } from "../../components/Reveal";
-import { LegalLinks } from "../../components/PublicShell";
-import { ThemeSwitch } from "../../components/ThemeSwitch";
+import { HeaderAction, SiteFooter } from "../../components/PublicShell";
 import { CopyButton, cx } from "../../components/ui";
 import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
-import { site } from "../../lib/site";
 import { useMe } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
 import { chapters } from "./content";
@@ -57,14 +55,11 @@ function useActiveChapter(ids: string[]): string | null {
 
 const chapterIds = chapters.map((c) => c.id);
 
-function Header({ signInUrl, active }: { signInUrl: string | null; active: string | null }) {
-  // Hosted: a signed-in visitor gets the dashboard button only, never "Sign in" (local mode has no accounts).
-  const me = useMe(isHosted());
-  const signedIn = me.data?.signed_in === true;
+function Header({ active }: { active: string | null }) {
   return (
     <header className="veil-rail sticky top-0 z-40 border-b border-line">
       <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to={dashboardPath()} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix dashboard">
+        <Link to={landingPath()} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix home">
           <BrandMark size={28} />
           <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
         </Link>
@@ -90,29 +85,19 @@ function Header({ signInUrl, active }: { signInUrl: string | null; active: strin
             ))}
           </ul>
         </nav>
-        <div className="flex items-center gap-2">
-          {/* Hosted accounts: rendered only when a sign-in URL is configured (lib/site.ts). */}
-          {signInUrl && !signedIn ? (
-            <Link to={signInUrl} className="btn btn-secondary btn-sm min-h-10">
-              Sign in
-            </Link>
-          ) : null}
-          <Link to={dashboardPath()} className="btn btn-primary btn-sm min-h-10">
-            <span className="hidden sm:inline">Open the dashboard</span>
-            <span className="sm:hidden">Dashboard</span>
-            <Icon name="arrowRight" size={15} />
-          </Link>
-        </div>
+        <HeaderAction />
       </div>
       <span className="scroll-progress" aria-hidden="true" />
     </header>
   );
 }
 
-function Hero({ signInUrl }: { signInUrl: string | null }) {
+function Hero() {
   const first = chapters[0]?.id ?? "";
-  // Hosted: the Log in / Sign up card sits beside the globe (above it on narrow screens).
-  const authCard = isHosted();
+  // Hosted, signed out: the Log in / Sign up card sits beside the globe (above it on narrow
+  // screens). Signed in, the header's "Open the dashboard" is the one action.
+  const me = useMe(isHosted());
+  const authCard = isHosted() && me.data?.signed_in !== true;
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
       <div className="holo-grid -z-10" aria-hidden="true" />
@@ -142,16 +127,6 @@ function Hero({ signInUrl }: { signInUrl: string | null }) {
               Start the story
               <Icon name="chevronDown" size={18} />
             </a>
-            <Link to={dashboardPath()} className="btn btn-secondary btn-lg">
-              Open the dashboard
-              <Icon name="arrowRight" size={18} />
-            </Link>
-            {/* A "Sign in" button appears here once signInUrl is configured; hosted mode has the card instead. */}
-            {signInUrl && !authCard ? (
-              <Link to={signInUrl} className="btn btn-ghost btn-lg">
-                Sign in
-              </Link>
-            ) : null}
           </div>
           <p className="mx-auto mt-6 flex max-w-[48ch] items-start justify-center gap-2 text-[0.875rem] text-ink-3 lg:mx-0 lg:justify-start">
             <span className="mt-1.5 size-2 flex-none rounded-full bg-[conic-gradient(var(--h1),var(--h2),var(--h3),var(--h4),var(--h1))]" aria-hidden="true" />
@@ -248,16 +223,6 @@ function RunIt() {
                   ? "Sign in to check your own email, file, link or website here in the browser. Detection repair and the Bitcoin check run in the desktop app."
                   : "Every scene above is a tool in the dashboard. Bring your own email, file, link, rule, website or addresses."}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to={dashboardPath()} className="btn btn-primary btn-lg">
-                  Open the dashboard
-                  <Icon name="arrowRight" size={18} />
-                </Link>
-                <a href={site.docsUrl} className="btn btn-secondary btn-lg">
-                  Read the docs
-                  <Icon name="external" size={16} />
-                </a>
-              </div>
             </div>
             <div className="grid gap-4">
               <div className="terminal overflow-hidden rounded-2xl">
@@ -307,46 +272,6 @@ function RunIt() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="veil-rail border-t border-line">
-      <div className="mx-auto grid max-w-[80rem] gap-8 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <div>
-          <p className="flex items-center gap-2.5">
-            <BrandMark size={26} />
-            <span className="text-lg font-bold tracking-[-0.02em]">Kestrix by Ruthvik Bandari</span>
-          </p>
-          <p className="mt-3 max-w-[60ch] text-[0.875rem] text-ink-2">
-            Licensed under the Apache License 2.0. Use Kestrix only on systems, files and websites you own or are
-            authorized to assess.
-          </p>
-          <LegalLinks className="mt-4 text-[0.875rem]" />
-          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[0.875rem]">
-            <li>
-              <a className="link" href={site.repoUrl}>
-                GitHub repository
-              </a>
-            </li>
-            <li>
-              <a className="link" href={site.docsUrl}>
-                Documentation
-              </a>
-            </li>
-            <li>
-              <a className="link" href={site.licenseUrl}>
-                License (Apache-2.0)
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div className="w-full max-w-[16rem]">
-          <ThemeSwitch />
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 const NOTICES: Record<string, { param: string; tone: "ok" | "crit"; text: string }> = {
   signinFailed: { param: "signin", tone: "crit", text: "Sign-in didn’t complete. Please try again." },
   accountDeleted: { param: "account", tone: "ok", text: "Your account and all its sessions were deleted." },
@@ -390,7 +315,7 @@ function Notice() {
   );
 }
 
-export default function LandingPage({ signInUrl = isHosted() ? SIGNIN_PATH : site.signInUrl }: { signInUrl?: string | null }) {
+export default function LandingPage() {
   useTitle("Welcome");
   const active = useActiveChapter(chapterIds);
   return (
@@ -401,11 +326,11 @@ export default function LandingPage({ signInUrl = isHosted() ? SIGNIN_PATH : sit
       >
         Skip to content
       </a>
-      <Header signInUrl={signInUrl} active={active} />
+      <Header active={active} />
       <Rail active={active} />
       <main id="landing-main" tabIndex={-1} className="outline-none">
         <Notice />
-        <Hero signInUrl={signInUrl} />
+        <Hero />
         {chapters.map(({ Scene, ...chapter }) => (
           <div key={chapter.id} id={`chapter-${chapter.id}`}>
             <Chapter
@@ -423,7 +348,7 @@ export default function LandingPage({ signInUrl = isHosted() ? SIGNIN_PATH : sit
         ))}
         <RunIt />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

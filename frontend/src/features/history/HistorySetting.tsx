@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router";
-import { dashboardPath } from "../../app/paths";
 import { Dialog } from "../../components/Dialog";
 import { ErrorState, Skeleton, Spinner, Switch } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -61,11 +59,6 @@ export function HistorySetting() {
             <ErrorState error={toggle.error} />
           </div>
         ) : null}
-        <p className="mt-4 text-[0.875rem] text-ink-2">
-          <Link to={dashboardPath("history")} className="link">
-            Open Recent results
-          </Link>
-        </p>
       </div>
       {confirming ? (
         <Dialog

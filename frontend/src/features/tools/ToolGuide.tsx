@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { useId, type ReactNode } from "react";
-import { Link } from "react-router";
-import { dashboardPath } from "../../app/paths";
+import type { ToolPage } from "../../app/tools";
 import { Icon } from "../../components/Icon";
 import { cx } from "../../components/ui";
-import { guides, type GuideTool } from "./guides";
+import { toolContent } from "./content";
+import { examples } from "./examples";
 import { Command, ExampleOutput, Inline } from "./parts";
 
 function Section({
@@ -32,26 +32,15 @@ function Section({
   );
 }
 
-/** The command-line guide for one tool, in a fixed order: what, requirements, install, steps, example, troubleshooting, docs. */
-export function ToolGuide({ tool, compact = false }: { tool: GuideTool; compact?: boolean }) {
-  const guide = guides[tool];
+/**
+ * How to install and run one tool yourself: requirements, install, steps, a real example output and
+ * troubleshooting. The tool's guide page shows it at the top level; its docs page nests it
+ * (`compact`, h3 headings) under one section.
+ */
+export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?: boolean }) {
+  const guide = toolContent[tool].local;
   return (
     <div className="max-w-[72ch] text-[0.9375rem] leading-relaxed text-ink-2">
-      <Section title="What it is and how it helps" compact={compact}>
-        <p className="text-ink">{guide.summary}</p>
-        <p className="mt-3 flex gap-2.5 rounded-xl bg-accent-soft px-3.5 py-3 text-ink">
-          <Icon name="shield" size={18} className="mt-0.5 flex-none text-accent-text" />
-          <span>{guide.protects}</span>
-        </p>
-        <ul className="mt-3 list-disc space-y-1.5 pl-5">
-          {guide.helps.map((item) => (
-            <li key={item}>
-              <Inline text={item} />
-            </li>
-          ))}
-        </ul>
-      </Section>
-
       <Section title="Requirements" compact={compact}>
         <ul className="space-y-1.5">
           {guide.requirements.map((item) => (
@@ -105,7 +94,7 @@ export function ToolGuide({ tool, compact = false }: { tool: GuideTool; compact?
       </Section>
 
       <Section title="Example output" compact={compact}>
-        <ExampleOutput example={guide.example} />
+        <ExampleOutput example={examples[tool]} />
       </Section>
 
       <Section title="Troubleshooting" compact={compact}>
@@ -122,14 +111,6 @@ export function ToolGuide({ tool, compact = false }: { tool: GuideTool; compact?
           ))}
         </dl>
       </Section>
-
-      <p className={compact ? "mt-6" : "mt-10"}>
-        <Link to={dashboardPath(`docs/${guide.docsSlug}`)} className="link inline-flex items-center gap-1.5 font-semibold">
-          <Icon name="bookOpen" size={16} />
-          Read the full {guide.name} documentation
-          <Icon name="arrowRight" size={14} />
-        </Link>
-      </p>
     </div>
   );
 }

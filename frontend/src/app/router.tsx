@@ -20,7 +20,7 @@ const Settings = lazy(() => import("../features/settings/SettingsPage"));
 const History = lazy(() => import("../features/history/HistoryPage"));
 const HistoryDetail = lazy(() => import("../features/history/HistoryDetailPage"));
 const Docs = lazy(() => import("../features/docs/DocsPage"));
-const Guide = lazy(() => import("../features/guides/GuidePage").then((m) => ({ default: m.GuidePage })));
+const Guide = lazy(() => import("../features/tools/GuidePage").then((m) => ({ default: m.GuidePage })));
 const NotFound = lazy(() => import("./NotFound"));
 const Landing = lazy(() => import("../features/landing/LandingPage"));
 const SignIn = lazy(() => import("../features/auth/SignInPage"));

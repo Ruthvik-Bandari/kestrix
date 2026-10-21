@@ -3,45 +3,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 import { Tabs } from "../../components/Tabs";
-import { ErrorState, PageHeader, StatusPill } from "../../components/ui";
+import { ErrorState, StatusPill } from "../../components/ui";
 import { api } from "../../lib/api";
 import { keys, useEngine } from "../../lib/queries";
 import type { DetectReport, RunBody } from "../../lib/types";
-import { isHosted } from "../../lib/mode";
-import { CliGuide } from "../guides/CliGuide";
-import { useTitle } from "../../lib/useTitle";
+import { ToolHeader } from "../tools/ToolHeader";
 import { CaseGallery } from "./CaseGallery";
 import { CustomRuleForm } from "./CustomRuleForm";
 import { EngineHint } from "./EngineHint";
 import { ReportView } from "./ReportView";
 
 type Tab = "cases" | "custom";
-
-const howItWorks: HowItWorksContent = {
-  id: "detect",
-  name: "Detection repair",
-  purpose:
-    "Find out why a Sigma detection rule misses attacks or fires on harmless activity, and get the smallest fix that replay on labeled events supports.",
-  steps: [
-    "Pick a bundled sample case, or give your own Sigma rule, an environment field mapping and labeled development events. Validation events are optional.",
-    "Kestrix checks which fields the rule needs against what your events contain, then replays the rule on a pinned Elasticsearch 8.19.3 in a fresh, throwaway index.",
-    "It diagnoses the cause (mapping drift, noise, a logic fault or missing telemetry) and screens up to four candidate fixes of at most three edits each.",
-    "A fix is chosen on the development events, then checked on held-out validation events. You get the outcome, replay counts and a diff.",
-  ],
-  usefulWhen: [
-    "A rule went quiet after a log pipeline or field-name change.",
-    "A rule floods you with false alarms.",
-    "You want to know whether the telemetry a rule needs is collected at all.",
-  ],
-  doesNot: [
-    "It does not guess: unclear evidence gives abstained or insufficient evidence instead of a forced fix.",
-    "It covers single-event Windows process_creation rules; anything else is reported as unsupported.",
-    "It cannot replay without the engine, which needs Docker (kestrix detect engine-up).",
-    "Without validation events a repair is only provisional, and the bundled cases are synthetic demonstrations, not a benchmark.",
-  ],
-};
 
 function EnginePill() {
   const engine = useEngine();
@@ -57,7 +30,6 @@ function EnginePill() {
 }
 
 export default function DetectPage() {
-  useTitle("Detection repair");
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get("tab") === "custom" ? "custom" : "cases";
   const engine = useEngine();
@@ -76,12 +48,7 @@ export default function DetectPage() {
 
   return (
     <>
-      <PageHeader
-        title="Detection repair"
-        lede="Find out why a Sigma detection rule stopped catching attacks, or catches too much, and get a fix that was replayed on labeled events before you see it."
-        aside={<EnginePill />}
-      />
-      <HowItWorks content={howItWorks} />
+      <ToolHeader page="detect" aside={<EnginePill />} />
 
       {engineDown ? (
         <div className="mb-6 space-y-2">
@@ -129,11 +96,6 @@ export default function DetectPage() {
         </div>
       ) : null}
       {run.data ? <ReportView report={run.data} /> : null}
-      {isHosted() ? null : (
-        <div className="mt-12">
-          <CliGuide tool="detect" />
-        </div>
-      )}
     </>
   );
 }

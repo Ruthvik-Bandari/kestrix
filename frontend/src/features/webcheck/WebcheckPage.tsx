@@ -8,7 +8,6 @@ import {
   cx,
   ErrorState,
   Field,
-  PageHeader,
   RawJson,
   SectionTitle,
   Spinner,
@@ -22,6 +21,7 @@ import {
   type Tone,
 } from "../../components/tone";
 import { api } from "../../lib/api";
+import { ToolHeader } from "../tools/ToolHeader";
 import { isHosted } from "../../lib/mode";
 import { slug } from "../../lib/download";
 import { plural } from "../../lib/format";
@@ -33,9 +33,6 @@ import type {
   WebFinding,
   WebReport,
 } from "../../lib/types";
-import { CliGuide } from "../guides/CliGuide";
-import { useTitle } from "../../lib/useTitle";
-import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 
 /** Mirrors webcheck.models.NOTICE; the report repeats the server's own copy. */
 export const NOTICE =
@@ -416,38 +413,7 @@ export function WebReportView({ report }: { report: WebReport }) {
   );
 }
 
-const hostedHowItWorks = (content: HowItWorksContent): HowItWorksContent => ({
-  ...content,
-  steps: content.steps.map((step) => step.replace("(public addresses only, unless you allow private ones)", "(public addresses only)")),
-  doesNot: content.doesNot.map((line) =>
-    line.startsWith("It is not offline") ? "It is not offline: Kestrix's server contacts the site you enter." : line,
-  ),
-});
-
-const howItWorks: HowItWorksContent = {
-  id: "webcheck",
-  name: "Web check",
-  purpose:
-    "Grade how well a website you own, or are authorized to assess, protects its visitors at the connection and browser level.",
-  steps: [
-    "Enter the site's address and confirm you are allowed to check it.",
-    "Kestrix validates the target (public addresses only, unless you allow private ones) and sends one GET request, following up to five redirects, plus one TLS handshake.",
-    "It reads HTTPS and redirects, the certificate and its expiry, security headers and cookie flags, and profiles the page as static, static with an API, or dynamic to weigh what matters.",
-    "You get an A to F grade from a fixed rubric and a concrete fix for every issue.",
-  ],
-  usefulWhen: [
-    "After a deploy or a hosting change.",
-    "To catch a certificate before it expires.",
-    "To get a fix list for a small site.",
-  ],
-  doesNot: [
-    "It does not crawl, fuzz, log in or scan ports, so it cannot find application bugs such as SQL injection.",
-    "It is not offline: it contacts the site you enter, from this computer.",
-  ],
-};
-
 export default function WebcheckPage() {
-  useTitle("Web check");
   const hosted = isHosted();
   const [url, setUrl] = useState("");
   const [authorized, setAuthorized] = useState(false);
@@ -476,11 +442,7 @@ export default function WebcheckPage() {
 
   return (
     <>
-      <PageHeader
-        title="Web check"
-        lede="A passive check of a website's HTTPS setup and browser security headers, with a grade and a fix for every issue."
-      />
-      <HowItWorks content={hosted ? hostedHowItWorks(howItWorks) : howItWorks} />
+      <ToolHeader page="webcheck" />
       <form
         onSubmit={submit}
         className="panel max-w-3xl space-y-5 p-5 sm:p-6"
@@ -609,11 +571,6 @@ export default function WebcheckPage() {
         </div>
       ) : null}
       {scan.data ? <WebReportView report={scan.data} /> : null}
-      {isHosted() ? null : (
-        <div className="mt-12">
-          <CliGuide tool="webcheck" />
-        </div>
-      )}
     </>
   );
 }

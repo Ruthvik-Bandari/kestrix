@@ -33,20 +33,41 @@ function hostedServer(me: unknown = SIGNED_IN, extra: Parameters<typeof fakeServ
   });
 }
 
+/** The sidebar: the workspace pages by name, then one icon shortcut per tool (named by its label). */
+const NAV = [
+  "Home",
+  "Docs",
+  "Recent results",
+  "Settings",
+  "Email check",
+  "Web check",
+  "File & link forensics",
+  "Detection repair",
+  "Code scanner",
+  "Claude Code plugin",
+  "Bitcoin quantum risk",
+];
+
+function navNames(nav: HTMLElement): (string | null)[] {
+  return within(nav)
+    .getAllByRole("link")
+    .map((link) => link.getAttribute("aria-label") ?? link.textContent);
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   onSignInRequired(null);
 });
 
 describe("hosted routing", () => {
-  it("shows the landing page at / with Sign in and the dashboard under /app", async () => {
+  it("shows the landing page at / with Log in, and the dashboard under /app", async () => {
     hostedServer({ signed_in: false });
     renderApp("/");
     expect(await screen.findByRole("heading", { level: 1, name: "Kestrix" })).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: "Sign in" })[0]?.getAttribute("href")).toBe("/signin");
-    for (const link of screen.getAllByRole("link", { name: /open the dashboard/i })) {
-      expect(link.getAttribute("href")).toBe("/app");
-    }
+    expect((await screen.findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
+    expect((await screen.findByRole("link", { name: "Continue with Google" })).getAttribute("href")).toBe(
+      `/api/auth/login/google?next=${encodeURIComponent("/app")}`,
+    );
   });
 
   it("labels local-only chapters on the landing page", async () => {
@@ -100,25 +121,11 @@ describe("hosted routing", () => {
     renderApp("/app");
     const nav = (await screen.findAllByRole("navigation", { name: "Main" }))[0];
     if (!nav) throw new Error("no main navigation");
-    const labels = within(nav)
-      .getAllByRole("link")
-      .map((link) => link.textContent);
-    expect(labels).toEqual([
-      "Home",
-      "Email check",
-      "Web check",
-      "File & link forensics",
-      "Detection repair Local(runs locally)",
-      "Code scanner Local(runs locally)",
-      "Claude Code plugin Local(runs locally)",
-      "Bitcoin quantum risk Local(runs locally)",
-      "Docs",
-      "Recent results",
-      "Settings",
-      "About Kestrix",
-    ]);
+    expect(navNames(nav)).toEqual(NAV);
     expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/mail");
-    expect(within(nav).getByRole("link", { name: "Bitcoin quantum risk (runs locally)" }).getAttribute("href")).toBe("/app/bitcoin");
+    // The tile and the guide header say "Run locally"; the sidebar shortcut does not repeat it.
+    expect(within(nav).getByRole("link", { name: "Bitcoin quantum risk" }).getAttribute("href")).toBe("/app/bitcoin");
+    expect(within(nav).queryByText(/locally/i)).toBeNull();
     expect(screen.getAllByText("ada@mail.example").length).toBeGreaterThan(0);
   });
 
@@ -224,21 +231,8 @@ describe("local routing is unchanged", () => {
     renderApp("/");
     const nav = (await screen.findAllByRole("navigation", { name: "Main" }))[0];
     if (!nav) throw new Error("no main navigation");
-    expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Home",
-      "Email check",
-      "Web check",
-      "File & link forensics",
-      "Detection repair",
-      "Code scanner",
-      "Claude Code plugin",
-      "Bitcoin quantum risk",
-      "Docs",
-      "Recent results",
-      "Settings",
-      "About Kestrix",
-    ]);
-    expect(within(nav).getByRole("link", { name: "About Kestrix" }).getAttribute("href")).toBe("/welcome");
+    expect(navNames(nav)).toEqual(NAV);
+    expect(within(nav).getByRole("link", { name: "Code scanner" }).getAttribute("href")).toBe("/code");
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 });
