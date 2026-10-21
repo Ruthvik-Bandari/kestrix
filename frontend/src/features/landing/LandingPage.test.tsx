@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
 import { setMode } from "../../lib/mode";
-import { REPO_URL, site } from "../../lib/site";
+import { REPO_URL } from "../../lib/site";
 import { fakeServer, HOSTED_HEALTH, SIGNED_IN } from "../../test/fakeServer";
 import LandingPage from "./LandingPage";
 import { emailSample } from "./samples";
@@ -139,7 +139,7 @@ describe("LandingPage in local mode", () => {
     expect(within(footer).getByText("Kestrix by Ruthvik Bandari")).toBeTruthy();
     expect(screen.getAllByText(/Ruthvik Bandari/)).toHaveLength(1);
     expect(within(footer).getByRole("link", { name: "GitHub repository" }).getAttribute("href")).toBe(REPO_URL);
-    expect(within(footer).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe(site.docsUrl);
+    expect(within(footer).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe("/docs");
     expect(within(footer).getByRole("link", { name: "License (Apache-2.0)" })).toBeTruthy();
     expect(within(footer).getByRole("link", { name: "Privacy" }).getAttribute("href")).toBe(PRIVACY_PATH);
     expect(within(footer).getByRole("link", { name: "Terms" })).toBeTruthy();
@@ -227,9 +227,10 @@ describe("LandingPage on the hosted service", () => {
     }
   });
 
-  it("links the docs on the repository, since the app's docs sit behind sign-in", async () => {
+  it("links the public docs page, not the private repository", async () => {
     renderHosted(false);
     await screen.findByRole("link", { name: "Log in" });
-    expect(within(screen.getByRole("banner")).getByRole("link", { name: "Docs" }).getAttribute("href")).toBe(site.docsUrl);
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: "Docs" }).getAttribute("href")).toBe("/docs");
+    expect(within(screen.getByRole("contentinfo")).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe("/docs");
   });
 });

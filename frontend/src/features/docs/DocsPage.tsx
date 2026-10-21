@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
+import { createContext, useContext } from "react";
 import { Link, NavLink, useParams } from "react-router";
-import { dashboardPath, landingPath } from "../../app/paths";
+import { dashboardPath, docsPath, landingPath } from "../../app/paths";
 import { tools } from "../../app/tools";
 import { Icon } from "../../components/Icon";
 import { headingId, OnThisPage, type TocItem } from "../../components/OnThisPage";
@@ -12,13 +13,19 @@ import { ToolGuide } from "../tools/ToolGuide";
 import type { Block } from "./blocks";
 import { DOC_GROUPS, docPages, findDoc, type DocPage } from "./content";
 
-function docPath(slug: string): string {
-  return dashboardPath(slug ? `docs/${slug}` : "docs");
+/** Where these docs are mounted: the app shell (links stay in the app) or the public shell (links stay public). */
+const DocsScope = createContext<"app" | "public">("app");
+
+function useDocPath(): (slug: string) => string {
+  const scope = useContext(DocsScope);
+  return (slug) => (scope === "public" ? docsPath(slug) : dashboardPath(slug ? `docs/${slug}` : "docs"));
 }
 
 function DocsNav() {
+  const docPath = useDocPath();
+  const scope = useContext(DocsScope);
   return (
-    <nav aria-label="Documentation" className="lg:sticky lg:top-8">
+    <nav aria-label="Documentation" className={cx("lg:sticky", scope === "public" ? "lg:top-24" : "lg:top-8")}>
       {DOC_GROUPS.map((group) => (
         <div key={group} className="mb-4 last:mb-0">
           <p className="mb-1.5 px-2 text-[0.75rem] font-semibold tracking-[0.08em] text-ink-3 uppercase">{group}</p>
@@ -51,6 +58,7 @@ function DocsNav() {
 }
 
 function BlockView({ block }: { block: Block }) {
+  const docPath = useDocPath();
   switch (block.kind) {
     case "p":
       return (
@@ -125,6 +133,7 @@ export function sectionLinks(page: DocPage): TocItem[] {
 }
 
 function DocArticle({ page }: { page: DocPage }) {
+  const scroll = useContext(DocsScope) === "public" ? "scroll-mt-24" : "scroll-mt-6";
   const links = sectionLinks(page);
   return (
     <div className="grid gap-x-10 xl:grid-cols-[minmax(0,68ch)_11rem]">
@@ -133,7 +142,7 @@ function DocArticle({ page }: { page: DocPage }) {
       <div className="text-[0.9375rem] leading-relaxed text-ink-2">
         {page.sections.map((section, index) => (
           <section key={section.heading} className="mt-9 first:mt-0">
-            <h2 id={links[index]?.id} className="mb-3 scroll-mt-6 text-xl font-bold tracking-[-0.015em] text-ink">
+            <h2 id={links[index]?.id} className={`mb-3 ${scroll} text-xl font-bold tracking-[-0.015em] text-ink`}>
               {section.heading}
             </h2>
             <div className="space-y-3">
@@ -145,7 +154,7 @@ function DocArticle({ page }: { page: DocPage }) {
         ))}
         {page.tool ? (
           <section aria-labelledby={INSTALL_ID} className="mt-9">
-            <h2 id={INSTALL_ID} className="mb-3 scroll-mt-6 text-xl font-bold tracking-[-0.015em] text-ink">
+            <h2 id={INSTALL_ID} className={`mb-3 ${scroll} text-xl font-bold tracking-[-0.015em] text-ink`}>
               Install and use
             </h2>
             <ToolGuide tool={page.tool} compact />
@@ -153,12 +162,13 @@ function DocArticle({ page }: { page: DocPage }) {
         ) : null}
       </div>
     </article>
-    <OnThisPage items={links} />
+    <OnThisPage items={links} stickyTop={scroll === "scroll-mt-24" ? "xl:top-24" : "xl:top-8"} />
     </div>
   );
 }
 
 function DocNotFound() {
+  const docPath = useDocPath();
   return (
     <div className="min-w-0">
       <h1 className="text-2xl font-bold tracking-[-0.02em]">Page not found</h1>
@@ -173,7 +183,7 @@ function DocNotFound() {
   );
 }
 
-export default function DocsPage() {
+function DocsBody() {
   const { slug } = useParams();
   const page = findDoc(slug);
   useTitle(page ? (page.slug ? `${page.title} · Docs` : "Docs") : "Docs");
@@ -184,5 +194,19 @@ export default function DocsPage() {
       </div>
       {page ? <DocArticle page={page} /> : <DocNotFound />}
     </div>
+  );
+}
+
+/** The in-app docs (local "/docs", hosted "/app/docs"), inside the app shell. */
+export default function DocsPage() {
+  return <DocsBody />;
+}
+
+/** The public docs ("/docs" on the hosted service): the same content, linking within the public copy. */
+export function PublicDocsBody() {
+  return (
+    <DocsScope.Provider value="public">
+      <DocsBody />
+    </DocsScope.Provider>
   );
 }

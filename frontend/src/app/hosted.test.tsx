@@ -163,6 +163,62 @@ describe("hosted routing", () => {
   });
 });
 
+describe("hosted public docs", () => {
+  it("serves /docs to an anonymous visitor in the public shell, linking within the public copy", async () => {
+    hostedServer({ signed_in: false });
+    renderApp("/docs");
+    expect(await screen.findByRole("heading", { level: 1, name: "Kestrix documentation" })).toBeTruthy();
+    const header = screen.getAllByRole("banner")[0] as HTMLElement;
+    expect((await within(header).findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
+    expect(within(header).getByRole("link", { name: "Sign up" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
+    const nav = screen.getByRole("navigation", { name: "Documentation" });
+    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/mail");
+    expect(screen.getByRole("link", { name: /on the home page/ }).getAttribute("href")).toBe("/");
+    expect(within(screen.getByRole("contentinfo")).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe("/docs");
+  });
+
+  it("serves /docs/mail with the On this page list", async () => {
+    hostedServer({ signed_in: false });
+    renderApp("/docs/mail");
+    expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
+  });
+
+  it("shows a signed-in visitor the same pages with Open workbench", async () => {
+    hostedServer();
+    renderApp("/docs/mail");
+    expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
+    expect((await within(screen.getAllByRole("banner")[0] as HTMLElement).findByRole("link", { name: /open workbench/i })).getAttribute("href")).toBe("/app");
+  });
+
+  it("shows the docs not-found page inside the public shell for an unknown page", async () => {
+    hostedServer({ signed_in: false });
+    renderApp("/docs/xyz");
+    expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeTruthy();
+    expect(screen.getByText("There is no documentation page at this address.")).toBeTruthy();
+    expect(screen.getAllByRole("banner").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /documentation overview/ }).getAttribute("href")).toBe("/docs");
+  });
+
+  it("keeps /app/docs in the app shell for a signed-in user, linking within the app", async () => {
+    hostedServer();
+    renderApp("/app/docs/mail");
+    expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
+    expect((await screen.findAllByRole("navigation", { name: "Main" })).length).toBeGreaterThan(0);
+    const nav = screen.getByRole("navigation", { name: "Documentation" });
+    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/docs/mail");
+  });
+
+  it("still sends a signed-out visitor from /app/docs to /signin", async () => {
+    hostedServer({ signed_in: false });
+    const router = renderApp("/app/docs");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/signin");
+    });
+  });
+});
+
 describe("account menu", () => {
   it("deletes the account only after DELETE is typed, then reloads the home page with a confirmation", async () => {
     const assign = vi.spyOn(browser, "assign").mockImplementation(() => undefined);
@@ -240,5 +296,14 @@ describe("local routing is unchanged", () => {
     expect(navNames(nav)).toEqual(NAV_LOCAL);
     expect(within(nav).getByRole("link", { name: "Code scanner Guide" }).getAttribute("href")).toBe("/code");
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
+
+  it("keeps /docs in the dashboard shell, with no public header", async () => {
+    fakeServer({ "GET /api/health": { body: { status: "ok", version: "0.1.0", modules: [] } } });
+    renderApp("/docs/mail");
+    expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
+    expect(screen.getAllByRole("navigation", { name: "Main" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
+    expect(within(screen.getByRole("navigation", { name: "Documentation" })).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/mail");
   });
 });

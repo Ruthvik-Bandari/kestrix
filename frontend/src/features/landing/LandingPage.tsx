@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
+import { dashboardPath, docsPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
 import { toolFor } from "../../app/tools";
 import { BrandMark } from "../../components/BrandMark";
 import { CodeRain } from "../../components/CodeRain";
@@ -12,7 +12,6 @@ import { CopyButton, cx } from "../../components/ui";
 import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { useMe } from "../../lib/queries";
-import { site } from "../../lib/site";
 import { useTitle } from "../../lib/useTitle";
 import { INSTALL_DASHBOARD } from "../tools/content";
 import { availability, deeperTools, everydayTools, steps, trust, type LandingTool } from "./content";
@@ -50,9 +49,9 @@ function PrimaryAction({ className, onGraphite = false }: { className?: string; 
 
 type NavItem = { label: string; anchor: string } | { label: string; to: string } | { label: string; href: string };
 
-/** Docs are in the dashboard locally; on the hosted service they sit behind sign-in, so link the repository docs. */
+/** Locally the docs are a dashboard page; hosted, a public page that needs no account. */
 function docsItem(): NavItem {
-  return isHosted() ? { label: "Docs", href: site.docsUrl } : { label: "Docs", to: dashboardPath("docs") };
+  return { label: "Docs", to: docsPath() };
 }
 
 function navItems(): NavItem[] {

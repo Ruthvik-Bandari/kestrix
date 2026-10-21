@@ -19,7 +19,7 @@ export function headingId(prefix: string, text: string): string {
   return `${prefix}-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 }
 
-export function OnThisPage({ items, className }: { items: TocItem[]; className?: string }) {
+export function OnThisPage({ items, className, stickyTop = "xl:top-8" }: { items: TocItem[]; className?: string; stickyTop?: string }) {
   const [current, setCurrent] = useState<string | null>(null);
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -46,7 +46,7 @@ export function OnThisPage({ items, className }: { items: TocItem[]; className?:
 
   if (items.length < 2) return null;
   return (
-    <nav aria-label="On this page" className={cx("hidden self-start xl:sticky xl:top-8 xl:block", className)}>
+    <nav aria-label="On this page" className={cx("hidden self-start xl:sticky xl:block", stickyTop, className)}>
       <p className="mb-2 text-[0.75rem] font-semibold tracking-[0.08em] text-ink-3 uppercase">On this page</p>
       <ul className="space-y-0.5 border-l border-line">
         {items.map((item) => {

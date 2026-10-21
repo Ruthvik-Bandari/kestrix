@@ -40,7 +40,7 @@ describe("public shell header", () => {
   it("shows the dashboard instead once signed in", async () => {
     renderAt("/terms", true, SIGNED_IN);
     const header = await screen.findByRole("banner");
-    expect(await within(header).findByRole("link", { name: /dashboard/i })).toBeTruthy();
+    expect(await within(header).findByRole("link", { name: /open workbench/i })).toBeTruthy();
     expect(within(header).queryByRole("link", { name: "Sign up" })).toBeNull();
   });
 });

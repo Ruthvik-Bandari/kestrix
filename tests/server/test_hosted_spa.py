@@ -3,7 +3,8 @@
 """The dashboard's client-side routes are served as index.html in both modes (ADR 0004).
 
 Hosted: the landing page at ``/``, the dashboard under ``/app``, and ``/welcome``, ``/signin``,
-``/privacy`` and ``/terms``. Unknown ``/api/`` paths stay JSON errors, never the page.
+``/privacy``, ``/terms`` and the public docs at ``/docs`` and ``/docs/<page>`` (readable
+without an account). Unknown ``/api/`` paths stay JSON errors, never the page.
 """
 
 import pytest
@@ -24,6 +25,9 @@ SPA_PATHS = [
     "/signin?next=%2Fapp",
     "/privacy",
     "/terms",
+    "/docs",
+    "/docs/mail",
+    "/docs/nope",
 ]
 
 
@@ -75,3 +79,16 @@ def test_local_mode_is_unchanged(bundle, path):
     nope = client.get("/api/nope")
     assert nope.status_code == 404
     assert nope.json()["reason"] == "not_found"
+
+
+@pytest.mark.parametrize("path", ["/docs", "/docs/mail"])
+def test_hosted_docs_need_no_sign_in_but_the_app_and_api_do_not_change(hosted, bundle, path):
+    anonymous = hosted.get(path)
+    assert anonymous.status_code == 200
+    assert anonymous.text == INDEX
+    # Same hardening headers as the other client routes.
+    assert anonymous.headers["strict-transport-security"] == hosted.get("/signin").headers["strict-transport-security"]
+    assert anonymous.headers["content-security-policy"] == hosted.get("/").headers["content-security-policy"]
+    # The in-app copy is still only a client route (the page redirects to sign-in); data stays behind the API.
+    assert hosted.get("/app/docs").text == INDEX
+    assert hosted.get("/api/history").status_code == 401

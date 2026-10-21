@@ -5,7 +5,7 @@ import { createBrowserRouter, Navigate, useLocation, type RouteObject } from "re
 import { isHosted } from "../lib/mode";
 import { RequireSignIn } from "./RequireSignIn";
 import { Layout } from "./Layout";
-import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, TERMS_PATH } from "./paths";
+import { dashboardPath, DOCS_PATH, landingPath, PRIVACY_PATH, SIGNIN_PATH, TERMS_PATH } from "./paths";
 import { RouteError } from "./RouteError";
 
 // One chunk per page; the shell (layout, API client, tokens) loads once.
@@ -20,6 +20,7 @@ const Settings = lazy(() => import("../features/settings/SettingsPage"));
 const History = lazy(() => import("../features/history/HistoryPage"));
 const HistoryDetail = lazy(() => import("../features/history/HistoryDetailPage"));
 const Docs = lazy(() => import("../features/docs/DocsPage"));
+const PublicDocs = lazy(() => import("../features/docs/PublicDocsPage"));
 const Guide = lazy(() => import("../features/tools/GuidePage").then((m) => ({ default: m.GuidePage })));
 const NotFound = lazy(() => import("./NotFound"));
 const Landing = lazy(() => import("../features/landing/LandingPage"));
@@ -70,6 +71,9 @@ export function createRoutes(): RouteObject[] {
     return [
       ...publicRoutes(),
       { path: "/welcome", element: <WelcomeRedirect /> },
+      // Public docs (no account): same pages as /app/docs, in the public shell. An unknown slug shows the docs not-found page.
+      { path: DOCS_PATH, ErrorBoundary: RouteError, element: page(PublicDocs) },
+      { path: `${DOCS_PATH}/:slug`, ErrorBoundary: RouteError, element: page(PublicDocs) },
       { path: SIGNIN_PATH, ErrorBoundary: RouteError, element: page(SignIn) },
       {
         path: dashboardPath(),

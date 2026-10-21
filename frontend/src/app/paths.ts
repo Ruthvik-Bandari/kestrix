@@ -11,6 +11,8 @@ import { isHosted } from "../lib/mode";
 export const SIGNIN_PATH = "/signin";
 export const PRIVACY_PATH = "/privacy";
 export const TERMS_PATH = "/terms";
+/** The public documentation root on the hosted service (no collision locally, where "/docs" is the dashboard page). */
+export const DOCS_PATH = "/docs";
 
 /**
  * Tools that run live only in local mode (their APIs answer 404 on the hosted service, ADR 0004).
@@ -36,6 +38,17 @@ export function dashboardPath(page = ""): string {
   const tail = page.replace(/^\/+/, "");
   if (!tail) return dashboardBase() || "/";
   return `${dashboardBase()}/${tail}`;
+}
+
+/**
+ * The documentation. Locally it is a dashboard page ("/docs"). Hosted, the in-app copy sits behind
+ * sign-in at "/app/docs", so the public copy at "/docs" is what the landing page, footers and
+ * sign-in link to.
+ */
+export function docsPath(slug = ""): string {
+  const tail = slug.replace(/^\/+/, "");
+  if (!isHosted()) return dashboardPath(tail ? `docs/${tail}` : "docs");
+  return tail ? `${DOCS_PATH}/${tail}` : DOCS_PATH;
 }
 
 /** Whether a dashboard page (its first path segment, such as "bitcoin") runs live in this mode. */

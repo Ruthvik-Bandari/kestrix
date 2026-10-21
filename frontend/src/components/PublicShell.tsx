@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH, TERMS_PATH } from "../app/paths";
+import { dashboardPath, docsPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH, TERMS_PATH } from "../app/paths";
 import { isHosted } from "../lib/mode";
 import { useMe } from "../lib/queries";
 import { site } from "../lib/site";
@@ -32,8 +32,8 @@ export function LegalLinks({ className }: { className?: string }) {
 function DashboardLink() {
   return (
     <Link to={dashboardPath()} className="btn btn-primary btn-sm min-h-10">
-      <span className="hidden sm:inline">Open the dashboard</span>
-      <span className="sm:hidden">Dashboard</span>
+      <span className="hidden sm:inline">{isHosted() ? "Open workbench" : "Open the dashboard"}</span>
+      <span className="sm:hidden">{isHosted() ? "Workbench" : "Dashboard"}</span>
       <Icon name="arrowRight" size={15} />
     </Link>
   );
@@ -91,9 +91,9 @@ export function SiteFooter() {
               </a>
             </li>
             <li>
-              <a className="link" href={site.docsUrl}>
+              <Link className="link" to={docsPath()}>
                 Documentation
-              </a>
+              </Link>
             </li>
             <li>
               <a className="link" href={site.licenseUrl}>
@@ -118,7 +118,7 @@ export function PublicShell({
   backdrop,
 }: {
   children: ReactNode;
-  width?: "narrow" | "wide" | "article";
+  width?: "narrow" | "wide" | "article" | "docs";
   /** False on the sign-in page, whose card is the action. */
   action?: boolean;
   /** Decorative layer behind the page content (the sign-in rain); it fills the band between header and footer. */
@@ -148,7 +148,7 @@ export function PublicShell({
           tabIndex={-1}
           className={cx(
             "relative z-10 mx-auto w-full flex-1 px-4 py-10 outline-none sm:px-6 sm:py-14",
-            width === "narrow" ? "max-w-[34rem]" : width === "wide" ? "max-w-[52rem]" : "max-w-[60rem]",
+            width === "narrow" ? "max-w-[34rem]" : width === "wide" ? "max-w-[52rem]" : width === "docs" ? "max-w-[80rem]" : "max-w-[60rem]",
           )}
         >
           {children}
