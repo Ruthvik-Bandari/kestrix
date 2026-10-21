@@ -204,3 +204,35 @@ Published results on realistic, project-disjoint data are low:
 
 The model is therefore framed as **"ranks functions worth reviewing"**, never as a gate. It ships only if it
 measurably improves on the rules, following the same rule as the detection-repair research.
+
+## Results (C6, 2026-10-21)
+
+Reports: [`reports/vul-eval-dev-c6.json`](reports/vul-eval-dev-c6.json) (dev, H200 job 11277237) and
+[`reports/vul-eval-test-c6.json`](reports/vul-eval-test-c6.json) (the one-time locked test, H200 job 11286516,
+claimed in `LOCKED_EVAL.json`; it cannot be run again). Both use the same code and the same three trained runs:
+teacher `teacher-seed1-11277233` (the candidate, chosen on dev), student `student-seed1-11277235`, and zero-shot
+Qwen2.5-Coder-7B-Instruct. PR-AUC with 95% repository-bootstrap intervals; "pair" is the share of
+vulnerable/patched pairs where the vulnerable version scores higher (the harder question).
+
+| View (full) | Base rate | Rules | Bag of words | Zero-shot 7B | Student | **Teacher** | Teacher pair |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| dev (25,875) | 0.025 | 0.124 | 0.096 | 0.276 | 0.203 | **0.381** [0.298, 0.491] | 0.322 |
+| test (7,193) | 0.049 | 0.059 | 0.137 | 0.141 | 0.226 | **0.249** [0.213, 0.295] | 0.147 |
+| test_extension (47,947) | 0.033 | 0.037 | 0.095 | 0.098 | 0.103 | **0.138** [0.111, 0.178] | 0.071 |
+
+What the locked test shows:
+
+- **Dev was optimistic.** The teacher falls from 0.381 on dev to 0.249 on test and 0.138 on the extension set, and
+  its vulnerable-versus-patch accuracy from 0.32 to 0.15 and 0.07. Dev was used to pick the run, the checkpoint and
+  the threshold, so it overstated generalization, as the expectations above warned.
+- **The teacher is still the best system on both held-out sets**, about 5x (test) and 4x (extension) the base rate.
+  On test its interval clears bag-of-words; on the extension set it overlaps bag-of-words and the student.
+- **The rules barely beat chance on held-out projects** (0.059 against a 0.049 base rate on test).
+- **On the filtered view of test the student (0.124) edges the teacher (0.100)**, with overlapping intervals: no
+  reliable difference.
+
+Decision: the model is **not shipped** in `kestrix-scan` or the Claude Code plugin. A ranker that is right about one
+time in four to seven at these thresholds, and near chance at telling a bug from its fix, would add noise to
+findings. The next round, if any, must improve generalization to unseen projects (project-disjoint early stopping
+and threshold selection, more diverse training repositories, seed ensembling), judged on a new held-out set, since
+this test set is now spent.
