@@ -32,7 +32,7 @@ the training set's most frequent CWEs (top-1/top-3 for true positives).
 **Student**: UniXcoder-base (Apache-2.0) with a vulnerability head and a CWE head, trained only on
 the permissive-license pool, on the hard labels and the teacher's soft labels (mean teacher logit
 over the given teacher runs, temperature ``temperature``). Exported as a plain PyTorch state dict
-(fp32) and an int8 dynamically quantized one (``Linear`` layers int8, other tensors fp16).
+(fp32) and fp16 weights (``student_fp16.pt``) from which the int8 dynamically quantized model is rebuilt at load time.
 
 Every run writes ``runs/<run-id>/run.json`` (config, data SHA-256, base revision, git SHA),
 ``log.jsonl`` (loss, dev PR-AUC, timings) and checkpoints.
@@ -753,19 +753,19 @@ def quantize_int8(model: Any) -> Any:
     return torch.ao.quantization.quantize_dynamic(model.cpu().float().eval(), {torch.nn.Linear}, dtype=torch.qint8)
 
 
-def int8_state(model: Any) -> dict[str, Any]:
-    """State dict of the int8 model with its remaining float tensors (embeddings, norms) in fp16."""
-    return {k: _cast(v, half=True) for k, v in model.state_dict().items()}
+def fp16_state(model: Any) -> dict[str, Any]:
+    """The float model's state dict with float tensors in fp16: the shipped student weights.
 
-
-def _cast(value: Any, *, half: bool) -> Any:
+    A dynamically quantized model's own state dict does not round-trip through ``load_state_dict``
+    (packed parameters use different keys), so the int8 model is rebuilt at load time instead:
+    load these weights into the float model, then ``quantize_int8`` it. Quantizing is deterministic.
+    """
     import torch
 
-    # A quantized state dict also holds non-tensor entries (packed params, torch.dtype objects whose
-    # is_floating_point is a bool attribute, not a method); only float tensors are cast.
-    if isinstance(value, torch.Tensor) and value.is_floating_point():
-        return value.half() if half else value.float()
-    return value
+    return {
+        k: (v.detach().cpu().half() if isinstance(v, torch.Tensor) and v.is_floating_point() else v)
+        for k, v in model.state_dict().items()
+    }
 
 
 def load_student(run: Path, snapshot: Path, *, int8: bool) -> tuple[Any, Any]:
@@ -775,12 +775,10 @@ def load_student(run: Path, snapshot: Path, *, int8: bool) -> tuple[Any, Any]:
     meta = json.loads((run / "run.json").read_text())
     model, tokenizer = build_student(snapshot, len(meta["cwe_vocab"]), pretrained=False)
     if int8:
-        model = quantize_int8(model)
-        state = torch.load(run / "student_int8.pt", weights_only=True, map_location="cpu")
-        state = {k: _cast(v, half=False) for k, v in state.items()}
-    else:
-        state = torch.load(run / "student_fp32.pt", weights_only=True, map_location="cpu")
-    model.load_state_dict(state)
+        state = torch.load(run / "student_fp16.pt", weights_only=True, map_location="cpu")
+        model.load_state_dict({k: v.float() if v.is_floating_point() else v for k, v in state.items()})
+        return quantize_int8(model).eval(), tokenizer
+    model.load_state_dict(torch.load(run / "student_fp32.pt", weights_only=True, map_location="cpu"))
     return model.eval(), tokenizer
 
 
@@ -952,7 +950,7 @@ def train_student(root: Path, snapshot: Path, run: Path, teacher_runs: list[str]
         dev_eval(step)
     elapsed = time.time() - started
     model.load_state_dict(torch.load(run / "student_fp32.pt", weights_only=True, map_location="cpu"))
-    torch.save(int8_state(quantize_int8(model)), run / "student_int8.pt")
+    torch.save(fp16_state(model), run / "student_fp16.pt")
     meta |= {
         "status": "done",
         "optimizer_steps": step,
@@ -961,7 +959,7 @@ def train_student(root: Path, snapshot: Path, run: Path, teacher_runs: list[str]
         "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
         "exports": {
             name: {"bytes": (run / name).stat().st_size, "sha256": file_sha256(run / name)}
-            for name in ("student_fp32.pt", "student_int8.pt")
+            for name in ("student_fp32.pt", "student_fp16.pt")
         },
     }
     write_json(run / "run.json", meta)

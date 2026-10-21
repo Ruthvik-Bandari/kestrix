@@ -553,7 +553,7 @@ def student_system(
         "int8_ms": ms(t8),
         "fp32_ms": ms(t32),
         "int8_vs_fp32_prob_abs_diff": {"max": max(diffs), "mean": sum(diffs) / len(diffs)} if diffs else None,
-        "bytes": {name: (run / name).stat().st_size for name in ("student_fp32.pt", "student_int8.pt")},
+        "bytes": {name: (run / name).stat().st_size for name in ("student_fp32.pt", "student_fp16.pt")},
         "max_tokens": max_tokens,
         "metrics_from": "fp32 weights on the GPU (bf16 autocast)",
     }
