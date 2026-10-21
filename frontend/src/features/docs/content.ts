@@ -136,7 +136,7 @@ const overview: DocPage = {
       heading: "On your computer, or on the hosted service",
       blocks: [
         p(
-          "By default Kestrix runs on your own machine, with no accounts. The hosted service adds Google or GitHub sign-in and runs the email check, the web check and forensics on Kestrix's server; uploaded files and emails are never stored.",
+          "By default Kestrix runs on your own machine, with no accounts. The hosted service adds Google or GitHub sign-in and runs the email check, the web check and forensics on Kestrix's server; uploaded files and emails are never stored. The reports of those checks are kept for 30 days in Recent results (encrypted on the hosted service, in your Kestrix folder locally) so you can open them again; you can delete them or turn history off in Settings.",
         ),
         p(
           "Detection repair, the Bitcoin check, the code scanner and the Claude Code plugin run on your computer only. Their pages on the hosted service are guides to installing and using them.",

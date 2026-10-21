@@ -14,7 +14,7 @@ function Tile({ to, name, icon, badge }: { to: string; name: string; icon: IconN
     <li className="flex">
       <Link
         to={to}
-        className="launcher-tile glass group flex w-full flex-col items-center justify-center gap-3.5 rounded-2xl px-3 pt-7 pb-6 text-center"
+        className="launcher-tile glass group flex w-full flex-col items-center justify-center gap-3.5 rounded-2xl px-3 pt-10 pb-6 text-center sm:pt-8"
       >
         <span className="launcher-icon relative flex size-16 items-center justify-center rounded-2xl sm:size-[4.5rem]">
           <Icon name={icon} size={30} className="text-accent-text" />
