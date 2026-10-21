@@ -8,6 +8,8 @@ import type {
   FileReport,
   GuardianResult,
   Health,
+  HistoryEntry,
+  HistoryPage,
   MailOptions,
   Me,
   Providers,
@@ -256,6 +258,13 @@ export const api = {
   settings: () => request<Settings>("/api/settings"),
   setAnthropicKey: (key: string | null) =>
     request<undefined>("/api/settings/anthropic-key", { method: "PUT", body: JSON.stringify({ key }) }),
+
+  history: (page = 1, perPage = 20) => request<HistoryPage>(`/api/history?page=${page}&per_page=${perPage}`),
+  historyEntry: (id: string) => request<HistoryEntry>(`/api/history/${encodeURIComponent(id)}`),
+  deleteHistoryEntry: (id: string) => request<undefined>(`/api/history/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  clearHistory: () => request<undefined>("/api/history", { method: "DELETE" }),
+  setHistoryEnabled: (enabled: boolean) =>
+    request<{ enabled: boolean }>("/api/settings/history", { method: "PUT", body: JSON.stringify({ enabled }) }),
 
   engine: () => request<EngineStatus>("/api/detect/engine"),
   cases: () => request<CaseManifest[]>("/api/detect/cases"),

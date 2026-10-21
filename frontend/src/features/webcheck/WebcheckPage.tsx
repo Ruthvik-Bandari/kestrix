@@ -33,6 +33,7 @@ import type {
   WebFinding,
   WebReport,
 } from "../../lib/types";
+import { CliGuide } from "../guides/CliGuide";
 import { useTitle } from "../../lib/useTitle";
 import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 
@@ -44,7 +45,7 @@ export const NOTICE =
 export const HOSTED_NOTICE =
   "Only check websites you own or are authorized to assess. Kestrix's server, not your computer, sends one GET request (plus redirects) and one TLS handshake to the site. Public addresses only.";
 
-const gradeTone: Record<WebReport["grade"], Tone> = {
+export const gradeTone: Record<WebReport["grade"], Tone> = {
   A: "ok",
   B: "ok",
   C: "med",
@@ -247,7 +248,7 @@ function FindingItem({ finding }: { finding: WebFinding }) {
   );
 }
 
-function Report({ report }: { report: WebReport }) {
+export function WebReportView({ report }: { report: WebReport }) {
   const ref = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     ref.current?.focus();
@@ -607,7 +608,12 @@ export default function WebcheckPage() {
           <ErrorState error={scan.error} />
         </div>
       ) : null}
-      {scan.data ? <Report report={scan.data} /> : null}
+      {scan.data ? <WebReportView report={scan.data} /> : null}
+      {isHosted() ? null : (
+        <div className="mt-12">
+          <CliGuide tool="webcheck" />
+        </div>
+      )}
     </>
   );
 }

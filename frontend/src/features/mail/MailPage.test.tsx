@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MailReport, MailVerdict } from "../../lib/types";
 import MailPage, { parseDomains } from "./MailPage";
@@ -11,7 +12,9 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MailPage />
+      <MemoryRouter>
+        <MailPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -117,7 +120,7 @@ describe("email check page", () => {
     chooseFile();
     fireEvent.click(screen.getByRole("button", { name: /check message/i }));
     expect(await screen.findByText(verdictMeta.clean.title)).toBeTruthy();
-    expect(screen.getByText(/not that the message is safe/i)).toBeTruthy();
+    expect(screen.getAllByText(/not that the message is safe/i).length).toBeGreaterThan(0);
     const [path] = fetchMock.mock.calls[0] as unknown as [string];
     expect(path).toBe("/api/mail/analyze");
   });

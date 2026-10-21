@@ -12,6 +12,9 @@ export const keys = {
   migration: (type: string) => ["bitcoin", "migration", type] as const,
   me: ["auth", "me"] as const,
   providers: ["auth", "providers"] as const,
+  history: ["history"] as const,
+  historyPage: (page: number) => ["history", "page", page] as const,
+  historyEntry: (id: string) => ["history", "entry", id] as const,
 };
 
 export const useHealth = () => useQuery({ queryKey: keys.health, queryFn: api.health, staleTime: 60_000 });
@@ -26,6 +29,9 @@ export const useEngine = () =>
     enabled: !isHosted(),
   });
 /** Hosted mode: who is signed in. Fetching it also refreshes the CSRF token (lib/api.ts). */
-export const useMe = () => useQuery({ queryKey: keys.me, queryFn: api.me, staleTime: 5 * 60_000 });
+export const useMe = (enabled = true) => useQuery({ queryKey: keys.me, queryFn: api.me, staleTime: 5 * 60_000, enabled });
 export const useProviders = () => useQuery({ queryKey: keys.providers, queryFn: api.providers, staleTime: Infinity });
 export const useCases = () => useQuery({ queryKey: keys.cases, queryFn: api.cases, staleTime: Infinity });
+export const useHistory = (page = 1) => useQuery({ queryKey: keys.historyPage(page), queryFn: () => api.history(page) });
+export const useHistoryEntry = (id: string) =>
+  useQuery({ queryKey: keys.historyEntry(id), queryFn: () => api.historyEntry(id), staleTime: Infinity });

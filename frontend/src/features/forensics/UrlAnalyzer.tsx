@@ -10,14 +10,14 @@ import { slug } from "../../lib/download";
 import type { UrlReport } from "../../lib/types";
 import { FindingsList } from "./FindingsList";
 
-const levelMeta: Record<UrlReport["level"], { tone: Tone; label: string; title: string }> = {
+export const levelMeta: Record<UrlReport["level"], { tone: Tone; label: string; title: string }> = {
   none: { tone: "neutral", label: "No signals", title: "None of the phishing checks fired for this link." },
   low: { tone: "low", label: "Low", title: "A few weak warning signs. Look closely before you trust it." },
   medium: { tone: "med", label: "Medium", title: "Several warning signs. Treat this link with suspicion." },
   high: { tone: "crit", label: "High", title: "Strong phishing signals. Don't enter passwords or payment details here." },
 };
 
-function Report({ report }: { report: UrlReport }) {
+export function UrlReportView({ report }: { report: UrlReport }) {
   const meta = levelMeta[report.level];
   const lookalike = report.unicode_host !== report.host;
   return (
@@ -108,7 +108,7 @@ export function UrlAnalyzer() {
             <ErrorState error={check.error} />
           </div>
         ) : null}
-        {check.data ? <Report report={check.data} /> : null}
+        {check.data ? <UrlReportView report={check.data} /> : null}
       </div>
     </>
   );

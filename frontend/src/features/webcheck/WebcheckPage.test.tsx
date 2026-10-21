@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setMode } from "../../lib/mode";
 import WebcheckPage, { HOSTED_NOTICE, NOTICE } from "./WebcheckPage";
@@ -12,7 +13,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <WebcheckPage />
+      <MemoryRouter>
+        <WebcheckPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -27,7 +30,7 @@ describe("web check authorization gate", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPage();
     const scan = screen.getByRole<HTMLButtonElement>("button", {
-      name: /scan/i,
+      name: /^scan/i,
     });
     expect(screen.getByText(NOTICE)).toBeTruthy();
 
@@ -55,7 +58,7 @@ describe("web check authorization gate", () => {
       }),
     );
     expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: /scan/i }).disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: /^scan/i }).disabled,
     ).toBe(true);
   });
 
@@ -71,7 +74,7 @@ describe("web check authorization gate", () => {
         name: /i own this site or am authorized/i,
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /scan/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^scan/i }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
@@ -159,7 +162,7 @@ describe("site profile", () => {
         name: /i own this site or am authorized/i,
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /scan/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^scan/i }));
     expect(await screen.findByText("Static site")).toBeTruthy();
     expect(
       screen.getByText(/Weighed for this site/).parentElement?.textContent,
@@ -192,7 +195,7 @@ describe("web check on the hosted service", () => {
     renderPage();
     expect(screen.getByText(HOSTED_NOTICE)).toBeTruthy();
     expect(screen.queryByRole("checkbox", { name: /private and local/i })).toBeNull();
-    const scan = screen.getByRole<HTMLButtonElement>("button", { name: /scan/i });
+    const scan = screen.getByRole<HTMLButtonElement>("button", { name: /^scan/i });
     fireEvent.change(screen.getByLabelText(/website address/i), { target: { value: "example.com" } });
     expect(scan.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox", { name: /^I own this website or am authorized to test it/ }));

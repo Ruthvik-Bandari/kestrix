@@ -10,6 +10,7 @@ import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { MailOptions } from "../../lib/types";
 import { isHosted } from "../../lib/mode";
+import { CliGuide } from "../guides/CliGuide";
 import { useTitle } from "../../lib/useTitle";
 import { MailReportView } from "./MailReportView";
 
@@ -110,8 +111,8 @@ export default function MailPage() {
           <Icon name="lock" size={16} className="mt-1 flex-none text-ink-3" />
           <span>
             {isHosted()
-              ? "The message is analyzed on Kestrix's server and never stored; the report is not kept. "
-              : "The check runs offline on this computer and nothing leaves it. "}
+              ? "The message is analyzed on Kestrix's server and never stored; only the report is kept in your Recent results, for 30 days unless you turn history off. "
+              : "The check runs offline on this computer and nothing leaves it; the report is kept in Recent results on this computer for 30 days. "}
             Links are never visited, the message is never displayed as a web page, and attachments are never opened.
           </span>
         </p>
@@ -213,6 +214,11 @@ export default function MailPage() {
         </div>
       ) : null}
       {analyze.data ? <MailReportView report={analyze.data} /> : null}
+      {isHosted() ? null : (
+        <div className="mt-12">
+          <CliGuide tool="mail" />
+        </div>
+      )}
     </>
   );
 }

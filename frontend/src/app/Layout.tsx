@@ -12,23 +12,39 @@ import { isHosted } from "../lib/mode";
 import { useEngine, useHealth, useSettings } from "../lib/queries";
 import { AccountMenu } from "./AccountMenu";
 import { WelcomeNote } from "./WelcomeNote";
-import { dashboardPath, landingPath, pageAvailable } from "./paths";
+import { dashboardPath, landingPath } from "./paths";
+import { runsLocallyOnly, tools, workspace } from "./tools";
 
-// Pages are dashboard-relative; the hosted service drops the local-only ones (paths.ts).
-const pages: { page: string; label: string; icon: IconName }[] = [
-  { page: "detect", label: "Detection repair", icon: "wrench" },
-  { page: "webcheck", label: "Web check", icon: "globe" },
-  { page: "forensics", label: "Forensics", icon: "search" },
-  { page: "mail", label: "Email check", icon: "mail" },
-  { page: "bitcoin", label: "Bitcoin quantum risk", icon: "bitcoin" },
-  { page: "settings", label: "Settings", icon: "sliders" },
-];
+interface NavItem {
+  to: string;
+  label: string;
+  icon: IconName;
+  end?: boolean;
+  /** Hosted mode: the tool runs on your own computer; its page is a guide. */
+  local?: boolean;
+}
 
-function navItems(): { to: string; label: string; icon: IconName; end?: boolean }[] {
+function navGroups(): { label: string | null; items: NavItem[] }[] {
+  const hosted = isHosted();
   return [
-    { to: dashboardPath(), label: "Overview", icon: "shield", end: true },
-    ...pages.filter((item) => pageAvailable(item.page)).map((item) => ({ ...item, to: dashboardPath(item.page) })),
-    { to: landingPath(), label: "About Kestrix", icon: "sparkle", end: true },
+    { label: null, items: [{ to: dashboardPath(), label: "Home", icon: "grid", end: true }] },
+    {
+      label: "Tools",
+      items: tools.map((tool) => ({
+        to: dashboardPath(tool.page),
+        label: tool.name,
+        icon: tool.icon,
+        local: hosted && runsLocallyOnly(tool),
+      })),
+    },
+    {
+      label: "Workspace",
+      items: [
+        ...workspace.map((item) => ({ to: dashboardPath(item.page), label: item.name, icon: item.icon })),
+        { to: dashboardPath("settings"), label: "Settings", icon: "settings" },
+        { to: landingPath(), label: "About Kestrix", icon: "sparkle", end: true },
+      ],
+    },
   ];
 }
 
@@ -89,32 +105,50 @@ function SystemStatus() {
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <ul className="space-y-0.5">
-      {navItems().map((item) => (
-        <li key={item.to}>
-          <NavLink
-            to={item.to}
-            end={item.end ?? false}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cx(
-                "relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors duration-150",
-                isActive
-                  ? "glass text-ink before:opacity-100 after:absolute after:top-2 after:bottom-2 after:left-0 after:w-[3px] after:rounded-full after:bg-[linear-gradient(180deg,var(--h1),var(--h2),var(--h3))]"
-                  : "text-ink-2 hover:bg-inset hover:text-ink",
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon name={item.icon} size={18} className={isActive ? "text-accent-text" : "text-ink-3"} />
-                {item.label}
-              </>
-            )}
-          </NavLink>
-        </li>
+    <div className="space-y-4">
+      {navGroups().map((group) => (
+        <div key={group.label ?? "home"}>
+          {group.label ? (
+            <p className="mb-1 px-3 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-3 uppercase" aria-hidden="true">
+              {group.label}
+            </p>
+          ) : null}
+          <ul className="space-y-0.5">
+            {group.items.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end={item.end ?? false}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    cx(
+                      "relative flex min-h-9 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors duration-150",
+                      isActive
+                        ? "glass text-ink before:opacity-100 after:absolute after:top-2 after:bottom-2 after:left-0 after:w-[3px] after:rounded-full after:bg-[linear-gradient(180deg,var(--h1),var(--h2),var(--h3))]"
+                        : "text-ink-2 hover:bg-inset hover:text-ink",
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon name={item.icon} size={18} className={isActive ? "text-accent-text" : "text-ink-3"} />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.local ? " " : null}
+                      {item.local ? (
+                        <span className="text-[0.6875rem] font-medium text-ink-3">
+                          <span aria-hidden="true">Local</span>
+                          <span className="sr-only">(runs locally)</span>
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -177,8 +211,8 @@ export function Layout() {
       </a>
 
       {/* Desktop rail */}
-      <aside className="veil-rail sticky top-0 z-10 hidden h-dvh flex-col border-r border-line px-4 py-5 lg:flex">
-        <NavLink to={dashboardPath()} className="mb-7 rounded-md px-2" aria-label="Kestrix overview">
+      <aside className="veil-rail sticky top-0 z-10 hidden h-dvh flex-col overflow-y-auto border-r border-line px-4 py-5 lg:flex">
+        <NavLink to={dashboardPath()} className="mb-5 rounded-md px-2" aria-label="Kestrix home">
           <Brand />
         </NavLink>
         <nav aria-label="Main">
@@ -192,7 +226,7 @@ export function Layout() {
       {/* Mobile header */}
       <header className="veil-rail sticky top-0 z-30 border-b border-line lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <NavLink to={dashboardPath()} className="rounded-md" aria-label="Kestrix overview">
+          <NavLink to={dashboardPath()} className="rounded-md" aria-label="Kestrix home">
             <Brand />
           </NavLink>
           <button

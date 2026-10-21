@@ -32,8 +32,8 @@ describe("paths", () => {
     expect(dashboardPath()).toBe("/app");
     expect(dashboardPath("mail")).toBe("/app/mail");
     expect(landingPath()).toBe("/");
-    for (const page of ["detect", "detect?tab=custom", "bitcoin", "settings"]) expect(pageAvailable(page)).toBe(false);
-    for (const page of ["webcheck", "forensics", "mail"]) expect(pageAvailable(page)).toBe(true);
+    for (const page of ["detect", "detect?tab=custom", "bitcoin"]) expect(pageAvailable(page)).toBe(false);
+    for (const page of ["webcheck", "forensics", "mail", "settings", "history", "docs"]) expect(pageAvailable(page)).toBe(true);
   });
 
   it("only returns to same-origin paths after sign-in", () => {

@@ -28,6 +28,10 @@ precedence were implemented for Kestrix from the PEP 440 text (public domain) an
 formula follows the FIRST CVSS v3.1 specification (https://www.first.org/cvss/v3.1/specification-document).
 The tests use synthetic advisories only.
 
+The dashboard's icons are Lucide icons from lucide-react 1.52.0 (https://lucide.dev), Copyright (c) 2026 Lucide
+Icons and Contributors, ISC License. They are bundled into
+the dashboard build (src/kestrix/server/static/); brand logos (Google, GitHub) are not Lucide icons.
+
 Third-party notices policy: third-party code, rules or data are added to this repository only under a
 license that permits redistribution with Apache-2.0, and each addition is recorded in this file with its
 source, copyright holder and license in the same change. Datasets for the code-vulnerability research are

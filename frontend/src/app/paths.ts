@@ -12,8 +12,11 @@ export const SIGNIN_PATH = "/signin";
 export const PRIVACY_PATH = "/privacy";
 export const TERMS_PATH = "/terms";
 
-/** Dashboard pages the hosted service does not serve (their APIs answer 404 there). */
-export const LOCAL_ONLY_PAGES = ["detect", "bitcoin", "settings"] as const;
+/**
+ * Tools that run live only in local mode (their APIs answer 404 on the hosted service, ADR 0004).
+ * The hosted dashboard shows a step-by-step guide for running them locally instead.
+ */
+export const LOCAL_ONLY_PAGES = ["detect", "bitcoin"] as const;
 
 /**
  * Where the public landing page lives. In hosted mode this becomes "/" and the dashboard
@@ -35,7 +38,7 @@ export function dashboardPath(page = ""): string {
   return `${dashboardBase()}/${tail}`;
 }
 
-/** Whether a dashboard page (its first path segment, such as "bitcoin") is served in this mode. */
+/** Whether a dashboard page (its first path segment, such as "bitcoin") runs live in this mode. */
 export function pageAvailable(page: string): boolean {
   const first = page.replace(/^\/+/, "").split(/[/?#]/, 1)[0] ?? "";
   return !isHosted() || !(LOCAL_ONLY_PAGES as readonly string[]).includes(first);

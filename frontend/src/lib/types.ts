@@ -40,6 +40,37 @@ export interface Settings {
   anthropic_key_configured: boolean;
 }
 
+// Recent results (per-user history) -----------------------------------------------
+
+export type HistoryTool = "mail" | "webcheck" | "forensics_file" | "forensics_url";
+
+export interface HistoryItem {
+  id: string;
+  tool: HistoryTool;
+  /** Epoch seconds. */
+  created_at: number;
+  /** mail: the verdict; webcheck: the grade; forensics_file: the worst finding severity or "none"; forensics_url: the level. */
+  verdict: string;
+  findings: number;
+}
+
+export interface HistoryPage {
+  enabled: boolean;
+  retention_days: number;
+  page: number;
+  per_page: number;
+  total: number;
+  items: HistoryItem[];
+}
+
+export type HistoryEntry = HistoryItem &
+  (
+    | { tool: "mail"; report: MailReport }
+    | { tool: "webcheck"; report: WebReport }
+    | { tool: "forensics_file"; report: FileReport }
+    | { tool: "forensics_url"; report: UrlReport }
+  );
+
 // Detection repair -------------------------------------------------------------
 
 export type Outcome =

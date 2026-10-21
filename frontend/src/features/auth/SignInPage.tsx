@@ -28,7 +28,7 @@ export default function SignInPage() {
             Your privacy, in short
           </h2>
           <ul className="mt-3 grid gap-2 text-[0.9375rem] text-ink-2">
-            <li>Files and emails you upload are analyzed and never stored.</li>
+            <li>Uploaded files and emails are never stored; your reports are kept for 30 days so you can see your history, and you can turn this off.</li>
             <li>We keep only your email address and display name from your sign-in.</li>
             <li>You can delete your account at any time; it is removed right away, and backup snapshots expire within 14 days.</li>
           </ul>

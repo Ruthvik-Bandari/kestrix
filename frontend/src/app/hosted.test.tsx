@@ -74,7 +74,7 @@ describe("hosted routing", () => {
     const github = await screen.findByRole("link", { name: "Continue with GitHub" });
     expect(github.getAttribute("href")).toBe("/api/auth/login/github?next=%2Fapp");
     expect(screen.queryByRole("link", { name: /google/i })).toBeNull();
-    expect(screen.getByText(/analyzed and never stored/i)).toBeTruthy();
+    expect(screen.getByText(/uploaded files and emails are never stored; your reports are kept for 30 days/i)).toBeTruthy();
     // The same Log in / Sign up card as the landing page.
     expect(screen.getByRole("tab", { name: "Log in" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.click(screen.getByRole("tab", { name: "Sign up" }));
@@ -103,10 +103,22 @@ describe("hosted routing", () => {
     const labels = within(nav)
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(labels).toEqual(["Overview", "Web check", "Forensics", "Email check", "About Kestrix"]);
+    expect(labels).toEqual([
+      "Home",
+      "Email check",
+      "Web check",
+      "File & link forensics",
+      "Detection repair Local(runs locally)",
+      "Code scanner Local(runs locally)",
+      "Claude Code plugin Local(runs locally)",
+      "Bitcoin quantum risk Local(runs locally)",
+      "Docs",
+      "Recent results",
+      "Settings",
+      "About Kestrix",
+    ]);
     expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/mail");
-    const cards = await screen.findAllByRole("heading", { level: 3 });
-    expect(cards.map((h) => h.textContent)).toEqual(["Web check", "Forensics", "Email check"]);
+    expect(within(nav).getByRole("link", { name: "Bitcoin quantum risk (runs locally)" }).getAttribute("href")).toBe("/app/bitcoin");
     expect(screen.getAllByText("ada@mail.example").length).toBeGreaterThan(0);
   });
 
@@ -124,7 +136,7 @@ describe("hosted routing", () => {
     expect(router.state.location.search).toBe(`?next=${encodeURIComponent("/app/forensics?tab=url")}`);
   });
 
-  it.each(["/app/detect", "/app/bitcoin", "/app/settings"])("does not serve %s", async (path) => {
+  it.each(["/app/bitcoin/migration/p2pk", "/app/overview"])("does not serve %s", async (path) => {
     hostedServer();
     renderApp(path);
     expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeTruthy();
@@ -213,12 +225,16 @@ describe("local routing is unchanged", () => {
     const nav = (await screen.findAllByRole("navigation", { name: "Main" }))[0];
     if (!nav) throw new Error("no main navigation");
     expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Overview",
-      "Detection repair",
-      "Web check",
-      "Forensics",
+      "Home",
       "Email check",
+      "Web check",
+      "File & link forensics",
+      "Detection repair",
+      "Code scanner",
+      "Claude Code plugin",
       "Bitcoin quantum risk",
+      "Docs",
+      "Recent results",
       "Settings",
       "About Kestrix",
     ]);

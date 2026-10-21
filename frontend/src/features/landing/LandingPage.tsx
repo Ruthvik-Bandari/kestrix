@@ -14,6 +14,7 @@ import { CopyButton, cx } from "../../components/ui";
 import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { site } from "../../lib/site";
+import { useMe } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
 import { chapters } from "./content";
 import { Chapter, RealOutput } from "./parts";
@@ -57,6 +58,9 @@ function useActiveChapter(ids: string[]): string | null {
 const chapterIds = chapters.map((c) => c.id);
 
 function Header({ signInUrl, active }: { signInUrl: string | null; active: string | null }) {
+  // Hosted: a signed-in visitor gets the dashboard button only, never "Sign in" (local mode has no accounts).
+  const me = useMe(isHosted());
+  const signedIn = me.data?.signed_in === true;
   return (
     <header className="veil-rail sticky top-0 z-40 border-b border-line">
       <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6">
@@ -88,7 +92,7 @@ function Header({ signInUrl, active }: { signInUrl: string | null; active: strin
         </nav>
         <div className="flex items-center gap-2">
           {/* Hosted accounts: rendered only when a sign-in URL is configured (lib/site.ts). */}
-          {signInUrl ? (
+          {signInUrl && !signedIn ? (
             <Link to={signInUrl} className="btn btn-secondary btn-sm min-h-10">
               Sign in
             </Link>

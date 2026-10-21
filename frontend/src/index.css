@@ -495,6 +495,37 @@
     position: relative;
   }
 
+  /* Home launcher: a large tile per tool, the icon in a soft glass square. Calm: the tile lifts
+     a little and its rim brightens on hover and focus, nothing else moves. */
+  .launcher-tile {
+    min-height: 9.5rem;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease;
+  }
+  .launcher-tile:hover {
+    transform: translateY(-2px);
+    border-color: var(--line-strong);
+  }
+  .launcher-tile:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+  .launcher-tile:hover::before,
+  .launcher-tile:focus-visible::before {
+    opacity: 1;
+  }
+  .launcher-icon {
+    background:
+      linear-gradient(145deg, color-mix(in oklch, var(--h1) 16%, transparent), color-mix(in oklch, var(--h3) 12%, transparent)),
+      var(--inset);
+    border: 1px solid var(--line);
+    box-shadow:
+      inset 0 1px 0 var(--glass-hi),
+      0 10px 24px -14px var(--glow);
+  }
+
   .label {
     display: block;
     font-weight: 600;

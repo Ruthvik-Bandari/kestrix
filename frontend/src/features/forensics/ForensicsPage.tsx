@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router";
 import { HowItWorks, type HowItWorksContent } from "../../components/HowItWorks";
 import { Tabs } from "../../components/Tabs";
 import { PageHeader } from "../../components/ui";
+import { isHosted } from "../../lib/mode";
+import { CliGuide } from "../guides/CliGuide";
 import { useTitle } from "../../lib/useTitle";
 import { FileAnalyzer } from "./FileAnalyzer";
 import { UrlAnalyzer } from "./UrlAnalyzer";
@@ -57,6 +59,11 @@ export default function ForensicsPage() {
       >
         {tab === "file" ? <FileAnalyzer /> : <UrlAnalyzer />}
       </Tabs>
+      {isHosted() ? null : (
+        <div className="mt-12">
+          <CliGuide tool="forensics" />
+        </div>
+      )}
     </>
   );
 }

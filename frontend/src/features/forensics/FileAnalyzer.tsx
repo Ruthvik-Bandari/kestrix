@@ -53,7 +53,7 @@ function headline(report: FileReport): { tone: Tone; title: string } {
   };
 }
 
-function Report({ report }: { report: FileReport }) {
+export function FileReportView({ report }: { report: FileReport }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const [log, setLog] = useState(true);
   const logId = useId();
@@ -346,8 +346,8 @@ export function FileAnalyzer() {
       <p className="mt-3 flex gap-2 text-[0.875rem] text-ink-2">
         <Icon name="lock" size={16} className="mt-0.5 flex-none text-ink-3" />
         {isHosted()
-          ? "Files are analyzed on Kestrix's server and are never stored or sent anywhere else. Nothing is run or saved."
-          : "Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else. Nothing is run or saved."}
+          ? "Files are analyzed on Kestrix's server and are never stored or sent anywhere else, and nothing is run. The report is kept in your Recent results for 30 days unless you turn history off."
+          : "Files are analyzed by the Kestrix server on this computer and are never uploaded anywhere else, and nothing is run. The report is kept in Recent results on this computer for 30 days."}
       </p>
 
       <div aria-live="polite" className="sr-only">
@@ -365,7 +365,7 @@ export function FileAnalyzer() {
           <ErrorState error={analyze.error} />
         </div>
       ) : null}
-      {analyze.data ? <Report report={analyze.data} /> : null}
+      {analyze.data ? <FileReportView report={analyze.data} /> : null}
     </>
   );
 }

@@ -7,7 +7,9 @@ import { ThemeSwitch } from "../../components/ThemeSwitch";
 import { ErrorState, Field, PageHeader, Skeleton, Spinner, StatusPill } from "../../components/ui";
 import { api } from "../../lib/api";
 import { keys, useSettings } from "../../lib/queries";
+import { isHosted } from "../../lib/mode";
 import { useTitle } from "../../lib/useTitle";
+import { HistorySetting } from "../history/HistorySetting";
 
 const MIN_KEY = 20;
 const MAX_KEY = 512;
@@ -28,6 +30,7 @@ export default function SettingsPage() {
     },
   });
   const configured = settings.data?.anthropic_key_configured === true;
+  const hosted = isHosted();
 
   function submit(event: SubmitEvent) {
     event.preventDefault();
@@ -43,8 +46,16 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" lede="Optional setup for the AI guardian, and how the dashboard looks." />
+      <PageHeader
+        title="Settings"
+        lede={
+          hosted
+            ? "Your results history and how the dashboard looks."
+            : "Optional setup for the AI guardian, your results history, and how the dashboard looks."
+        }
+      />
 
+      {hosted ? null : (
       <section aria-labelledby="key-title" className="panel max-w-3xl p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="key-title" className="text-lg font-semibold">
@@ -130,6 +141,9 @@ export default function SettingsPage() {
           </ul>
         </div>
       </section>
+      )}
+
+      <HistorySetting />
 
       <section aria-labelledby="look-title" className="panel mt-6 max-w-3xl p-5 sm:p-6">
         <h2 id="look-title" className="mb-3 text-lg font-semibold">

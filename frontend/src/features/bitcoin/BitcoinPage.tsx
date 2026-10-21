@@ -11,6 +11,8 @@ import { api } from "../../lib/api";
 import { plural, satsToBtc } from "../../lib/format";
 import { scrollBehavior } from "../../lib/motion";
 import type { AddressAssessment, PublicTestnet, Risk, ScanResult } from "../../lib/types";
+import { isHosted } from "../../lib/mode";
+import { CliGuide } from "../guides/CliGuide";
 import { useTitle } from "../../lib/useTitle";
 import { Guardian } from "./Guardian";
 
@@ -272,6 +274,11 @@ export default function BitcoinPage() {
           ))}
         </ul>
       </section>
+      {isHosted() ? null : (
+        <div className="mt-12">
+          <CliGuide tool="bitcoin" />
+        </div>
+      )}
     </>
   );
 }

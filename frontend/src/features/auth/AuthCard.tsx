@@ -184,8 +184,8 @@ export function AuthCard({ next, className }: { next: string; className?: string
               <ProviderButtons next={next} intent={intent} enabled={intent === "login" || agreed} />
               <p className="text-[0.8125rem] text-ink-3">
                 {intent === "login"
-                  ? "New here? Choose Sign up. Files and emails you check are never stored."
-                  : "Already have an account? Signing up again just signs you in."}
+                  ? "New here? Choose Sign up. Uploaded files and emails are never stored."
+                  : "Your reports (never your files or emails) are kept for 30 days so you can see your history; you can turn this off in Settings. Already have an account? Signing up again just signs you in."}
               </p>
             </div>
           </>

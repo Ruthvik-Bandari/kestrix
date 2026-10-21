@@ -9,6 +9,8 @@ import { ErrorState, PageHeader, StatusPill } from "../../components/ui";
 import { api } from "../../lib/api";
 import { keys, useEngine } from "../../lib/queries";
 import type { DetectReport, RunBody } from "../../lib/types";
+import { isHosted } from "../../lib/mode";
+import { CliGuide } from "../guides/CliGuide";
 import { useTitle } from "../../lib/useTitle";
 import { CaseGallery } from "./CaseGallery";
 import { CustomRuleForm } from "./CustomRuleForm";
@@ -127,6 +129,11 @@ export default function DetectPage() {
         </div>
       ) : null}
       {run.data ? <ReportView report={run.data} /> : null}
+      {isHosted() ? null : (
+        <div className="mt-12">
+          <CliGuide tool="detect" />
+        </div>
+      )}
     </>
   );
 }
