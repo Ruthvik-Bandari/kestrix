@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, TERMS_PATH } from "../app/paths";
+import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH, TERMS_PATH } from "../app/paths";
 import { isHosted } from "../lib/mode";
 import { useMe } from "../lib/queries";
 import { site } from "../lib/site";
@@ -39,15 +39,20 @@ function DashboardLink() {
   );
 }
 
-/** Hosted: "Log in" while signed out (the dashboard would only send you to sign-in), the dashboard once signed in. */
+/** Hosted: "Log in" and "Sign up" while signed out, as on the landing page (the dashboard would only send you to sign-in), the dashboard once signed in. */
 function HostedAction() {
   const me = useMe();
   if (me.isPending) return null;
   if (me.data?.signed_in === true) return <DashboardLink />;
   return (
-    <Link to={SIGNIN_PATH} className="btn btn-ghost btn-sm min-h-10">
-      Log in
-    </Link>
+    <div className="flex items-center gap-2">
+      <Link to={SIGNIN_PATH} className="btn btn-secondary btn-sm min-h-10">
+        Log in
+      </Link>
+      <Link to={SIGNUP_PATH} className="btn btn-primary btn-sm min-h-10">
+        Sign up
+      </Link>
+    </div>
   );
 }
 
@@ -113,7 +118,7 @@ export function PublicShell({
   backdrop,
 }: {
   children: ReactNode;
-  width?: "narrow" | "wide";
+  width?: "narrow" | "wide" | "article";
   /** False on the sign-in page, whose card is the action. */
   action?: boolean;
   /** Decorative layer behind the page content (the sign-in rain); it fills the band between header and footer. */
@@ -143,7 +148,7 @@ export function PublicShell({
           tabIndex={-1}
           className={cx(
             "relative z-10 mx-auto w-full flex-1 px-4 py-10 outline-none sm:px-6 sm:py-14",
-            width === "narrow" ? "max-w-[34rem]" : "max-w-[52rem]",
+            width === "narrow" ? "max-w-[34rem]" : width === "wide" ? "max-w-[52rem]" : "max-w-[60rem]",
           )}
         >
           {children}

@@ -25,9 +25,18 @@ describe("outcome banner mapping", () => {
     for (const o of outcomes) expect(outcomeMeta[o].title.toLowerCase()).not.toContain("no matches");
   });
 
-  it.each(outcomes)("renders the %s headline", (outcome) => {
+  it.each(outcomes)("renders the %s outcome with its own label and sentence", (outcome) => {
     render(<OutcomeBanner report={report(outcome)} />);
+    expect(screen.getByRole("heading", { level: 2, name: outcomeMeta[outcome].label })).toBeTruthy();
     expect(screen.getByText(outcomeMeta[outcome].title)).toBeTruthy();
+  });
+
+  it("gives every outcome a distinct label, and only repaired and unchanged look like success", () => {
+    expect(new Set(outcomes.map((o) => outcomeMeta[o].label)).size).toBe(outcomes.length);
+    expect(outcomes.filter((o) => outcomeMeta[o].tone === "ok")).toEqual(["repaired", "unchanged"]);
+    // A success outcome never shares its icon with a non-success one.
+    const successIcons = new Set(outcomes.filter((o) => outcomeMeta[o].tone === "ok").map((o) => outcomeMeta[o].icon));
+    for (const o of outcomes.filter((o) => outcomeMeta[o].tone !== "ok")) expect(successIcons.has(outcomeMeta[o].icon)).toBe(false);
   });
 
   it("flags a provisional repair and shows the reason", () => {
@@ -39,7 +48,8 @@ describe("outcome banner mapping", () => {
         })}
       />,
     );
-    expect(screen.getByText("Repair proposed, but not yet validated")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Repair proposed" })).toBeTruthy();
+    expect(screen.getByText(/Not yet validated/)).toBeTruthy();
     expect(screen.getByRole("note").textContent).toContain("Provisional.");
     expect(screen.getByText(/development evidence only/)).toBeTruthy();
   });
@@ -47,6 +57,7 @@ describe("outcome banner mapping", () => {
   it("shows the engine start command when the engine is down", () => {
     render(<OutcomeBanner report={report("engine_unavailable", { reason: "cannot reach Elasticsearch" })} />);
     expect(screen.getByText("kestrix detect engine-up")).toBeTruthy();
+    expect(screen.getByText("kestrix detect engine-status")).toBeTruthy();
   });
 
   it("summarises the before/after impact of a repair", () => {

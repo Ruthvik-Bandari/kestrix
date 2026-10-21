@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dialog } from "../../components/Dialog";
-import { ErrorState, Skeleton, Spinner, Switch } from "../../components/ui";
+import { Button, ErrorState, Skeleton, Spinner, Switch } from "../../components/ui";
 import { api } from "../../lib/api";
 import { plural } from "../../lib/format";
 import { isHosted } from "../../lib/mode";
@@ -25,11 +25,12 @@ export function HistorySetting() {
   const hosted = isHosted();
 
   return (
-    <section aria-labelledby="history-title" className="panel mt-6 max-w-3xl p-5 sm:p-6">
+    <section aria-labelledby="history-title" className="panel p-5 sm:p-6">
       <div className="relative">
-        <h2 id="history-title" className="mb-3 text-lg font-semibold">
+        <h2 id="history-title" className="text-lg font-semibold tracking-[-0.01em]">
           Results history
         </h2>
+        <p className="mt-1 mb-4 text-[0.875rem] text-ink-2">Decide whether finished reports are kept so you can open them again under Recent results.</p>
         {history.isPending ? (
           <Skeleton className="h-12 w-full max-w-md" />
         ) : history.isError ? (
@@ -74,26 +75,23 @@ export function HistorySetting() {
             </p>
             {toggle.isError ? <ErrorState error={toggle.error} /> : null}
             <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                className="btn btn-secondary"
+              <Button
+                variant="secondary"
                 onClick={() => {
                   setConfirming(false);
                 }}
               >
                 Keep history on
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                disabled={toggle.isPending}
+              </Button>
+              <Button
+                variant="danger"
+                pending={toggle.isPending}
                 onClick={() => {
                   toggle.mutate(false);
                 }}
               >
-                {toggle.isPending ? <Spinner /> : null}
                 Turn off and delete
-              </button>
+              </Button>
             </div>
           </div>
         </Dialog>

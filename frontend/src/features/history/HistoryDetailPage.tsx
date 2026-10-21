@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { dashboardPath } from "../../app/paths";
 import { Icon } from "../../components/Icon";
-import { Badge, ErrorState, PageHeader, Skeleton } from "../../components/ui";
+import { Badge, Button, ErrorState, PageHeader, Skeleton } from "../../components/ui";
 import { api, ApiError } from "../../lib/api";
 import { keys, useHistoryEntry } from "../../lib/queries";
 import type { HistoryEntry } from "../../lib/types";
@@ -70,12 +70,25 @@ export default function HistoryDetailPage() {
       <>
         <BackLink />
         {missing ? (
-          <div className="panel px-5 py-8">
-            <h1 className="relative text-xl font-bold">Result not found</h1>
-            <p className="relative mt-1 text-ink-2">It may have been deleted, or it is older than 30 days.</p>
+          <div className="panel max-w-[68ch] px-5 py-8">
+            <h1 className="text-xl font-bold">Result not found</h1>
+            <p className="mt-1 text-ink-2">It may have been deleted, or it is older than 30 days.</p>
           </div>
         ) : (
-          <ErrorState error={entry.error} />
+          <div className="max-w-[68ch]">
+            <ErrorState error={entry.error}>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-1"
+                onClick={() => {
+                  void entry.refetch();
+                }}
+              >
+                Try again
+              </Button>
+            </ErrorState>
+          </div>
         )}
       </>
     );

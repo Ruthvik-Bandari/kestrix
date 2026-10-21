@@ -17,12 +17,13 @@ import { Badge, Button, cx, ErrorState, SectionTitle, Spinner, Verdict } from ".
 
 /**
  * Input column (~360px) beside a flexible report column from 1100px up; stacked below, input first.
- * The input column sticks while a long report scrolls, so the left side never becomes an empty band.
+ * The input column sticks while a long report scrolls, so the left side never becomes an empty band;
+ * pass `sticky={false}` when the input is itself taller than a screen (a list of cases).
  */
-export function ToolLayout({ input, children }: { input: ReactNode; children: ReactNode }) {
+export function ToolLayout({ input, children, sticky = true }: { input: ReactNode; children: ReactNode; sticky?: boolean }) {
   return (
     <div className="grid items-start gap-6 min-[1100px]:grid-cols-[22.5rem_minmax(0,1fr)] min-[1100px]:gap-8">
-      <div className="min-w-0 min-[1100px]:sticky min-[1100px]:top-6">{input}</div>
+      <div className={cx("min-w-0", sticky && "min-[1100px]:sticky min-[1100px]:top-6")}>{input}</div>
       <div className="min-w-0 space-y-6">{children}</div>
     </div>
   );
@@ -230,7 +231,7 @@ export function VerdictCard({
               id={headingId}
               ref={headingRef}
               tabIndex={-1}
-              className={cx("text-2xl leading-tight font-semibold tracking-[-0.015em] break-words outline-none", style.text)}
+              className={cx("scroll-mt-20 text-2xl leading-tight font-semibold tracking-[-0.015em] break-words outline-none", style.text)}
             >
               {label}
             </h2>

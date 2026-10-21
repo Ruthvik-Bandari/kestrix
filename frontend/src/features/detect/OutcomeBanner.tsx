@@ -1,20 +1,29 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { Verdict } from "../../components/ui";
+import { useFocusOnArrival, VerdictCard } from "../../components/report";
 import type { DetectReport } from "../../lib/types";
 import { EngineHint } from "./EngineHint";
 import { impactSummary, outcomeMeta } from "./describe";
 
-export function OutcomeBanner({ report, titleId }: { report: DetectReport; titleId?: string }) {
+/**
+ * The result's opening card. Every explicit outcome has its own label, icon and sentence; only
+ * `repaired` (validated) and `unchanged` look like success, and a provisional repair is a warning.
+ * The label takes focus when the report arrives.
+ */
+export function OutcomeBanner({ report }: { report: DetectReport }) {
+  const heading = useFocusOnArrival(report);
   const meta = outcomeMeta[report.outcome];
   const provisional = report.outcome === "repaired" && report.provisional === true;
   const impact = report.outcome === "repaired" ? impactSummary(report) : null;
   return (
     <div className="space-y-3">
-      <Verdict
+      <VerdictCard
         tone={provisional ? "med" : meta.tone}
-        title={provisional ? "Repair proposed, but not yet validated" : meta.title}
-        {...(titleId ? { titleId } : {})}
+        icon={provisional ? "alert" : meta.icon}
+        label={provisional ? "Repair proposed" : meta.label}
+        headingId="detect-result"
+        headingRef={heading}
+        title={provisional ? "Not yet validated: screened on development events only" : meta.title}
       >
         <p>{meta.explain}</p>
         {impact ? <p className="mt-1 font-medium text-ink">{impact}</p> : null}
@@ -24,9 +33,9 @@ export function OutcomeBanner({ report, titleId }: { report: DetectReport; title
             <span className="break-words">{report.reason}</span>
           </p>
         ) : null}
-      </Verdict>
+      </VerdictCard>
       {provisional ? (
-        <p role="note" className="rounded-lg border border-line px-4 py-3 text-ink-2">
+        <p role="note" className="max-w-[68ch] rounded-xl border border-line px-4 py-3 text-ink-2">
           <span className="font-medium text-ink">Provisional.</span> This fix was only screened on development events.
           Add validation events (a separate labeled set) before you approve it.
         </p>

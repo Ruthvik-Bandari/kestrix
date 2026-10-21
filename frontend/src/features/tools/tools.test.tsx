@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 import { TOOL_PAGES, toolFor, tools } from "../../app/tools";
 import type { DocSection } from "../docs/blocks";
 import { docPages } from "../docs/content";
-import { toolContent, type LocalGuide } from "./content";
+import { INSTALL_AI, INSTALL_KESTRIX, INSTALL_SCAN, PYPI_PENDING, toolContent, type LocalGuide } from "./content";
 import { examples } from "./examples";
 import { GuidePage } from "./GuidePage";
 
-const SECTIONS = ["Requirements", "Install", "Step by step", "Example output", "Troubleshooting"];
+const SECTIONS = ["Requirements", "Install", "Check it works", "Step by step", "Example output", "Troubleshooting"];
 
 function referenceText(sections: DocSection[]): string[] {
   return sections.flatMap((section) =>
@@ -71,11 +71,19 @@ describe("tool content, defined once", () => {
     }
   });
 
-  it("installs the right package for each tool", () => {
-    expect(toolContent.code.local.install[0]?.command).toBe("pip install kestrix-scan");
-    expect(toolContent["claude-plugin"].local.install[0]?.command).toBe("pip install kestrix-scan");
-    expect(toolContent.detect.local.install[0]?.command).toBe("pip install kestrix");
-    expect(toolContent.bitcoin.local.install.map((i) => i.command)).toContain('pip install "kestrix[ai]"');
+  it("installs the right package for each tool, from the repository until the PyPI release", () => {
+    expect(toolContent.code.local.install[0]?.command).toBe(INSTALL_SCAN);
+    expect(toolContent["claude-plugin"].local.install[0]?.command).toBe(INSTALL_SCAN);
+    expect(toolContent.detect.local.install[0]?.command).toBe(INSTALL_KESTRIX);
+    expect(toolContent.bitcoin.local.install.map((i) => i.command)).toContain(INSTALL_AI);
+    expect(INSTALL_KESTRIX).toBe('uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"');
+  });
+
+  it.each(TOOL_PAGES)("%s: no install or step command presents pip install as available", (page) => {
+    const guide = toolContent[page].local;
+    const commands = [...guide.install.map((i) => i.command), guide.verify.command, ...guide.steps.map((s) => s.command ?? "")];
+    for (const command of commands) expect(command).not.toMatch(/^pip install /);
+    expect(guideText(guide).join("\n")).not.toMatch(/pip install/);
   });
 });
 
@@ -101,6 +109,8 @@ describe("GuidePage", () => {
     for (const install of toolContent[page].local.install) {
       expect(screen.getByRole("button", { name: `Copy command: ${install.command}` })).toBeTruthy();
     }
+    expect(screen.getByText(PYPI_PENDING)).toBeTruthy();
+    expect(screen.getByRole("button", { name: `Copy command: ${toolContent[page].local.verify.command}` })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe(`/docs/${page}`);
   });
 });

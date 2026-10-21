@@ -4,7 +4,7 @@ import { useId, type ReactNode } from "react";
 import type { ToolPage } from "../../app/tools";
 import { Icon } from "../../components/Icon";
 import { cx } from "../../components/ui";
-import { toolContent } from "./content";
+import { PYPI_PENDING, toolContent } from "./content";
 import { examples } from "./examples";
 import { Command, ExampleOutput, Inline } from "./parts";
 
@@ -33,14 +33,15 @@ function Section({
 }
 
 /**
- * How to install and run one tool yourself: requirements, install, steps, a real example output and
- * troubleshooting. The tool's guide page shows it at the top level; its docs page nests it
- * (`compact`, h3 headings) under one section.
+ * How to install and run one tool yourself, as a short checklist: requirements, the install command,
+ * a check that it worked, then the steps; a real example output and troubleshooting close it.
+ * The tool's guide page puts the checklist at reading width with the example output beside it from
+ * 1280px up; its docs page nests it (`compact`, h3 headings, one column) under one section.
  */
 export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?: boolean }) {
   const guide = toolContent[tool].local;
-  return (
-    <div className="max-w-[72ch] text-[0.9375rem] leading-relaxed text-ink-2">
+  const setup = (
+    <>
       <Section title="Requirements" compact={compact}>
         <ul className="space-y-1.5">
           {guide.requirements.map((item) => (
@@ -55,6 +56,7 @@ export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?:
       </Section>
 
       <Section title="Install" compact={compact}>
+        <p className="mb-2 text-[0.8125rem] text-ink-3">{PYPI_PENDING}</p>
         <div className="space-y-2">
           {guide.install.map((item) => (
             <div key={item.command}>
@@ -63,6 +65,11 @@ export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?:
             </div>
           ))}
         </div>
+      </Section>
+
+      <Section title="Check it works" compact={compact}>
+        <Command command={guide.verify.command} />
+        <p className="mt-1 text-[0.8125rem] text-ink-3">{guide.verify.detail}</p>
       </Section>
 
       <Section title="Step by step" compact={compact}>
@@ -92,25 +99,47 @@ export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?:
           ))}
         </ol>
       </Section>
+    </>
+  );
 
-      <Section title="Example output" compact={compact}>
-        <ExampleOutput example={examples[tool]} />
-      </Section>
+  const example = (
+    <Section title="Example output" compact={compact}>
+      <ExampleOutput example={examples[tool]} />
+    </Section>
+  );
 
-      <Section title="Troubleshooting" compact={compact}>
-        <dl className="space-y-3">
-          {guide.troubleshooting.map((item) => (
-            <div key={item.problem} className="rounded-xl border border-line px-3.5 py-3">
-              <dt className="font-medium text-ink">
-                <Inline text={item.problem} />
-              </dt>
-              <dd className="mt-1">
-                <Inline text={item.fix} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
+  const troubleshooting = (
+    <Section title="Troubleshooting" compact={compact}>
+      <dl className="space-y-3">
+        {guide.troubleshooting.map((item) => (
+          <div key={item.problem} className="rounded-xl border border-line px-3.5 py-3">
+            <dt className="font-medium text-ink">
+              <Inline text={item.problem} />
+            </dt>
+            <dd className="mt-1">
+              <Inline text={item.fix} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
+  );
+
+  const text = "text-[0.9375rem] leading-relaxed text-ink-2";
+  if (compact) {
+    return (
+      <div className={cx("max-w-[68ch]", text)}>
+        {setup}
+        {example}
+        {troubleshooting}
+      </div>
+    );
+  }
+  return (
+    <div className={cx("grid items-start gap-x-10 gap-y-10", "xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]", text)}>
+      <div className="min-w-0 max-w-[68ch]">{setup}</div>
+      <div className="min-w-0 xl:sticky xl:top-6 xl:row-span-2 xl:col-start-2 xl:row-start-1">{example}</div>
+      <div className="min-w-0 max-w-[68ch] xl:col-start-1">{troubleshooting}</div>
     </div>
   );
 }

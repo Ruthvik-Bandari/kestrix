@@ -12,13 +12,13 @@ import { CopyButton, cx } from "../../components/ui";
 import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { useMe } from "../../lib/queries";
-import { REPO_URL, site } from "../../lib/site";
+import { site } from "../../lib/site";
 import { useTitle } from "../../lib/useTitle";
+import { INSTALL_DASHBOARD } from "../tools/content";
 import { availability, deeperTools, everydayTools, steps, trust, type LandingTool } from "./content";
 import { ReportCard, severitySummary } from "./parts";
 import { emailSample } from "./samples";
 
-const SOURCE_INSTALL = `uv tool install "git+${REPO_URL}"`;
 
 /** Smooth-scroll to an in-page section and move focus there, so keyboard users land on it too. */
 function jumpTo(event: MouseEvent<HTMLAnchorElement>, id: string) {
@@ -367,14 +367,13 @@ function Trust() {
               ))}
             </ul>
             <div className="mt-5 rounded-lg border border-line bg-inset p-4">
-              <p className="text-[0.875rem] font-medium text-ink">PyPI release pending. Install from the repository:</p>
-              <p className="mt-2 flex items-center gap-2 font-mono text-[0.8125rem] text-ink">
-                <code className="min-w-0 flex-1 break-all">{SOURCE_INSTALL}</code>
-                <CopyButton text={SOURCE_INSTALL} label="Copy install command" className="flex-none" />
-              </p>
-              <p className="mt-1 font-mono text-[0.8125rem] text-ink-2">
-                <code>kestrix dashboard</code>
-              </p>
+              <p className="text-[0.875rem] font-medium text-ink">PyPI release pending. Build and run it from the repository:</p>
+              <div className="mt-2 flex items-start gap-2 font-mono text-[0.8125rem] text-ink">
+                <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all">
+                  <code>{INSTALL_DASHBOARD}</code>
+                </pre>
+                <CopyButton text={INSTALL_DASHBOARD} label="Copy install commands" className="flex-none" />
+              </div>
             </div>
           </div>
           <div className="border-t border-line-strong pt-5">

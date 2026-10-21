@@ -36,7 +36,7 @@ function maxUpload(): number {
 const exifText: Record<Exclude<ExifStatus, "ok">, string> = {
   no_exif: "This image carries no EXIF metadata.",
   not_image: "This file is not a format that carries EXIF metadata.",
-  pillow_not_installed: "Reading image metadata needs the optional extra: pip install \"kestrix[exif]\".",
+  pillow_not_installed: "Reading image metadata needs the optional exif extra (Pillow). The install steps are in the documentation.",
   unreadable: "The image metadata is malformed and could not be read.",
   too_many_pixels: "The image declares implausibly large dimensions, so it was not opened.",
 };

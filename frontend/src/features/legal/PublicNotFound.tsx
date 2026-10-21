@@ -10,7 +10,7 @@ export default function PublicNotFound() {
   useTitle("Page not found");
   return (
     <PublicShell>
-      <div className="glass rounded-3xl px-6 py-10 text-center">
+      <div className="panel px-6 py-10 text-center">
         <h1 className="text-2xl font-bold tracking-[-0.02em]">Page not found</h1>
         <p className="mt-2 text-ink-2">There is nothing at this address.</p>
         <Link to={landingPath()} className="btn btn-primary mt-6">

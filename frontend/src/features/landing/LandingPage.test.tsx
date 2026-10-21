@@ -128,7 +128,9 @@ describe("LandingPage in local mode", () => {
     renderLanding();
     expect(screen.queryByText("pip install kestrix")).toBeNull();
     expect(screen.getByText(/PyPI release pending/i)).toBeTruthy();
-    expect(screen.getByText(`uv tool install "git+${REPO_URL}"`)).toBeTruthy();
+    // A git install has no built dashboard, so the landing shows the from-source build that does.
+    expect(screen.getByText(/npm --prefix frontend run build/)).toBeTruthy();
+    expect(screen.getByText(new RegExp(`git clone ${REPO_URL.replace(/[.]/g, "\\.")}`))).toBeTruthy();
   });
 
   it("keeps the attribution, docs, repository and license links in the footer, once", () => {

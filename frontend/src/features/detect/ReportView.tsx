@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Icon } from "../../components/Icon";
-import { Badge, CodeBlock, CopyButton, cx, Disclosure, RawJson, SectionTitle } from "../../components/ui";
+import { ReasonCode } from "../../components/report";
+import { Badge, Button, CodeBlock, CopyButton, cx, Disclosure, RawJson, SectionTitle } from "../../components/ui";
 import { downloadText, slug } from "../../lib/download";
 import { shortHash } from "../../lib/format";
-import { scrollBehavior } from "../../lib/motion";
 import type { CandidateEntry, DetectReport, FieldCoverage, ReplayResult } from "../../lib/types";
 import { CountsTable, type SplitCounts } from "./CountsTable";
 import { DiffViewer } from "./DiffViewer";
 import { OutcomeBanner } from "./OutcomeBanner";
-import { describePatch, familyMeta, outcomeMeta, policyFailureText, selectedCandidate } from "./describe";
+import { describePatch, familyMeta, policyFailureText, reasonCodes, selectedCandidate } from "./describe";
 
 function Block({ title, children, id }: { title: string; children: ReactNode; id: string }) {
   return (
-    <section aria-labelledby={id} className="mt-10">
+    <section aria-labelledby={id}>
       <SectionTitle id={id}>{title}</SectionTitle>
       {children}
     </section>
@@ -22,14 +22,14 @@ function Block({ title, children, id }: { title: string; children: ReactNode; id
 }
 
 function countsLine(result: ReplayResult): string {
-  if (result.error) return "replay failed";
   const c = result.counts;
+  if (result.error || !c) return "counts not available (the replay failed)";
   return `caught ${c.tp}, missed ${c.fn}, false alarms ${c.fp}`;
 }
 
 function CoverageTable({ rows }: { rows: FieldCoverage[] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+    <div className="overflow-x-auto rounded-xl border border-line bg-surface-solid">
       <table className="data-table">
         <thead>
           <tr>
@@ -135,12 +135,6 @@ function evidenceName(report: DetectReport): string {
 }
 
 export function ReportView({ report }: { report: DetectReport }) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    headingRef.current?.focus();
-    headingRef.current?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-  }, [report]);
-
   const chosen = selectedCandidate(report);
   const splits: SplitCounts[] = [];
   if (report.original) {
@@ -150,16 +144,14 @@ export function ReportView({ report }: { report: DetectReport }) {
   }
   const json = JSON.stringify(report, null, 2);
   const artifactName = report.artifact?.kind === "mapping" ? "mapping.yml" : "rule.yml";
+  const codes = reasonCodes(report);
 
   return (
-    <section aria-labelledby="report-title" className="reveal mt-10 scroll-mt-6 border-t border-line pt-8">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 id="report-title" ref={headingRef} tabIndex={-1} className="text-xl font-semibold tracking-[-0.01em] outline-none">
-            {report.case?.title ?? report.rule?.title ?? "Repair result"}
-          </h2>
-          <p className="mt-1 text-[0.875rem] text-ink-2">
-            Outcome <span className="font-medium text-ink">{outcomeMeta[report.outcome].label}</span>
+    <section aria-labelledby="detect-result" className="@container reveal scroll-mt-6 space-y-8">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <p className="min-w-0 text-[0.875rem] text-ink-2">
+            <span className="font-medium text-ink break-words">{report.case?.title ?? report.rule?.title ?? "Repair result"}</span>
             {report.mapping ? (
               <>
                 {" "}· mapping <code>{report.mapping.name}</code>
@@ -167,75 +159,27 @@ export function ReportView({ report }: { report: DetectReport }) {
             ) : null}
             {typeof report.manifest.elapsed_ms === "number" ? ` · ${report.manifest.elapsed_ms} ms` : null}
           </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              downloadText(evidenceName(report), json);
+            }}
+          >
+            <Icon name="download" size={15} />
+            Download evidence JSON
+          </Button>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => {
-            downloadText(evidenceName(report), json);
-          }}
-        >
-          <Icon name="download" size={16} />
-          Download evidence JSON
-        </button>
+        <OutcomeBanner report={report} />
       </div>
-
-      <OutcomeBanner report={report} />
-
-      {report.diff && report.artifact ? (
-        <Block title="What changed" id="report-diff">
-          <DiffViewer diff={report.diff} label={artifactName} />
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                if (report.artifact) downloadText(artifactName, report.artifact.content, "application/yaml");
-              }}
-            >
-              <Icon name="download" size={15} />
-              Download fixed {artifactName}
-            </button>
-            <CopyButton text={report.artifact.content} label={`Copy fixed ${artifactName}`} />
-            <span className="text-[0.8125rem] text-ink-3">
-              SHA-256 <code title={report.artifact.sha256}>{shortHash(report.artifact.sha256)}</code>
-            </span>
-          </div>
-        </Block>
-      ) : null}
-
-      {splits.length > 0 ? (
-        <Block title="Before and after" id="report-counts">
-          <p className="mb-3 max-w-[68ch] text-ink-2">
-            Counts come from replaying the rule on the pinned engine against labeled events. Validation events are a
-            separate set that decides acceptance; development events only screen ideas.
-          </p>
-          <CountsTable splits={splits} />
-        </Block>
-      ) : null}
-
-      {report.telemetry_recommendations && report.telemetry_recommendations.length > 0 ? (
-        <Block title="What to collect" id="report-telemetry">
-          <ul className="space-y-3">
-            {report.telemetry_recommendations.map((rec) => (
-              <li key={rec.field} className="rounded-lg border border-line bg-surface px-4 py-3">
-                <p className="font-medium">
-                  Collect <code>{rec.field}</code>
-                </p>
-                <p className="mt-1 text-ink-2">{rec.guidance}</p>
-              </li>
-            ))}
-          </ul>
-        </Block>
-      ) : null}
 
       {report.hypotheses && report.hypotheses.length > 0 ? (
         <Block title="Diagnosis" id="report-hypotheses">
           <ul className="space-y-3">
             {report.hypotheses.map((h, i) => (
-              <li key={i} className="rounded-lg border border-line bg-surface px-4 py-3">
+              <li key={i} className="rounded-xl border border-line bg-surface-solid px-4 py-3">
                 <p className="font-medium">{familyMeta[h.family].label}</p>
-                <p className="mt-0.5 text-ink-2">{familyMeta[h.family].explain}</p>
+                <p className="mt-0.5 max-w-[68ch] text-ink-2">{familyMeta[h.family].explain}</p>
                 <dl className="mt-2 grid gap-x-6 gap-y-1 text-[0.875rem] sm:grid-cols-[auto_1fr]">
                   {h.fields.length > 0 ? (
                     <>
@@ -255,12 +199,59 @@ export function ReportView({ report }: { report: DetectReport }) {
                       <dd className="font-mono break-all">{h.evidence_event_ids.join(", ")}</dd>
                     </>
                   ) : null}
-                  <dt className="text-ink-3">Reason codes</dt>
-                  <dd className="font-mono break-all">{h.reason_codes.join(", ")}</dd>
                 </dl>
               </li>
             ))}
           </ul>
+        </Block>
+      ) : null}
+
+      {report.telemetry_recommendations && report.telemetry_recommendations.length > 0 ? (
+        <Block title="What to collect" id="report-telemetry">
+          <ul className="space-y-3">
+            {report.telemetry_recommendations.map((rec) => (
+              <li key={rec.field} className="rounded-xl border border-line bg-surface-solid px-4 py-3">
+                <p className="font-medium">
+                  Collect <code>{rec.field}</code>
+                </p>
+                <p className="mt-1 max-w-[68ch] text-ink-2">{rec.guidance}</p>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+
+      {report.diff && report.artifact ? (
+        <Block title="What changed" id="report-diff">
+          <DiffViewer diff={report.diff} label={artifactName} />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (report.artifact) downloadText(artifactName, report.artifact.content, "application/yaml");
+              }}
+            >
+              <Icon name="download" size={15} />
+              Download fixed {artifactName}
+            </Button>
+            <CopyButton text={report.artifact.content} label={`Copy fixed ${artifactName}`} />
+            <span className="text-[0.8125rem] text-ink-3">
+              SHA-256 <code title={report.artifact.sha256}>{shortHash(report.artifact.sha256)}</code>
+            </span>
+          </div>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">Nothing has been applied to your rules. Review the change, then deploy it yourself.</p>
+        </Block>
+      ) : null}
+
+      {splits.length > 0 ? (
+        <Block title="Replay counts" id="report-counts">
+          <p className="mb-3 max-w-[68ch] text-ink-2">
+            Counts come from replaying the rule on the pinned engine against labeled events. Validation events are a
+            held-out set that decides acceptance; development events only screen ideas. A replay that failed shows
+            &ldquo;not available&rdquo;, never zero.
+          </p>
+          <CountsTable splits={splits} />
         </Block>
       ) : null}
 
@@ -277,7 +268,7 @@ export function ReportView({ report }: { report: DetectReport }) {
             events, and only the top one is replayed on validation events, so the acceptance policy sees the validation
             set exactly once.
           </p>
-          <ol className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+          <ol className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface-solid">
             {report.candidates.map((entry) => (
               <CandidateItem
                 key={entry.candidate.proposal_id}
@@ -289,6 +280,21 @@ export function ReportView({ report }: { report: DetectReport }) {
           </ol>
         </Block>
       ) : null}
+
+      <Block title="Reason codes" id="report-codes">
+        {codes.length > 0 ? (
+          <ul className="divide-y divide-line rounded-xl border border-line bg-surface-solid">
+            {codes.map((entry) => (
+              <li key={`${entry.source}-${entry.code}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-4 py-2.5">
+                <ReasonCode>{entry.code}</ReasonCode>
+                <span className="text-[0.8125rem] text-ink-2">{entry.source}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-ink-2">This report carries no reason codes.</p>
+        )}
+      </Block>
 
       <Block title="Technical detail" id="report-technical">
         <div className="space-y-3">

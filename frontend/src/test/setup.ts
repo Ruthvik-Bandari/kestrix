@@ -28,3 +28,5 @@ if (typeof window.matchMedia !== "function") {
     }) as MediaQueryList;
 }
 HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
+// jsdom does not implement scrollIntoView, which result headings call when a report arrives.
+Object.defineProperty(Element.prototype, "scrollIntoView", { value: () => undefined, configurable: true, writable: true });

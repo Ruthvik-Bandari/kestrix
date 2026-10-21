@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import type { ToolPage } from "../../app/tools";
+import { REPO_URL } from "../../lib/site";
 import { list, p, steps, type DocSection } from "../docs/blocks";
 
 /*
@@ -24,9 +25,35 @@ export interface GuideStep {
   command?: string;
 }
 
+/*
+ * Install commands. Neither package is on PyPI yet (docs/release.md), so every command here installs
+ * from the repository; the guides say so and mention pip only as what works after the release.
+ */
+const SOURCE = `git+${REPO_URL}`;
+export const INSTALL_KESTRIX = `uv tool install "${SOURCE}"`;
+export const INSTALL_SCAN = `uv tool install "${SOURCE}#subdirectory=packages/kestrix-scan"`;
+export const INSTALL_EXIF = `uv tool install "kestrix[exif] @ ${SOURCE}"`;
+export const INSTALL_AI = `uv tool install "kestrix[ai] @ ${SOURCE}"`;
+
+/**
+ * The repository does not commit the built dashboard, so a git install gives every CLI command but an
+ * empty dashboard. Until the PyPI wheel ships the bundle, the dashboard needs this from-source build.
+ */
+export const INSTALL_DASHBOARD = [
+  `git clone ${REPO_URL} && cd kestrix`,
+  "npm --prefix frontend ci && npm --prefix frontend run build",
+  "uv tool install .",
+  "kestrix dashboard",
+].join("\n");
+
+/** Shown above every install command until the first PyPI release. */
+export const PYPI_PENDING = "PyPI release pending, so install from the repository with uv. pip install works only after that release.";
+
 export interface LocalGuide {
   requirements: string[];
   install: { command: string; note?: string }[];
+  /** One command that proves the install worked, and what to expect. */
+  verify: { command: string; detail: string };
   steps: GuideStep[];
   troubleshooting: { problem: string; fix: string }[];
 }
@@ -85,7 +112,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         PYTHON,
         "A saved message: in Gmail, ⋮ (More) → Download message; in Outlook, File → Save as.",
       ],
-      install: [{ command: "pip install kestrix" }],
+      install: [{ command: INSTALL_KESTRIX }],
+      verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
         { title: "Save the message as an .eml file", detail: "Use your mail client's download or save option." },
         { title: "Analyze it", command: "kestrix mail analyze message.eml" },
@@ -147,7 +175,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
     }),
     local: {
       requirements: [PYTHON, "Network access to the site.", "Only check websites you own or are authorized to assess."],
-      install: [{ command: "pip install kestrix" }],
+      install: [{ command: INSTALL_KESTRIX }],
+      verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
         { title: "Check a site", command: "kestrix webcheck scan https://your-site.example" },
         {
@@ -208,9 +237,10 @@ export const toolContent: Record<ToolPage, ToolContent> = {
     local: {
       requirements: [PYTHON, "Optional: the exif extra (Pillow) to read photo metadata."],
       install: [
-        { command: "pip install kestrix" },
-        { command: 'pip install "kestrix[exif]"', note: "Adds photo metadata (Pillow)." },
+        { command: INSTALL_KESTRIX },
+        { command: INSTALL_EXIF, note: "Instead of the line above: adds photo metadata (Pillow)." },
       ],
+      verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
         { title: "Analyze a file", command: "kestrix forensics file ~/Downloads/invoice.pdf" },
         { title: "Check a photo before you share it", detail: "Needs the exif extra.", command: "kestrix forensics file photo.jpg" },
@@ -218,7 +248,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         { title: "Get the full report as JSON", command: "kestrix forensics file ~/Downloads/invoice.pdf --json" },
       ],
       troubleshooting: [
-        { problem: "exif_status is pillow_not_installed", fix: 'Install the extra with pip install "kestrix[exif]".' },
+        { problem: "exif_status is pillow_not_installed", fix: "Install kestrix with the exif extra: the second command under Install." },
         { problem: "Rejected (input_too_large)", fix: "Files over 50 MiB and URLs over 8,192 characters are refused." },
         { problem: "Rejected (invalid_url)", fix: "Only http and https links (or a link without a scheme) are accepted." },
       ],
@@ -261,7 +291,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "Docker, for the pinned Elasticsearch replay engine.",
         "For your own rule: a Sigma rule, an environment field mapping and labeled JSONL events.",
       ],
-      install: [{ command: "pip install kestrix" }],
+      install: [{ command: INSTALL_KESTRIX }],
+      verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
         { title: "Start the pinned engine", detail: "Binds to 127.0.0.1:9200.", command: "kestrix detect engine-up" },
         { title: "Wait until it is ready", command: "kestrix detect engine-status" },
@@ -336,7 +367,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "git, for --diff and directory walks.",
         "Network only for kestrix-scan db update, which downloads the public OSV data.",
       ],
-      install: [{ command: "pip install kestrix-scan", note: "Or: uv tool install kestrix-scan / pipx install kestrix-scan." }],
+      install: [{ command: INSTALL_SCAN }],
+      verify: { command: "kestrix-scan version", detail: "Prints the installed version and the author." },
       steps: [
         { title: "Scan a directory", detail: "Exit 1 on high or critical findings.", command: "kestrix-scan src" },
         { title: "Download the vulnerability data once", detail: "The only network step.", command: "kestrix-scan db update" },
@@ -433,7 +465,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "kestrix-scan on PATH (the full kestrix package includes it).",
         "python3 on PATH: any Python 3.9 or later, including the macOS system Python.",
       ],
-      install: [{ command: "pip install kestrix-scan" }],
+      install: [{ command: INSTALL_SCAN }],
+      verify: { command: "kestrix-scan version", detail: "Prints the installed version and the author." },
       steps: [
         {
           title: "Copy the plugin",
@@ -507,9 +540,10 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "Optional: the ai extra and your own Anthropic API key for the guardian.",
       ],
       install: [
-        { command: "pip install kestrix" },
-        { command: 'pip install "kestrix[ai]"', note: "Only for the optional guardian." },
+        { command: INSTALL_KESTRIX },
+        { command: INSTALL_AI, note: "Instead of the line above, only for the optional guardian." },
       ],
+      verify: { command: "kestrix version", detail: "Prints the installed version and the author." },
       steps: [
         {
           title: "Scan addresses offline",
@@ -536,7 +570,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         },
         {
           problem: "ai_key_missing",
-          fix: 'Install the extra with pip install "kestrix[ai]" and set ANTHROPIC_API_KEY or run kestrix config set-anthropic-key.',
+          fix: "Install kestrix with the ai extra (the second command under Install), then set ANTHROPIC_API_KEY or run kestrix config set-anthropic-key.",
         },
         {
           problem: "Risk unknown",

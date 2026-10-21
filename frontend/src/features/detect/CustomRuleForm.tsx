@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState, type SubmitEvent } from "react";
 import { FileButton } from "../../components/FileButton";
 import { Icon } from "../../components/Icon";
-import { Disclosure, ErrorState, Field, Spinner } from "../../components/ui";
+import { Button, Disclosure, ErrorState, Field, Panel, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { RunBody } from "../../lib/types";
@@ -234,18 +234,18 @@ export function CustomRuleForm({
   );
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-6">
+    <form onSubmit={submit} noValidate className="space-y-6" aria-label="Repair your own rule">
       <p className="max-w-[68ch] text-ink-2">
         Paste or load your own rule, field mapping and labeled events. They are sent only to the Kestrix server on
         this computer and replayed on the local engine.
       </p>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid items-start gap-6 min-[1100px]:grid-cols-2">
+        <Panel as="section" className="space-y-3">
           {input("rule")}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={!values.rule.trim() || parse.isPending}
               onClick={() => {
                 parse.mutate(values.rule);
@@ -253,7 +253,7 @@ export function CustomRuleForm({
             >
               {parse.isPending ? <Spinner /> : <Icon name="check" size={15} />}
               Check rule
-            </button>
+            </Button>
           </div>
           <div aria-live="polite">
             {parse.isError ? <ErrorState error={parse.error} /> : null}
@@ -269,27 +269,26 @@ export function CustomRuleForm({
               </div>
             ) : null}
           </div>
-        </div>
-        {input("mapping")}
+        </Panel>
+        <Panel as="section">{input("mapping")}</Panel>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        {input("development")}
-        {input("validation")}
+      <div className="grid items-start gap-6 min-[1100px]:grid-cols-2">
+        <Panel as="section">{input("development")}</Panel>
+        <Panel as="section">{input("validation")}</Panel>
       </div>
       <Disclosure summary="Advanced: healthy reference">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 min-[1100px]:grid-cols-2">
           {input("healthy_rule")}
           {input("healthy_mapping")}
         </div>
       </Disclosure>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" className="btn btn-primary" disabled={running}>
-          {running ? <Spinner /> : <Icon name="play" size={15} />}
-          {running ? "Running repair…" : "Diagnose and repair"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
+        <Button type="submit" pending={running} pendingLabel="Running repair…">
+          <Icon name="play" size={15} />
+          Diagnose and repair
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setValues(empty);
             setErrors({});
@@ -297,7 +296,7 @@ export function CustomRuleForm({
           }}
         >
           Clear
-        </button>
+        </Button>
       </div>
     </form>
   );

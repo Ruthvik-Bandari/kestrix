@@ -30,7 +30,10 @@ export function Command({ command, label }: { command: string; label?: string | 
   return (
     <div className="flex items-start gap-2 rounded-xl border border-line bg-inset py-1.5 pr-1.5 pl-3">
       <pre
-        className="min-w-0 flex-1 overflow-x-auto py-1.5 font-mono text-[0.8125rem] leading-relaxed text-ink"
+        className={cx(
+          "min-w-0 flex-1 py-1.5 font-mono text-[0.8125rem] leading-relaxed text-ink",
+          multiline ? "overflow-x-auto" : "[overflow-wrap:anywhere] whitespace-pre-wrap",
+        )}
         tabIndex={0}
         role="region"
         aria-label={label ?? `Command: ${command.split("\n", 1)[0] ?? ""}`}

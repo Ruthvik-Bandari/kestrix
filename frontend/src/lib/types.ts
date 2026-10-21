@@ -123,7 +123,8 @@ export interface ReplayResult {
   dataset_sha256: string;
   query: string | null;
   error: string | null;
-  counts: Counts;
+  /** Null when the replay failed: an errored replay has no counts, and no count is ever shown as 0. */
+  counts: Counts | null;
   scenarios_expected: string[];
   scenarios_detected: string[];
   matched_event_ids: string[];

@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
+import type { IconName } from "../../components/Icon";
 import type { Tone } from "../../components/tone";
 import type { CandidateEntry, Counts, DetectReport, Family, Outcome, Patch, ReplayResult } from "../../lib/types";
 
 export interface OutcomeMeta {
   tone: Tone;
+  /** A distinct icon per outcome, so no outcome other than a success looks like one. */
+  icon: IconName;
   label: string;
   title: string;
   explain: string;
@@ -14,19 +17,22 @@ export interface OutcomeMeta {
 export const outcomeMeta: Record<Outcome, OutcomeMeta> = {
   repaired: {
     tone: "ok",
+    icon: "checkCircle",
     label: "Repaired",
-    title: "Repaired: a tested fix is ready to review",
+    title: "A tested fix is ready to review",
     explain:
       "Kestrix found the cause, proposed a bounded change and replayed it on labeled events. Review the change before you deploy it.",
   },
   unchanged: {
     tone: "ok",
+    icon: "shieldCheck",
     label: "Unchanged",
     title: "No repair needed: the rule already works",
     explain: "The original rule catches every labeled attack without false alarms on the development events.",
   },
   abstained: {
     tone: "med",
+    icon: "help",
     label: "Abstained",
     title: "No safe fix found, so the rule was left as it is",
     explain:
@@ -34,12 +40,14 @@ export const outcomeMeta: Record<Outcome, OutcomeMeta> = {
   },
   unsupported: {
     tone: "low",
+    icon: "info",
     label: "Unsupported",
     title: "This rule uses a feature Kestrix can't repair yet",
     explain: "Nothing was changed. The reason below names the unsupported part of the rule.",
   },
   insufficient_evidence: {
     tone: "high",
+    icon: "alert",
     label: "Insufficient evidence",
     title: "The data this rule needs isn't being collected",
     explain:
@@ -47,6 +55,7 @@ export const outcomeMeta: Record<Outcome, OutcomeMeta> = {
   },
   engine_unavailable: {
     tone: "high",
+    icon: "octagon",
     label: "Engine unavailable",
     title: "The detection engine isn't reachable",
     explain: "Start the pinned engine, then run again. Nothing was replayed.",
@@ -138,5 +147,24 @@ export function impactSummary(report: DetectReport): string | null {
   if (before.split !== after.split) return null;
   const b = before.replay.counts;
   const a = after.replay.counts;
+  // A failed replay has no counts; say nothing rather than a number.
+  if (!b || !a) return null;
   return `On ${after.split} events the rule went from catching ${attacks(b)} with ${alarms(b.fp)} to catching ${attacks(a)} with ${alarms(a.fp)}.`;
+}
+
+/** Every reason code in a report with where it came from: diagnosis, the selected change, policy failures. */
+export function reasonCodes(report: DetectReport): { code: string; source: string }[] {
+  const out: { code: string; source: string }[] = [];
+  const seen = new Set<string>();
+  const add = (code: string, source: string) => {
+    if (seen.has(`${source}|${code}`)) return;
+    seen.add(`${source}|${code}`);
+    out.push({ code, source });
+  };
+  for (const h of report.hypotheses ?? []) for (const code of h.reason_codes) add(code, `Diagnosis: ${familyMeta[h.family].label.toLowerCase()}`);
+  for (const entry of report.candidates ?? []) {
+    if (entry.candidate.proposal_id === report.selected) for (const code of entry.candidate.reason_codes) add(code, "Selected change");
+    for (const code of entry.policy_failures ?? []) add(code, `Policy failure: ${entry.candidate.proposal_id}`);
+  }
+  return out;
 }

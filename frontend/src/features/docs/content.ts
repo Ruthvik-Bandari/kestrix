@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { toolFor, type ToolPage } from "../../app/tools";
 import type { IconName } from "../../components/Icon";
-import { toolContent } from "../tools/content";
+import { INSTALL_AI, INSTALL_DASHBOARD, INSTALL_EXIF, INSTALL_KESTRIX, INSTALL_SCAN, toolContent } from "../tools/content";
 import { code, list, p, steps, type DocSection } from "./blocks";
 
 /*
@@ -58,7 +58,7 @@ const overview: DocPage = {
         p(
           "Every result starts with a plain answer and keeps the evidence that produced it. Heuristic scores are labeled as heuristics, never as probabilities, and a clean result always means that no check fired, not that something is safe.",
         ),
-        { kind: "landing", text: "See six real Kestrix results, before and after, on the home page" },
+        { kind: "landing", text: "See a real example report on the home page" },
       ],
     },
     {
@@ -110,12 +110,19 @@ const packages: DocPage = {
     {
       heading: "Install",
       blocks: [
-        code("pip install kestrix-scan"),
-        p("Only the code scanner and the Claude Code plugin. Or use `uv tool install kestrix-scan` or `pipx install kestrix-scan`."),
-        code("pip install kestrix"),
-        p("The full workbench and dashboard, including `kestrix-scan`. Add `kestrix[exif]` for photo metadata or `kestrix[ai]` for the Bitcoin guardian."),
         p(
-          "Before the first PyPI release, install the scanner from GitHub: `pip install \"git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan\"`.",
+          "PyPI release pending: neither package is published to PyPI yet, so install them from the repository with uv.",
+        ),
+        code(INSTALL_KESTRIX),
+        p("Every workbench command, including `kestrix-scan`. Two optional extras, `exif` for photo metadata and `ai` for the Bitcoin guardian, install the same way:"),
+        code(INSTALL_EXIF),
+        code(INSTALL_AI),
+        code(INSTALL_SCAN),
+        p("Only the code scanner and the Claude Code plugin."),
+        p("The web dashboard is not built into a repository install yet. To run it, build it from a clone (needs Node.js 20 or newer):"),
+        code(INSTALL_DASHBOARD),
+        p(
+          "After the PyPI release you will also be able to run `pip install kestrix-scan` or `pip install kestrix` (or use `uv tool install` or `pipx install` with the package name).",
         ),
       ],
     },
@@ -191,6 +198,9 @@ rules.disable = ["py.crypto.weak_hash"]`,
           ".github/workflows/kestrix.yml (excerpt)",
         ),
         p("Findings appear under Security → Code scanning. To fail the build instead, drop `|| true`."),
+        p(
+          "The generated workflow installs `kestrix-scan` from PyPI, so it only works after the PyPI release. Until then, replace that step with the repository install shown under Install, which needs uv on the runner.",
+        ),
       ],
     },
     {
@@ -205,7 +215,7 @@ rules.disable = ["py.crypto.weak_hash"]`,
       heading: "The kestrix workbench CLI",
       blocks: [
         code("kestrix dashboard"),
-        p("Opens the dashboard at `http://localhost:8765`. Every module also has commands; each tool's page lists them."),
+        p("Opens the dashboard at `http://localhost:8765` (until the PyPI release, only after the from-source build in Install). Every module also has commands; each tool's page lists them."),
         p("Add `--json` to any command for machine-readable output. Exit codes are stable, so the commands work in scripts and CI."),
       ],
     },

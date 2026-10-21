@@ -4,6 +4,7 @@ import { Link, NavLink, useParams } from "react-router";
 import { dashboardPath, landingPath } from "../../app/paths";
 import { tools } from "../../app/tools";
 import { Icon } from "../../components/Icon";
+import { headingId, OnThisPage, type TocItem } from "../../components/OnThisPage";
 import { cx, PageHeader } from "../../components/ui";
 import { useTitle } from "../../lib/useTitle";
 import { Command, Inline } from "../tools/parts";
@@ -115,14 +116,26 @@ function BlockView({ block }: { block: Block }) {
   }
 }
 
+const INSTALL_ID = "docs-install";
+
+/** The article's h2 headings, in order: the "On this page" links and the heading ids share this one list. */
+export function sectionLinks(page: DocPage): TocItem[] {
+  const items = page.sections.map((section) => ({ id: headingId("docs", section.heading), label: section.heading }));
+  return page.tool ? [...items, { id: INSTALL_ID, label: "Install and use" }] : items;
+}
+
 function DocArticle({ page }: { page: DocPage }) {
+  const links = sectionLinks(page);
   return (
-    <article className="min-w-0">
+    <div className="grid gap-x-10 xl:grid-cols-[minmax(0,68ch)_11rem]">
+    <article className="min-w-0 max-w-[68ch]">
       <PageHeader title={page.title} lede={page.lede} />
-      <div className="max-w-[70ch] text-[0.9375rem] leading-relaxed text-ink-2">
-        {page.sections.map((section) => (
+      <div className="text-[0.9375rem] leading-relaxed text-ink-2">
+        {page.sections.map((section, index) => (
           <section key={section.heading} className="mt-9 first:mt-0">
-            <h2 className="mb-3 text-xl font-bold tracking-[-0.015em] text-ink">{section.heading}</h2>
+            <h2 id={links[index]?.id} className="mb-3 scroll-mt-6 text-xl font-bold tracking-[-0.015em] text-ink">
+              {section.heading}
+            </h2>
             <div className="space-y-3">
               {section.blocks.map((block, index) => (
                 <BlockView key={index} block={block} />
@@ -131,8 +144,8 @@ function DocArticle({ page }: { page: DocPage }) {
           </section>
         ))}
         {page.tool ? (
-          <section aria-labelledby="docs-install" className="mt-9">
-            <h2 id="docs-install" className="mb-3 text-xl font-bold tracking-[-0.015em] text-ink">
+          <section aria-labelledby={INSTALL_ID} className="mt-9">
+            <h2 id={INSTALL_ID} className="mb-3 scroll-mt-6 text-xl font-bold tracking-[-0.015em] text-ink">
               Install and use
             </h2>
             <ToolGuide tool={page.tool} compact />
@@ -140,6 +153,8 @@ function DocArticle({ page }: { page: DocPage }) {
         ) : null}
       </div>
     </article>
+    <OnThisPage items={links} />
+    </div>
   );
 }
 
@@ -163,7 +178,7 @@ export default function DocsPage() {
   const page = findDoc(slug);
   useTitle(page ? (page.slug ? `${page.title} · Docs` : "Docs") : "Docs");
   return (
-    <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+    <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
       <div className="lg:border-r lg:border-line lg:pr-6">
         <DocsNav />
       </div>
