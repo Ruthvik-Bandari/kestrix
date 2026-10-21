@@ -1,0 +1,309 @@
+{
+  "generated_at": "2026-10-21T16:55:09+00:00",
+  "schema_version": 1,
+  "sources": [
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-21T16:53:45+00:00",
+          "filename": "20051114.mbox",
+          "kind": "mbox",
+          "last_modified": "Mon, 10 Feb 2014 17:00:43 GMT",
+          "sha256": "928cbf1c394d01d0b398ded8dc7cbd94dd4ce9cb0d4efdecd12696338c247926",
+          "size": 4071556,
+          "url": "https://www.monkey.org/~jose/phishing/20051114.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:46+00:00",
+          "filename": "phishing0.mbox",
+          "kind": "mbox",
+          "last_modified": "Mon, 13 Jun 2005 14:37:26 GMT",
+          "sha256": "6184b0a34ed8cbbb252676e21c1eab9eac5fa4be89c61e30cc9954ebbb25d848",
+          "size": 3119972,
+          "url": "https://www.monkey.org/~jose/phishing/phishing0.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:46+00:00",
+          "filename": "phishing1.mbox",
+          "kind": "mbox",
+          "last_modified": "Tue, 15 Nov 2005 16:01:00 GMT",
+          "sha256": "99f02474a11086408a5ce6d11ef38823f003c6611a4312c31fbee96773eeba28",
+          "size": 4191770,
+          "url": "https://www.monkey.org/~jose/phishing/phishing1.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:49+00:00",
+          "filename": "phishing2.mbox",
+          "kind": "mbox",
+          "last_modified": "Mon, 07 Aug 2006 13:09:01 GMT",
+          "sha256": "5113277984eae759a5ff958ccf408b542441ce033a49b923ab3b0f324075e6bd",
+          "size": 10420294,
+          "url": "https://www.monkey.org/~jose/phishing/phishing2.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:49+00:00",
+          "filename": "phishing3.mbox",
+          "kind": "mbox",
+          "last_modified": "Tue, 07 Aug 2007 01:20:02 GMT",
+          "sha256": "b29336d2e31c2dff19639415e98ed2aced5b4d63675ea5e29bea1a7d4e452841",
+          "size": 20067215,
+          "url": "https://www.monkey.org/~jose/phishing/phishing3.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:51+00:00",
+          "filename": "private-phishing4.mbox",
+          "kind": "mbox",
+          "last_modified": "Tue, 24 Jul 2018 21:46:12 GMT",
+          "sha256": "2f246d27b9838a4eff1df46cd271d2a968453b1352e97dfd239a5ce135dd88ce",
+          "size": 32736139,
+          "url": "https://www.monkey.org/~jose/phishing/private-phishing4.mbox"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:51+00:00",
+          "filename": "phishing-2015",
+          "kind": "mbox",
+          "last_modified": "Tue, 15 May 2018 19:18:31 GMT",
+          "sha256": "7523e62a5e6e4ee8134ab8b1a628e423097a7779e1003b28422864aa34f1c319",
+          "size": 8815568,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2015"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:52+00:00",
+          "filename": "phishing-2016",
+          "kind": "mbox",
+          "last_modified": "Tue, 15 May 2018 19:18:31 GMT",
+          "sha256": "42393e4d686193bfb879d1608c23fd4d3b698ccd4d73f0e1d2276ba709718483",
+          "size": 12578274,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2016"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:52+00:00",
+          "filename": "phishing-2017",
+          "kind": "mbox",
+          "last_modified": "Tue, 15 May 2018 19:18:31 GMT",
+          "sha256": "110fba876b38b44035bf065788952674bc68a7b6879c345a515a9ac844b1d704",
+          "size": 11352450,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2017"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:54+00:00",
+          "filename": "phishing-2018",
+          "kind": "mbox",
+          "last_modified": "Fri, 11 Jan 2019 19:41:19 GMT",
+          "sha256": "83f49cf2a76c7b29b205d22d8778e46848e36af0f15ee1df126a543696acd48d",
+          "size": 8775701,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2018"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:55+00:00",
+          "filename": "phishing-2019",
+          "kind": "mbox",
+          "last_modified": "Fri, 03 Jan 2020 15:08:42 GMT",
+          "sha256": "cab39d6fcb38cf80cdaabb3e6ffd1222777e2fcaac7e8480321b7f729c2e3c0e",
+          "size": 5211476,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2019"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:55+00:00",
+          "filename": "phishing-2020",
+          "kind": "mbox",
+          "last_modified": "Mon, 08 Mar 2021 15:59:56 GMT",
+          "sha256": "99e20bf25f5e8556d37103f2c8140cd75181a62d3df91df8acf9d9aece9f08bb",
+          "size": 5826445,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2020"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:56+00:00",
+          "filename": "phishing-2021",
+          "kind": "mbox",
+          "last_modified": "Sat, 12 Feb 2022 16:02:23 GMT",
+          "sha256": "636707cff42245d1482e4ae8a2c03369717a5e06bf9d1a0f4ec5dcd846661cee",
+          "size": 2719946,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2021"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:56+00:00",
+          "filename": "phishing-2022",
+          "kind": "mbox",
+          "last_modified": "Tue, 31 Jan 2023 21:15:05 GMT",
+          "sha256": "a6291e2cb990204766fce425423949b403cce4ae6a660fc8d08812e40a063fa7",
+          "size": 4775954,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2022"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:57+00:00",
+          "filename": "phishing-2023",
+          "kind": "mbox",
+          "last_modified": "Mon, 01 Jan 2024 16:31:53 GMT",
+          "sha256": "5007f1c1dc91b15e93e988afa3a1cf402e15c88f765d3057be8bfec50dae1fe8",
+          "size": 7763704,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2023"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:57+00:00",
+          "filename": "phishing-2024",
+          "kind": "mbox",
+          "last_modified": "Sun, 05 Jan 2025 18:32:05 GMT",
+          "sha256": "60afa40a2757170093a2bde31ec9cda4e54d33992203ce04bfbbc86d2e5e5b99",
+          "size": 15457816,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2024"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:58+00:00",
+          "filename": "phishing-2025",
+          "kind": "mbox",
+          "last_modified": "Thu, 19 Feb 2026 13:52:06 GMT",
+          "sha256": "f1fa7e0fe35c9a16f36d9aa20ade7e1d3908d1d0c1d917b8c53c8aa799ec1c8f",
+          "size": 18769863,
+          "url": "https://www.monkey.org/~jose/phishing/phishing-2025"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:58+00:00",
+          "filename": "LICENSE.txt",
+          "kind": "document",
+          "last_modified": "Fri, 20 Feb 2026 15:28:08 GMT",
+          "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+          "size": 18657,
+          "url": "https://www.monkey.org/~jose/phishing/LICENSE.txt"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:58+00:00",
+          "filename": "README.txt",
+          "kind": "document",
+          "last_modified": "Fri, 20 Feb 2026 15:27:37 GMT",
+          "sha256": "4589b63a4149bff0b65e82c2110baaebee36e5d9219009a31cc78bb6ab597fab",
+          "size": 961,
+          "url": "https://www.monkey.org/~jose/phishing/README.txt"
+        }
+      ],
+      "landing_url": "https://www.monkey.org/~jose/phishing/",
+      "license": {
+        "attribution": "Nazario, J. Phishing corpus. https://www.monkey.org/~jose/phishing/ (CC BY 4.0)",
+        "note": "CC BY 4.0 per the author's README (https://www.monkey.org/~jose/phishing/README.txt): derivative works allowed, attribution required. Hand-classified from one personal inbox; later mailboxes are not anonymized, so messages are never copied off the cluster.",
+        "spdx": "CC-BY-4.0"
+      },
+      "schema_version": 1,
+      "source": "nazario",
+      "title": "Jose Nazario's phishing corpus (raw mbox files, 2005-2025)"
+    },
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-21T16:53:59+00:00",
+          "filename": "20021010_easy_ham.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Tue, 29 Jun 2004 03:26:54 GMT",
+          "sha256": "f9fc56e1f68780f9afdc6d23a2e24c4584af988afc58bbfabae500e51f3a2f36",
+          "size": 1677144,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20021010_easy_ham.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:59+00:00",
+          "filename": "20021010_hard_ham.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Thu, 16 Dec 2004 19:49:02 GMT",
+          "sha256": "7cd46378877e00caa4e943920a854e2ef95ac29e296cf2a3ce691fb4104c4fbd",
+          "size": 1021126,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20021010_hard_ham.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:53:59+00:00",
+          "filename": "20021010_spam.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Tue, 29 Jun 2004 03:26:54 GMT",
+          "sha256": "048c2d2e61ff13f7cef88788c7184ee57dbc9049c58e5bd706fdb8537e9bac81",
+          "size": 1192582,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20021010_spam.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:00+00:00",
+          "filename": "20030228_easy_ham.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Tue, 29 Jun 2004 03:26:54 GMT",
+          "sha256": "2b7b65904bcfcc31d2b5f51946f2d261370b257402cbbd62930b46ab83367438",
+          "size": 1612216,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:00+00:00",
+          "filename": "20030228_easy_ham_2.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Tue, 29 Jun 2004 03:26:54 GMT",
+          "sha256": "b4bd3dc5ae5b40f38e99a0e41ad7d16b428b56e818e3a6ffa07330d62004dd38",
+          "size": 1077892,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham_2.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:00+00:00",
+          "filename": "20030228_hard_ham.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Thu, 16 Dec 2004 19:49:02 GMT",
+          "sha256": "ce2ce67880643dbde65ea7f85bffbfe4417349c4bd80b6b0de56262ae6b0a9c9",
+          "size": 1029898,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_hard_ham.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:00+00:00",
+          "filename": "20030228_spam.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Tue, 29 Jun 2004 03:26:54 GMT",
+          "sha256": "c08debc32413804949a866be45ef78195cec2cbafd1da744ed76cdb860589743",
+          "size": 1183768,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_spam.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:01+00:00",
+          "filename": "20050311_spam_2.tar.bz2",
+          "kind": "tar_messages",
+          "last_modified": "Fri, 11 Mar 2005 23:55:26 GMT",
+          "sha256": "44280a0e28bf7645b2279e8e42659271ad82c6f40bf8d364dbda7f1df344a765",
+          "size": 2059029,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/20050311_spam_2.tar.bz2"
+        },
+        {
+          "downloaded_at": "2026-10-21T16:54:01+00:00",
+          "filename": "readme.html",
+          "kind": "document",
+          "last_modified": "Tue, 31 Jan 2006 20:30:37 GMT",
+          "sha256": "9f8cc0c8be6f32b25226d3ece26da775a6e008581b8fb061a679e3acee6b64be",
+          "size": 4566,
+          "url": "https://spamassassin.apache.org/old/publiccorpus/readme.html"
+        }
+      ],
+      "landing_url": "https://spamassassin.apache.org/old/publiccorpus/",
+      "license": {
+        "attribution": "The Apache SpamAssassin Project, public mail corpus. https://spamassassin.apache.org/old/publiccorpus/",
+        "note": "No license is stated. The corpus readme says copyright for the message text remains with the original senders and that the messages were made public or sent to the maintainer for this use. Used for research evaluation and training of the benchmark's weights by the owner's decision; not redistributed.",
+        "spdx": "NOASSERTION"
+      },
+      "schema_version": 1,
+      "source": "spamassassin",
+      "title": "Apache SpamAssassin public mail corpus (ham, easy_ham, hard_ham, spam, spam_2)"
+    },
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-21T16:55:09+00:00",
+          "filename": "enron_mail_20150507.tar.gz",
+          "kind": "enron_maildir_tgz",
+          "last_modified": "Thu, 07 May 2015 20:35:29 GMT",
+          "sha256": "b3da1b3fe0369ec3140bb4fbce94702c33b7da810ec15d718b3fadf5cd748ca7",
+          "size": 443254787,
+          "url": "https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz"
+        }
+      ],
+      "landing_url": "https://www.cs.cmu.edu/~enron/",
+      "license": {
+        "attribution": "Cohen, W. W. Enron email dataset. https://www.cs.cmu.edu/~enron/ (May 7, 2015 release)",
+        "note": "No license is stated. The data are real employees' mail and contain personal information, so only a seeded sample is used, it stays on the cluster, and no address, subject or body is ever reported. Used for research evaluation and training by the owner's decision; not redistributed.",
+        "spdx": "NOASSERTION"
+      },
+      "schema_version": 1,
+      "source": "enron",
+      "title": "Enron email dataset, May 7 2015 release (CMU)"
+    }
+  ]
+}

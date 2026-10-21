@@ -39,6 +39,14 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | `hpc/vul_train_teacher.sbatch` | `gpu`, H200 | 8 CPU, 96 GB, 6 h | C6 teacher LoRA (Qwen2.5-Coder-7B, bf16); `--array=1-3` for three seeds |
 | `hpc/vul_train_student.sbatch --teacher-run ID` | `gpu`, A100 | 8 CPU, 48 GB, 3 h | C6 student distillation, permissive pool only; fp32 and int8 state dicts |
 | `hpc/vul_eval.sbatch [--split test --locked]` | `gpu`, H200 | 8 CPU, 96 GB, 8 h | C6 metrics and baselines on dev; `--locked` runs the held-out test once (`reports/LOCKED_EVAL.json`) |
+| `hpc/mail_acquire.sh` | transfer node | n/a | Email benchmark corpora (Nazario phishing mboxes, SpamAssassin tarballs, Enron May 2015 tarball, about 0.5 GB) into `/scratch/$USER/kestrix/mailbench/raw` (0700); records URL, size, SHA-256 and licence in `manifests/` |
+| `hpc/mail_chain.sh smoke\|full` | login node | n/a | Submits the email benchmark: `smoke` is one small job; `full` chains build, features (array), dev-metrics and learn with `--dependency=afterok`. Never submits the locked test |
+| `hpc/mail_smoke.sbatch` | `short` | 2 CPU, 8 GB, 40 min | The whole chain on a few hundred messages under `mailbench/smoke/` |
+| `hpc/mail_build.sbatch` | `short` | 2 CPU, 24 GB, 6 h | Unpack, filter, deduplicate, label, group and split; writes private `work/` and the aggregate `reports/build.json`, `reports/split-manifest.json` |
+| `hpc/mail_features.sbatch` | `short` | 1 CPU, 8 GB, 4 h, `--array=0-15` | `kestrix.mail.analyze` over one shard per task; writes finding ids, severities and counts only |
+| `hpc/mail_dev_metrics.sbatch` | `short` | 1 CPU, 16 GB, 4 h | Baseline catch and false-alarm rates with grouped bootstrap intervals, leakage controls and miss causes on dev |
+| `hpc/mail_learn.sbatch` | `short` | 1 CPU, 16 GB, 4 h | Non-negative L2 logistic-regression weights on dev (three leakage-controlled feature sets), grouped cross-validation |
+| `hpc/mail_locked.sbatch --weights FILE [--name N]` | `short` | 1 CPU, 16 GB, 4 h | The one-time locked test evaluation (`mailbench/reports/LOCKED_EVAL.json` is claimed exclusively) |
 
 The cluster has no Docker, so jobs run Elasticsearch from Elastic's official tarball with its
 bundled JDK. That is the same 8.19.3 release the local Docker image pins by digest. The engine

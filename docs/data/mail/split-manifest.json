@@ -1,0 +1,89 @@
+{
+  "created_at": "2026-10-21T17:09:18+00:00",
+  "ids_sha256_all": "1e1ec54852519ada1254603c1ebc57be04e17f9346218c7a4cc1c4dc4c2ce38b",
+  "schema_version": 1,
+  "seed": "kestrixmail-v1",
+  "splits": {
+    "dev": {
+      "by_source_label": {
+        "enron/ham": 13986,
+        "nazario/phishing": 6070,
+        "spamassassin/ham": 2757,
+        "spamassassin/spam": 1546,
+        "synthetic/ham": 90,
+        "synthetic/phishing": 150,
+        "synthetic/spam": 55
+      },
+      "by_year": {
+        "1997": 24,
+        "1999": 351,
+        "2000": 5458,
+        "2001": 7150,
+        "2002": 5296,
+        "2003": 15,
+        "2004": 53,
+        "2005": 241,
+        "2006": 804,
+        "2007": 1400,
+        "2008": 361,
+        "2009": 290,
+        "2010": 550,
+        "2011": 408,
+        "2013": 261,
+        "2014": 189,
+        "2015": 270,
+        "2016": 4,
+        "2017": 273,
+        "2020": 147,
+        "2023": 315,
+        "2024": 1,
+        "2025": 433,
+        "2026": 295,
+        "unknown": 65
+      },
+      "groups": 298,
+      "ids_sha256": "fd1f1ce0aab15d134c9f0a1c9e6c482fc341960eb657e766e1df248c364ff5e3",
+      "messages": 24654
+    },
+    "test": {
+      "by_source_label": {
+        "enron/ham": 6014,
+        "nazario/phishing": 3019,
+        "spamassassin/ham": 1536,
+        "spamassassin/spam": 238,
+        "synthetic/ham": 30,
+        "synthetic/phishing": 60
+      },
+      "by_year": {
+        "1993": 1,
+        "1997": 1,
+        "1998": 6,
+        "1999": 121,
+        "2000": 2237,
+        "2001": 3420,
+        "2002": 1938,
+        "2003": 5,
+        "2004": 3,
+        "2005": 588,
+        "2006": 517,
+        "2012": 332,
+        "2016": 432,
+        "2017": 1,
+        "2018": 247,
+        "2019": 209,
+        "2020": 2,
+        "2021": 91,
+        "2022": 203,
+        "2024": 360,
+        "2026": 90,
+        "unknown": 93
+      },
+      "groups": 138,
+      "ids_sha256": "7370ad45a1575b4897657e3af3da4ade00743eb0a27f84aefb2e315921bc7262",
+      "messages": 10897
+    }
+  },
+  "stratified_by": "source and label",
+  "test_fraction_target": 0.3,
+  "unit": "group = source file or mailbox + year (one-year files whole)"
+}
