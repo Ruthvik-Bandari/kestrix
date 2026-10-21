@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 import { dashboardPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
 import { toolFor } from "../../app/tools";
 import { BrandMark } from "../../components/BrandMark";
+import { CodeRain } from "../../components/CodeRain";
 import { Icon } from "../../components/Icon";
 import { SiteFooter } from "../../components/PublicShell";
 import { CopyButton, cx } from "../../components/ui";
@@ -187,8 +188,9 @@ function Header() {
 function Hero() {
   const hosted = isHosted();
   return (
-    <section aria-labelledby="hero-title" className="graphite border-b border-line">
-      <div className="mx-auto grid max-w-[75rem] items-center gap-12 px-5 pt-12 pb-16 sm:px-8 lg:min-h-[calc(100dvh-4rem-1px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-16 lg:px-12 lg:py-16">
+    <section aria-labelledby="hero-title" className="graphite relative isolate border-b border-line">
+      <CodeRain />
+      <div className="relative mx-auto grid max-w-[75rem] items-center gap-12 px-5 pt-12 pb-16 sm:px-8 lg:min-h-[calc(100dvh-4rem-1px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-16 lg:px-12 lg:py-16">
         <div>
           <p className="eyebrow">
             <span className="h-px w-6 bg-lime" aria-hidden="true" />

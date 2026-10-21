@@ -32,8 +32,9 @@
  * family on purpose and are told apart by their labels and icons.
  * Every text/background pair below was checked for 4.5:1 (marks and control borders 3:1).
  * Surfaces are solid: no glass, glow, sheen or iridescent gradients in routine UI. The legacy
- * names --h1..--h4, --holo-text, --glow and --glass-hi stay so
- * existing components keep compiling; they now resolve to solid green, ink or nothing.
+ * names --h1..--h4 stay so existing components keep compiling; they resolve to solid green.
+ * Dark is true OLED black: the page is #000, the rail #050807, panels #0b1310 and insets #121c18
+ * so the layers stay distinguishable.
  */
 :root {
   color-scheme: light;
@@ -60,9 +61,6 @@
   --h2: #075338;
   --h3: #0c6b4b;
   --h4: #075338;
-  --holo-text: var(--ink);
-  --glass-hi: transparent;
-  --glow: transparent;
 
   --crit: #a12c35;
   --crit-mark: #c23a43;
@@ -80,6 +78,11 @@
   --ok-mark: #1f8a58;
   --ok-bg: #e9f5ec;
 
+  /* Code rain (components/CodeRain.tsx): "r g b" triples and the brightest composited alpha. */
+  --rain-head: 12 107 75;
+  --rain-trail: 12 107 75;
+  --rain-max: 0.12;
+
   --diff-add-bg: #e1f2e6;
   --diff-del-bg: #fbe6e3;
   --shadow: 0 1px 2px rgb(22 35 32 / 0.06), 0 12px 32px -12px rgb(22 35 32 / 0.2);
@@ -90,12 +93,12 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #101918;
-    --bg-deep: #101918;
-    --rail: #131f1b;
-    --surface: #172421;
-    --surface-solid: #172421;
-    --inset: #20322d;
+    --bg: #000000;
+    --bg-deep: #000000;
+    --rail: #050807;
+    --surface: #0b1310;
+    --surface-solid: #0b1310;
+    --inset: #121c18;
     --line: #354a40;
     --line-strong: #789285;
     --ink: #edf4ed;
@@ -129,6 +132,10 @@
     --ok-mark: #4fc787;
     --ok-bg: #193c2b;
 
+    --rain-head: 198 239 155;
+    --rain-trail: 140 228 189;
+    --rain-max: 0.2;
+
     --diff-add-bg: #1c3c2c;
     --diff-del-bg: #422226;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
@@ -139,12 +146,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101918;
-  --bg-deep: #101918;
-  --rail: #131f1b;
-  --surface: #172421;
-  --surface-solid: #172421;
-  --inset: #20322d;
+  --bg: #000000;
+  --bg-deep: #000000;
+  --rail: #050807;
+  --surface: #0b1310;
+  --surface-solid: #0b1310;
+  --inset: #121c18;
   --line: #354a40;
   --line-strong: #789285;
   --ink: #edf4ed;
@@ -177,6 +184,10 @@
   --ok: #9ce5bb;
   --ok-mark: #4fc787;
   --ok-bg: #193c2b;
+
+  --rain-head: 198 239 155;
+  --rain-trail: 140 228 189;
+  --rain-max: 0.2;
 
   --diff-add-bg: #1c3c2c;
   --diff-del-bg: #422226;
@@ -298,10 +309,6 @@
     letter-spacing: -0.03em;
     line-height: 1.1;
   }
-  /* Legacy name: headings stay solid ink (--holo-text resolves to var(--ink)). */
-  .holo-text {
-    color: var(--holo-text);
-  }
   .eyebrow {
     display: inline-flex;
     align-items: center;
@@ -398,6 +405,18 @@
     --line-strong: #789285;
     --accent-text: #c6ef9b;
     --focus: #c6ef9b;
+    --rain-head: 198 239 155;
+    --rain-trail: 140 228 189;
+    --rain-max: 0.2;
+  }
+  /* Dark mode: the hero and landing header are true black, like the rest of the dark theme. */
+  :root[data-theme="dark"] .graphite {
+    background: #000000;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .graphite {
+      background: #000000;
+    }
   }
   .btn-lime {
     background: #c6ef9b;
@@ -494,10 +513,6 @@
     border: 1px solid var(--line);
     border-radius: 12px;
   }
-  .holo-rim {
-    position: relative;
-  }
-
   /* Home launcher tile: solid, the border darkens on hover and focus, nothing moves. */
   .launcher-tile {
     min-height: 9.5rem;
@@ -641,30 +656,4 @@
     border-color: GrayText;
     color: GrayText;
   }
-  .holo-text {
-    color: CanvasText;
-  }
-}
-
-/*
- * Threat field: a canvas behind everything (components/ThreatField.tsx). Content sits on
- * translucent, blurred veils so text keeps its contrast while the scene shows through.
- */
-.threat-field {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  /* The binary-rain canvas is retired from routine UI; ThreatField is removed in a later phase. */
-  display: none;
-}
-.veil-content {
-  --veil: 100%;
-  background: var(--bg);
-  border: 1px solid var(--line);
-}
-.veil-rail {
-  background: var(--rail);
 }

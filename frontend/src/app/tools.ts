@@ -17,6 +17,8 @@ export interface Tool {
   /** Dashboard-relative page, such as "mail"; also the tool's docs page, docs/<page>. */
   page: ToolPage;
   name: string;
+  /** Short label for the navigation rail, where the group heading already says "Checks" or "Advanced". */
+  navName: string;
   icon: IconName;
   /** One sentence: what the tool does. The page lede everywhere the tool is introduced. */
   summary: string;
@@ -27,6 +29,7 @@ export interface Tool {
 export const tools: Tool[] = [
   {
     page: "mail",
+    navName: "Email",
     name: "Email check",
     icon: "mailWarning",
     summary: "Checks a saved email for phishing, impersonation and fake-invoice signs, with a reason for every finding.",
@@ -34,6 +37,7 @@ export const tools: Tool[] = [
   },
   {
     page: "webcheck",
+    navName: "Website",
     name: "Web check",
     icon: "globeLock",
     summary: "Grades a website's HTTPS, TLS certificate, security headers and cookies from A to F, with a fix for each problem.",
@@ -41,6 +45,7 @@ export const tools: Tool[] = [
   },
   {
     page: "forensics",
+    navName: "File & link",
     name: "File & link forensics",
     icon: "fileSearch",
     summary:
@@ -49,6 +54,7 @@ export const tools: Tool[] = [
   },
   {
     page: "detect",
+    navName: "Detection repair",
     name: "Detection repair",
     icon: "shieldCheck",
     summary:
@@ -57,6 +63,7 @@ export const tools: Tool[] = [
   },
   {
     page: "code",
+    navName: "Code scanner",
     name: "Code scanner",
     icon: "scanSearch",
     summary:
@@ -65,6 +72,7 @@ export const tools: Tool[] = [
   },
   {
     page: "claude-plugin",
+    navName: "Claude integration",
     name: "Claude Code plugin",
     icon: "bot",
     summary: "Claude Code checks the code it writes: every edit is scanned, and Claude fixes what it introduced in the same turn.",
@@ -72,12 +80,20 @@ export const tools: Tool[] = [
   },
   {
     page: "bitcoin",
+    navName: "Bitcoin",
     name: "Bitcoin quantum risk",
     icon: "bitcoin",
     summary:
       "Shows which of your Bitcoin addresses have a public key visible on the blockchain, and how to move coins to an address that hides it.",
     live: true,
   },
+];
+
+/** The tools that make up the rail and Home groups: single source for both. */
+export const toolGroups: { title: string; pages: ToolPage[] }[] = [
+  { title: "Checks", pages: ["mail", "webcheck", "forensics"] },
+  { title: "Advanced", pages: ["detect", "bitcoin"] },
+  { title: "Developer tools", pages: ["code", "claude-plugin"] },
 ];
 
 export const TOOL_PAGES: ToolPage[] = tools.map((tool) => tool.page);
@@ -91,4 +107,14 @@ export function toolFor(page: ToolPage): Tool {
 /** Whether the tool runs on your own computer only in this mode (shown as "Run locally"). */
 export function runsLocallyOnly(tool: Tool): boolean {
   return !tool.live || !pageAvailable(tool.page);
+}
+
+/**
+ * The short availability hint for navigation and Home, or null where the tool simply runs:
+ * "Guide" where the page is always a setup guide (code scanner, Claude integration), "Local guide"
+ * where it is live locally but only a guide on the hosted service (detection repair, Bitcoin).
+ */
+export function availabilityHint(tool: Tool): "Guide" | "Local guide" | null {
+  if (!tool.live) return "Guide";
+  return pageAvailable(tool.page) ? null : "Local guide";
 }

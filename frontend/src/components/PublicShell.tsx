@@ -59,7 +59,7 @@ export function HeaderAction() {
 /** The footer of every public page: the attribution, the legal and project links, and the theme. */
 export function SiteFooter() {
   return (
-    <footer className="veil-rail relative z-10 border-t border-line">
+    <footer className="bg-rail relative z-10 border-t border-line">
       <div className="mx-auto grid max-w-[80rem] gap-6 px-4 py-8 text-[0.875rem] sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
           <p className="flex items-center gap-2.5">
@@ -110,11 +110,14 @@ export function PublicShell({
   children,
   width = "narrow",
   action = true,
+  backdrop,
 }: {
   children: ReactNode;
   width?: "narrow" | "wide";
   /** False on the sign-in page, whose card is the action. */
   action?: boolean;
+  /** Decorative layer behind the page content (the sign-in rain); it fills the band between header and footer. */
+  backdrop?: ReactNode;
 }) {
   return (
     <div className="relative isolate flex min-h-dvh flex-col">
@@ -124,7 +127,7 @@ export function PublicShell({
       >
         Skip to content
       </a>
-      <header className="veil-rail sticky top-0 z-40 border-b border-line">
+      <header className="bg-rail sticky top-0 z-40 border-b border-line">
         <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6">
           <Link to={landingPath()} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix home">
             <BrandMark size={28} />
@@ -133,16 +136,19 @@ export function PublicShell({
           {action ? <HeaderAction /> : null}
         </div>
       </header>
-      <main
-        id="public-main"
-        tabIndex={-1}
-        className={cx(
-          "relative z-10 mx-auto w-full flex-1 px-4 py-10 outline-none sm:px-6 sm:py-14",
-          width === "narrow" ? "max-w-[34rem]" : "max-w-[52rem]",
-        )}
-      >
-        {children}
-      </main>
+      <div className="relative flex flex-1 flex-col">
+        {backdrop}
+        <main
+          id="public-main"
+          tabIndex={-1}
+          className={cx(
+            "relative z-10 mx-auto w-full flex-1 px-4 py-10 outline-none sm:px-6 sm:py-14",
+            width === "narrow" ? "max-w-[34rem]" : "max-w-[52rem]",
+          )}
+        >
+          {children}
+        </main>
+      </div>
       <SiteFooter />
     </div>
   );

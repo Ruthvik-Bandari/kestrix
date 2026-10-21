@@ -51,7 +51,7 @@ export function Tabs<K extends string>({
       <div
         role="tablist"
         aria-label={label}
-        className="mb-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1 shadow-[inset_0_1px_0_var(--glass-hi)] backdrop-blur-md"
+        className="mb-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1"
       >
         {items.map((item) => {
           const selected = item.key === value;

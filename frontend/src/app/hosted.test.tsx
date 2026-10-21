@@ -33,25 +33,27 @@ function hostedServer(me: unknown = SIGNED_IN, extra: Parameters<typeof fakeServ
   });
 }
 
-/** The sidebar: the workspace pages by name, then one icon shortcut per tool (named by its label). */
+/** The rail in hosted mode: grouped links, with an availability hint where the page is only a guide. */
 const NAV = [
-  "Home",
-  "Docs",
+  "Overview",
+  "Email",
+  "Website",
+  "File & link",
+  "Detection repair Local guide",
+  "Bitcoin Local guide",
+  "Code scanner Guide",
+  "Claude integration Guide",
   "Recent results",
   "Settings",
-  "Email check",
-  "Web check",
-  "File & link forensics",
-  "Detection repair",
-  "Code scanner",
-  "Claude Code plugin",
-  "Bitcoin quantum risk",
 ];
+
+/** Local mode: detection repair and Bitcoin are live, so only the always-guide pages carry a hint. */
+const NAV_LOCAL = NAV.map((name) => name.replace(" Local guide", ""));
 
 function navNames(nav: HTMLElement): (string | null)[] {
   return within(nav)
     .getAllByRole("link")
-    .map((link) => link.getAttribute("aria-label") ?? link.textContent);
+    .map((link) => link.textContent);
 }
 
 afterEach(() => {
@@ -128,10 +130,8 @@ describe("hosted routing", () => {
     const nav = (await screen.findAllByRole("navigation", { name: "Main" }))[0];
     if (!nav) throw new Error("no main navigation");
     expect(navNames(nav)).toEqual(NAV);
-    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/mail");
-    // The tile and the guide header say "Run locally"; the sidebar shortcut does not repeat it.
-    expect(within(nav).getByRole("link", { name: "Bitcoin quantum risk" }).getAttribute("href")).toBe("/app/bitcoin");
-    expect(within(nav).queryByText(/locally/i)).toBeNull();
+    expect(within(nav).getByRole("link", { name: "Email" }).getAttribute("href")).toBe("/app/mail");
+    expect(within(nav).getByRole("link", { name: "Bitcoin Local guide" }).getAttribute("href")).toBe("/app/bitcoin");
     expect(screen.getAllByText("ada@mail.example").length).toBeGreaterThan(0);
   });
 
@@ -237,8 +237,8 @@ describe("local routing is unchanged", () => {
     renderApp("/");
     const nav = (await screen.findAllByRole("navigation", { name: "Main" }))[0];
     if (!nav) throw new Error("no main navigation");
-    expect(navNames(nav)).toEqual(NAV);
-    expect(within(nav).getByRole("link", { name: "Code scanner" }).getAttribute("href")).toBe("/code");
+    expect(navNames(nav)).toEqual(NAV_LOCAL);
+    expect(within(nav).getByRole("link", { name: "Code scanner Guide" }).getAttribute("href")).toBe("/code");
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 });

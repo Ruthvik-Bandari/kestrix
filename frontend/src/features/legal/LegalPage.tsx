@@ -9,7 +9,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
   useTitle(doc.title);
   return (
     <PublicShell width="wide">
-      <article className="veil-content rounded-3xl px-5 py-8 sm:px-10 sm:py-10">
+      <article className="py-2 sm:py-4">
         <p
           role="note"
           className="flex gap-2.5 rounded-xl bg-med-bg px-4 py-3 font-semibold text-ink shadow-[inset_0_0_0_1px_var(--line)]"

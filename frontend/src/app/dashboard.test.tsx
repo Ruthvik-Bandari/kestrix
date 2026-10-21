@@ -10,16 +10,6 @@ import { fakeServer, HOSTED_HEALTH, SIGNED_IN } from "../test/fakeServer";
 import { createRoutes } from "./router";
 
 const LOCAL_HEALTH = { status: "ok", version: "0.1.0", modules: [] };
-const TILES = [
-  "Email check",
-  "Web check",
-  "File & link forensics",
-  "Detection repair",
-  "Code scanner",
-  "Claude Code plugin",
-  "Bitcoin quantum risk",
-];
-
 const NOW = 1_792_000_000;
 const ITEMS = [
   { id: "r-mail-1", tool: "mail", created_at: NOW, verdict: "malicious", findings: 7 },
@@ -78,10 +68,10 @@ function local(extra: Parameters<typeof fakeServer>[0] = {}) {
   return fakeServer({ "GET /api/health": { body: LOCAL_HEALTH }, ...extra });
 }
 
-async function launcher() {
-  const heading = await screen.findByRole("heading", { level: 2, name: "Tools" });
+async function otherTools() {
+  const heading = await screen.findByRole("heading", { level: 2, name: "Advanced and developer tools" });
   const section = heading.closest("section");
-  if (!section) throw new Error("no launcher");
+  if (!section) throw new Error("no advanced tools section");
   return section;
 }
 
@@ -96,38 +86,16 @@ afterEach(() => {
   setMode("local");
 });
 
-describe("home launcher", () => {
-  it("shows every tool, and only the tools, as a named link without badges in local mode", async () => {
-    local();
-    renderApp("/");
-    const grid = await launcher();
-    const links = within(grid).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(TILES);
-    expect(within(grid).getByRole("link", { name: "Code scanner" }).getAttribute("href")).toBe("/code");
-    expect(within(grid).queryByText("Run locally")).toBeNull();
-  });
-
-  it("marks the local-only tools Run locally on the hosted service", async () => {
-    hosted();
-    renderApp("/app");
-    const grid = await launcher();
-    for (const name of ["Detection repair", "Code scanner", "Claude Code plugin", "Bitcoin quantum risk"]) {
-      expect(within(grid).getByRole("link", { name: `${name} Run locally` })).toBeTruthy();
-    }
-    for (const name of ["Email check", "Web check", "File & link forensics"]) {
-      expect(within(grid).getByRole("link", { name }).getAttribute("href")).toMatch(/^\/app\//);
-    }
-  });
-
+describe("home guides on the hosted service", () => {
   it.each([
     ["Bitcoin quantum risk", "/app/bitcoin"],
     ["Detection repair", "/app/detect"],
     ["Code scanner", "/app/code"],
     ["Claude Code plugin", "/app/claude-plugin"],
-  ])("opens a guide with no live controls for %s on the hosted service", async (name, path) => {
+  ])("opens a guide with no live controls for %s", async (name, path) => {
     hosted();
     const router = renderApp("/app");
-    fireEvent.click(within(await launcher()).getByRole("link", { name: `${name} Run locally` }));
+    fireEvent.click(within(await otherTools()).getByRole("link", { name: new RegExp(`^${name} (Local guide|Guide)$`) }));
     expect(await screen.findByRole("heading", { level: 1, name })).toBeTruthy();
     expect(router.state.location.pathname).toBe(path);
     expect(screen.queryAllByRole("textbox")).toHaveLength(0);
