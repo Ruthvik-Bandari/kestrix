@@ -1,20 +1,32 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState, type DragEvent } from "react";
+import { useId, useState } from "react";
 import { ByteHistogram, byteLabel } from "../../components/charts/ByteHistogram";
 import { EntropyChart } from "../../components/charts/EntropyChart";
 import { DataNote } from "../../components/DataNote";
 import { Icon } from "../../components/Icon";
-import { Badge, CopyButton, cx, Disclosure, ErrorState, RawJson, SectionTitle, Spinner, Verdict } from "../../components/ui";
+import {
+  FailedRequest,
+  FileDrop,
+  FindingList,
+  FindingTally,
+  HelpPanel,
+  LiveStatus,
+  LocalProblem,
+  PendingPanel,
+  ReasonCode,
+  ToolLayout,
+  useFocusOnArrival,
+  VerdictCard,
+} from "../../components/report";
+import { Badge, CopyButton, Disclosure, Panel, RawJson, SectionTitle, Verdict } from "../../components/ui";
 import { severityTone, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
 import { slug } from "../../lib/download";
 import { formatBytes, hexOffset, plural } from "../../lib/format";
 import { isHosted } from "../../lib/mode";
-import { scrollBehavior } from "../../lib/motion";
 import type { ExifStatus, FileReport, Severity } from "../../lib/types";
-import { FindingsList } from "./FindingsList";
 
 /** The server's upload cap: 50 MB locally, 10 MB on the hosted service. */
 function maxUpload(): number {
@@ -34,12 +46,13 @@ function worst(findings: { severity: Severity }[]): Severity | null {
   return null;
 }
 
-function headline(report: FileReport): { tone: Tone; title: string } {
+function headline(report: FileReport): { tone: Tone; label: string; title: string } {
   const t = report.file_type;
   const attention = report.findings.filter((f) => f.severity !== "info").length;
   if (t.extension_mismatch) {
     return {
       tone: "crit",
+      label: "Type mismatch",
       title: `${report.filename} claims to be .${t.extension ?? "?"}, but its content is detected as ${t.label}.`,
     };
   }
@@ -47,6 +60,7 @@ function headline(report: FileReport): { tone: Tone; title: string } {
   const what = t.id === "unknown" ? "isn't a format Kestrix recognizes" : `is detected as ${t.label}`;
   return {
     tone: level ? severityTone[level] : "ok",
+    label: attention === 0 ? "No findings" : `${plural(attention, "finding")} to review`,
     title:
       attention === 0
         ? `${report.filename} ${what}. Nothing here needs your attention.`
@@ -55,13 +69,9 @@ function headline(report: FileReport): { tone: Tone; title: string } {
 }
 
 export function FileReportView({ report }: { report: FileReport }) {
-  const ref = useRef<HTMLHeadingElement>(null);
+  const heading = useFocusOnArrival(report);
   const [log, setLog] = useState(true);
   const logId = useId();
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-  }, [report]);
   const verdict = headline(report);
   const t = report.file_type;
   const top = report.byte_histogram
@@ -71,24 +81,45 @@ export function FileReportView({ report }: { report: FileReport }) {
     .slice(0, 12);
 
   return (
-    <section aria-labelledby="file-result" className="reveal mt-10 scroll-mt-6 border-t border-line pt-8">
-      <h2 id="file-result" ref={ref} tabIndex={-1} className="mb-4 text-xl font-semibold break-all outline-none">
-        {report.filename}
-        <span className="ml-2 text-base font-normal text-ink-3">{formatBytes(report.size)}</span>
-      </h2>
-      <Verdict tone={verdict.tone} title={verdict.title}>
+    <section aria-labelledby="file-result" className="@container reveal scroll-mt-6 space-y-8">
+      <VerdictCard
+        tone={verdict.tone}
+        label={verdict.label}
+        headingId="file-result"
+        headingRef={heading}
+        title={verdict.title}
+        aside={report.findings.length > 0 ? <FindingTally findings={report.findings} /> : undefined}
+      >
         <p>
-          Detected from the file's content, not its name.{" "}
+          Detected from the file&apos;s content, not its name. No findings is not a guarantee that a file is safe.{" "}
           {t.executable ? "This is a program or script that can run on a computer; open it only if you trust its source." : null}
         </p>
-      </Verdict>
+      </VerdictCard>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <section aria-labelledby="type-title" className="panel p-5">
+      {report.findings.length > 0 ? (
+        <FindingList
+          id="file-findings"
+          findings={report.findings}
+          keyOf={(finding) => finding.id}
+          renderDetail={(finding) => (
+            <>
+              <p className="max-w-[68ch] text-ink-2">{finding.explanation}</p>
+              <ReasonCode>{finding.id}</ReasonCode>
+            </>
+          )}
+        />
+      ) : null}
+
+      <div className="grid items-start gap-4 @4xl:grid-cols-2">
+        <Panel as="section">
           <h3 id="type-title" className="font-semibold">
             File type
           </h3>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5 text-[0.875rem]">
+          <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[0.875rem]">
+            <dt className="text-ink-3">File</dt>
+            <dd className="break-all">
+              {report.filename} <span className="text-ink-3">({formatBytes(report.size)})</span>
+            </dd>
             <dt className="text-ink-3">Content</dt>
             <dd>
               {t.label} <code className="text-ink-3">{t.id}</code>
@@ -112,35 +143,30 @@ export function FileReportView({ report }: { report: FileReport }) {
             <dt className="text-ink-3">Printable</dt>
             <dd>{Math.round(report.printable_ratio * 100)}% of bytes are plain text</dd>
           </dl>
-        </section>
+        </Panel>
 
-        <section aria-labelledby="hash-title" className="panel p-5">
+        <Panel as="section">
           <h3 id="hash-title" className="font-semibold">
             Fingerprints
           </h3>
           <p className="hint mt-1">Search the SHA-256 in a malware database to see if others have reported this file.</p>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-3">
             {(["sha256", "sha1", "md5", "sha512"] as const).map((name) => (
-              <li key={name} className="flex items-start gap-2">
-                <span className="w-16 flex-none pt-1.5 text-[0.8125rem] font-medium text-ink-2 uppercase">
-                  {name === "sha256" ? "SHA-256" : name === "sha1" ? "SHA-1" : name === "sha512" ? "SHA-512" : "MD5"}
-                </span>
-                <code className="min-w-0 flex-1 pt-1.5 text-[0.75rem] break-all text-ink">{report.hashes[name]}</code>
-                <CopyButton text={report.hashes[name]} label={`Copy ${name.toUpperCase()} hash`} className="flex-none" />
+              <li key={name}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[0.8125rem] font-medium text-ink-2">
+                    {name === "sha256" ? "SHA-256" : name === "sha1" ? "SHA-1" : name === "sha512" ? "SHA-512" : "MD5"}
+                  </span>
+                  <CopyButton text={report.hashes[name]} label={`Copy ${name.toUpperCase()} hash`} />
+                </div>
+                <code className="block text-[0.75rem] break-all text-ink">{report.hashes[name]}</code>
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
       </div>
 
-      {report.findings.length > 0 ? (
-        <section aria-labelledby="file-findings" className="mt-10">
-          <SectionTitle id="file-findings">Findings</SectionTitle>
-          <FindingsList findings={report.findings} />
-        </section>
-      ) : null}
-
-      <section aria-labelledby="entropy-title" className="mt-10">
+      <section aria-labelledby="entropy-title">
         <SectionTitle id="entropy-title">Entropy across the file</SectionTitle>
         <p className="mb-3 max-w-[68ch] text-ink-2">
           Entropy measures how random the bytes look, from 0 to 8 bits per byte. Text sits around 4 to 5; compressed or
@@ -181,7 +207,7 @@ export function FileReportView({ report }: { report: FileReport }) {
         </div>
       </section>
 
-      <section aria-labelledby="hist-title" className="mt-10">
+      <section aria-labelledby="hist-title">
         <SectionTitle
           id="hist-title"
           aside={
@@ -236,7 +262,7 @@ export function FileReportView({ report }: { report: FileReport }) {
         </div>
       </section>
 
-      <section aria-labelledby="exif-title" className="mt-10">
+      <section aria-labelledby="exif-title">
         <SectionTitle id="exif-title">Image metadata (EXIF)</SectionTitle>
         {report.exif_status !== "ok" || !report.exif ? (
           <p className="text-ink-2">{report.exif_status === "ok" ? exifText.no_exif : exifText[report.exif_status]}</p>
@@ -274,94 +300,101 @@ export function FileReportView({ report }: { report: FileReport }) {
         )}
       </section>
 
-      <div className="mt-10">
-        <RawJson data={report} filename={`kestrix-forensics-${slug(report.filename)}.json`} />
-      </div>
+      <RawJson data={report} filename={`kestrix-forensics-${slug(report.filename)}.json`} />
     </section>
   );
 }
 
 export function FileAnalyzer() {
-  const [dragging, setDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-  const inputId = useId();
   const analyze = useMutation({ mutationFn: api.analyzeFile });
 
-  function accept(file: File | undefined) {
-    if (!file) return;
+  function accept(next: File) {
     const limit = maxUpload();
-    if (file.size > limit) {
-      analyze.reset();
-      setLocalError(`${file.name} is ${formatBytes(file.size)}. The limit is ${formatBytes(limit)}.`);
+    analyze.reset();
+    if (next.size > limit) {
+      setFile(null);
+      setLocalError(`${next.name} is ${formatBytes(next.size)}. The limit is ${formatBytes(limit)}.`);
       return;
     }
     setLocalError(null);
-    analyze.mutate(file);
+    setFile(next);
+    analyze.mutate(next);
   }
 
-  function onDrop(event: DragEvent) {
-    event.preventDefault();
-    setDragging(false);
-    accept(event.dataTransfer.files[0]);
-  }
+  const input = (
+    <Panel as="section" className="space-y-4">
+      <FileDrop
+        icon="file"
+        idleTitle="Drop a file here, or choose one"
+        hint={`Any file type, up to ${formatBytes(maxUpload())}.`}
+        chooseLabel="Choose a file"
+        chooseAnotherLabel="Choose another file"
+        file={file}
+        disabled={analyze.isPending}
+        onFile={accept}
+        onClear={() => {
+          setFile(null);
+          setLocalError(null);
+          analyze.reset();
+        }}
+      />
+      {localError ? <LocalProblem title="That file is too large" detail={localError} /> : null}
+      <div className="space-y-2">
+        <p className="flex gap-2 text-[0.875rem] text-ink-2">
+          <Icon name="shield" size={16} className="mt-0.5 flex-none text-ink-3" />
+          <span>The file is read as bytes and never run. Analysis starts as soon as you choose it.</span>
+        </p>
+        <DataNote subject="The file" />
+      </div>
+    </Panel>
+  );
 
   return (
-    <>
-      {/* Drag and drop is a pointer shortcut; the native file input inside is the keyboard path. */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <label
-        htmlFor={inputId}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => {
-          setDragging(false);
-        }}
-        onDrop={onDrop}
-        className={cx(
-          "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-(--focus)",
-          dragging ? "border-accent bg-accent-soft" : "border-line-strong bg-surface hover:bg-inset",
-        )}
-      >
-        {analyze.isPending ? (
-          <Spinner label="Analyzing…" />
-        ) : (
-          <>
-            <Icon name="file" size={28} className="text-ink-3" />
-            <span className="font-medium text-ink">Drop a file here, or choose one</span>
-            <span className="hint">Any file type, up to {formatBytes(maxUpload())}.</span>
-          </>
-        )}
-        <input
-          id={inputId}
-          type="file"
-          className="sr-only"
-          disabled={analyze.isPending}
-          onChange={(e) => {
-            accept(e.target.files?.[0]);
-            e.target.value = "";
+    <ToolLayout input={input}>
+      <LiveStatus
+        pending={analyze.isPending}
+        done={analyze.isSuccess}
+        pendingText="Analyzing the file…"
+        doneText="Analysis finished. The result is below."
+      />
+      {analyze.isPending ? (
+        <PendingPanel title="Analyzing the file">
+          Detecting its real type, hashing it and measuring entropy. The file is not executed.
+        </PendingPanel>
+      ) : analyze.isError ? (
+        <FailedRequest
+          error={analyze.error}
+          onRetry={() => {
+            if (file) analyze.mutate(file);
           }}
         />
-      </label>
-      <DataNote subject="The file" className="mt-3" />
-
-      <div aria-live="polite" className="sr-only">
-        {analyze.isPending ? "Analyzing the file…" : analyze.isSuccess ? "Analysis finished. Results below." : ""}
-      </div>
-      {localError ? (
-        <div className="mt-6" role="alert">
-          <Verdict tone="crit" icon="xCircle" title="That file is too large">
-            {localError}
-          </Verdict>
-        </div>
-      ) : null}
-      {analyze.isError ? (
-        <div className="mt-6">
-          <ErrorState error={analyze.error} />
-        </div>
-      ) : null}
-      {analyze.data ? <FileReportView report={analyze.data} /> : null}
-    </>
+      ) : analyze.data ? (
+        <FileReportView report={analyze.data} />
+      ) : (
+        <HelpPanel title="Inspect a file">
+          <div className="grid gap-6 @2xl:grid-cols-2">
+            <div>
+              <h3 className="font-semibold">What the report contains</h3>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+                <li>Whether the content matches the file name, or the type is a mismatch.</li>
+                <li>SHA-256, SHA-1, MD5 and SHA-512 fingerprints you can copy.</li>
+                <li>Entropy across the file and the byte values, with the random-looking regions marked.</li>
+                <li>Image metadata, including any embedded location, and findings with reason codes.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold">Good to know</h3>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+                <li>The type comes from the file&apos;s bytes, not its extension.</li>
+                <li>No findings is not a guarantee that a file is safe.</li>
+                <li>Use Link to check a web address instead; it is analyzed as text and never opened.</li>
+              </ul>
+            </div>
+          </div>
+        </HelpPanel>
+      )}
+    </ToolLayout>
   );
 }

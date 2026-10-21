@@ -3,8 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setMode } from "../../lib/mode";
+import type { WebReport } from "../../lib/types";
 import WebcheckPage, { HOSTED_NOTICE, NOTICE } from "./WebcheckPage";
 
 function renderPage() {
@@ -210,5 +211,89 @@ describe("web check on the hosted service", () => {
     expect(alert.textContent).toContain("Too many requests for now");
     expect(alert.textContent).toContain("too many requests; try again in 1200 seconds");
     expect(alert.textContent).toContain("You can try again in about 20 minutes.");
+  });
+});
+
+function webReport(extra: Partial<WebReport> = {}): WebReport {
+  return {
+    notice: NOTICE,
+    requested_url: "https://site.test/",
+    final_url: "https://site.test/",
+    status_code: 200,
+    headers_checked: true,
+    redirect_chain: [],
+    tls: { host: "site.test", status: "ok", detail: null, protocol: "TLSv1.3", issuer: null, not_after: null, days_remaining: null },
+    grade: "C",
+    score: 72,
+    findings: [
+      { id: "csp.missing", severity: "low", baseline_severity: "low", title: "Content-Security-Policy missing", explanation: "No CSP.", recommendation: "Add a CSP header.", evidence: null, context: null },
+      { id: "hsts.missing", severity: "high", baseline_severity: "high", title: "HSTS missing", explanation: "No HSTS.", recommendation: "Send Strict-Transport-Security.", evidence: "no header", context: null },
+    ],
+    timings: { total_ms: 1, http_ms: 1, tls_ms: 0 },
+    profile: null,
+    ...extra,
+  };
+}
+
+function scanSite(target = "site.test") {
+  fireEvent.change(screen.getByLabelText(/website address/i), { target: { value: target } });
+  fireEvent.click(screen.getByRole("checkbox", { name: /i own this site or am authorized/i }));
+  fireEvent.click(screen.getByRole("button", { name: /^scan/i }));
+}
+
+describe("web check result", () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  });
+
+  it("opens with the grade, lists failed checks first with fixes, and filters them", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(webReport()))));
+    renderPage();
+    scanSite();
+    const heading = await screen.findByRole("heading", { level: 2, name: "Grade C" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(heading);
+    });
+    const titles = [...document.querySelectorAll("li > details > summary")].map((n) => n.textContent);
+    expect(titles[0]).toContain("HSTS missing");
+    expect(titles[1]).toContain("Content-Security-Policy missing");
+    expect(screen.getByText("Send Strict-Transport-Security.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^Low\s*1$/ }));
+    expect(screen.queryByText("HSTS missing")).toBeNull();
+    expect(screen.getByRole("button", { name: /^Low\s*1$/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("says when the analysis was partial", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(webReport({ headers_checked: false, findings: [] })))));
+    renderPage();
+    scanSite();
+    expect(await screen.findByText("Partial analysis")).toBeTruthy();
+    expect(screen.getByText(/headers were not checked/i)).toBeTruthy();
+  });
+
+  it("keeps the address and authorization after a failed connection and retries", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ reason: "target_unreachable", detail: "connection refused" }, { status: 502 }))
+      .mockResolvedValueOnce(Response.json(webReport()));
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    scanSite("down.test");
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Couldn't reach that address");
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: /website address/i }).value).toBe("down.test");
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /i own this site/i }).checked).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Grade C" })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the authorization checkbox and notice visible, with optional settings collapsed", () => {
+    renderPage();
+    expect(screen.getByText(NOTICE)).toBeTruthy();
+    const details = screen.getByText("Optional settings").closest("details");
+    expect(details?.open).toBe(false);
+    expect(details?.contains(screen.getByRole("checkbox", { name: /i own this site/i }))).toBe(false);
   });
 });

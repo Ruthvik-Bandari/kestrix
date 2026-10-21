@@ -1,93 +1,142 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useRef } from "react";
 import type { IconName } from "../../components/Icon";
-import { Badge, CopyButton, RawJson, SectionTitle, Verdict } from "../../components/ui";
+import {
+  Evidence,
+  FindingList,
+  FindingTally,
+  NextStep,
+  ReasonCode,
+  useFocusOnArrival,
+  VerdictCard,
+} from "../../components/report";
 import type { Tone } from "../../components/tone";
+import { CopyButton, Panel, RawJson } from "../../components/ui";
 import { plural } from "../../lib/format";
-import { scrollBehavior } from "../../lib/motion";
-import type { MailReport, MailVerdict } from "../../lib/types";
-import { MailFindings } from "./MailFindings";
+import type { MailAnalyzer, MailReport, MailVerdict } from "../../lib/types";
 
-export const verdictMeta: Record<MailVerdict, { tone: Tone; icon: IconName; label: string; title: string; body: string }> = {
+export const analyzerLabel: Record<MailAnalyzer, string> = {
+  auth: "Sender authentication",
+  sender: "Sender addresses",
+  lookalike: "Look-alike domain",
+  links: "Links",
+  attachments: "Attachments",
+  intent: "Wording (heuristic)",
+};
+
+interface VerdictCopy {
+  tone: Tone;
+  icon: IconName;
+  label: string;
+  /** One sentence under the label. */
+  title: string;
+  body: string;
+  /** Reviewed advice for this verdict; presentation copy, not an API field. */
+  next: string;
+}
+
+export const verdictMeta: Record<MailVerdict, VerdictCopy> = {
   malicious: {
     tone: "crit",
     icon: "octagon",
     label: "Malicious",
-    title: "Malicious: strong signs of phishing, impersonation or malware.",
-    body: "Don't click its links, open its attachments or reply. If it claims to come from someone you know, contact them another way.",
+    title: "Strong signs of phishing, impersonation or malware.",
+    body: "Read the findings before you take any action on this message.",
+    next: "Don't click its links, open its attachments or reply. If it claims to come from someone you know or a company you use, contact them another way, such as a phone number or website you already trust. Consider reporting it to your mail provider or IT team.",
   },
   suspicious: {
     tone: "med",
     icon: "alert",
     label: "Suspicious",
-    title: "Suspicious: some checks raised warnings.",
-    body: "Read the findings below before you act on this message. Verify any request for money or sign-in details another way.",
+    title: "Some checks raised warnings.",
+    body: "Warnings are not proof. Weigh them against what you expected from this sender.",
+    next: "Hold off on links, attachments and replies until the findings are explained. Verify any request for money, sign-in details or personal information through a separate, trusted channel.",
   },
   insufficient_evidence: {
     tone: "neutral",
     icon: "help",
     label: "Insufficient evidence",
-    title: "Insufficient evidence: the sender could not be checked.",
-    body: "The message has no authentication results Kestrix can trust, often because it was forwarded or saved from an app that drops them. Nothing else fired, but that is not the same as safe.",
+    title: "The sender could not be checked, so there is no verdict either way.",
+    body: "The message has no authentication results Kestrix can trust, often because it was forwarded or saved from an app that drops them. This is not a clean result: nothing else fired, but that is not the same as safe.",
+    next: "Confirm the sender another way before you act on it. If the message was forwarded, save the original from the mailbox that first received it and check that copy.",
   },
   clean: {
     tone: "ok",
     icon: "checkCircle",
-    label: "Clean",
-    title: "Clean: none of the checks fired.",
-    body: "This means no warning sign was found, not that the message is safe. Stay careful with unexpected requests.",
+    label: "No checks fired",
+    title: "None of the checks found a warning sign.",
+    body: "This means no warning sign was found, not that the message is safe. Heuristic checks miss things.",
+    next: "Stay careful with unexpected requests for money, sign-in details or urgency, even when nothing fired. If something feels wrong, confirm it with the sender through a channel you already trust.",
   },
 };
 
+function MessagePanel({ report }: { report: MailReport }) {
+  const { counts } = report;
+  return (
+    <Panel as="aside" className="space-y-3">
+      <h3 className="text-lg font-semibold tracking-[-0.01em]">Message</h3>
+      <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-[0.875rem]">
+        <dt className="text-ink-3">Subject</dt>
+        <dd className="break-words text-ink">{report.subject ?? "(no subject)"}</dd>
+        <dt className="text-ink-3">From</dt>
+        <dd className="break-all text-ink">{report.from_address ?? "no address found"}</dd>
+        <dt className="text-ink-3">Contents</dt>
+        <dd className="text-ink">
+          {plural(counts.parts, "MIME part")}, {plural(counts.links, "link")}, {plural(counts.attachments, "attachment")}
+        </dd>
+        <dt className="text-ink-3">SHA-256</dt>
+        <dd className="min-w-0">
+          <code className="block text-[0.75rem] break-all text-ink">{report.sha256}</code>
+          <CopyButton text={report.sha256} label="Copy SHA-256 of the message" className="-ml-2 mt-1" />
+        </dd>
+      </dl>
+      <p className="text-[0.8125rem] text-ink-3">
+        The report keeps these details and the findings. The message body, Reply-To and date are not part of it.
+      </p>
+    </Panel>
+  );
+}
+
+function Limitations({ report }: { report: MailReport }) {
+  return (
+    <section aria-labelledby="mail-limits" className="rounded-xl border border-line px-5 py-4 text-[0.875rem] text-ink-2">
+      <h3 id="mail-limits" className="font-semibold text-ink">
+        What this check can tell you
+      </h3>
+      <p className="mt-2">{report.notice}</p>
+    </section>
+  );
+}
+
 export function MailReportView({ report }: { report: MailReport }) {
-  const ref = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-  }, [report]);
+  const heading = useFocusOnArrival(report);
   const meta = verdictMeta[report.verdict];
   const { counts } = report;
   return (
-    <section aria-labelledby="mail-result" className="reveal mt-10 scroll-mt-6 border-t border-line pt-8">
-      <h2 id="mail-result" ref={ref} tabIndex={-1} className="mb-4 text-xl font-semibold break-words outline-none">
-        {report.subject ?? "(no subject)"}
-      </h2>
-      <Verdict tone={meta.tone} icon={meta.icon} title={meta.title}>
-        <p>{meta.body}</p>
-      </Verdict>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="panel min-w-48 p-5">
-          <p className="text-[0.875rem] text-ink-2">Heuristic score, not a probability</p>
-          <p className="mt-1 text-3xl font-semibold">
-            {report.heuristic_score}
-            <span className="text-base font-normal text-ink-3"> / 100</span>
-          </p>
-          <div className="mt-2">
-            <Badge tone={meta.tone} icon={meta.icon}>
-              {meta.label}
-            </Badge>
+    <section aria-labelledby="mail-result" className="@container reveal scroll-mt-6 space-y-6">
+      <VerdictCard
+        tone={meta.tone}
+        icon={meta.icon}
+        label={meta.label}
+        headingId="mail-result"
+        headingRef={heading}
+        title={meta.title}
+        aside={
+          <div className="space-y-3">
+            <FindingTally findings={report.findings} />
+            <p className="text-[0.8125rem] text-ink-2">
+              Heuristic score <span className="font-medium text-ink">{report.heuristic_score} / 100</span>, not a probability
+            </p>
           </div>
-        </div>
-        <dl className="panel grid grid-cols-[auto_1fr] content-start gap-x-5 gap-y-1.5 p-5 text-[0.875rem]">
-          <dt className="text-ink-3">From</dt>
-          <dd className="break-all">{report.from_address ?? "no address found"}</dd>
-          <dt className="text-ink-3">Contents</dt>
-          <dd>
-            {plural(counts.parts, "MIME part")}, {plural(counts.links, "link")}, {plural(counts.attachments, "attachment")}
-          </dd>
-          <dt className="text-ink-3">Findings</dt>
-          <dd>{plural(report.findings.length, "finding")}</dd>
-          <dt className="text-ink-3">SHA-256</dt>
-          <dd className="flex items-start gap-2">
-            <code className="min-w-0 flex-1 pt-1.5 text-[0.75rem] break-all">{report.sha256}</code>
-            <CopyButton text={report.sha256} label="Copy SHA-256 of the message" className="flex-none" />
-          </dd>
-        </dl>
-      </div>
+        }
+      >
+        <p>{meta.body}</p>
+      </VerdictCard>
+
+      <NextStep>{meta.next}</NextStep>
+
       {counts.text_truncated || counts.links_truncated ? (
-        <p className="mt-3 text-[0.875rem] text-ink-2">
+        <p className="max-w-[68ch] text-[0.875rem] text-ink-2">
           This message is very large, so only part of it was checked:
           {counts.text_truncated ? " the text was cut at the scan limit" : ""}
           {counts.text_truncated && counts.links_truncated ? " and" : ""}
@@ -95,19 +144,40 @@ export function MailReportView({ report }: { report: MailReport }) {
         </p>
       ) : null}
 
-      <section aria-labelledby="mail-findings" className="mt-10">
-        <SectionTitle id="mail-findings">What Kestrix found</SectionTitle>
-        {report.findings.length > 0 ? (
-          <MailFindings findings={report.findings} />
-        ) : (
-          <p className="text-ink-2">No findings. None of the checks fired for this message.</p>
-        )}
-      </section>
-
-      <p className="mt-8 max-w-[72ch] text-[0.875rem] text-ink-3">{report.notice}</p>
-      <div className="mt-4">
-        <RawJson data={report} filename={`kestrix-mail-${report.sha256.slice(0, 12)}.json`} />
+      <div className="grid items-start gap-6 @2xl:grid-cols-[minmax(0,1fr)_17rem] @4xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
+          {report.findings.length > 0 ? (
+            <FindingList
+              id="mail-findings"
+              heading="What Kestrix found"
+              findings={report.findings}
+              keyOf={(finding, index) => `${finding.id}-${index.toString()}`}
+              renderDetail={(finding) => (
+                <>
+                  <p className="max-w-[68ch] text-ink-2">{finding.explanation}</p>
+                  {finding.evidence ? <Evidence>{finding.evidence}</Evidence> : null}
+                  <ReasonCode>
+                    {analyzerLabel[finding.analyzer]} · {finding.id}
+                  </ReasonCode>
+                </>
+              )}
+            />
+          ) : (
+            <section aria-labelledby="mail-no-findings">
+              <h3 id="mail-no-findings" className="text-xl font-semibold tracking-[-0.015em]">
+                What Kestrix found
+              </h3>
+              <p className="mt-2 max-w-[68ch] text-ink-2">No findings. None of the checks fired for this message.</p>
+            </section>
+          )}
+        </div>
+        <div className="min-w-0 space-y-4">
+          <MessagePanel report={report} />
+          <Limitations report={report} />
+        </div>
       </div>
+
+      <RawJson data={report} filename={`kestrix-mail-${report.sha256.slice(0, 12)}.json`} />
     </section>
   );
 }

@@ -83,6 +83,7 @@ describe("email check page", () => {
     expect(screen.getByText(/checked on this computer and never leaves it/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/mail");
     expect(screen.getByText("Download message")).toBeTruthy();
+    expect(screen.getByText(/An \.eml file, up to 25 MB/)).toBeTruthy();
     expect(screen.getByRole<HTMLButtonElement>("button", { name: /check message/i }).disabled).toBe(true);
   });
 
@@ -104,14 +105,151 @@ describe("email check page", () => {
     expect(init.method).toBe("POST");
     expect((init.body as FormData).get("file")).toBeInstanceOf(File);
 
-    expect(screen.getByText("Heuristic score, not a probability")).toBeTruthy();
-    expect(screen.getByText("85")).toBeTruthy();
-    const high = screen.getByRole("region", { name: /high/i });
-    expect(within(high).getByText("From domain is a look-alike of paypal.com")).toBeTruthy();
-    expect(within(high).getByText("from domain paypa1.com vs protected domain paypal.com")).toBeTruthy();
-    expect(screen.getByRole("region", { name: /medium/i }).textContent).toContain("bank details have changed");
-    expect(screen.getByRole("region", { name: /low/i }).textContent).toContain("SPF soft-failed");
+    expect(screen.getAllByText(/not a probability/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("85 / 100")).toBeTruthy();
+    expect(screen.getByText("From domain is a look-alike of paypal.com")).toBeTruthy();
+    expect(screen.getByText("from domain paypa1.com vs protected domain paypal.com")).toBeTruthy();
+    expect(screen.getByText("Asks for a payment or a change of bank details")).toBeTruthy();
+    expect(screen.getByText("SPF soft-failed")).toBeTruthy();
     expect(screen.getByText("Raw JSON")).toBeTruthy();
+  });
+
+  it("shows only the metadata the report has in a Message panel", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report()))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    const panel = (await screen.findByRole("heading", { name: "Message" })).closest("aside") as HTMLElement;
+    expect(within(panel).getByText("Invoice overdue")).toBeTruthy();
+    expect(within(panel).getByText("billing@paypa1.com")).toBeTruthy();
+    expect(within(panel).getByText("a".repeat(64))).toBeTruthy();
+    expect(within(panel).getByText("3 MIME parts, 2 links, 0 attachments")).toBeTruthy();
+    expect(within(panel).queryByText("Reply-To")).toBeNull();
+    expect(within(panel).queryByText("Date")).toBeNull();
+  });
+
+  it("moves focus to the result heading when the result arrives", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report()))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    const heading = await screen.findByRole("heading", { level: 2, name: "Malicious" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(heading);
+    });
+  });
+
+  it("filters findings by severity with truthful counts", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report()))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    await screen.findByRole("heading", { level: 2, name: "Malicious" });
+    const filters = screen.getByRole("group", { name: /filter findings by severity/i });
+    const all = within(filters).getByRole("button", { name: /^All\s*3$/ });
+    const high = within(filters).getByRole("button", { name: /^High\s*1$/ });
+    expect(within(filters).getByRole("button", { name: /^Medium\s*1$/ })).toBeTruthy();
+    expect(within(filters).getByRole("button", { name: /^Low\s*1$/ })).toBeTruthy();
+    expect(within(filters).queryByRole("button", { name: /^Info/ })).toBeNull();
+    expect(all.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByRole("listitem").filter((li) => li.querySelector("details")).length).toBe(3);
+
+    fireEvent.click(high);
+    expect(high.getAttribute("aria-pressed")).toBe("true");
+    expect(all.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByText("From domain is a look-alike of paypal.com")).toBeTruthy();
+    expect(screen.queryByText("SPF soft-failed")).toBeNull();
+    expect(screen.getByText("Showing 1 of 3 findings")).toBeTruthy();
+
+    fireEvent.click(all);
+    expect(screen.getByText("SPF soft-failed")).toBeTruthy();
+  });
+
+  it("lists findings most severe first, each in a native disclosure", async () => {
+    const unordered = report();
+    unordered.findings = [...unordered.findings].reverse();
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(unordered))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    await screen.findByRole("heading", { level: 2, name: "Malicious" });
+    const titles = [...document.querySelectorAll("li > details > summary")].map((n) => n.textContent);
+    expect(titles[0]).toContain("look-alike");
+    expect(titles[1]).toContain("bank details");
+    expect(titles[2]).toContain("SPF soft-failed");
+  });
+
+  it("renders a clean verdict as 'No checks fired', not as safe", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report({ verdict: "clean", findings: [] })))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    expect(await screen.findByRole("heading", { level: 2, name: "No checks fired" })).toBeTruthy();
+    expect(screen.getAllByText(/not that the message is safe/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/No findings\. None of the checks fired/)).toBeTruthy();
+    expect(screen.queryByText(/^Clean$/)).toBeNull();
+  });
+
+  it("renders insufficient evidence as undecided, not as success", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report({ verdict: "insufficient_evidence", findings: [] })))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Insufficient evidence" })).toBeTruthy();
+    expect(screen.getByText(/this is not a clean result/i)).toBeTruthy();
+    expect(screen.getByText(/no verdict either way/i)).toBeTruthy();
+  });
+
+  it("labels the suggested next step as advice", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report()))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    const next = await screen.findByRole("region", { name: "Suggested next step" });
+    expect(next.textContent).toContain("Nothing has been done for you");
+    expect(next.textContent).toContain(verdictMeta.malicious.next);
+  });
+
+  it("keeps the chosen file and options after an error and retries with them", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ reason: "busy", detail: "try again shortly" }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json(report()));
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    chooseFile();
+    fireEvent.change(screen.getByLabelText(/protected domains/i), { target: { value: "example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("try again shortly");
+    await waitFor(() => {
+      expect(document.activeElement?.contains(alert)).toBe(true);
+    });
+    expect(screen.getByText("message.eml")).toBeTruthy();
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: /protected domains/i }).value).toBe("example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Malicious" })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, second] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    expect((second.body as FormData).get("file")).toBeInstanceOf(File);
+  });
+
+  it("refuses an Outlook .msg file without calling the server", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    chooseFile(new File(["x"], "invoice.msg", { type: "application/vnd.ms-outlook" }));
+    expect(screen.getByRole("alert").textContent).toContain("Outlook .msg files can't be checked");
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: /check message/i }).disabled).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("describes the pending task while the check runs", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    expect((await screen.findAllByRole("status")).some((n) => /links are not visited/i.test(n.textContent))).toBe(true);
   });
 
   it("sends no query string when no options are given", async () => {
@@ -120,8 +258,7 @@ describe("email check page", () => {
     renderPage();
     chooseFile();
     fireEvent.click(screen.getByRole("button", { name: /check message/i }));
-    expect(await screen.findByText(verdictMeta.clean.title)).toBeTruthy();
-    expect(screen.getAllByText(/not that the message is safe/i).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { level: 2, name: verdictMeta.clean.label })).toBeTruthy();
     const [path] = fetchMock.mock.calls[0] as unknown as [string];
     expect(path).toBe("/api/mail/analyze");
   });
@@ -134,7 +271,7 @@ describe("email check page", () => {
       chooseFile();
       fireEvent.click(screen.getByRole("button", { name: /check message/i }));
       expect(await screen.findByText(verdictMeta[verdict].title)).toBeTruthy();
-      expect(screen.getAllByText(verdictMeta[verdict].label).length).toBeGreaterThan(0);
+      expect(screen.getByRole("heading", { level: 2, name: verdictMeta[verdict].label })).toBeTruthy();
     },
   );
 

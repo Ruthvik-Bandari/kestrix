@@ -1,11 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { useMutation } from "@tanstack/react-query";
-import { useState, type DragEvent, type SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { DataNote } from "../../components/DataNote";
-import { FileButton } from "../../components/FileButton";
 import { Icon } from "../../components/Icon";
-import { cx, ErrorState, Field, Spinner, Verdict } from "../../components/ui";
+import {
+  FailedRequest,
+  FileDrop,
+  HelpPanel,
+  LiveStatus,
+  LocalProblem,
+  PendingPanel,
+  ToolLayout,
+} from "../../components/report";
+import { Button, Disclosure, Field, Panel } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { MailOptions } from "../../lib/types";
@@ -24,20 +32,63 @@ export function parseDomains(text: string): string[] {
   return [...new Set(text.split(/[\s,]+/).map((d) => d.trim().toLowerCase()).filter(Boolean))];
 }
 
+/** Outlook's binary .msg format, which the checker cannot read; anything else goes to the server to judge. */
+function isOutlookMsg(file: File): boolean {
+  return /\.msg$/i.test(file.name) || file.type === "application/vnd.ms-outlook";
+}
+
+function HelpColumns() {
+  return (
+    <div className="grid gap-6 @2xl:grid-cols-2">
+      <div>
+        <h3 className="font-semibold">What the report contains</h3>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+          <li>A verdict in words, with a plain summary and a suggested next step.</li>
+          <li>Findings from most to least severe, each with its evidence and reason code.</li>
+          <li>The message&apos;s subject, sender address, SHA-256 and how many parts, links and attachments it has.</li>
+        </ul>
+        <p className="mt-3 text-[0.875rem] text-ink-3">
+          Links are not visited and attachments are not opened. The score is a heuristic, not a probability.
+        </p>
+      </div>
+      <div>
+        <h3 className="font-semibold">Save a message as an .eml file</h3>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-ink-2">
+          <li>
+            <span className="font-medium text-ink">Gmail:</span> open the message, choose ⋮ (More), then{" "}
+            <span className="font-medium text-ink">Download message</span>.
+          </li>
+          <li>
+            <span className="font-medium text-ink">Outlook:</span> choose{" "}
+            <span className="font-medium text-ink">File, Save as</span>, or drag the message to your desktop.
+          </li>
+          <li>Come back here and choose the saved file.</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 export default function MailPage() {
   const [file, setFile] = useState<File | null>(null);
   const [domains, setDomains] = useState("");
   const [authservId, setAuthservId] = useState("");
-  const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState<{ title: string; detail: string } | null>(null);
   const analyze = useMutation({
     mutationFn: ({ message, options }: { message: File; options: MailOptions }) => api.analyzeMail(message, options),
   });
 
-  function choose(next: File | undefined) {
-    if (!next) return;
+  function choose(next: File) {
     analyze.reset();
     const limit = maxMessage();
+    if (isOutlookMsg(next)) {
+      setFile(null);
+      setLocalError({
+        title: "Outlook .msg files can't be checked",
+        detail: `${next.name} is an Outlook .msg file. Save the message as an .eml file instead.`,
+      });
+      return;
+    }
     if (next.size > limit) {
       setFile(null);
       setLocalError({
@@ -50,14 +101,7 @@ export default function MailPage() {
     setFile(next);
   }
 
-  function onDrop(event: DragEvent) {
-    event.preventDefault();
-    setDragging(false);
-    choose(event.dataTransfer.files[0]);
-  }
-
-  function submit(event: SubmitEvent) {
-    event.preventDefault();
+  function run() {
     if (!file) return;
     const protectedDomains = parseDomains(domains);
     if (protectedDomains.length > MAX_PROTECTED_DOMAINS) {
@@ -72,110 +116,108 @@ export default function MailPage() {
     analyze.mutate({ message: file, options: { protectedDomains, trustedAuthservId: authservId.trim() || null } });
   }
 
+  function submit(event: SubmitEvent) {
+    event.preventDefault();
+    run();
+  }
+
+  const input = (
+    <Panel as="section" className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" aria-label="Check a saved email">
+        <FileDrop
+          icon="mail"
+          idleTitle="Drop an .eml file here, or choose one"
+          hint={`An .eml file, up to ${formatBytes(maxMessage())}.`}
+          chooseLabel="Choose an .eml file"
+          chooseAnotherLabel="Choose another .eml file"
+          accept=".eml,message/rfc822"
+          file={file}
+          onFile={choose}
+          onClear={() => {
+            setFile(null);
+            setLocalError(null);
+            analyze.reset();
+          }}
+        />
+        {localError ? <LocalProblem title={localError.title} detail={localError.detail} /> : null}
+
+        <Disclosure summary="Advanced options">
+          <div className="space-y-4">
+            <Field
+              htmlFor="mail-protected"
+              label="Protected domains"
+              optional
+              hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
+            >
+              <input
+                id="mail-protected"
+                className="field font-mono"
+                type="text"
+                spellCheck={false}
+                autoComplete="off"
+                value={domains}
+                onChange={(e) => {
+                  setDomains(e.target.value);
+                }}
+                placeholder="example-bank.com, example.com"
+              />
+            </Field>
+            <Field
+              htmlFor="mail-authserv"
+              label="Trusted authserv-id"
+              optional
+              hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
+            >
+              <input
+                id="mail-authserv"
+                className="field font-mono"
+                type="text"
+                spellCheck={false}
+                autoComplete="off"
+                value={authservId}
+                onChange={(e) => {
+                  setAuthservId(e.target.value);
+                }}
+              />
+            </Field>
+          </div>
+        </Disclosure>
+
+        <div className="space-y-3">
+          <Button type="submit" className="w-full" disabled={!file} pending={analyze.isPending} pendingLabel="Checking…">
+            <Icon name="search" size={16} />
+            Check message
+          </Button>
+          <DataNote subject="The message" />
+        </div>
+      </form>
+    </Panel>
+  );
+
   return (
     <>
       <ToolHeader page="mail" />
-
-      <div className="mb-6 grid max-w-3xl gap-3 text-ink-2">
-        <DataNote subject="The message" />
-        <p className="flex gap-2">
-          <Icon name="info" size={16} className="mt-1 flex-none text-ink-3" />
-          <span>
-            First save the message as an <code>.eml</code> file. In Gmail, open it and choose ⋮ (More) →{" "}
-            <span className="font-medium text-ink">Download message</span>. In Outlook, use{" "}
-            <span className="font-medium text-ink">File → Save as</span> (or drag the message to your desktop).
-          </span>
-        </p>
-      </div>
-
-      <form onSubmit={submit} className="panel max-w-3xl space-y-5 p-5 sm:p-6" aria-label="Check a saved email">
-        {/* Drag and drop is a pointer shortcut; the file button inside is the keyboard path. */}
-        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => {
-            setDragging(false);
-          }}
-          onDrop={onDrop}
-          className={cx(
-            "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors duration-150",
-            dragging ? "border-accent bg-accent-soft" : "border-line-strong bg-surface",
-          )}
-        >
-          <Icon name="mail" size={28} className="text-ink-3" />
-          <p className="font-medium text-ink">{file ? file.name : "Drop an .eml file here, or choose one"}</p>
-          <p className="hint">{file ? formatBytes(file.size) : `Up to ${formatBytes(maxMessage())}.`}</p>
-          <FileButton
-            label={file ? "Choose another .eml file" : "Choose an .eml file"}
-            accept=".eml,message/rfc822"
-            onFile={choose}
-          />
-        </div>
-
-        <Field
-          htmlFor="mail-protected"
-          label="Protected domains (optional)"
-          hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
-        >
-          <input
-            id="mail-protected"
-            className="field font-mono"
-            type="text"
-            spellCheck={false}
-            autoComplete="off"
-            value={domains}
-            onChange={(e) => {
-              setDomains(e.target.value);
-            }}
-            aria-describedby="mail-protected-hint"
-            placeholder="example-bank.com, example.com"
-          />
-        </Field>
-
-        <Field
-          htmlFor="mail-authserv"
-          label="Trusted authserv-id (optional)"
-          hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
-        >
-          <input
-            id="mail-authserv"
-            className="field font-mono"
-            type="text"
-            spellCheck={false}
-            autoComplete="off"
-            value={authservId}
-            onChange={(e) => {
-              setAuthservId(e.target.value);
-            }}
-            aria-describedby="mail-authserv-hint"
-          />
-        </Field>
-
-        <button type="submit" className="btn btn-primary" disabled={!file || analyze.isPending}>
-          {analyze.isPending ? <Spinner /> : <Icon name="search" size={16} />}
-          Check message
-        </button>
-      </form>
-
-      <div aria-live="polite" className="sr-only">
-        {analyze.isPending ? "Checking the message…" : analyze.isSuccess ? "Check finished. Results below." : ""}
-      </div>
-      {localError ? (
-        <div className="mt-6" role="alert">
-          <Verdict tone="crit" icon="xCircle" title={localError.title}>
-            {localError.detail}
-          </Verdict>
-        </div>
-      ) : null}
-      {analyze.isError ? (
-        <div className="mt-6">
-          <ErrorState error={analyze.error} />
-        </div>
-      ) : null}
-      {analyze.data ? <MailReportView report={analyze.data} /> : null}
+      <ToolLayout input={input}>
+        <LiveStatus
+          pending={analyze.isPending}
+          done={analyze.isSuccess}
+          pendingText="Checking the message…"
+          doneText="Check finished. The result is below."
+        />
+        {analyze.isPending ? (
+          <PendingPanel title="Checking the message">
+            Reading the headers, sender, links and attachments. Links are not visited and attachments are not opened.
+          </PendingPanel>
+        ) : analyze.isError ? (
+          <FailedRequest error={analyze.error} onRetry={run} />
+        ) : analyze.data ? (
+          <MailReportView report={analyze.data} />
+        ) : (
+          <HelpPanel title="Check a saved email">
+            <HelpColumns />
+          </HelpPanel>
+        )}
+      </ToolLayout>
     </>
   );
 }

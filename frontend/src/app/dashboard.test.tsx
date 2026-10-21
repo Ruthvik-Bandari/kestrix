@@ -146,6 +146,16 @@ describe("recent results", () => {
     expect(screen.getByText("URGENT: Updated bank details")).toBeTruthy();
   });
 
+  it("shows a saved email report on its own, without the input column", async () => {
+    hosted({ "GET /api/history/r-mail-1": { body: { ...ITEMS[0], report: MAIL_REPORT } } });
+    renderApp("/app/history/r-mail-1");
+    expect(await screen.findByRole("heading", { level: 2, name: "Malicious" })).toBeTruthy();
+    const panel = screen.getByRole("heading", { name: "Message" }).closest("aside") as HTMLElement;
+    expect(within(panel).getByText("billing@n0rthbank-secure.example")).toBeTruthy();
+    expect(screen.queryByLabelText(/choose an \.eml file/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /check message/i })).toBeNull();
+  });
+
   it("says when a saved report is gone", async () => {
     hosted({ "GET /api/history/nope": { status: 404, body: { reason: "not_found", detail: "no such result" } } });
     renderApp("/app/history/nope");
