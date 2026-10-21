@@ -15,6 +15,7 @@ The machine-readable schema is served at `GET /api/openapi.json` (by the local s
 - [Website check](#website-check)
 - [Bitcoin](#bitcoin)
 - [Mail](#mail)
+- [Result history](#result-history)
 - [Hosted mode](#hosted-mode)
 
 ## Quick example
@@ -206,6 +207,22 @@ curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_d
 - Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels, or a header nested too deeply to parse (such as thousands of nested comments), returns 400 `nesting_too_deep`; too many parts or headers, an oversized header or header block, or a `Content-Type` or `Content-Disposition` with more than 50 parameters return 413 `input_too_large`.
 - The report never contains the message body, link text or attachment bytes. The one exception is an `intent` finding, whose evidence is the matched cue phrase (at most 60 characters).
 
+## Result history
+
+Both modes keep the report of each successful analysis for 30 days ([ADR 0008](adr/0008-per-user-result-history.md)): `POST /api/mail/analyze` (tool `mail`), `POST /api/webcheck` (`webcheck`), `POST /api/forensics/file` (`forensics_file`) and `POST /api/forensics/url` (`forensics_url`). Only the JSON response is kept, never the request: uploaded files and messages are not stored. Failed requests (any status other than 200) and responses over 2 MiB are not recorded. Locally there is one user and the history is plaintext in `history.sqlite3` in the config folder (`0600`); on the hosted service each signed-in user has their own, encrypted at rest (AES-256-GCM).
+
+`verdict` is a short summary for lists: the mail `verdict`, the website `grade` (`A` to `F`), the URL `level`, or for a file the highest finding severity (`high`, `medium`, `low`, `info`) or `none`. `findings` is the number of findings.
+
+| Route | Request | Response |
+| --- | --- | --- |
+| `GET /api/history` | Optional `?page=` (from 1, default 1) and `?per_page=` (1 to 50, default 20) | `{"enabled": bool, "retention_days": 30, "page", "per_page", "total", "items": [{"id": string, "tool": string, "created_at": epoch seconds, "verdict": string, "findings": int}]}`, newest first. Results older than 30 days are never listed. `per_page` over 50 gives 422. |
+| `GET /api/history/{id}` | none | The item's fields plus `"report"`: the report exactly as the analysis returned it. 404 `not_found` for an unknown, expired or undecryptable id, and for another user's. |
+| `DELETE /api/history/{id}` | none | 204, or 404 `not_found` as above. |
+| `DELETE /api/history` | none | 204. Deletes all of the caller's results. |
+| `PUT /api/settings/history` | `{"enabled": bool}` (unknown keys refused, 422) | `{"enabled": bool}`. History is on by default; `false` deletes every stored result and stops recording until it is turned on again. |
+
+Results older than 30 days are deleted whenever a result is stored and when the server starts.
+
 ## Hosted mode
 
 With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, signed-in service. Setup, security properties and limits are in [hosted.md](hosted.md). Everything above still applies, with these differences:
@@ -213,12 +230,12 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 - **Host and origin.** `Host` must be the host of `KESTRIX_PUBLIC_ORIGIN` (no loopback names), else 421. On state-changing requests, `Origin`, when sent, must equal `KESTRIX_PUBLIC_ORIGIN` exactly, else 403 `cross_site_request`.
 - **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and every `/api/` response carries `Cache-Control: no-store`.
 - **No API schema.** `GET /api/openapi.json` is not served (401 without a session, 404 with one).
-- **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not.
+- **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not, except `PUT /api/settings/history` (see [Result history](#result-history)).
 - **Sign-in required.** Every `/api/` route except `GET /api/health` and the `/api/auth/*` routes marked public below needs a valid access token (the `__Host-kx_at` cookie, [ADR 0007](adr/0007-jwt-access-and-rotating-refresh-tokens.md)). Without one it returns 401 with one of two reasons:
   - `token_expired`: the access token has expired (its signature and claims are otherwise valid), or it is missing while a `__Host-kx_rt` refresh cookie is present. Call `POST /api/auth/refresh` once, then retry.
   - `sign_in_required`: no usable token (missing, forged, wrong key, issuer or audience, a revoked or ended family). Sign in again.
 - **CSRF.** A signed-in `POST`, `PUT`, `PATCH` or `DELETE`, and every `POST /api/auth/refresh`, must send `X-CSRF-Token` with the token from `GET /api/auth/me`, else 403 `csrf_failed`. The token stays the same across refreshes.
-- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 20 sign-in starts, 10 callbacks and 60 refreshes per client IP (IPv6: per /64) per 10 minutes.
+- **Rate limits.** 429 `rate_limited` with `Retry-After`: 20 website checks per user per hour; 120 analyses (forensics file and URL, mail) per user per hour; 120 result-history changes (`DELETE /api/history*`, `PUT /api/settings/history`) per user per hour; 20 sign-in starts, 10 callbacks and 60 refreshes per client IP (IPv6: per /64) per 10 minutes.
 - **One request at a time.** A user's second website check or analysis while the first is still running gets 429 `busy` with `Retry-After: 5`. When the service already runs 2 analyses or 8 website checks, the next one gets 503 `busy` with `Retry-After: 5`. Neither counts against the hourly limits, and nothing is queued.
 - **Uploads.** `POST /api/forensics/file` and `POST /api/mail/analyze` accept at most 10 MiB of file or message (10 MiB plus 64 KiB of request body); more gives 413 `input_too_large`.
 - **Analyses run in a worker process** with 10 seconds of CPU, 384 MiB of address space (on Linux) and 20 seconds of wall-clock time. An analysis stopped by these limits returns 422 `analysis_timeout`; one that runs out of memory returns 413 `input_too_large`.
@@ -234,7 +251,7 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 | `GET /api/auth/me` | Yes | none | `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string, "access_expires_at": epoch seconds}`; without a usable access token but with a live refresh family, `{"signed_in": false, "refreshable": true, "csrf_token": string}`; else `{"signed_in": false}`. Never rotates anything. Sent with `Cache-Control: no-store`. |
 | `POST /api/auth/refresh` | Yes | `X-CSRF-Token`; the `__Host-kx_rt` cookie | 200 `{"access_expires_at": epoch seconds}` with new `__Host-kx_at` and `__Host-kx_rt` cookies (the refresh token rotates). 403 `csrf_failed` without the family's token. 401 `sign_in_required`, clearing both cookies, for a missing, unknown or ended family, or for a refresh token that was already rotated, which also revokes its whole family. |
 | `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when there is a family to end (from the access token, else the refresh cookie) | 204. Revokes the refresh family, so its access tokens stop working at once, and clears both cookies. |
-| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every refresh family of that user and their rate-limit counters, then clears both cookies. |
+| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every refresh family of that user, their result history and history setting, and their rate-limit counters, then clears both cookies. |
 
 ```json
 {"reason": "sign_in_required", "detail": "sign in to use this feature"}

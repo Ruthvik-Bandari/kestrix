@@ -43,6 +43,7 @@ docker run --rm --name kestrix \
   -e KESTRIX_PUBLIC_ORIGIN=https://kestrix.test \
   -e KESTRIX_SESSION_PEPPER="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')" \
   -e KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')" \
+  -e KESTRIX_HISTORY_KEY="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')" \
   -e KESTRIX_GITHUB_CLIENT_ID=dummy -e KESTRIX_GITHUB_CLIENT_SECRET=dummy \
   kestrix:dev
 ```
@@ -106,6 +107,8 @@ Secrets live in Fly's secret store and reach the machine as environment variable
 fly secrets set --stage KESTRIX_SESSION_PEPPER="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
 # Signs the 15-minute access tokens (ADR 0007). A separate value; never reuse the pepper.
 fly secrets set --stage KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+# Encrypts users' stored result reports (ADR 0008): exactly 32 random bytes in base64.
+fly secrets set --stage KESTRIX_HISTORY_KEY="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
 
 read -rs GOOGLE_SECRET            # paste, then Enter
 fly secrets set --stage KESTRIX_GOOGLE_CLIENT_ID=<client id> KESTRIX_GOOGLE_CLIENT_SECRET="$GOOGLE_SECRET"
@@ -124,6 +127,8 @@ fly secrets list                  # names and digests only, never values
 | `KESTRIX_SESSION_PEPPER` | secret | Yes |
 | `KESTRIX_JWT_SECRET` | secret | Yes |
 | `KESTRIX_JWT_SECRET_PREVIOUS` | secret | Only during a rotation (see [Rotating secrets](#rotating-secrets)) |
+| `KESTRIX_HISTORY_KEY` | secret | Yes |
+| `KESTRIX_HISTORY_KEY_PREVIOUS` | secret | Only during a rotation (see [Rotating secrets](#rotating-secrets)) |
 | `KESTRIX_GOOGLE_CLIENT_ID`, `KESTRIX_GOOGLE_CLIENT_SECRET` | secret | One provider (both or neither) |
 | `KESTRIX_GITHUB_CLIENT_ID`, `KESTRIX_GITHUB_CLIENT_SECRET` | secret | One provider (both or neither) |
 | `KESTRIX_ABUSE_CONTACT` | secret or `[env]` | Recommended: it goes into the website check's `User-Agent` |
@@ -195,7 +200,7 @@ Without `KESTRIX_CLIENT_IP_HEADER` every visitor shares one sign-in bucket; trea
 
 ## Backups
 
-The volume holds users, sessions and pending sign-ins. Losing it signs everyone out and forgets accounts; nobody's files are on it.
+The volume holds users, sessions and pending sign-ins (`/data/kestrix.db`) and the encrypted result history (`/data/kestrix-history.db`, ADR 0008). Losing it signs everyone out, forgets accounts and empties every history; nobody's files are on it. A snapshot of the history file is useless without `KESTRIX_HISTORY_KEY`, which is not on the volume.
 
 - **Snapshots.** Fly takes daily volume snapshots, kept for the retention set when the volume was created (14 days with the command in step 3; `snapshot_retention` in `fly.toml` says the same for volumes that `fly deploy` creates). SQLite in WAL mode recovers from a crash-consistent snapshot. A deleted account's row is overwritten in the live database at once, but stays in snapshots taken before the deletion until they expire; the draft privacy notice says so.
 
@@ -223,6 +228,7 @@ The volume holds users, sessions and pending sign-ins. Losing it signs everyone 
 | --- | --- | --- |
 | `KESTRIX_SESSION_PEPPER` | Everyone is signed out (refresh tokens and CSRF tokens no longer match); pending sign-ins fail. Accounts stay. | Set a new value. Rotate at once if it may have leaked. |
 | `KESTRIX_JWT_SECRET` | None if done in order: access tokens signed with the old key keep working until they expire (15 minutes). | `fly secrets set KESTRIX_JWT_SECRET_PREVIOUS=<the current value> KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"`, then after 15 minutes `fly secrets unset KESTRIX_JWT_SECRET_PREVIOUS`. After a suspected leak, skip `KESTRIX_JWT_SECRET_PREVIOUS`: every access token ends at once and pages refresh with their refresh tokens. |
+| `KESTRIX_HISTORY_KEY` | None if done in order: reports stored under the old key stay readable through `KESTRIX_HISTORY_KEY_PREVIOUS`. | `fly secrets set KESTRIX_HISTORY_KEY_PREVIOUS=<the current value> KESTRIX_HISTORY_KEY="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"`, then after 30 days (when the last old report has expired) `fly secrets unset KESTRIX_HISTORY_KEY_PREVIOUS`. After a suspected leak, skip `KESTRIX_HISTORY_KEY_PREVIOUS`: older reports become unreadable and disappear from users' views, and are purged within 30 days. |
 | `KESTRIX_LOG_SALT` | User hashes in new log lines no longer match older lines. | Set a new value. |
 | OAuth client secret | None if done in order. | Create a second secret at the provider, set it, confirm a sign-in works, then delete the old one at the provider. |
 | Any secret after a suspected leak | | Rotate it, then `fly secrets list` to confirm the digest changed, and review `fly logs` for `kestrix.auth` failures. |
@@ -240,7 +246,7 @@ In a local test (Docker, `/tmp` on tmpfs), the idle container used about 120 MiB
 - [ ] `auto_stop_machines = "off"` and `min_machines_running = 1`, so rate limits are not reset by idle stops.
 - [ ] Exactly one machine (`fly machines list`).
 - [ ] Both OAuth apps use the production redirect URIs; the Google consent screen is published; test users removed.
-- [ ] `KESTRIX_SESSION_PEPPER` and `KESTRIX_JWT_SECRET` were generated for production, differ, and have never been used elsewhere; `KESTRIX_JWT_SECRET_PREVIOUS` is unset.
+- [ ] `KESTRIX_SESSION_PEPPER`, `KESTRIX_JWT_SECRET` and `KESTRIX_HISTORY_KEY` were generated for production, differ, and have never been used elsewhere; `KESTRIX_JWT_SECRET_PREVIOUS` and `KESTRIX_HISTORY_KEY_PREVIOUS` are unset.
 - [ ] `KESTRIX_ABUSE_CONTACT` is a monitored mailbox.
 - [ ] `fly checks list` passes and `/api/health` reports `"mode":"hosted"` over HTTPS.
 - [ ] `http://` redirects to `https://`, and `https://<app>.fly.dev` answers 421 once a custom domain is set.

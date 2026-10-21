@@ -4,6 +4,18 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+
+- **Recent results: per-user result history** ([ADR 0008](docs/adr/0008-per-user-result-history.md)). After a
+  successful email check, website check, file analysis or URL analysis, the report (never the upload) is kept for 30
+  days. New routes in both modes: `GET /api/history` (paginated, newest first), `GET /api/history/{id}`,
+  `DELETE /api/history/{id}`, `DELETE /api/history` and `PUT /api/settings/history` (`{"enabled": bool}`; off deletes
+  the history and stops recording). Hosted: per signed-in user, encrypted with AES-256-GCM under the new required
+  `KESTRIX_HISTORY_KEY` (32 bytes, base64; `KESTRIX_HISTORY_KEY_PREVIOUS` for rotation), stored beside the accounts
+  database, CSRF-protected and limited to 120 writes per user per hour; account deletion deletes it. The hosted extra
+  adds `cryptography`. Local: plaintext in `history.sqlite3` (`0600`) in the config folder. The privacy draft
+  describes what is kept, why, for how long and how to delete it.
+
 ### Changed
 
 - **Hosted sign-in uses JWT access tokens and rotating refresh tokens** ([ADR 0007](docs/adr/0007-jwt-access-and-rotating-refresh-tokens.md)).
