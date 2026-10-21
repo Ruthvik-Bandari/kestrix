@@ -165,10 +165,10 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 
 | Asset | Why it matters |
 | --- | --- |
-| Accounts and sessions | A stolen session lets someone act as the user and delete their account. |
+| Accounts and sign-ins | A stolen access or refresh token lets someone act as the user and delete their account. |
 | Users' files, messages and URLs | They now belong to strangers, not to the machine's owner. |
 | The service's network position and reputation | The website check makes requests on users' behalf and can be abused for scanning. |
-| OAuth client secrets and the session pepper | They let an attacker impersonate the service or forge session hashes. |
+| OAuth client secrets, the pepper and the JWT secret | They let an attacker impersonate the service, forge refresh-token hashes or mint access tokens. |
 
 ### Additional adversaries
 
@@ -176,25 +176,27 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 | --- | --- |
 | Any internet user | Credential stuffing is not possible (no passwords), but sign-in flooding, scan abuse, upload floods and probing for unauthenticated routes are |
 | A malicious web page | Login CSRF (forcing the victim into the attacker's account), cross-site writes, open redirects through `next` |
-| Someone with a copy of the database | Replaying session ids, harvesting emails |
+| Someone with a copy of the database | Replaying refresh tokens, harvesting emails |
 | A network attacker between the server and a provider | Forged ID tokens or user info |
 
 ### Controls
 
 | Control | Implementation |
 | --- | --- |
-| Refuses to start without an `https` public origin, a pepper of at least 32 bytes and at least one complete provider | [`server/settings.py`](../src/kestrix/server/settings.py) |
+| Refuses to start without an `https` public origin, a pepper and a different JWT secret of at least 32 bytes each, the `kestrix[hosted]` extra, and at least one complete provider | [`server/settings.py`](../src/kestrix/server/settings.py) |
 | `Host` must be the public host; `Origin` on writes must equal the public origin; HSTS with `preload` on every response, plus the existing CSP and headers | `_LocalOnly` in [`server/app.py`](../src/kestrix/server/app.py) |
 | Detection repair, Bitcoin and the Anthropic-key settings are not mounted and return 404 | [`server/app.py`](../src/kestrix/server/app.py), `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
-| Every `/api/` route needs a session unless it is on a short public list, so new routes are private by default (401); the OpenAPI schema is not served; every `/api/` response is `Cache-Control: no-store` | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py), [`server/app.py`](../src/kestrix/server/app.py) |
+| Every `/api/` route needs a valid access token unless it is on a short public list, so new routes are private by default (401); the OpenAPI schema is not served; every `/api/` response is `Cache-Control: no-store` | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py), [`server/app.py`](../src/kestrix/server/app.py) |
 | Authorization code with PKCE S256, single-use 10-minute `state` stored under a keyed hash, Google `nonce`, and `state` bound to the browser by a `__Host-` cookie | [`server/auth.py`](../src/kestrix/server/auth.py) |
 | Google ID-token claims checked (`iss`, `aud`/`azp`, `exp`, `iat`, `nonce`, `email_verified`). The signature is not checked: the token comes directly from Google's token endpoint over verified TLS, as OpenID Connect Core 3.1.3.7 permits. GitHub sign-in needs a primary, verified email. | [`server/auth.py`](../src/kestrix/server/auth.py) |
 | Provider requests only to four fixed hosts over https:443, verified TLS, no redirects, no environment proxies, 10 s timeout, 64 KiB cap | `ProviderClient` in [`server/auth.py`](../src/kestrix/server/auth.py) |
 | `next` accepts only same-origin paths; `//`, backslashes, control characters, whitespace and absolute URLs fall back to `/app` | `safe_next` in [`server/auth.py`](../src/kestrix/server/auth.py) |
-| Session ids are 256-bit random and stored only as HMAC-SHA256 with the pepper; `__Host-` cookie, `Secure`, `HttpOnly`, `SameSite=Lax`; 7-day idle and 30-day absolute expiry; rotated at sign-in | [`server/auth.py`](../src/kestrix/server/auth.py), [`server/store.py`](../src/kestrix/server/store.py) |
-| A per-session CSRF token, derived from the session id and stored only as a keyed hash, is required in `X-CSRF-Token` on state-changing requests (403 otherwise) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
-| Account deletion removes the user and, by cascade, all of that user's sessions, and clears the user's rate-limit counters; deleted rows are overwritten (`secure_delete`), the WAL is checkpointed and truncated, and user ids are never reused | [`server/store.py`](../src/kestrix/server/store.py), [`server/auth_api.py`](../src/kestrix/server/auth_api.py) |
-| Operators can disable an account (`kestrix hosted disable-user`): it cannot sign in and its sessions end | [`server/cli.py`](../src/kestrix/server/cli.py), [`server/store.py`](../src/kestrix/server/store.py) |
+| Access tokens are 15-minute HS256 JWTs verified by PyJWT with the algorithm pinned, `kid`-selected keys (the previous key verifies only), required `iss`/`aud`/`sub`/`sid`/`iat`/`nbf`/`exp`/`jti` and 30 s leeway; `__Host-kx_at`, `Secure`, `HttpOnly`, `SameSite=Lax` (ADR 0007) | [`server/tokens.py`](../src/kestrix/server/tokens.py) |
+| Every authenticated request also checks that the token's refresh family is live, through a 30-second in-process cache that logout, deletion and reuse detection update at once | [`server/auth.py`](../src/kestrix/server/auth.py) |
+| Refresh tokens are 256-bit random, stored only as HMAC-SHA256 with the pepper, rotated on every refresh, and a reused (already rotated) one revokes its whole family and is logged; `__Host-kx_rt`, `Secure`, `HttpOnly`, `SameSite=Strict`; 7-day idle and 30-day absolute expiry; a new family at every sign-in | [`server/auth.py`](../src/kestrix/server/auth.py), [`server/store.py`](../src/kestrix/server/store.py) |
+| A per-family CSRF token, derived from the `sid` with the pepper and never stored, is required in `X-CSRF-Token` on state-changing requests, refresh and logout (403 otherwise) | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
+| Account deletion removes the user and, by cascade, all of that user's refresh families, and clears the user's rate-limit counters; deleted rows are overwritten (`secure_delete`), the WAL is checkpointed and truncated, and user ids are never reused | [`server/store.py`](../src/kestrix/server/store.py), [`server/auth_api.py`](../src/kestrix/server/auth_api.py) |
+| Operators can disable an account (`kestrix hosted disable-user`): it cannot sign in and its families are revoked (seen by the running server within 30 seconds) | [`server/cli.py`](../src/kestrix/server/cli.py), [`server/store.py`](../src/kestrix/server/store.py) |
 | Rate limits: 20 website checks and 120 analyses per user per hour; 20 sign-in starts and 10 callbacks per IP (IPv6 per /64) per 10 minutes (429 with `Retry-After`). Cross-site sign-in starts that are not top-level navigations are refused before they count. The limiter evicts stale and least recently requested keys first and keeps blocked ones | [`server/ratelimit.py`](../src/kestrix/server/ratelimit.py), [`server/hosted.py`](../src/kestrix/server/hosted.py) |
 | Concurrency: one module request at a time per user (429 `busy`), at most 2 analyses and 8 website checks at once (503 `busy`); nothing queues or holds a thread | `HostedGate` in [`server/hosted.py`](../src/kestrix/server/hosted.py) |
 | Uploads capped at 10 MiB before and while the body is read | `hosted_body_limits` in [`server/app.py`](../src/kestrix/server/app.py), `hosted_router` in [`forensics/api.py`](../src/kestrix/forensics/api.py) and [`mail/api.py`](../src/kestrix/mail/api.py) |
@@ -207,8 +209,10 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 
 - **Rate limits are per process.** Several instances or workers each count separately. See [hosted.md](hosted.md#limitations).
 - **Client IPs behind a proxy.** Without `KESTRIX_TRUST_PROXY_HEADERS=1`, every visitor behind the platform proxy shares one per-IP sign-in limit. With it, the right-most `X-Forwarded-For` entry is trusted, which is correct only behind a proxy that always appends it.
-- **The pepper is a single key.** Anyone who has both the database and the pepper can check guesses of session ids, but cannot recover them, since the ids are 256-bit random. A leaked pepper should be rotated, which signs everyone out.
-- **Sessions are bearer cookies.** Malware or an extension in the user's browser can still use them. `HttpOnly` keeps page scripts from reading them.
+- **The pepper is a single key.** Anyone who has both the database and the pepper can check guesses of refresh tokens, but cannot recover them, since they are 256-bit random. A leaked pepper should be rotated, which signs everyone out.
+- **The JWT secret mints access tokens.** Anyone who has it can sign tokens for any live family (the family check still applies, so they also need a `sid`). A leaked secret must be replaced without `KESTRIX_JWT_SECRET_PREVIOUS`, which ends every access token at once.
+- **Revocation is cached for up to 30 seconds** in processes other than the one that revoked (today, only operator commands). An access token keeps working for at most that long after its account is disabled from the command line.
+- **Tokens are bearer cookies.** Malware or an extension in the user's browser can still use them. `HttpOnly` keeps page scripts from reading them. Reuse detection catches a stolen refresh token only once both the thief and the user have used it; whichever is second ends the family.
 - **Uploads are still parsed by the same code as locally.** A parser bug now affects a shared server rather than one person's machine. The worker process limits contain CPU and memory exhaustion, but a memory-safety bug in a C extension would run with the server user's file-system access (the worker shares the uid; there is no seccomp or namespace sandbox).
 - **Uploads can touch disk.** Uploads over 1 MiB are spooled to an anonymous temporary file in `/tmp`, which on Fly.io is on the machine's disk, until the request ends.
 - **Counters reset on restart.** Rate-limit counters and concurrency slots live in memory.

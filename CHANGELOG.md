@@ -6,6 +6,19 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Hosted sign-in uses JWT access tokens and rotating refresh tokens** ([ADR 0007](docs/adr/0007-jwt-access-and-rotating-refresh-tokens.md)).
+  The `__Host-kx_session` cookie is gone. A 15-minute HS256 access token (`__Host-kx_at`, PyJWT, `kid`-based key
+  rotation) and an opaque refresh token (`__Host-kx_rt`, `SameSite=Strict`, stored only as a keyed hash) replace it.
+  The refresh token rotates on every `POST /api/auth/refresh` (new, CSRF-protected, 60 per IP per 10 minutes), and
+  reusing a rotated one revokes the whole sign-in. Logout, account deletion and reuse detection take effect at once.
+  Expired access tokens get 401 `token_expired`; `GET /api/auth/me` adds `access_expires_at`, or `refreshable`. Hosted
+  mode now needs `KESTRIX_JWT_SECRET` (at least 32 bytes) and the new `kestrix[hosted]` extra; the container image has
+  it. A database from the earlier preview is refused at start-up with instructions. The dashboard refreshes before
+  expiry and once on `token_expired`.
+- **Landing page Log in / Sign up card.** The hosted landing hero, and `/signin`, have a card with Log in and Sign up
+  tabs. Sign up needs the terms checkbox and records `terms_accepted_at` for a new account; an account created through
+  Log in sees a one-time welcome note linking to the terms. The privacy draft lists the new cookies and the timestamp.
+
 - **`kestrix-scan` Python rules, informed by the benchmark's gap analysis.** Five new rules (reflected XSS, LDAP and
   XPath injection, insecure cookies, session trust boundary), shells started through an argument list, a `weak_random`
   taint kind, more propagators, sanitizers and guards, constant-aware pattern rules, and an XXE rule that follows the

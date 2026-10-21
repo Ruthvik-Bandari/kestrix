@@ -42,6 +42,7 @@ docker run --rm --name kestrix \
   -v kestrix-data:/data -p 127.0.0.1:8000:8000 \
   -e KESTRIX_PUBLIC_ORIGIN=https://kestrix.test \
   -e KESTRIX_SESSION_PEPPER="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')" \
+  -e KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')" \
   -e KESTRIX_GITHUB_CLIENT_ID=dummy -e KESTRIX_GITHUB_CLIENT_SECRET=dummy \
   kestrix:dev
 ```
@@ -54,7 +55,7 @@ curl -s -H 'Host: kestrix.test' http://127.0.0.1:8000/api/health
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/api/health   # 421: wrong Host
 ```
 
-The server answers only requests whose `Host` is the host of `KESTRIX_PUBLIC_ORIGIN`, so every probe, including health checks, has to send it. Sign-in cannot complete locally with dummy credentials, and the browser will not send the `__Host-` session cookie over plain `http`. The `/tmp` tmpfs must hold the largest hosted upload (10 MiB plus the multipart framing) for each upload in progress; 128 MB is ample.
+The server answers only requests whose `Host` is the host of `KESTRIX_PUBLIC_ORIGIN`, so every probe, including health checks, has to send it. Sign-in cannot complete locally with dummy credentials, and the browser will not send the `__Host-` access and refresh cookies over plain `http`. The `/tmp` tmpfs must hold the largest hosted upload (10 MiB plus the multipart framing) for each upload in progress; 128 MB is ample.
 
 The image also has a Docker `HEALTHCHECK` that sends the right `Host`. Fly.io ignores it and uses the checks in `fly.toml`.
 
@@ -103,6 +104,8 @@ Secrets live in Fly's secret store and reach the machine as environment variable
 
 ```bash
 fly secrets set --stage KESTRIX_SESSION_PEPPER="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+# Signs the 15-minute access tokens (ADR 0007). A separate value; never reuse the pepper.
+fly secrets set --stage KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
 
 read -rs GOOGLE_SECRET            # paste, then Enter
 fly secrets set --stage KESTRIX_GOOGLE_CLIENT_ID=<client id> KESTRIX_GOOGLE_CLIENT_SECRET="$GOOGLE_SECRET"
@@ -119,6 +122,8 @@ fly secrets list                  # names and digests only, never values
 | Name | Where | Required |
 | --- | --- | --- |
 | `KESTRIX_SESSION_PEPPER` | secret | Yes |
+| `KESTRIX_JWT_SECRET` | secret | Yes |
+| `KESTRIX_JWT_SECRET_PREVIOUS` | secret | Only during a rotation (see [Rotating secrets](#rotating-secrets)) |
 | `KESTRIX_GOOGLE_CLIENT_ID`, `KESTRIX_GOOGLE_CLIENT_SECRET` | secret | One provider (both or neither) |
 | `KESTRIX_GITHUB_CLIENT_ID`, `KESTRIX_GITHUB_CLIENT_SECRET` | secret | One provider (both or neither) |
 | `KESTRIX_ABUSE_CONTACT` | secret or `[env]` | Recommended: it goes into the website check's `User-Agent` |
@@ -216,7 +221,8 @@ The volume holds users, sessions and pending sign-ins. Losing it signs everyone 
 
 | Secret | Effect of rotating | How |
 | --- | --- | --- |
-| `KESTRIX_SESSION_PEPPER` | Everyone is signed out; pending sign-ins fail. Accounts stay. | Set a new value. Rotate at once if it may have leaked. |
+| `KESTRIX_SESSION_PEPPER` | Everyone is signed out (refresh tokens and CSRF tokens no longer match); pending sign-ins fail. Accounts stay. | Set a new value. Rotate at once if it may have leaked. |
+| `KESTRIX_JWT_SECRET` | None if done in order: access tokens signed with the old key keep working until they expire (15 minutes). | `fly secrets set KESTRIX_JWT_SECRET_PREVIOUS=<the current value> KESTRIX_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"`, then after 15 minutes `fly secrets unset KESTRIX_JWT_SECRET_PREVIOUS`. After a suspected leak, skip `KESTRIX_JWT_SECRET_PREVIOUS`: every access token ends at once and pages refresh with their refresh tokens. |
 | `KESTRIX_LOG_SALT` | User hashes in new log lines no longer match older lines. | Set a new value. |
 | OAuth client secret | None if done in order. | Create a second secret at the provider, set it, confirm a sign-in works, then delete the old one at the provider. |
 | Any secret after a suspected leak | | Rotate it, then `fly secrets list` to confirm the digest changed, and review `fly logs` for `kestrix.auth` failures. |
@@ -234,7 +240,7 @@ In a local test (Docker, `/tmp` on tmpfs), the idle container used about 120 MiB
 - [ ] `auto_stop_machines = "off"` and `min_machines_running = 1`, so rate limits are not reset by idle stops.
 - [ ] Exactly one machine (`fly machines list`).
 - [ ] Both OAuth apps use the production redirect URIs; the Google consent screen is published; test users removed.
-- [ ] `KESTRIX_SESSION_PEPPER` was generated for production and has never been used elsewhere.
+- [ ] `KESTRIX_SESSION_PEPPER` and `KESTRIX_JWT_SECRET` were generated for production, differ, and have never been used elsewhere; `KESTRIX_JWT_SECRET_PREVIOUS` is unset.
 - [ ] `KESTRIX_ABUSE_CONTACT` is a monitored mailbox.
 - [ ] `fly checks list` passes and `/api/health` reports `"mode":"hosted"` over HTTPS.
 - [ ] `http://` redirects to `https://`, and `https://<app>.fly.dev` answers 421 once a custom domain is set.
