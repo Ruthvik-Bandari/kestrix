@@ -134,6 +134,7 @@ def test_hosted_upload_caps_are_lower_than_local():
             "KESTRIX_MODE": "hosted",
             "KESTRIX_PUBLIC_ORIGIN": ORIGIN,
             "KESTRIX_SESSION_PEPPER": "p" * 40,
+            "KESTRIX_JWT_SECRET": "j" * 40,
             "KESTRIX_GITHUB_CLIENT_ID": "id",
             "KESTRIX_GITHUB_CLIENT_SECRET": "secret",
         }
@@ -335,22 +336,36 @@ def test_deletion_leaves_no_residue_and_ids_are_not_reused(hosted, providers, ho
     assert new_id > google_id
 
 
-def test_a_database_with_the_old_schema_is_refused(hosted_env):
+@pytest.mark.parametrize(
+    "ddl",
+    [
+        "CREATE TABLE users (id INTEGER PRIMARY KEY, provider TEXT, subject TEXT)",
+        # ADR 0004's opaque-session table, before refresh families (ADR 0007)
+        "CREATE TABLE sessions (id_hash TEXT PRIMARY KEY, user_id INTEGER, csrf_token_hash TEXT, "
+        "created_at INTEGER, last_seen_at INTEGER, expires_at INTEGER)",
+    ],
+)
+def test_a_database_with_an_old_schema_is_refused(hosted_env, ddl):
     path = Path(hosted_env["KESTRIX_DB"])
     path.parent.mkdir(parents=True)
     with sqlite3.connect(path) as db:
-        db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, provider TEXT, subject TEXT)")
+        db.execute(ddl)
     with pytest.raises(SettingsError, match="older schema"):
         create_app()
 
 
-def test_disabled_accounts_cannot_sign_in_and_their_sessions_end(hosted, providers, caplog):
+def test_disabled_accounts_cannot_sign_in_and_their_sessions_end(hosted, providers, clock, caplog):
     sign_in(hosted, providers)
     assert hosted.get("/api/auth/me").json()["signed_in"]
     runner = CliRunner()
     result = runner.invoke(cli_app, ["hosted", "disable-user", "--email", GOOGLE_EMAIL.upper()])
     assert result.exit_code == 0 and "Disabled 1 account" in result.output
+    # The operator command is another process as far as the server is concerned: its cached check of
+    # the refresh family lasts at most 30 seconds (ADR 0007).
+    assert hosted.get("/api/auth/me").json()["signed_in"]
+    clock.advance(31)
     assert hosted.get("/api/auth/me").json() == {"signed_in": False}
+    assert hosted.post("/api/auth/refresh", headers={"x-csrf-token": "x"}).status_code == 401
     caplog.set_level(logging.INFO, logger="kestrix")
     resp = sign_in(hosted, providers)
     assert resp.headers["location"] == "/welcome?signin=failed"

@@ -10,12 +10,13 @@ from kestrix.core import config
 from kestrix.server.app import create_app
 from kestrix.server.settings import SettingsError, load_settings
 
-from .hosted_support import GOOGLE_ID, GOOGLE_SECRET, ORIGIN, PEPPER
+from .hosted_support import GOOGLE_ID, GOOGLE_SECRET, JWT_SECRET, ORIGIN, PEPPER
 
 BASE = {
     "KESTRIX_MODE": "hosted",
     "KESTRIX_PUBLIC_ORIGIN": ORIGIN,
     "KESTRIX_SESSION_PEPPER": PEPPER,
+    "KESTRIX_JWT_SECRET": JWT_SECRET,
     "KESTRIX_GOOGLE_CLIENT_ID": GOOGLE_ID,
     "KESTRIX_GOOGLE_CLIENT_SECRET": GOOGLE_SECRET,
 }
@@ -36,7 +37,9 @@ def test_a_complete_hosted_configuration_loads():
     assert hosted.client_ip_header is None
     fly = load_settings({**BASE, "KESTRIX_CLIENT_IP_HEADER": "Fly-Client-IP"}).hosted
     assert fly is not None and fly.client_ip_header == "fly-client-ip"
-    assert PEPPER not in repr(hosted) and GOOGLE_SECRET not in repr(hosted)
+    assert PEPPER not in repr(hosted) and GOOGLE_SECRET not in repr(hosted) and JWT_SECRET not in repr(hosted)
+    assert hosted.jwt_secret == JWT_SECRET.encode() and hosted.jwt_secret_previous is None
+    assert hosted.access_ttl_s == 900
 
 
 @pytest.mark.parametrize(
@@ -51,6 +54,11 @@ def test_a_complete_hosted_configuration_loads():
         ({"KESTRIX_PUBLIC_ORIGIN": "https://user:pw@kestrix.example"}, "only a scheme and host"),
         ({"KESTRIX_SESSION_PEPPER": ""}, "KESTRIX_SESSION_PEPPER"),
         ({"KESTRIX_SESSION_PEPPER": "x" * 31}, "at least 32 bytes"),
+        ({"KESTRIX_JWT_SECRET": ""}, "KESTRIX_JWT_SECRET of at least 32 bytes"),
+        ({"KESTRIX_JWT_SECRET": "x" * 31}, "KESTRIX_JWT_SECRET of at least 32 bytes"),
+        ({"KESTRIX_JWT_SECRET_PREVIOUS": "x" * 31}, "KESTRIX_JWT_SECRET_PREVIOUS must be at least 32 bytes"),
+        ({"KESTRIX_JWT_SECRET": PEPPER}, "must differ"),
+        ({"KESTRIX_JWT_SECRET_PREVIOUS": JWT_SECRET}, "must differ"),
         ({"KESTRIX_GOOGLE_CLIENT_SECRET": ""}, "set both"),
         ({"KESTRIX_GOOGLE_CLIENT_ID": "", "KESTRIX_GOOGLE_CLIENT_SECRET": ""}, "at least one sign-in provider"),
         ({"KESTRIX_TRUST_PROXY_HEADERS": "maybe"}, "KESTRIX_TRUST_PROXY_HEADERS"),
@@ -104,4 +112,36 @@ def test_serve_hosted_removes_secrets_from_the_environment(monkeypatch, tmp_path
     result = CliRunner().invoke(cli, ["serve-hosted"])
     assert result.exit_code == 0 and served
     assert "KESTRIX_SESSION_PEPPER" not in os.environ and "KESTRIX_GOOGLE_CLIENT_SECRET" not in os.environ
+    assert "KESTRIX_JWT_SECRET" not in os.environ
     assert os.environ["KESTRIX_GOOGLE_CLIENT_ID"] == GOOGLE_ID  # not a secret; left alone
+
+
+@pytest.mark.parametrize("secret", [None, "s" * 31])
+def test_serve_hosted_refuses_to_start_without_a_long_jwt_secret(monkeypatch, tmp_path, secret):
+    for name, value in {**BASE, "KESTRIX_DB": str(tmp_path / "db" / "hosted.sqlite3")}.items():
+        monkeypatch.setenv(name, value)
+    if secret is None:
+        monkeypatch.delenv("KESTRIX_JWT_SECRET")
+    else:
+        monkeypatch.setenv("KESTRIX_JWT_SECRET", secret)
+    result = CliRunner().invoke(cli, ["serve-hosted"])
+    assert result.exit_code == 2
+    assert "KESTRIX_JWT_SECRET of at least 32 bytes" in result.output
+    assert "token_urlsafe" in result.output  # says how to generate one
+
+
+def test_hosted_mode_needs_the_hosted_extra(monkeypatch):
+    import importlib.util
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name, *a: None if name == "jwt" else real(name, *a))
+    with pytest.raises(SettingsError, match=r"kestrix\[hosted\]"):
+        load_settings(BASE)
+
+
+def test_local_mode_never_imports_pyjwt():
+    import subprocess
+    import sys
+
+    code = "import sys; from kestrix.server.app import create_app; create_app(); assert 'jwt' not in sys.modules"
+    subprocess.run([sys.executable, "-c", code], check=True, env={"PATH": "", "KESTRIX_MODE": "local"})

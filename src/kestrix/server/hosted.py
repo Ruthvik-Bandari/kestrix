@@ -7,11 +7,13 @@
 1. routes of modules that stay local-only (detect, bitcoin, Anthropic-key settings) are 404;
 2. a sign-in start from another site is refused (403) unless it is a top-level navigation,
    so a page cannot burn a visitor's sign-in allowance with hidden requests;
-3. sign-in routes are rate-limited per client IP (IPv6 per /64);
-4. the session cookie is resolved (``request.state.session``);
-5. every ``/api/`` route that is not explicitly public needs a session (401), so a new route
-   is private by default;
-6. a state-changing request with a session needs a matching ``X-CSRF-Token`` (403);
+3. sign-in and token-refresh routes are rate-limited per client IP (IPv6 per /64);
+4. the access token is verified and its refresh family checked (``request.state.session``,
+   ADR 0007);
+5. every ``/api/`` route that is not explicitly public needs a session: 401 ``token_expired`` when
+   the client should refresh, else 401 ``sign_in_required``, so a new route is private by default;
+6. a state-changing request with a session needs a matching ``X-CSRF-Token`` (403); the public
+   refresh and logout routes check it themselves against the refresh family;
 7. module work runs one request at a time per user (429 ``busy``), within global caps on
    concurrent analyses and website checks (503 ``busy``), and is rate-limited per user (429
    ``rate_limited``). All three answer at once with ``Retry-After``; nothing waits in a queue or
@@ -33,12 +35,12 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from ..core.errors import Reason
-from .auth import SESSION_COOKIE, AuthService, current_session
+from .auth import ACCESS_COOKIE, REFRESH_COOKIE, AuthService, Session, current_session
 from .ratelimit import RateLimiter, client_ip, ip_key
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 LOCAL_ONLY_PREFIXES = ("/api/detect", "/api/bitcoin", "/api/settings")
-PUBLIC_API = frozenset({"/api/health", "/api/auth/providers", "/api/auth/me", "/api/auth/logout"})
+PUBLIC_API = frozenset({"/api/health", "/api/auth/providers", "/api/auth/me", "/api/auth/logout", "/api/auth/refresh"})
 PUBLIC_API_PREFIXES = ("/api/auth/login/", "/api/auth/callback/")
 HOUR, TEN_MINUTES = 3600, 600
 # path -> (bucket, limit, window seconds), counted per signed-in user for POST requests
@@ -52,6 +54,7 @@ USER_LIMITS = {
 IP_LIMITS = {
     "/api/auth/login/": ("login", 20, TEN_MINUTES),
     "/api/auth/callback/": ("callback", 10, TEN_MINUTES),
+    "/api/auth/refresh": ("refresh", 60, TEN_MINUTES),
 }
 LOGIN_PREFIX = "/api/auth/login/"
 BUSY_RETRY_S = 5
@@ -122,15 +125,22 @@ class HostedGate(BaseHTTPMiddleware):
                 retry = self.limiter.hit(f"{bucket}:{ip_key(ip)}", limit, window)
                 if retry is not None:
                     return _rate_limited(retry)
-        request.state.session = await run_in_threadpool(
-            self.auth.session_from_cookie, request.cookies.get(SESSION_COOKIE)
-        )
-        session = current_session(request)
         public = not path.startswith("/api/") or path in PUBLIC_API or path.startswith(PUBLIC_API_PREFIXES)
+        if not path.startswith("/api/"):
+            return await call_next(request)  # the dashboard's files need no session
+        checked = await run_in_threadpool(
+            lambda: self.auth.authenticate(
+                request.cookies.get(ACCESS_COOKIE), has_refresh=bool(request.cookies.get(REFRESH_COOKIE))
+            )
+        )
+        session = checked if isinstance(checked, Session) else None
+        request.state.session = session
         if session is None and not public:
+            if checked == "token_expired":
+                return _deny(Reason.TOKEN_EXPIRED, "your sign-in needs refreshing; call POST /api/auth/refresh", 401)
             return _deny(Reason.SIGN_IN_REQUIRED, "sign in to use this feature", 401)
         if method not in SAFE_METHODS and session is not None:
-            if not self.auth.csrf_ok(session, request.headers.get("x-csrf-token")):
+            if not self.auth.csrf_ok(session.csrf_token, request.headers.get("x-csrf-token")):
                 return _deny(Reason.CSRF_FAILED, "missing or invalid X-CSRF-Token header", 403)
             rule = USER_LIMITS.get(path)
             if rule is not None and method == "POST":

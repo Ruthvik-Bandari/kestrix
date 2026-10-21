@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""Hosted-mode sign-in with Google and GitHub, sessions and CSRF tokens (ADR 0004).
+"""Hosted-mode sign-in with Google and GitHub, access and refresh tokens, and CSRF tokens
+(ADR 0004, amended by ADR 0007).
 
 Sign-in is the OAuth 2.0 authorization-code flow with PKCE (S256) and a random ``state``;
 Google adds an OpenID Connect ``nonce``. The pending attempt is stored server-side, keyed
@@ -14,9 +15,13 @@ OpenID Connect Core 1.0 section 3.1.3.7 (rule 6) allows in place of checking the
 signature. Its claims are still validated: issuer, audience, expiry, issue time, nonce and
 a verified email.
 
-Session ids are 256-bit random values. The database stores only HMAC-SHA256(pepper, id).
-The CSRF token is derived from the session id with the same pepper, so it can be shown to
-the signed-in page without being stored; the database keeps only its keyed hash.
+A sign-in creates a refresh family (``sid``). The browser holds a 15-minute JWT access token
+(``server/tokens.py``) and an opaque 256-bit refresh token; the database stores only
+HMAC-SHA256(pepper, refresh token). Each refresh rotates the refresh token; presenting a rotated
+one again revokes the family. Every authenticated request verifies the JWT and then checks that its
+family is still live, through a 30-second in-process cache that logout, account deletion and reuse
+detection update at once. The CSRF token is derived from the ``sid`` with the pepper, so it stays
+the same for the family's life and is never stored.
 """
 
 from __future__ import annotations
@@ -26,27 +31,36 @@ import binascii
 import hashlib
 import hmac
 import json
+import logging
 import secrets
+import threading
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
-from urllib.parse import urlencode, urlsplit
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 from starlette.requests import Request
 
 from .. import __version__
 from .settings import HostedSettings, OAuthClient
-from .store import LoginAttempt, Store
+from .store import FamilyRow, LoginAttempt, Store
 
-SESSION_COOKIE = "__Host-kx_session"
+if TYPE_CHECKING:
+    from .tokens import AccessTokens
+
+ACCESS_COOKIE = "__Host-kx_at"
+REFRESH_COOKIE = "__Host-kx_rt"
 LOGIN_COOKIE = "__Host-kx_login"
 LOGIN_TTL_S = 10 * 60
 SESSION_IDLE_S = 7 * 24 * 3600
 SESSION_ABSOLUTE_S = 30 * 24 * 3600
-TOUCH_INTERVAL_S = 5 * 60
+REVOCATION_CACHE_TTL_S = 30
+REVOCATION_CACHE_MAX = 10_000
+MAX_TOKEN = 128
 CLOCK_SKEW_S = 5 * 60
+WELCOME_PARAM = ("welcome", "created")
 DEFAULT_NEXT = "/app"
 FAILED_REDIRECT = "/welcome?signin=failed"
 MAX_NEXT = 512
@@ -81,6 +95,9 @@ GITHUB_USER_URL = "https://api.github.com/user"
 GITHUB_EMAILS_URL = "https://api.github.com/user/emails"
 
 
+log = logging.getLogger("kestrix.auth")
+
+
 class AuthFailed(Exception):
     """A sign-in step failed. ``code`` is a fixed reason code that is safe to log."""
 
@@ -99,13 +116,15 @@ class Identity:
 
 @dataclass(frozen=True)
 class Session:
-    id_hash: str = field(repr=False)
+    """The signed-in caller of one request: a verified access token whose family is live."""
+
+    sid: str = field(repr=False)
     user_id: int
     provider: str
     email: str
     display_name: str
     csrf_token: str = field(repr=False)
-    csrf_token_hash: str = field(repr=False)
+    access_expires_at: int
 
 
 @dataclass(frozen=True)
@@ -115,9 +134,24 @@ class LoginStart:
 
 
 @dataclass(frozen=True)
+class Tokens:
+    """A new access token and refresh token, with their lifetimes for the cookies."""
+
+    access_token: str = field(repr=False)
+    access_expires_at: int
+    access_max_age: int
+    refresh_token: str = field(repr=False)
+    refresh_max_age: int
+
+
+@dataclass(frozen=True)
 class SignIn:
-    session_id: str = field(repr=False)
+    tokens: Tokens
     next: str
+
+
+Intent = Literal["login", "signup"]
+AccessProblem = Literal["token_expired", "sign_in_required"]
 
 
 def safe_next(value: str | None) -> str | None:
@@ -135,6 +169,13 @@ def safe_next(value: str | None) -> str | None:
     if parts.scheme or parts.netloc:
         return None
     return value
+
+
+def with_welcome(path: str) -> str:
+    """``path`` with ``welcome=created`` added to its query: the one-time "account created" note."""
+    parts = urlsplit(path)
+    query = [*parse_qsl(parts.query, keep_blank_values=True), WELCOME_PARAM]
+    return urlunsplit(("", "", parts.path, urlencode(query), parts.fragment))
 
 
 def _b64url(data: bytes) -> str:
@@ -231,10 +272,18 @@ class AuthService:
         transport: httpx.BaseTransport | None = None,
         clock: Callable[[], float] = time.time,
     ) -> None:
+        from .tokens import AccessTokens  # PyJWT is the hosted extra; local mode never imports it
+
         self.settings = settings
         self.store = store
         self.client = ProviderClient(transport)
         self.clock = clock
+        self.tokens: AccessTokens = AccessTokens(
+            settings.jwt_secret, settings.jwt_secret_previous, settings.public_origin, settings.access_ttl_s
+        )
+        # sid -> (checked at, the live family or None); see family_live.
+        self._families: dict[str, tuple[float, FamilyRow | None]] = {}
+        self._families_lock = threading.Lock()
 
     @property
     def providers(self) -> list[str]:
@@ -246,24 +295,21 @@ class AuthService:
     def _mac(self, data: bytes) -> bytes:
         return hmac.new(self.settings.session_pepper, data, hashlib.sha256).digest()
 
-    def session_hash(self, session_id: str) -> str:
-        return self._mac(session_id.encode()).hex()
+    def refresh_hash(self, refresh_token: str) -> str:
+        return self._mac(b"kx-refresh\x00" + refresh_token.encode()).hex()
 
     def _state_hash(self, state: str) -> str:
         return self._mac(b"kx-state\x00" + state.encode()).hex()
 
-    def _csrf_token(self, session_id: str) -> str:
-        return _b64url(self._mac(b"kx-csrf-token\x00" + session_id.encode()))
-
-    def _csrf_hash(self, token: str) -> str:
-        return self._mac(b"kx-csrf-hash\x00" + token.encode()).hex()
+    def csrf_token(self, sid: str) -> str:
+        return _b64url(self._mac(b"kx-csrf-token\x00" + sid.encode()))
 
     def redirect_uri(self, provider: str) -> str:
         return f"{self.settings.public_origin}/api/auth/callback/{provider}"
 
     # Sign-in
 
-    def start_login(self, provider: str, next_path: str | None) -> LoginStart:
+    def start_login(self, provider: str, next_path: str | None, intent: Intent = "login") -> LoginStart:
         client = self.settings.providers[provider]
         spec = PROVIDERS[provider]
         now = self._now()
@@ -271,7 +317,7 @@ class AuthService:
         nonce = secrets.token_urlsafe(32) if provider == "google" else None
         self.store.purge(now=now, idle_s=SESSION_IDLE_S, attempt_ttl_s=LOGIN_TTL_S)
         self.store.add_login_attempt(
-            self._state_hash(state), LoginAttempt(provider, verifier, nonce, safe_next(next_path), now)
+            self._state_hash(state), LoginAttempt(provider, verifier, nonce, safe_next(next_path), intent, now)
         )
         params = {
             "client_id": client.client_id,
@@ -294,7 +340,7 @@ class AuthService:
         code: str | None,
         error: str | None,
         bound_state: str | None,
-        previous_session_id: str | None,
+        previous_refresh_token: str | None,
     ) -> SignIn:
         if provider not in self.settings.providers:
             raise AuthFailed("unknown_provider")
@@ -317,21 +363,25 @@ class AuthService:
             identity = self._google_identity(client, code, attempt, now)
         else:
             identity = self._github_identity(client, code, attempt)
-        user = self.store.upsert_user(identity.provider, identity.subject, identity.email, identity.display_name, now)
+        signup = attempt.intent == "signup"
+        user = self.store.upsert_user(
+            identity.provider, identity.subject, identity.email, identity.display_name, now, terms_accepted=signup
+        )
         if user.disabled_at is not None:
             raise AuthFailed("account_disabled")
-        user_id = user.id
-        if previous_session_id:
-            self.store.delete_session(self.session_hash(previous_session_id))  # rotate on sign-in
-        session_id = secrets.token_urlsafe(32)
-        self.store.create_session(
-            self.session_hash(session_id),
-            user_id,
-            self._csrf_hash(self._csrf_token(session_id)),
-            now,
-            now + SESSION_ABSOLUTE_S,
-        )
-        return SignIn(session_id, attempt.next or DEFAULT_NEXT)
+        if previous_refresh_token:
+            self._revoke_by_refresh(previous_refresh_token, now)  # a new family at every sign-in
+        sid, refresh_token = secrets.token_urlsafe(24), secrets.token_urlsafe(32)
+        expires_at = now + SESSION_ABSOLUTE_S
+        self.store.create_family(sid, user.id, self.refresh_hash(refresh_token), now, expires_at)
+        next_path = attempt.next or DEFAULT_NEXT
+        if user.created and not signup:
+            next_path = with_welcome(next_path)  # created through Log in: show where the terms are, once
+        return SignIn(self._tokens(user.id, sid, refresh_token, now, expires_at), next_path)
+
+    def _tokens(self, user_id: int, sid: str, refresh_token: str, now: int, family_expires_at: int) -> Tokens:
+        access, access_expires_at = self.tokens.issue(user_id, sid, now)
+        return Tokens(access, access_expires_at, self.tokens.ttl_s, refresh_token, max(0, family_expires_at - now))
 
     def _exchange(self, provider: str, client: OAuthClient, code: str, verifier: str) -> dict[str, Any]:
         token = self.client.request(
@@ -409,43 +459,139 @@ class AuthService:
             raise AuthFailed("email_not_verified")
         return Identity("github", str(user_id), email, _text(user.get("name"), 200) or login)
 
-    # Sessions
+    # Access tokens and refresh families
 
-    def session_from_cookie(self, session_id: str | None) -> Session | None:
-        """The live session for this cookie value, enforcing idle and absolute expiry."""
-        if not session_id or len(session_id) > 128:
+    def _live(self, family: FamilyRow | None, now: int) -> FamilyRow | None:
+        if family is None or family.revoked_at is not None:
             return None
-        id_hash = self.session_hash(session_id)
-        row = self.store.get_session(id_hash)
-        if row is None:
+        if now >= family.expires_at or now - family.last_used_at >= SESSION_IDLE_S:
             return None
-        now = self._now()
-        if now >= row.expires_at or now - row.last_seen_at >= SESSION_IDLE_S:
-            self.store.delete_session(id_hash)
-            return None
-        if now - row.last_seen_at >= TOUCH_INTERVAL_S:
-            self.store.touch_session(id_hash, now)
+        return family
+
+    def family_live(self, sid: str) -> FamilyRow | None:
+        """The family if it is live, checked against the store at most every 30 seconds per sid.
+
+        Changes made in this process (logout, account deletion, reuse detection) update the cache at
+        once; changes made by another process are seen within ``REVOCATION_CACHE_TTL_S``."""
+        now = self.clock()
+        with self._families_lock:
+            cached = self._families.get(sid)
+        if cached is not None and now - cached[0] < REVOCATION_CACHE_TTL_S:
+            return self._live(cached[1], int(now))
+        family = self.store.family(sid)
+        with self._families_lock:
+            if len(self._families) >= REVOCATION_CACHE_MAX:
+                self._families = {
+                    key: value for key, value in self._families.items() if now - value[0] < REVOCATION_CACHE_TTL_S
+                }
+                if len(self._families) >= REVOCATION_CACHE_MAX:
+                    self._families.clear()
+            self._families[sid] = (now, family)
+        return self._live(family, int(now))
+
+    def _forget(self, *sids: str) -> None:
+        with self._families_lock:
+            for sid in sids:
+                self._families.pop(sid, None)
+
+    def authenticate(self, access_token: str | None, *, has_refresh: bool) -> Session | AccessProblem:
+        """The caller's session, or why there is none. ``token_expired`` tells the client to refresh:
+        the access token expired, or it is missing while a refresh cookie is present."""
+        from .tokens import TokenExpired, TokenInvalid
+
+        if not access_token:
+            return "token_expired" if has_refresh else "sign_in_required"
+        try:
+            claims = self.tokens.verify(access_token, self._now())
+        except TokenExpired:
+            return "token_expired"
+        except TokenInvalid:
+            return "sign_in_required"
+        family = self.family_live(claims.sid)
+        if family is None or family.user_id != claims.user_id:
+            return "sign_in_required"
         return Session(
-            id_hash=id_hash,
-            user_id=row.user_id,
-            provider=row.provider,
-            email=row.email,
-            display_name=row.display_name,
-            csrf_token=self._csrf_token(session_id),
-            csrf_token_hash=row.csrf_token_hash,
+            sid=family.sid,
+            user_id=family.user_id,
+            provider=family.provider,
+            email=family.email,
+            display_name=family.display_name,
+            csrf_token=self.csrf_token(family.sid),
+            access_expires_at=claims.expires_at,
         )
 
-    def csrf_ok(self, session: Session, header: str | None) -> bool:
-        if not header or len(header) > 128:
-            return False
-        return hmac.compare_digest(self._csrf_hash(header), session.csrf_token_hash)
+    def refreshable(self, refresh_token: str | None) -> FamilyRow | None:
+        """The live family whose current refresh token this is. Read-only: nothing rotates."""
+        if not refresh_token or len(refresh_token) > MAX_TOKEN:
+            return None
+        found = self.store.find_refresh(self.refresh_hash(refresh_token))
+        if found is None or not found.current:
+            return None
+        return self._live(found.family, self._now())
 
-    def logout(self, session: Session) -> None:
-        self.store.delete_session(session.id_hash)
+    def refresh(self, refresh_token: str | None, csrf_header: str | None) -> Tokens:
+        """Rotate the refresh token and issue a new access token.
+
+        Raises ``AuthFailed``: ``csrf_failed`` for a missing or wrong CSRF token, ``refresh_reused`` (after
+        revoking the family) for a token that was already rotated, and other codes for an unknown or
+        ended family."""
+        if not refresh_token or len(refresh_token) > MAX_TOKEN:
+            raise AuthFailed("refresh_missing")
+        now = self._now()
+        old_hash = self.refresh_hash(refresh_token)
+        found = self.store.find_refresh(old_hash)
+        if found is None:
+            raise AuthFailed("refresh_unknown")
+        family = found.family
+        if not found.current:
+            self._reuse_detected(family, now)
+        if self._live(family, now) is None:
+            raise AuthFailed("refresh_family_ended")
+        if not self.csrf_ok(self.csrf_token(family.sid), csrf_header):
+            raise AuthFailed("csrf_failed")
+        new_token = secrets.token_urlsafe(32)
+        if not self.store.rotate_refresh(family.sid, old_hash, self.refresh_hash(new_token), now):
+            self._reuse_detected(family, now)  # another request rotated it between the lookup and here
+        return self._tokens(family.user_id, family.sid, new_token, now, family.expires_at)
+
+    def _reuse_detected(self, family: FamilyRow, now: int) -> NoReturn:
+        self.store.revoke_family(family.sid, now)
+        self._forget(family.sid)
+        log.warning("refresh token reuse detected; family revoked user=%s", self.user_tag(family.user_id))
+        raise AuthFailed("refresh_reused")
+
+    def _revoke_by_refresh(self, refresh_token: str, now: int) -> None:
+        family = self.refreshable(refresh_token)
+        if family is not None:
+            self.revoke(family.sid, now)
+
+    def revoke(self, sid: str, now: int | None = None) -> None:
+        self.store.revoke_family(sid, self._now() if now is None else now)
+        self._forget(sid)
+
+    @staticmethod
+    def csrf_ok(expected: str, header: str | None) -> bool:
+        if not header or len(header) > MAX_TOKEN:
+            return False
+        return hmac.compare_digest(header.encode(), expected.encode())
+
+    def logout(self, session: Session | None, refresh_token: str | None, csrf_header: str | None) -> bool:
+        """Revoke the caller's family, found by the access token or else the refresh cookie. False when a
+        family was found but the CSRF token does not match it."""
+        sid = session.sid if session is not None else None
+        if sid is None:
+            family = self.refreshable(refresh_token)
+            sid = family.sid if family is not None else None
+        if sid is None:
+            return True
+        if not self.csrf_ok(self.csrf_token(sid), csrf_header):
+            return False
+        self.revoke(sid)
+        return True
 
     def delete_account(self, session: Session) -> None:
-        """Remove the user row; its sessions go with it (``ON DELETE CASCADE``)."""
-        self.store.delete_user(session.user_id)
+        """Remove the user row; its families go with it (``ON DELETE CASCADE``)."""
+        self._forget(*self.store.delete_user(session.user_id))
 
     def user_tag(self, user_id: int) -> str:
         """A short salted hash of the user id for logs."""

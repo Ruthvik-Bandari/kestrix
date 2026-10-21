@@ -82,6 +82,7 @@ def test_rejections_come_back_as_rejections(isolator):
 def test_workers_never_see_secrets(monkeypatch):
     monkeypatch.setenv("KESTRIX_SESSION_PEPPER", "pepper-" + "s" * 40)
     monkeypatch.setenv("KESTRIX_GITHUB_CLIENT_SECRET", "github-secret-value")
+    monkeypatch.setenv("KESTRIX_JWT_SECRET", "jwt-secret-" + "s" * 40)
     isolator = Isolator()
     isolator.start()
     names = run(isolator, env_names, Names).names

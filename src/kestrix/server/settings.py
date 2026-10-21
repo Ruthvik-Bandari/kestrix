@@ -3,7 +3,8 @@
 """Server mode and hosted-mode settings, read from the environment (ADR 0004).
 
 ``KESTRIX_MODE=local`` (the default) needs nothing else. ``KESTRIX_MODE=hosted`` needs a
-public https origin, a session pepper and at least one sign-in provider; a missing or
+public https origin, a session pepper, a JWT signing secret (ADR 0007), the ``kestrix[hosted]``
+extra and at least one sign-in provider; a missing or
 malformed value raises :class:`SettingsError` so the server refuses to start rather than
 run with a weaker configuration. Secret values are kept out of ``repr``.
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import importlib.util
 import os
 import re
 from collections.abc import Mapping
@@ -24,12 +26,15 @@ from ..core import config
 
 MIB = 1024 * 1024
 MIN_PEPPER_BYTES = 32
+MIN_JWT_SECRET_BYTES = 32
 MIN_LOG_SALT_BYTES = 16
 MAX_ABUSE_CONTACT = 200
 # Read once at start-up; ``kestrix serve-hosted`` then removes them from the process environment
 # so no child process (analysis workers, a restarted fork server) can inherit them.
 SECRET_ENV = (
     "KESTRIX_SESSION_PEPPER",
+    "KESTRIX_JWT_SECRET",
+    "KESTRIX_JWT_SECRET_PREVIOUS",
     "KESTRIX_LOG_SALT",
     "KESTRIX_GOOGLE_CLIENT_SECRET",
     "KESTRIX_GITHUB_CLIENT_SECRET",
@@ -58,6 +63,9 @@ class HostedSettings:
     db_path: Path
     session_pepper: bytes = field(repr=False)
     log_salt: bytes = field(repr=False)
+    jwt_secret: bytes = field(repr=False)
+    # Accepted only to verify access tokens signed before a secret rotation.
+    jwt_secret_previous: bytes | None = field(default=None, repr=False)
     providers: Mapping[str, OAuthClient] = field(default_factory=dict)
     trust_proxy_headers: bool = False
     # A header that the platform's proxy always overwrites with the client address (Fly: Fly-Client-IP).
@@ -71,6 +79,7 @@ class HostedSettings:
     analysis_cpu_s: int = 10
     analysis_memory_bytes: int = 384 * MIB
     analysis_wall_s: float = 20.0
+    access_ttl_s: int = 15 * 60
 
 
 @dataclass(frozen=True)
@@ -144,6 +153,23 @@ def _abuse_contact(env: Mapping[str, str]) -> str | None:
     return value
 
 
+def _jwt_secrets(env: Mapping[str, str], pepper: bytes) -> tuple[bytes, bytes | None]:
+    hint = 'generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"'
+    secret = env.get("KESTRIX_JWT_SECRET", "").encode()
+    if len(secret) < MIN_JWT_SECRET_BYTES:
+        raise SettingsError(f"hosted mode needs KESTRIX_JWT_SECRET of at least {MIN_JWT_SECRET_BYTES} bytes; {hint}")
+    previous = env.get("KESTRIX_JWT_SECRET_PREVIOUS", "").encode() or None
+    if previous is not None and len(previous) < MIN_JWT_SECRET_BYTES:
+        raise SettingsError(f"KESTRIX_JWT_SECRET_PREVIOUS must be at least {MIN_JWT_SECRET_BYTES} bytes")
+    if hmac.compare_digest(secret, pepper) or (previous is not None and hmac.compare_digest(secret, previous)):
+        raise SettingsError(
+            "KESTRIX_JWT_SECRET must differ from KESTRIX_SESSION_PEPPER and KESTRIX_JWT_SECRET_PREVIOUS"
+        )
+    if importlib.util.find_spec("jwt") is None:
+        raise SettingsError("hosted mode needs the hosted extra: pip install 'kestrix[hosted]'")
+    return secret, previous
+
+
 def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = None) -> Settings:
     """Read the settings; ``mode`` overrides ``KESTRIX_MODE`` (``kestrix serve-hosted`` forces hosted)."""
     env = os.environ if env is None else env
@@ -165,6 +191,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
     # Without its own salt, the log salt is derived from the pepper, so it is stable across restarts
     # but reveals nothing about the pepper.
     log_salt = salt_value or hmac.new(pepper, b"kestrix-log-salt", hashlib.sha256).digest()
+    jwt_secret, jwt_secret_previous = _jwt_secrets(env, pepper)
     db_value = env.get("KESTRIX_DB", "").strip()
     return Settings(
         mode="hosted",
@@ -174,6 +201,8 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
             db_path=Path(db_value) if db_value else config.config_dir() / "hosted.sqlite3",
             session_pepper=pepper,
             log_salt=log_salt,
+            jwt_secret=jwt_secret,
+            jwt_secret_previous=jwt_secret_previous,
             providers=_providers(env),
             trust_proxy_headers=_flag(env, "KESTRIX_TRUST_PROXY_HEADERS"),
             client_ip_header=_client_ip_header(env),

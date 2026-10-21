@@ -37,6 +37,9 @@ dependencies = [
 [project.optional-dependencies]
 ai = ["anthropic>=0.75"]
 exif = ["pillow>=11"]
+hosted = [
+    "pyjwt>=2.10,<3",
+]
 
 [project.scripts]
 kestrix = "kestrix.cli:app"
