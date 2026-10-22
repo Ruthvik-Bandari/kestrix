@@ -108,8 +108,8 @@ _RULES = (
         "CWE-502",
         "high",
         "medium",
-        "Unsafe deserialization (pickle, dill, shelve, marshal)",
-        "Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data.",
+        "Unsafe deserialization (pickle, dill, shelve, marshal, pandas.read_pickle, ZeroMQ recv_pyobj)",
+        "Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data. pandas.read_pickle, numpy.load with allow_pickle=True and a ZeroMQ socket's recv_pyobj() all unpickle what they read.",
         "Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model.",
         "python",
         sources=(
@@ -438,6 +438,21 @@ _RULES = (
             "https://flask.palletsprojects.com/en/stable/api/#flask.session",
             "https://docs.djangoproject.com/en/stable/topics/http/sessions/",
             "https://cwe.mitre.org/data/definitions/501.html",
+        ),
+    ),
+    Rule(
+        "py.archive.extract",
+        "CWE-22",
+        "medium",
+        "low",
+        "Tar archive extracted without a member filter",
+        "A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559).",
+        "Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall.",
+        "python",
+        sources=(
+            "https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractall",
+            "https://docs.python.org/3/library/tarfile.html#extraction-filters",
+            "https://cwe.mitre.org/data/definitions/22.html",
         ),
     ),
     Rule(

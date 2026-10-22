@@ -217,6 +217,16 @@ POSITIVE = [
         "py.ml.unsafe_model_load",
         "from transformers import AutoModel\nm = AutoModel.from_pretrained('org/m', trust_remote_code=True)\n",
     ),
+    # py.archive.extract
+    (
+        "py.archive.extract",
+        "import tarfile\ndef f(p):\n    with tarfile.open(p) as tar:\n        tar.extractall('out')\n",
+    ),
+    (
+        "py.archive.extract",
+        "import tarfile\ndef f(p):\n    tar = tarfile.open(p, 'r:gz')\n    tar.extractall(path='out')\n",
+    ),
+    ("py.archive.extract", "import tarfile\ndef f(p, m):\n    tarfile.open(p).extract(m, 'out')\n"),
 ]
 
 NEGATIVE = [
@@ -395,6 +405,19 @@ NEGATIVE = [
     ("py.ml.unsafe_model_load", "import tensorflow as tf\nm = tf.keras.models.load_model('m.keras')\n"),
     ("py.ml.unsafe_model_load", "from transformers import AutoModel\nm = AutoModel.from_pretrained('org/m')\n"),
     ("py.ml.unsafe_model_load", "import pickle\ndef f(fh):\n    return pickle.load(fh)\n"),
+    (
+        "py.archive.extract",
+        "import tarfile\ndef f(p):\n    with tarfile.open(p) as tar:\n        tar.extractall('out', filter='data')\n",
+    ),
+    (
+        "py.archive.extract",
+        "import tarfile\ndef f(p, safe):\n    with tarfile.open(p) as tar:\n        tar.extractall('out', members=safe(tar))\n",
+    ),
+    (
+        "py.archive.extract",
+        "import zipfile\ndef f(p):\n    with zipfile.ZipFile(p) as z:\n        z.extractall('out')\n",
+    ),
+    ("py.archive.extract", "import tarfile\ndef f(box):\n    box.extractall('out')\n"),
 ]
 
 

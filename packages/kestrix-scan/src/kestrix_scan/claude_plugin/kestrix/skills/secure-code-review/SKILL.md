@@ -62,7 +62,7 @@ scan still covers code, configuration and secrets, and a `dep.db_stale` note say
    | LDAP and XPath injection | `py.ldap.injection`, `py.xpath.injection` | `escape_filter_chars` on each filter value; XPath variables: `tree.xpath("//u[name=$name]", name=name)`. |
    | Transport | `py.tls.verify_disabled` | Keep verification on; pass a CA bundle for private CAs. |
    | Crypto and randomness | `py.crypto.weak_hash`, `py.crypto.insecure_random`, `py.jwt.no_verify` | `hashlib.sha256`, `secrets.token_urlsafe`, `jwt.decode(..., algorithms=[...])`. |
-   | Files | `py.tempfile.mktemp`, `py.path.traversal` | `tempfile.mkstemp`; `secure_filename` or resolve-and-contain. |
+   | Files | `py.tempfile.mktemp`, `py.path.traversal`, `py.archive.extract` | `tempfile.mkstemp`; `secure_filename` or resolve-and-contain; `extractall(..., filter='data')`. |
    | Configuration | `py.flask.debug`, `py.assert.security`, `py.xml.unsafe_parser`, `py.cookie.insecure` | Debug from the environment; explicit `if not ...: raise`; no external entities (`resolve_entities=False`) or `defusedxml`; `set_cookie(..., secure=True, httponly=True)`. |
    | Untrusted data flow | `py.ssrf.request`, `py.redirect.open`, `py.xss.markup`, `py.xss.reflected`, `py.trust_boundary.session` | Fixed scheme and host or an allowlist; redirect only to your own paths; let autoescaping or `markupsafe.escape` handle values, and never build template source or an HTML response from input; validate before storing in the session. |
    | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |

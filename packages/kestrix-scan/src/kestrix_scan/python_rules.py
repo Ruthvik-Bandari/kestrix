@@ -48,7 +48,14 @@ _ALWAYS_SHELL = frozenset({"subprocess.getoutput", "subprocess.getstatusoutput",
 _OS_SHELL = frozenset({"os.system", "os.popen"})
 _PICKLE_LIKE = frozenset(
     f"{module}.{name}" for module in ("pickle", "cPickle", "_pickle", "dill") for name in ("load", "loads", "Unpickler")
-) | {"shelve.open", "shelve.DbfilenameShelf", "marshal.load", "marshal.loads"}
+) | {
+    "shelve.open",
+    "shelve.DbfilenameShelf",
+    "marshal.load",
+    "marshal.loads",
+    "pandas.read_pickle",
+    "jsonpickle.decode",
+}
 _YAML_LOAD = frozenset({"yaml.load", "yaml.load_all"})
 _YAML_ALWAYS_UNSAFE = frozenset({"yaml.unsafe_load", "yaml.unsafe_load_all", "yaml.full_load", "yaml.full_load_all"})
 _YAML_UNSAFE_LOADERS = frozenset(
@@ -125,6 +132,8 @@ _HTML_RESPONSES: dict[str, tuple[int, str]] = {  # response classes whose defaul
     "starlette.responses.HTMLResponse": (0, "content"),
 }
 _CONTENT_TYPE_KW = ("mimetype", "content_type", "media_type")
+_TAR_OPENERS = frozenset({"tarfile.open", "tarfile.TarFile", "tarfile.TarFile.open", "tarfile.TarFile.taropen"})
+_TAR_EXTRACT = frozenset({"extract", "extractall"})
 _MARKUP = re.compile(r"<[A-Za-z!/]")
 _LDAP_PYTHON_LDAP = frozenset({"search", "search_s", "search_st", "search_ext", "search_ext_s"})
 _LDAP3 = frozenset({"search", "paged_search"})
@@ -306,6 +315,7 @@ class _Checker:
         self.unstable: set[str] = set()  # names declared global or nonlocal: any call may rebind them
         self.hits: list[Hit] = []
         self.consts: set[ast.AST] = set()
+        self.tar_with: set[tuple[ast.AST, str]] | None = None  # (scope, name) bound by `with tarfile.open(..) as name`
         self._index()
         self.taint: dict[ast.AST, taint.Taint] = {}
         if taint.might_be_tainted(text):
@@ -800,6 +810,48 @@ class _Checker:
         self._model_load(node, name)
         if self.taint:
             self._taint_sinks(node, name)
+        if attr == "recv_pyobj" and not node.args:
+            self.hit("py.deserialize.pickle", node, "recv_pyobj() unpickles the bytes it receives from the socket.")
+        elif name == "numpy.load" and _truthy_const(_keyword(node, "allow_pickle")):
+            self.hit(
+                "py.deserialize.pickle", node, "numpy.load(allow_pickle=True) unpickles the objects stored in the file."
+            )
+        if attr in _TAR_EXTRACT and "tarfile" in self.imported:
+            self._archive_extract(node, attr)
+
+    def _archive_extract(self, node: ast.Call, attr: str) -> None:
+        """``tar.extract(...)`` and ``tar.extractall(...)`` with no ``filter=`` and no member list."""
+        func = node.func
+        if not isinstance(func, ast.Attribute) or not self._is_tar(func.value):
+            return
+        if _keyword(node, "filter") is not None or (
+            attr == "extractall" and (_argument(node, 1, "members") is not None)
+        ):
+            return
+        self.hit("py.archive.extract", node, f"tarfile .{attr}() runs without a member filter.")
+
+    def _is_tar(self, value: ast.expr, hops: int = 0) -> bool:
+        if isinstance(value, ast.Call):
+            return self.qualname(value.func) in _TAR_OPENERS
+        if not isinstance(value, ast.Name) or hops >= _NAME_HOPS:
+            return False
+        if self.tar_with is None:  # built on first use: only files that import tarfile and extract get here
+            self.tar_with = {
+                (self.scope_of(item), name)
+                for item in ast.walk(self.tree)
+                if isinstance(item, ast.withitem)
+                and isinstance(item.context_expr, ast.Call)
+                and self.qualname(item.context_expr.func) in _TAR_OPENERS
+                and item.optional_vars is not None
+                for name in self._target_names(item.optional_vars)
+            }
+        scope: ast.AST | None = self.scope_of(value)
+        while scope is not None:  # `with tarfile.open(p) as tar:` binds the name in the enclosing scope
+            if (scope, value.id) in self.tar_with:
+                return True
+            scope = None if scope is self.tree else self.scope_of(scope)
+        values = self.lookup(value) or []
+        return bool(values) and all(v is not None and self._is_tar(v, hops + 1) for v in values)
 
     def _shell(self, node: ast.Call, name: str | None, first: ast.expr | None) -> bool:
         """The shell rules; True when the call is a shell call (matched or not), so no other call rule applies."""

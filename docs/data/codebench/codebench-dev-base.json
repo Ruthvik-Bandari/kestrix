@@ -1,0 +1,5235 @@
+{
+  "bootstrap": {
+    "margin_lines": 3,
+    "resamples": 1000,
+    "seed": 0,
+    "unit": "repository"
+  },
+  "dev_data": {
+    "after_kloc": 7261.6,
+    "before_kloc": 7141.5,
+    "by_cwe": {
+      "1004": 2,
+      "1021": 24,
+      "1022": 2,
+      "1023": 2,
+      "1088": 3,
+      "1112": 1,
+      "1113": 1,
+      "1124": 2,
+      "113": 5,
+      "114": 2,
+      "115": 3,
+      "116": 146,
+      "117": 18,
+      "1176": 1,
+      "1188": 90,
+      "119": 19,
+      "120": 5,
+      "122": 1,
+      "1220": 3,
+      "1236": 15,
+      "125": 12,
+      "1254": 1,
+      "126": 2,
+      "1270": 3,
+      "1275": 7,
+      "1276": 13,
+      "1284": 52,
+      "1285": 3,
+      "1286": 3,
+      "1287": 14,
+      "1288": 5,
+      "1289": 6,
+      "130": 10,
+      "1321": 509,
+      "1322": 1,
+      "1327": 90,
+      "1333": 247,
+      "1335": 1,
+      "1336": 22,
+      "134": 3,
+      "1341": 5,
+      "1385": 40,
+      "1389": 1,
+      "1391": 2,
+      "1392": 1,
+      "1393": 72,
+      "1395": 18,
+      "140": 1,
+      "144": 1,
+      "15": 29,
+      "150": 79,
+      "155": 10,
+      "167": 11,
+      "176": 2,
+      "177": 6,
+      "178": 31,
+      "180": 20,
+      "183": 25,
+      "184": 94,
+      "185": 17,
+      "19": 3,
+      "190": 8,
+      "193": 7,
+      "20": 436,
+      "200": 669,
+      "201": 91,
+      "202": 22,
+      "203": 32,
+      "204": 4,
+      "208": 43,
+      "209": 60,
+      "21": 3,
+      "212": 14,
+      "214": 5,
+      "22": 796,
+      "226": 4,
+      "228": 1,
+      "23": 54,
+      "235": 6,
+      "241": 1,
+      "248": 55,
+      "250": 20,
+      "254": 4,
+      "255": 5,
+      "256": 2,
+      "264": 27,
+      "266": 40,
+      "269": 130,
+      "272": 2,
+      "276": 21,
+      "277": 15,
+      "279": 8,
+      "280": 4,
+      "281": 1,
+      "283": 2,
+      "284": 272,
+      "285": 307,
+      "287": 313,
+      "288": 69,
+      "289": 3,
+      "29": 15,
+      "290": 247,
+      "291": 5,
+      "294": 40,
+      "295": 47,
+      "296": 3,
+      "297": 1,
+      "303": 14,
+      "305": 14,
+      "306": 262,
+      "307": 102,
+      "310": 8,
+      "311": 15,
+      "312": 41,
+      "313": 8,
+      "315": 7,
+      "319": 15,
+      "321": 7,
+      "323": 2,
+      "324": 3,
+      "325": 2,
+      "326": 22,
+      "327": 11,
+      "328": 2,
+      "330": 16,
+      "331": 45,
+      "338": 5,
+      "340": 1,
+      "345": 257,
+      "346": 117,
+      "347": 97,
+      "348": 46,
+      "349": 17,
+      "350": 24,
+      "351": 9,
+      "352": 227,
+      "353": 1,
+      "354": 22,
+      "358": 2,
+      "359": 5,
+      "36": 12,
+      "362": 134,
+      "367": 109,
+      "369": 3,
+      "377": 12,
+      "378": 4,
+      "379": 5,
+      "384": 29,
+      "385": 1,
+      "391": 1,
+      "399": 2,
+      "40": 7,
+      "400": 559,
+      "401": 2,
+      "404": 17,
+      "405": 6,
+      "406": 4,
+      "407": 98,
+      "408": 3,
+      "409": 35,
+      "41": 1,
+      "416": 4,
+      "420": 1,
+      "425": 4,
+      "426": 38,
+      "427": 30,
+      "428": 1,
+      "434": 101,
+      "436": 34,
+      "440": 12,
+      "441": 48,
+      "444": 83,
+      "453": 3,
+      "454": 2,
+      "455": 2,
+      "459": 8,
+      "470": 20,
+      "471": 11,
+      "475": 1,
+      "476": 1,
+      "480": 1,
+      "488": 1,
+      "489": 3,
+      "494": 4,
+      "497": 5,
+      "501": 3,
+      "502": 161,
+      "521": 18,
+      "522": 70,
+      "524": 67,
+      "525": 2,
+      "526": 5,
+      "527": 1,
+      "532": 75,
+      "534": 1,
+      "539": 2,
+      "548": 1,
+      "552": 55,
+      "59": 178,
+      "601": 315,
+      "602": 23,
+      "606": 6,
+      "61": 15,
+      "610": 4,
+      "611": 23,
+      "613": 111,
+      "614": 1,
+      "620": 31,
+      "624": 10,
+      "625": 19,
+      "627": 5,
+      "636": 42,
+      "639": 469,
+      "640": 6,
+      "641": 2,
+      "642": 4,
+      "645": 58,
+      "646": 1,
+      "648": 4,
+      "653": 73,
+      "662": 2,
+      "665": 4,
+      "668": 58,
+      "669": 7,
+      "67": 5,
+      "670": 5,
+      "672": 3,
+      "674": 137,
+      "680": 1,
+      "681": 5,
+      "682": 2,
+      "683": 1,
+      "692": 4,
+      "693": 129,
+      "696": 14,
+      "697": 13,
+      "703": 7,
+      "704": 3,
+      "705": 14,
+      "706": 19,
+      "707": 2,
+      "73": 210,
+      "732": 50,
+      "74": 931,
+      "749": 7,
+      "75": 1,
+      "754": 48,
+      "755": 20,
+      "77": 236,
+      "770": 549,
+      "772": 13,
+      "776": 18,
+      "78": 495,
+      "787": 11,
+      "789": 37,
+      "79": 1339,
+      "798": 45,
+      "799": 5,
+      "80": 76,
+      "805": 2,
+      "807": 53,
+      "821": 1,
+      "829": 82,
+      "83": 5,
+      "830": 1,
+      "834": 3,
+      "835": 71,
+      "837": 5,
+      "84": 5,
+      "841": 1,
+      "843": 54,
+      "862": 616,
+      "863": 1041,
+      "87": 1,
+      "88": 148,
+      "89": 1055,
+      "90": 1,
+      "91": 18,
+      "913": 51,
+      "915": 100,
+      "916": 8,
+      "918": 985,
+      "922": 2,
+      "924": 3,
+      "93": 17,
+      "94": 716,
+      "940": 6,
+      "942": 55,
+      "943": 9,
+      "95": 56,
+      "96": 1
+    },
+    "by_family": {
+      "cmdi": 608,
+      "codeinj": 746,
+      "cors": 55,
+      "csrf": 227,
+      "debug": 3,
+      "deserialization": 161,
+      "hash": 12,
+      "jwt": 97,
+      "ldapi": 1,
+      "pathtraver": 880,
+      "protopollution": 509,
+      "redirect": 315,
+      "redos": 257,
+      "secrets": 48,
+      "securecookie": 3,
+      "sqli": 1055,
+      "ssrf": 985,
+      "tempfile": 12,
+      "timing": 43,
+      "tls": 47,
+      "trustbound": 3,
+      "weakrand": 21,
+      "xss": 1384,
+      "xxe": 41
+    },
+    "by_language": {
+      "javascript": 2331,
+      "python": 5723,
+      "typescript": 5053
+    },
+    "by_language_in_scope": {
+      "javascript": 1402,
+      "python": 3005,
+      "typescript": 2227
+    },
+    "by_source": {
+      "cvefixes": 3188,
+      "ghsa": 9919
+    },
+    "cves": 4311,
+    "ids_sha256": "1a582683147d0e11dc5426c6b4dd674e9fe00946917f3b7dc450cff26a99e588",
+    "pairs": 13107,
+    "pairs_in_scope": 6634,
+    "projects": 1588,
+    "unchanged_by_language": {
+      "javascript": 2685,
+      "python": 6687,
+      "typescript": 3834
+    },
+    "unchanged_files": 13206,
+    "unchanged_kloc": 2838.6
+  },
+  "generated_at": "2026-10-22T10:15:01+00:00",
+  "label": "base",
+  "overlap": {
+    "kestrix+bandit:python": {
+      "both": 95,
+      "intersection_detection": {
+        "ci95": [
+          0.017563,
+          0.054054
+        ],
+        "k": 95.0,
+        "n": 3005.0,
+        "rate": 0.031614
+      },
+      "kestrix_minus_bandit": {
+        "ci95": [
+          -0.043793,
+          -0.002672
+        ],
+        "delta": -0.019301
+      },
+      "neither": 2788,
+      "only_bandit": 90,
+      "only_kestrix": 32,
+      "pairs_in_scope": 3005,
+      "union_detection": {
+        "ci95": [
+          0.042003,
+          0.116749
+        ],
+        "k": 217.0,
+        "n": 3005.0,
+        "rate": 0.072213
+      }
+    },
+    "kestrix+eslint:js_ts": {
+      "both": 27,
+      "intersection_detection": {
+        "ci95": [
+          0.004172,
+          0.011847
+        ],
+        "k": 27.0,
+        "n": 3629.0,
+        "rate": 0.00744
+      },
+      "kestrix_minus_eslint": {
+        "ci95": [
+          -0.054044,
+          0.008116
+        ],
+        "delta": -0.025902
+      },
+      "neither": 3068,
+      "only_eslint": 314,
+      "only_kestrix": 220,
+      "pairs_in_scope": 3629,
+      "union_detection": {
+        "ci95": [
+          0.125064,
+          0.194099
+        ],
+        "k": 561.0,
+        "n": 3629.0,
+        "rate": 0.154588
+      }
+    }
+  },
+  "schema_version": 1,
+  "split": "dev",
+  "split_manifest_sha256": "698d926415608cc876b32eb3f831c8b8a04c514f79328b4aed4765d2f609ef4c",
+  "tools": {
+    "bandit": {
+      "code_sha": "51669cf+8be1ad7b",
+      "derived_from": null,
+      "error_analysis": {
+        "python": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 1075,
+              "per_kloc": 0.192,
+              "rule": "B105",
+              "true_hits": 4
+            },
+            {
+              "alerts": 686,
+              "per_kloc": 0.122,
+              "rule": "B603",
+              "true_hits": 16
+            },
+            {
+              "alerts": 508,
+              "per_kloc": 0.091,
+              "rule": "B311",
+              "true_hits": 13
+            },
+            {
+              "alerts": 489,
+              "per_kloc": 0.087,
+              "rule": "B308",
+              "true_hits": 72
+            },
+            {
+              "alerts": 485,
+              "per_kloc": 0.087,
+              "rule": "B404",
+              "true_hits": 9
+            },
+            {
+              "alerts": 431,
+              "per_kloc": 0.077,
+              "rule": "B703",
+              "true_hits": 57
+            },
+            {
+              "alerts": 377,
+              "per_kloc": 0.067,
+              "rule": "B608",
+              "true_hits": 46
+            },
+            {
+              "alerts": 326,
+              "per_kloc": 0.058,
+              "rule": "B607",
+              "true_hits": 9
+            },
+            {
+              "alerts": 314,
+              "per_kloc": 0.056,
+              "rule": "B324",
+              "true_hits": 0
+            },
+            {
+              "alerts": 168,
+              "per_kloc": 0.03,
+              "rule": "B605",
+              "true_hits": 7
+            },
+            {
+              "alerts": 159,
+              "per_kloc": 0.028,
+              "rule": "B403",
+              "true_hits": 23
+            },
+            {
+              "alerts": 156,
+              "per_kloc": 0.028,
+              "rule": "B108",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "sqli",
+              "missed": 847,
+              "missed_with_other_finding_near": 8,
+              "pairs": 864
+            },
+            {
+              "family": "codeinj",
+              "missed": 422,
+              "missed_with_other_finding_near": 64,
+              "pairs": 448
+            },
+            {
+              "family": "pathtraver",
+              "missed": 404,
+              "missed_with_other_finding_near": 35,
+              "pairs": 417
+            },
+            {
+              "family": "ssrf",
+              "missed": 342,
+              "missed_with_other_finding_near": 23,
+              "pairs": 344
+            },
+            {
+              "family": "xss",
+              "missed": 286,
+              "missed_with_other_finding_near": 11,
+              "pairs": 326
+            },
+            {
+              "family": "redirect",
+              "missed": 225,
+              "missed_with_other_finding_near": 4,
+              "pairs": 225
+            },
+            {
+              "family": "cmdi",
+              "missed": 134,
+              "missed_with_other_finding_near": 8,
+              "pairs": 159
+            },
+            {
+              "family": "csrf",
+              "missed": 116,
+              "missed_with_other_finding_near": 10,
+              "pairs": 116
+            },
+            {
+              "family": "redos",
+              "missed": 102,
+              "missed_with_other_finding_near": 8,
+              "pairs": 102
+            },
+            {
+              "family": "deserialization",
+              "missed": 94,
+              "missed_with_other_finding_near": 4,
+              "pairs": 137
+            },
+            {
+              "family": "jwt",
+              "missed": 63,
+              "missed_with_other_finding_near": 6,
+              "pairs": 63
+            },
+            {
+              "family": "tls",
+              "missed": 33,
+              "missed_with_other_finding_near": 1,
+              "pairs": 34
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "B308",
+              "true_hits": 72
+            },
+            {
+              "rule": "B703",
+              "true_hits": 57
+            },
+            {
+              "rule": "B608",
+              "true_hits": 46
+            },
+            {
+              "rule": "B307",
+              "true_hits": 30
+            },
+            {
+              "rule": "B403",
+              "true_hits": 23
+            },
+            {
+              "rule": "B301",
+              "true_hits": 23
+            },
+            {
+              "rule": "B202",
+              "true_hits": 18
+            },
+            {
+              "rule": "B314",
+              "true_hits": 17
+            },
+            {
+              "rule": "B506",
+              "true_hits": 16
+            },
+            {
+              "rule": "B603",
+              "true_hits": 16
+            },
+            {
+              "rule": "B311",
+              "true_hits": 13
+            },
+            {
+              "rule": "B602",
+              "true_hits": 10
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 10079,
+              "rule": "B101"
+            },
+            {
+              "findings": 1143,
+              "rule": "B110"
+            },
+            {
+              "findings": 456,
+              "rule": "B113"
+            },
+            {
+              "findings": 181,
+              "rule": "B104"
+            },
+            {
+              "findings": 137,
+              "rule": "B615"
+            }
+          ]
+        }
+      },
+      "families": {
+        "python": {
+          "cmdi": {
+            "detection": {
+              "ci95": [
+                0.087623,
+                0.296953
+              ],
+              "k": 25.0,
+              "n": 159.0,
+              "rate": 0.157233
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.024146,
+                0.1375
+              ],
+              "k": 10.0,
+              "n": 159.0,
+              "rate": 0.062893
+            },
+            "pairs": 159
+          },
+          "codeinj": {
+            "detection": {
+              "ci95": [
+                0.029579,
+                0.135292
+              ],
+              "k": 26.0,
+              "n": 448.0,
+              "rate": 0.058036
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.018842,
+                0.10991
+              ],
+              "k": 20.0,
+              "n": 448.0,
+              "rate": 0.044643
+            },
+            "pairs": 448
+          },
+          "cors": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 29.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 29.0,
+              "rate": 0.0
+            },
+            "pairs": 29
+          },
+          "csrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 116.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 116.0,
+              "rate": 0.0
+            },
+            "pairs": 116
+          },
+          "deserialization": {
+            "detection": {
+              "ci95": [
+                0.176471,
+                0.507083
+              ],
+              "k": 43.0,
+              "n": 137.0,
+              "rate": 0.313869
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.1292,
+                0.458353
+              ],
+              "k": 36.0,
+              "n": 137.0,
+              "rate": 0.262774
+            },
+            "pairs": 137
+          },
+          "hash": {
+            "detection": {
+              "k": 0.0,
+              "n": 5.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 5.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 5
+          },
+          "jwt": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 63.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 63.0,
+              "rate": 0.0
+            },
+            "pairs": 63
+          },
+          "pathtraver": {
+            "detection": {
+              "ci95": [
+                0.010196,
+                0.058267
+              ],
+              "k": 13.0,
+              "n": 417.0,
+              "rate": 0.031175
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.017095
+              ],
+              "k": 3.0,
+              "n": 417.0,
+              "rate": 0.007194
+            },
+            "pairs": 417
+          },
+          "protopollution": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "redirect": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 225.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 225.0,
+              "rate": 0.0
+            },
+            "pairs": 225
+          },
+          "redos": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 102.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 102.0,
+              "rate": 0.0
+            },
+            "pairs": 102
+          },
+          "secrets": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.666667
+              ],
+              "k": 4.0,
+              "n": 12.0,
+              "rate": 0.333333
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.666667
+              ],
+              "k": 3.0,
+              "n": 12.0,
+              "rate": 0.25
+            },
+            "pairs": 12
+          },
+          "securecookie": {
+            "detection": {
+              "k": 0.0,
+              "n": 2.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 2.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 2
+          },
+          "sqli": {
+            "detection": {
+              "ci95": [
+                0.004834,
+                0.37754
+              ],
+              "k": 17.0,
+              "n": 864.0,
+              "rate": 0.019676
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.001063,
+                0.151713
+              ],
+              "k": 6.0,
+              "n": 864.0,
+              "rate": 0.006944
+            },
+            "pairs": 864
+          },
+          "ssrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.018252
+              ],
+              "k": 2.0,
+              "n": 344.0,
+              "rate": 0.005814
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.018252
+              ],
+              "k": 2.0,
+              "n": 344.0,
+              "rate": 0.005814
+            },
+            "pairs": 344
+          },
+          "tempfile": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "timing": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 16.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 16.0,
+              "rate": 0.0
+            },
+            "pairs": 16
+          },
+          "tls": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.074074
+              ],
+              "k": 1.0,
+              "n": 34.0,
+              "rate": 0.029412
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "pairs": 34
+          },
+          "trustbound": {
+            "detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 3
+          },
+          "weakrand": {
+            "detection": {
+              "k": 3.0,
+              "n": 6.0,
+              "rate": 0.5
+            },
+            "fix_aware_detection": {
+              "k": 3.0,
+              "n": 6.0,
+              "rate": 0.5
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 6
+          },
+          "xss": {
+            "detection": {
+              "ci95": [
+                0.031369,
+                0.224037
+              ],
+              "k": 40.0,
+              "n": 326.0,
+              "rate": 0.122699
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.024169,
+                0.178906
+              ],
+              "k": 31.0,
+              "n": 326.0,
+              "rate": 0.095092
+            },
+            "pairs": 326
+          },
+          "xxe": {
+            "detection": {
+              "ci95": [
+                0.062408,
+                0.591017
+              ],
+              "k": 11.0,
+              "n": 40.0,
+              "rate": 0.275
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.022222,
+                0.470588
+              ],
+              "k": 8.0,
+              "n": 40.0,
+              "rate": 0.2
+            },
+            "pairs": 40
+          }
+        }
+      },
+      "files_not_parsed_by_kind": {
+        "a": 149,
+        "b": 145,
+        "u": 152
+      },
+      "files_per_second": 14.9,
+      "files_scanned": 18133,
+      "findings": 32016,
+      "run": "base",
+      "scan_seconds_summed_over_shards": 1218.8,
+      "subsets": {
+        "python": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              2.464528,
+              4.686712
+            ],
+            "k": 18594.0,
+            "n": 5605.606,
+            "rate": 3.317037
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.07624,
+              0.142223
+            ],
+            "k": 608.0,
+            "n": 5723.0,
+            "rate": 0.106238
+          },
+          "detection": {
+            "ci95": [
+              0.034989,
+              0.09986
+            ],
+            "k": 185.0,
+            "n": 3005.0,
+            "rate": 0.061564
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.096432,
+              0.152389
+            ],
+            "k": 105.60913116123642,
+            "n": 870.0368353308123,
+            "rate": 0.121385
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.855002,
+              1.455008
+            ],
+            "k": 4288.0,
+            "n": 3825.4739999999997,
+            "rate": 1.120907
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.830281,
+              1.668288
+            ],
+            "k": 2114.0,
+            "n": 1780.1320000000005,
+            "rate": 1.187552
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.021988,
+              0.069133
+            ],
+            "k": 122.0,
+            "n": 3005.0,
+            "rate": 0.040599
+          },
+          "pairs": 5723,
+          "pairs_in_scope": 3005,
+          "precision": {
+            "ci95": [
+              0.035674,
+              0.09618
+            ],
+            "k": 410.0,
+            "n": 6812.0,
+            "rate": 0.060188
+          },
+          "unchanged_files": 6687
+        }
+      },
+      "version": "1.9.4"
+    },
+    "eslint": {
+      "code_sha": "51669cf+8be1ad7b",
+      "derived_from": null,
+      "error_analysis": {
+        "javascript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 32492,
+              "per_kloc": 19.102,
+              "rule": "security/detect-object-injection",
+              "true_hits": 414
+            },
+            {
+              "alerts": 2182,
+              "per_kloc": 1.283,
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 40
+            },
+            {
+              "alerts": 687,
+              "per_kloc": 0.404,
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 28
+            },
+            {
+              "alerts": 495,
+              "per_kloc": 0.291,
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 15
+            },
+            {
+              "alerts": 91,
+              "per_kloc": 0.053,
+              "rule": "security/detect-possible-timing-attacks",
+              "true_hits": 0
+            },
+            {
+              "alerts": 61,
+              "per_kloc": 0.036,
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 3
+            },
+            {
+              "alerts": 48,
+              "per_kloc": 0.028,
+              "rule": "security/detect-child-process",
+              "true_hits": 30
+            },
+            {
+              "alerts": 1,
+              "per_kloc": 0.001,
+              "rule": "security/detect-pseudoRandomBytes",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "xss",
+              "missed": 599,
+              "missed_with_other_finding_near": 103,
+              "pairs": 599
+            },
+            {
+              "family": "ssrf",
+              "missed": 181,
+              "missed_with_other_finding_near": 21,
+              "pairs": 181
+            },
+            {
+              "family": "pathtraver",
+              "missed": 94,
+              "missed_with_other_finding_near": 14,
+              "pairs": 110
+            },
+            {
+              "family": "protopollution",
+              "missed": 82,
+              "missed_with_other_finding_near": 2,
+              "pairs": 191
+            },
+            {
+              "family": "cmdi",
+              "missed": 67,
+              "missed_with_other_finding_near": 13,
+              "pairs": 88
+            },
+            {
+              "family": "codeinj",
+              "missed": 61,
+              "missed_with_other_finding_near": 24,
+              "pairs": 64
+            },
+            {
+              "family": "redos",
+              "missed": 58,
+              "missed_with_other_finding_near": 10,
+              "pairs": 90
+            },
+            {
+              "family": "csrf",
+              "missed": 49,
+              "missed_with_other_finding_near": 3,
+              "pairs": 49
+            },
+            {
+              "family": "sqli",
+              "missed": 44,
+              "missed_with_other_finding_near": 11,
+              "pairs": 44
+            },
+            {
+              "family": "redirect",
+              "missed": 27,
+              "missed_with_other_finding_near": 7,
+              "pairs": 27
+            },
+            {
+              "family": "jwt",
+              "missed": 15,
+              "missed_with_other_finding_near": 0,
+              "pairs": 15
+            },
+            {
+              "family": "weakrand",
+              "missed": 6,
+              "missed_with_other_finding_near": 0,
+              "pairs": 6
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "security/detect-object-injection",
+              "true_hits": 414
+            },
+            {
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 40
+            },
+            {
+              "rule": "security/detect-child-process",
+              "true_hits": 30
+            },
+            {
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 28
+            },
+            {
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 15
+            },
+            {
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 3
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 188,
+              "rule": "security/detect-non-literal-require"
+            },
+            {
+              "findings": 104,
+              "rule": "security/detect-new-buffer"
+            },
+            {
+              "findings": 2,
+              "rule": "security/detect-buffer-noassert"
+            }
+          ]
+        },
+        "typescript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 14825,
+              "per_kloc": 5.307,
+              "rule": "security/detect-object-injection",
+              "true_hits": 262
+            },
+            {
+              "alerts": 3738,
+              "per_kloc": 1.338,
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 118
+            },
+            {
+              "alerts": 500,
+              "per_kloc": 0.179,
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 14
+            },
+            {
+              "alerts": 363,
+              "per_kloc": 0.13,
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 10
+            },
+            {
+              "alerts": 99,
+              "per_kloc": 0.035,
+              "rule": "security/detect-possible-timing-attacks",
+              "true_hits": 0
+            },
+            {
+              "alerts": 16,
+              "per_kloc": 0.006,
+              "rule": "security/detect-child-process",
+              "true_hits": 9
+            },
+            {
+              "alerts": 1,
+              "per_kloc": 0.0,
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "ssrf",
+              "missed": 460,
+              "missed_with_other_finding_near": 30,
+              "pairs": 460
+            },
+            {
+              "family": "xss",
+              "missed": 459,
+              "missed_with_other_finding_near": 34,
+              "pairs": 459
+            },
+            {
+              "family": "cmdi",
+              "missed": 355,
+              "missed_with_other_finding_near": 40,
+              "pairs": 361
+            },
+            {
+              "family": "pathtraver",
+              "missed": 293,
+              "missed_with_other_finding_near": 20,
+              "pairs": 353
+            },
+            {
+              "family": "protopollution",
+              "missed": 239,
+              "missed_with_other_finding_near": 3,
+              "pairs": 317
+            },
+            {
+              "family": "codeinj",
+              "missed": 234,
+              "missed_with_other_finding_near": 30,
+              "pairs": 234
+            },
+            {
+              "family": "sqli",
+              "missed": 147,
+              "missed_with_other_finding_near": 14,
+              "pairs": 147
+            },
+            {
+              "family": "redirect",
+              "missed": 63,
+              "missed_with_other_finding_near": 4,
+              "pairs": 63
+            },
+            {
+              "family": "csrf",
+              "missed": 62,
+              "missed_with_other_finding_near": 2,
+              "pairs": 62
+            },
+            {
+              "family": "redos",
+              "missed": 47,
+              "missed_with_other_finding_near": 10,
+              "pairs": 65
+            },
+            {
+              "family": "secrets",
+              "missed": 35,
+              "missed_with_other_finding_near": 2,
+              "pairs": 35
+            },
+            {
+              "family": "cors",
+              "missed": 26,
+              "missed_with_other_finding_near": 1,
+              "pairs": 26
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "security/detect-object-injection",
+              "true_hits": 262
+            },
+            {
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 118
+            },
+            {
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 14
+            },
+            {
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 10
+            },
+            {
+              "rule": "security/detect-child-process",
+              "true_hits": 9
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 39,
+              "rule": "security/detect-non-literal-require"
+            },
+            {
+              "findings": 2,
+              "rule": "security/detect-new-buffer"
+            }
+          ]
+        }
+      },
+      "families": {
+        "js_ts": {
+          "cmdi": {
+            "detection": {
+              "ci95": [
+                0.029249,
+                0.133575
+              ],
+              "k": 27.0,
+              "n": 449.0,
+              "rate": 0.060134
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.010055,
+                0.064177
+              ],
+              "k": 12.0,
+              "n": 449.0,
+              "rate": 0.026726
+            },
+            "pairs": 449
+          },
+          "codeinj": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.029272
+              ],
+              "k": 3.0,
+              "n": 298.0,
+              "rate": 0.010067
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.029272
+              ],
+              "k": 3.0,
+              "n": 298.0,
+              "rate": 0.010067
+            },
+            "pairs": 298
+          },
+          "cors": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "pairs": 26
+          },
+          "csrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "pairs": 111
+          },
+          "debug": {
+            "detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 3
+          },
+          "deserialization": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "pairs": 24
+          },
+          "hash": {
+            "detection": {
+              "k": 0.0,
+              "n": 7.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 7.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 7
+          },
+          "jwt": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "pairs": 34
+          },
+          "ldapi": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "pathtraver": {
+            "detection": {
+              "ci95": [
+                0.111514,
+                0.203131
+              ],
+              "k": 76.0,
+              "n": 463.0,
+              "rate": 0.164147
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.008694,
+                0.055702
+              ],
+              "k": 17.0,
+              "n": 463.0,
+              "rate": 0.036717
+            },
+            "pairs": 463
+          },
+          "protopollution": {
+            "detection": {
+              "ci95": [
+                0.260715,
+                0.533128
+              ],
+              "k": 187.0,
+              "n": 508.0,
+              "rate": 0.36811
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.021403,
+                0.08437
+              ],
+              "k": 24.0,
+              "n": 508.0,
+              "rate": 0.047244
+            },
+            "pairs": 508
+          },
+          "redirect": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 90.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 90.0,
+              "rate": 0.0
+            },
+            "pairs": 90
+          },
+          "redos": {
+            "detection": {
+              "ci95": [
+                0.229873,
+                0.435124
+              ],
+              "k": 50.0,
+              "n": 155.0,
+              "rate": 0.322581
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.060851,
+                0.185508
+              ],
+              "k": 18.0,
+              "n": 155.0,
+              "rate": 0.116129
+            },
+            "pairs": 155
+          },
+          "secrets": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "pairs": 36
+          },
+          "securecookie": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "sqli": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 191.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 191.0,
+              "rate": 0.0
+            },
+            "pairs": 191
+          },
+          "ssrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 641.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 641.0,
+              "rate": 0.0
+            },
+            "pairs": 641
+          },
+          "tempfile": {
+            "detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 11
+          },
+          "timing": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "pairs": 27
+          },
+          "tls": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 13.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 13.0,
+              "rate": 0.0
+            },
+            "pairs": 13
+          },
+          "weakrand": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "pairs": 15
+          },
+          "xss": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 1058.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 1058.0,
+              "rate": 0.0
+            },
+            "pairs": 1058
+          },
+          "xxe": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          }
+        }
+      },
+      "files_not_parsed_by_kind": {
+        "a": 29,
+        "b": 27,
+        "u": 25
+      },
+      "files_per_second": 26.5,
+      "files_scanned": 21287,
+      "findings": 97425,
+      "run": "base",
+      "scan_seconds_summed_over_shards": 804.5,
+      "subsets": {
+        "javascript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              19.238861,
+              23.684945
+            ],
+            "k": 36351.0,
+            "n": 1700.984,
+            "rate": 21.370571
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.232495,
+              0.302323
+            ],
+            "k": 622.0,
+            "n": 2331.0,
+            "rate": 0.266838
+          },
+          "detection": {
+            "ci95": [
+              0.099193,
+              0.163149
+            ],
+            "k": 181.0,
+            "n": 1402.0,
+            "rate": 0.129101
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.137268,
+              0.216388
+            ],
+            "k": 128.4738095238095,
+            "n": 729.2175574340454,
+            "rate": 0.17618
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              18.550601,
+              23.799029
+            ],
+            "k": 26047.0,
+            "n": 1237.4569999999999,
+            "rate": 21.048812
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              19.094195,
+              24.178648
+            ],
+            "k": 10010.0,
+            "n": 463.527,
+            "rate": 21.59529
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.015882,
+              0.033543
+            ],
+            "k": 34.0,
+            "n": 1402.0,
+            "rate": 0.024251
+          },
+          "pairs": 2331,
+          "pairs_in_scope": 1402,
+          "precision": {
+            "ci95": [
+              0.010137,
+              0.01943
+            ],
+            "k": 530.0,
+            "n": 36587.0,
+            "rate": 0.014486
+          },
+          "unchanged_files": 2685
+        },
+        "js_ts": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              9.611462,
+              15.927537
+            ],
+            "k": 55934.0,
+            "n": 4494.606999999998,
+            "rate": 12.444692
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.130179,
+              0.198845
+            ],
+            "k": 1172.0,
+            "n": 7384.0,
+            "rate": 0.158722
+          },
+          "detection": {
+            "ci95": [
+              0.076758,
+              0.117357
+            ],
+            "k": 341.0,
+            "n": 3629.0,
+            "rate": 0.093965
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.125822,
+              0.177481
+            ],
+            "k": 201.722196969697,
+            "n": 1343.9631646691878,
+            "rate": 0.150095
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              9.271246,
+              15.702428
+            ],
+            "k": 41483.0,
+            "n": 3436.149999999999,
+            "rate": 12.072523
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              10.568597,
+              16.927293
+            ],
+            "k": 14116.0,
+            "n": 1058.4569999999999,
+            "rate": 13.336394
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.014248,
+              0.026113
+            ],
+            "k": 73.0,
+            "n": 3629.0,
+            "rate": 0.020116
+          },
+          "pairs": 7384,
+          "pairs_in_scope": 3629,
+          "precision": {
+            "ci95": [
+              0.012795,
+              0.021478
+            ],
+            "k": 943.0,
+            "n": 56542.0,
+            "rate": 0.016678
+          },
+          "unchanged_files": 6519
+        },
+        "typescript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              5.865157,
+              9.16661
+            ],
+            "k": 19583.0,
+            "n": 2793.6229999999987,
+            "rate": 7.009894
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.093115,
+              0.13889
+            ],
+            "k": 550.0,
+            "n": 5053.0,
+            "rate": 0.108846
+          },
+          "detection": {
+            "ci95": [
+              0.053551,
+              0.094089
+            ],
+            "k": 160.0,
+            "n": 2227.0,
+            "rate": 0.071846
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.093108,
+              0.147184
+            ],
+            "k": 73.24838744588745,
+            "n": 614.7456072351424,
+            "rate": 0.119152
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              5.700906,
+              9.475836
+            ],
+            "k": 15436.0,
+            "n": 2198.6929999999993,
+            "rate": 7.020534
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              6.057095,
+              8.54435
+            ],
+            "k": 4106.0,
+            "n": 594.9300000000001,
+            "rate": 6.901652
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.009291,
+              0.026177
+            ],
+            "k": 39.0,
+            "n": 2227.0,
+            "rate": 0.017512
+          },
+          "pairs": 5053,
+          "pairs_in_scope": 2227,
+          "precision": {
+            "ci95": [
+              0.01448,
+              0.030836
+            ],
+            "k": 413.0,
+            "n": 19955.0,
+            "rate": 0.020697
+          },
+          "unchanged_files": 3834
+        }
+      },
+      "version": "eslint v9.39.5 + eslint-plugin-security 4.2.0"
+    },
+    "eslint-no-object-injection": {
+      "code_sha": "51669cf+8be1ad7b",
+      "derived_from": "eslint",
+      "error_analysis": {
+        "javascript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 2182,
+              "per_kloc": 1.283,
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 40
+            },
+            {
+              "alerts": 687,
+              "per_kloc": 0.404,
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 28
+            },
+            {
+              "alerts": 495,
+              "per_kloc": 0.291,
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 15
+            },
+            {
+              "alerts": 91,
+              "per_kloc": 0.053,
+              "rule": "security/detect-possible-timing-attacks",
+              "true_hits": 0
+            },
+            {
+              "alerts": 61,
+              "per_kloc": 0.036,
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 3
+            },
+            {
+              "alerts": 48,
+              "per_kloc": 0.028,
+              "rule": "security/detect-child-process",
+              "true_hits": 30
+            },
+            {
+              "alerts": 1,
+              "per_kloc": 0.001,
+              "rule": "security/detect-pseudoRandomBytes",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "xss",
+              "missed": 599,
+              "missed_with_other_finding_near": 19,
+              "pairs": 599
+            },
+            {
+              "family": "protopollution",
+              "missed": 191,
+              "missed_with_other_finding_near": 5,
+              "pairs": 191
+            },
+            {
+              "family": "ssrf",
+              "missed": 181,
+              "missed_with_other_finding_near": 5,
+              "pairs": 181
+            },
+            {
+              "family": "pathtraver",
+              "missed": 94,
+              "missed_with_other_finding_near": 3,
+              "pairs": 110
+            },
+            {
+              "family": "cmdi",
+              "missed": 67,
+              "missed_with_other_finding_near": 7,
+              "pairs": 88
+            },
+            {
+              "family": "codeinj",
+              "missed": 61,
+              "missed_with_other_finding_near": 2,
+              "pairs": 64
+            },
+            {
+              "family": "redos",
+              "missed": 58,
+              "missed_with_other_finding_near": 0,
+              "pairs": 90
+            },
+            {
+              "family": "csrf",
+              "missed": 49,
+              "missed_with_other_finding_near": 0,
+              "pairs": 49
+            },
+            {
+              "family": "sqli",
+              "missed": 44,
+              "missed_with_other_finding_near": 3,
+              "pairs": 44
+            },
+            {
+              "family": "redirect",
+              "missed": 27,
+              "missed_with_other_finding_near": 3,
+              "pairs": 27
+            },
+            {
+              "family": "jwt",
+              "missed": 15,
+              "missed_with_other_finding_near": 0,
+              "pairs": 15
+            },
+            {
+              "family": "weakrand",
+              "missed": 6,
+              "missed_with_other_finding_near": 0,
+              "pairs": 6
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 40
+            },
+            {
+              "rule": "security/detect-child-process",
+              "true_hits": 30
+            },
+            {
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 28
+            },
+            {
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 15
+            },
+            {
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 3
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 188,
+              "rule": "security/detect-non-literal-require"
+            },
+            {
+              "findings": 104,
+              "rule": "security/detect-new-buffer"
+            },
+            {
+              "findings": 2,
+              "rule": "security/detect-buffer-noassert"
+            }
+          ]
+        },
+        "typescript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 3738,
+              "per_kloc": 1.338,
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 118
+            },
+            {
+              "alerts": 500,
+              "per_kloc": 0.179,
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 14
+            },
+            {
+              "alerts": 363,
+              "per_kloc": 0.13,
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 10
+            },
+            {
+              "alerts": 99,
+              "per_kloc": 0.035,
+              "rule": "security/detect-possible-timing-attacks",
+              "true_hits": 0
+            },
+            {
+              "alerts": 16,
+              "per_kloc": 0.006,
+              "rule": "security/detect-child-process",
+              "true_hits": 9
+            },
+            {
+              "alerts": 1,
+              "per_kloc": 0.0,
+              "rule": "security/detect-eval-with-expression",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "ssrf",
+              "missed": 460,
+              "missed_with_other_finding_near": 15,
+              "pairs": 460
+            },
+            {
+              "family": "xss",
+              "missed": 459,
+              "missed_with_other_finding_near": 5,
+              "pairs": 459
+            },
+            {
+              "family": "cmdi",
+              "missed": 355,
+              "missed_with_other_finding_near": 22,
+              "pairs": 361
+            },
+            {
+              "family": "protopollution",
+              "missed": 317,
+              "missed_with_other_finding_near": 6,
+              "pairs": 317
+            },
+            {
+              "family": "pathtraver",
+              "missed": 293,
+              "missed_with_other_finding_near": 4,
+              "pairs": 353
+            },
+            {
+              "family": "codeinj",
+              "missed": 234,
+              "missed_with_other_finding_near": 5,
+              "pairs": 234
+            },
+            {
+              "family": "sqli",
+              "missed": 147,
+              "missed_with_other_finding_near": 2,
+              "pairs": 147
+            },
+            {
+              "family": "redirect",
+              "missed": 63,
+              "missed_with_other_finding_near": 1,
+              "pairs": 63
+            },
+            {
+              "family": "csrf",
+              "missed": 62,
+              "missed_with_other_finding_near": 1,
+              "pairs": 62
+            },
+            {
+              "family": "redos",
+              "missed": 47,
+              "missed_with_other_finding_near": 1,
+              "pairs": 65
+            },
+            {
+              "family": "secrets",
+              "missed": 35,
+              "missed_with_other_finding_near": 0,
+              "pairs": 35
+            },
+            {
+              "family": "cors",
+              "missed": 26,
+              "missed_with_other_finding_near": 0,
+              "pairs": 26
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "security/detect-non-literal-fs-filename",
+              "true_hits": 118
+            },
+            {
+              "rule": "security/detect-unsafe-regex",
+              "true_hits": 14
+            },
+            {
+              "rule": "security/detect-non-literal-regexp",
+              "true_hits": 10
+            },
+            {
+              "rule": "security/detect-child-process",
+              "true_hits": 9
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 39,
+              "rule": "security/detect-non-literal-require"
+            },
+            {
+              "findings": 2,
+              "rule": "security/detect-new-buffer"
+            }
+          ]
+        }
+      },
+      "families": {
+        "js_ts": {
+          "cmdi": {
+            "detection": {
+              "ci95": [
+                0.029249,
+                0.133575
+              ],
+              "k": 27.0,
+              "n": 449.0,
+              "rate": 0.060134
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.010055,
+                0.064177
+              ],
+              "k": 12.0,
+              "n": 449.0,
+              "rate": 0.026726
+            },
+            "pairs": 449
+          },
+          "codeinj": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.029272
+              ],
+              "k": 3.0,
+              "n": 298.0,
+              "rate": 0.010067
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.029272
+              ],
+              "k": 3.0,
+              "n": 298.0,
+              "rate": 0.010067
+            },
+            "pairs": 298
+          },
+          "cors": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "pairs": 26
+          },
+          "csrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "pairs": 111
+          },
+          "debug": {
+            "detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 3
+          },
+          "deserialization": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "pairs": 24
+          },
+          "hash": {
+            "detection": {
+              "k": 0.0,
+              "n": 7.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 7.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 7
+          },
+          "jwt": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "pairs": 34
+          },
+          "ldapi": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "pathtraver": {
+            "detection": {
+              "ci95": [
+                0.111514,
+                0.203131
+              ],
+              "k": 76.0,
+              "n": 463.0,
+              "rate": 0.164147
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.008694,
+                0.055702
+              ],
+              "k": 17.0,
+              "n": 463.0,
+              "rate": 0.036717
+            },
+            "pairs": 463
+          },
+          "protopollution": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 508.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 508.0,
+              "rate": 0.0
+            },
+            "pairs": 508
+          },
+          "redirect": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 90.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 90.0,
+              "rate": 0.0
+            },
+            "pairs": 90
+          },
+          "redos": {
+            "detection": {
+              "ci95": [
+                0.229873,
+                0.435124
+              ],
+              "k": 50.0,
+              "n": 155.0,
+              "rate": 0.322581
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.060851,
+                0.185508
+              ],
+              "k": 18.0,
+              "n": 155.0,
+              "rate": 0.116129
+            },
+            "pairs": 155
+          },
+          "secrets": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "pairs": 36
+          },
+          "securecookie": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "sqli": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 191.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 191.0,
+              "rate": 0.0
+            },
+            "pairs": 191
+          },
+          "ssrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 641.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 641.0,
+              "rate": 0.0
+            },
+            "pairs": 641
+          },
+          "tempfile": {
+            "detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 11
+          },
+          "timing": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "pairs": 27
+          },
+          "tls": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 13.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 13.0,
+              "rate": 0.0
+            },
+            "pairs": 13
+          },
+          "weakrand": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "pairs": 15
+          },
+          "xss": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 1058.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 1058.0,
+              "rate": 0.0
+            },
+            "pairs": 1058
+          },
+          "xxe": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          }
+        }
+      },
+      "files_not_parsed_by_kind": {
+        "a": 29,
+        "b": 27,
+        "u": 25
+      },
+      "files_per_second": 26.5,
+      "files_scanned": 21287,
+      "findings": 97425,
+      "run": "base",
+      "scan_seconds_summed_over_shards": 804.5,
+      "subsets": {
+        "javascript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              1.65785,
+              3.113867
+            ],
+            "k": 3859.0,
+            "n": 1700.984,
+            "rate": 2.268687
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.069596,
+              0.118021
+            ],
+            "k": 213.0,
+            "n": 2331.0,
+            "rate": 0.091377
+          },
+          "detection": {
+            "ci95": [
+              0.038827,
+              0.066202
+            ],
+            "k": 72.0,
+            "n": 1402.0,
+            "rate": 0.051355
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.055058,
+              0.096781
+            ],
+            "k": 54.451190476190476,
+            "n": 729.2175574340454,
+            "rate": 0.074671
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              1.424799,
+              3.152952
+            ],
+            "k": 2658.0,
+            "n": 1237.4569999999999,
+            "rate": 2.147953
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              1.567904,
+              2.431844
+            ],
+            "k": 907.0,
+            "n": 463.527,
+            "rate": 1.956736
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.010127,
+              0.024963
+            ],
+            "k": 24.0,
+            "n": 1402.0,
+            "rate": 0.017118
+          },
+          "pairs": 2331,
+          "pairs_in_scope": 1402,
+          "precision": {
+            "ci95": [
+              0.019638,
+              0.04768
+            ],
+            "k": 116.0,
+            "n": 3681.0,
+            "rate": 0.031513
+          },
+          "unchanged_files": 2685
+        },
+        "js_ts": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              1.563305,
+              2.337174
+            ],
+            "k": 8617.0,
+            "n": 4494.606999999998,
+            "rate": 1.917187
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.049002,
+              0.071633
+            ],
+            "k": 428.0,
+            "n": 7384.0,
+            "rate": 0.057963
+          },
+          "detection": {
+            "ci95": [
+              0.032272,
+              0.053925
+            ],
+            "k": 156.0,
+            "n": 3629.0,
+            "rate": 0.042987
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.058119,
+              0.090334
+            ],
+            "k": 101.35583694083692,
+            "n": 1343.9631646691878,
+            "rate": 0.075416
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              1.46169,
+              2.331871
+            ],
+            "k": 6358.0,
+            "n": 3436.149999999999,
+            "rate": 1.850327
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              1.448008,
+              2.114321
+            ],
+            "k": 1924.0,
+            "n": 1058.4569999999999,
+            "rate": 1.81774
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.009161,
+              0.018203
+            ],
+            "k": 50.0,
+            "n": 3629.0,
+            "rate": 0.013778
+          },
+          "pairs": 7384,
+          "pairs_in_scope": 3629,
+          "precision": {
+            "ci95": [
+              0.023687,
+              0.040902
+            ],
+            "k": 267.0,
+            "n": 8549.0,
+            "rate": 0.031232
+          },
+          "unchanged_files": 6519
+        },
+        "typescript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              1.246806,
+              2.091388
+            ],
+            "k": 4758.0,
+            "n": 2793.6229999999987,
+            "rate": 1.703165
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.032387,
+              0.050537
+            ],
+            "k": 215.0,
+            "n": 5053.0,
+            "rate": 0.042549
+          },
+          "detection": {
+            "ci95": [
+              0.021338,
+              0.052359
+            ],
+            "k": 84.0,
+            "n": 2227.0,
+            "rate": 0.037719
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.049248,
+              0.096007
+            ],
+            "k": 46.90464646464646,
+            "n": 614.7456072351424,
+            "rate": 0.076299
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              1.212917,
+              2.139293
+            ],
+            "k": 3700.0,
+            "n": 2198.6929999999993,
+            "rate": 1.682818
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              1.083305,
+              2.03006
+            ],
+            "k": 1017.0,
+            "n": 594.9300000000001,
+            "rate": 1.709445
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.005233,
+              0.017252
+            ],
+            "k": 26.0,
+            "n": 2227.0,
+            "rate": 0.011675
+          },
+          "pairs": 5053,
+          "pairs_in_scope": 2227,
+          "precision": {
+            "ci95": [
+              0.021394,
+              0.046941
+            ],
+            "k": 151.0,
+            "n": 4868.0,
+            "rate": 0.031019
+          },
+          "unchanged_files": 3834
+        }
+      },
+      "version": "eslint v9.39.5 + eslint-plugin-security 4.2.0"
+    },
+    "kestrix": {
+      "code_sha": "51669cf+8be1ad7b",
+      "derived_from": null,
+      "error_analysis": {
+        "all": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 2113,
+              "per_kloc": 0.209,
+              "rule": "js.dom.xss_sink",
+              "true_hits": 214
+            },
+            {
+              "alerts": 311,
+              "per_kloc": 0.031,
+              "rule": "py.crypto.weak_hash",
+              "true_hits": 0
+            },
+            {
+              "alerts": 228,
+              "per_kloc": 0.023,
+              "rule": "py.sql.string_built",
+              "true_hits": 29
+            },
+            {
+              "alerts": 207,
+              "per_kloc": 0.02,
+              "rule": "js.exec.eval",
+              "true_hits": 8
+            },
+            {
+              "alerts": 115,
+              "per_kloc": 0.011,
+              "rule": "py.subprocess.shell_true",
+              "true_hits": 12
+            },
+            {
+              "alerts": 112,
+              "per_kloc": 0.011,
+              "rule": "js.child_process.shell",
+              "true_hits": 240
+            },
+            {
+              "alerts": 111,
+              "per_kloc": 0.011,
+              "rule": "js.sql.string_built",
+              "true_hits": 32
+            },
+            {
+              "alerts": 104,
+              "per_kloc": 0.01,
+              "rule": "py.deserialize.pickle",
+              "true_hits": 24
+            },
+            {
+              "alerts": 104,
+              "per_kloc": 0.01,
+              "rule": "py.tls.verify_disabled",
+              "true_hits": 1
+            },
+            {
+              "alerts": 96,
+              "per_kloc": 0.01,
+              "rule": "py.os.system",
+              "true_hits": 6
+            },
+            {
+              "alerts": 75,
+              "per_kloc": 0.007,
+              "rule": "py.exec.exec",
+              "true_hits": 7
+            },
+            {
+              "alerts": 69,
+              "per_kloc": 0.007,
+              "rule": "py.exec.eval",
+              "true_hits": 30
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "xss",
+              "missed": 1251,
+              "missed_with_other_finding_near": 11,
+              "pairs": 1384
+            },
+            {
+              "family": "sqli",
+              "missed": 1032,
+              "missed_with_other_finding_near": 5,
+              "pairs": 1055
+            },
+            {
+              "family": "ssrf",
+              "missed": 981,
+              "missed_with_other_finding_near": 6,
+              "pairs": 985
+            },
+            {
+              "family": "pathtraver",
+              "missed": 871,
+              "missed_with_other_finding_near": 27,
+              "pairs": 880
+            },
+            {
+              "family": "codeinj",
+              "missed": 713,
+              "missed_with_other_finding_near": 42,
+              "pairs": 746
+            },
+            {
+              "family": "cmdi",
+              "missed": 508,
+              "missed_with_other_finding_near": 6,
+              "pairs": 608
+            },
+            {
+              "family": "protopollution",
+              "missed": 507,
+              "missed_with_other_finding_near": 0,
+              "pairs": 509
+            },
+            {
+              "family": "redirect",
+              "missed": 294,
+              "missed_with_other_finding_near": 1,
+              "pairs": 315
+            },
+            {
+              "family": "redos",
+              "missed": 257,
+              "missed_with_other_finding_near": 0,
+              "pairs": 257
+            },
+            {
+              "family": "csrf",
+              "missed": 227,
+              "missed_with_other_finding_near": 9,
+              "pairs": 227
+            },
+            {
+              "family": "deserialization",
+              "missed": 121,
+              "missed_with_other_finding_near": 1,
+              "pairs": 161
+            },
+            {
+              "family": "jwt",
+              "missed": 97,
+              "missed_with_other_finding_near": 0,
+              "pairs": 97
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "js.child_process.shell",
+              "true_hits": 240
+            },
+            {
+              "rule": "js.dom.xss_sink",
+              "true_hits": 214
+            },
+            {
+              "rule": "py.redirect.open",
+              "true_hits": 36
+            },
+            {
+              "rule": "js.sql.string_built",
+              "true_hits": 32
+            },
+            {
+              "rule": "py.exec.eval",
+              "true_hits": 30
+            },
+            {
+              "rule": "py.sql.string_built",
+              "true_hits": 29
+            },
+            {
+              "rule": "py.deserialize.pickle",
+              "true_hits": 24
+            },
+            {
+              "rule": "py.deserialize.yaml_unsafe",
+              "true_hits": 20
+            },
+            {
+              "rule": "py.ml.unsafe_model_load",
+              "true_hits": 12
+            },
+            {
+              "rule": "py.subprocess.shell_true",
+              "true_hits": 12
+            },
+            {
+              "rule": "py.crypto.insecure_random",
+              "true_hits": 9
+            },
+            {
+              "rule": "js.exec.eval",
+              "true_hits": 8
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 9,
+              "rule": "py.assert.security"
+            }
+          ]
+        },
+        "javascript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 1982,
+              "per_kloc": 1.165,
+              "rule": "js.dom.xss_sink",
+              "true_hits": 172
+            },
+            {
+              "alerts": 186,
+              "per_kloc": 0.109,
+              "rule": "js.exec.eval",
+              "true_hits": 4
+            },
+            {
+              "alerts": 73,
+              "per_kloc": 0.043,
+              "rule": "js.child_process.shell",
+              "true_hits": 31
+            },
+            {
+              "alerts": 24,
+              "per_kloc": 0.014,
+              "rule": "js.sql.string_built",
+              "true_hits": 15
+            },
+            {
+              "alerts": 22,
+              "per_kloc": 0.013,
+              "rule": "js.crypto.weak_hash",
+              "true_hits": 0
+            },
+            {
+              "alerts": 18,
+              "per_kloc": 0.011,
+              "rule": "js.path.traversal",
+              "true_hits": 2
+            },
+            {
+              "alerts": 15,
+              "per_kloc": 0.009,
+              "rule": "secret.jwt",
+              "true_hits": 0
+            },
+            {
+              "alerts": 12,
+              "per_kloc": 0.007,
+              "rule": "secret.generic",
+              "true_hits": 0
+            },
+            {
+              "alerts": 11,
+              "per_kloc": 0.006,
+              "rule": "js.tls.reject_unauthorized",
+              "true_hits": 2
+            },
+            {
+              "alerts": 10,
+              "per_kloc": 0.006,
+              "rule": "js.redirect.open",
+              "true_hits": 2
+            },
+            {
+              "alerts": 6,
+              "per_kloc": 0.004,
+              "rule": "js.crypto.insecure_random",
+              "true_hits": 0
+            },
+            {
+              "alerts": 4,
+              "per_kloc": 0.002,
+              "rule": "js.proto.pollution",
+              "true_hits": 1
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "xss",
+              "missed": 500,
+              "missed_with_other_finding_near": 6,
+              "pairs": 599
+            },
+            {
+              "family": "protopollution",
+              "missed": 190,
+              "missed_with_other_finding_near": 0,
+              "pairs": 191
+            },
+            {
+              "family": "ssrf",
+              "missed": 180,
+              "missed_with_other_finding_near": 1,
+              "pairs": 181
+            },
+            {
+              "family": "pathtraver",
+              "missed": 108,
+              "missed_with_other_finding_near": 1,
+              "pairs": 110
+            },
+            {
+              "family": "redos",
+              "missed": 90,
+              "missed_with_other_finding_near": 0,
+              "pairs": 90
+            },
+            {
+              "family": "cmdi",
+              "missed": 70,
+              "missed_with_other_finding_near": 1,
+              "pairs": 88
+            },
+            {
+              "family": "codeinj",
+              "missed": 60,
+              "missed_with_other_finding_near": 4,
+              "pairs": 64
+            },
+            {
+              "family": "csrf",
+              "missed": 49,
+              "missed_with_other_finding_near": 4,
+              "pairs": 49
+            },
+            {
+              "family": "sqli",
+              "missed": 41,
+              "missed_with_other_finding_near": 4,
+              "pairs": 44
+            },
+            {
+              "family": "redirect",
+              "missed": 25,
+              "missed_with_other_finding_near": 0,
+              "pairs": 27
+            },
+            {
+              "family": "jwt",
+              "missed": 15,
+              "missed_with_other_finding_near": 0,
+              "pairs": 15
+            },
+            {
+              "family": "weakrand",
+              "missed": 6,
+              "missed_with_other_finding_near": 0,
+              "pairs": 6
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "js.dom.xss_sink",
+              "true_hits": 172
+            },
+            {
+              "rule": "js.child_process.shell",
+              "true_hits": 31
+            },
+            {
+              "rule": "js.sql.string_built",
+              "true_hits": 15
+            },
+            {
+              "rule": "js.exec.eval",
+              "true_hits": 4
+            },
+            {
+              "rule": "js.redirect.open",
+              "true_hits": 2
+            },
+            {
+              "rule": "js.tls.reject_unauthorized",
+              "true_hits": 2
+            },
+            {
+              "rule": "js.path.traversal",
+              "true_hits": 2
+            },
+            {
+              "rule": "js.ssrf.request",
+              "true_hits": 1
+            },
+            {
+              "rule": "js.proto.pollution",
+              "true_hits": 1
+            }
+          ],
+          "unmapped_findings_top_rules": []
+        },
+        "python": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 311,
+              "per_kloc": 0.055,
+              "rule": "py.crypto.weak_hash",
+              "true_hits": 0
+            },
+            {
+              "alerts": 228,
+              "per_kloc": 0.041,
+              "rule": "py.sql.string_built",
+              "true_hits": 29
+            },
+            {
+              "alerts": 115,
+              "per_kloc": 0.021,
+              "rule": "py.subprocess.shell_true",
+              "true_hits": 12
+            },
+            {
+              "alerts": 104,
+              "per_kloc": 0.019,
+              "rule": "py.deserialize.pickle",
+              "true_hits": 24
+            },
+            {
+              "alerts": 104,
+              "per_kloc": 0.019,
+              "rule": "py.tls.verify_disabled",
+              "true_hits": 1
+            },
+            {
+              "alerts": 96,
+              "per_kloc": 0.017,
+              "rule": "py.os.system",
+              "true_hits": 6
+            },
+            {
+              "alerts": 75,
+              "per_kloc": 0.013,
+              "rule": "py.exec.exec",
+              "true_hits": 7
+            },
+            {
+              "alerts": 69,
+              "per_kloc": 0.012,
+              "rule": "py.exec.eval",
+              "true_hits": 30
+            },
+            {
+              "alerts": 54,
+              "per_kloc": 0.01,
+              "rule": "py.redirect.open",
+              "true_hits": 36
+            },
+            {
+              "alerts": 47,
+              "per_kloc": 0.008,
+              "rule": "py.exec.compile",
+              "true_hits": 2
+            },
+            {
+              "alerts": 47,
+              "per_kloc": 0.008,
+              "rule": "py.cookie.insecure",
+              "true_hits": 0
+            },
+            {
+              "alerts": 41,
+              "per_kloc": 0.007,
+              "rule": "py.ml.unsafe_model_load",
+              "true_hits": 12
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "sqli",
+              "missed": 851,
+              "missed_with_other_finding_near": 0,
+              "pairs": 864
+            },
+            {
+              "family": "codeinj",
+              "missed": 422,
+              "missed_with_other_finding_near": 35,
+              "pairs": 448
+            },
+            {
+              "family": "pathtraver",
+              "missed": 413,
+              "missed_with_other_finding_near": 6,
+              "pairs": 417
+            },
+            {
+              "family": "ssrf",
+              "missed": 342,
+              "missed_with_other_finding_near": 5,
+              "pairs": 344
+            },
+            {
+              "family": "xss",
+              "missed": 324,
+              "missed_with_other_finding_near": 4,
+              "pairs": 326
+            },
+            {
+              "family": "redirect",
+              "missed": 206,
+              "missed_with_other_finding_near": 0,
+              "pairs": 225
+            },
+            {
+              "family": "cmdi",
+              "missed": 144,
+              "missed_with_other_finding_near": 5,
+              "pairs": 159
+            },
+            {
+              "family": "csrf",
+              "missed": 116,
+              "missed_with_other_finding_near": 4,
+              "pairs": 116
+            },
+            {
+              "family": "redos",
+              "missed": 102,
+              "missed_with_other_finding_near": 0,
+              "pairs": 102
+            },
+            {
+              "family": "deserialization",
+              "missed": 97,
+              "missed_with_other_finding_near": 0,
+              "pairs": 137
+            },
+            {
+              "family": "jwt",
+              "missed": 63,
+              "missed_with_other_finding_near": 0,
+              "pairs": 63
+            },
+            {
+              "family": "xxe",
+              "missed": 39,
+              "missed_with_other_finding_near": 0,
+              "pairs": 40
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "py.redirect.open",
+              "true_hits": 36
+            },
+            {
+              "rule": "py.exec.eval",
+              "true_hits": 30
+            },
+            {
+              "rule": "py.sql.string_built",
+              "true_hits": 29
+            },
+            {
+              "rule": "py.deserialize.pickle",
+              "true_hits": 24
+            },
+            {
+              "rule": "py.deserialize.yaml_unsafe",
+              "true_hits": 20
+            },
+            {
+              "rule": "py.ml.unsafe_model_load",
+              "true_hits": 12
+            },
+            {
+              "rule": "py.subprocess.shell_true",
+              "true_hits": 12
+            },
+            {
+              "rule": "py.crypto.insecure_random",
+              "true_hits": 9
+            },
+            {
+              "rule": "py.exec.exec",
+              "true_hits": 7
+            },
+            {
+              "rule": "py.os.system",
+              "true_hits": 6
+            },
+            {
+              "rule": "py.path.traversal",
+              "true_hits": 5
+            },
+            {
+              "rule": "py.xss.reflected",
+              "true_hits": 2
+            }
+          ],
+          "unmapped_findings_top_rules": [
+            {
+              "findings": 9,
+              "rule": "py.assert.security"
+            }
+          ]
+        },
+        "typescript": {
+          "alert_rules_on_fixed_and_unchanged_files": [
+            {
+              "alerts": 131,
+              "per_kloc": 0.047,
+              "rule": "js.dom.xss_sink",
+              "true_hits": 42
+            },
+            {
+              "alerts": 87,
+              "per_kloc": 0.031,
+              "rule": "js.sql.string_built",
+              "true_hits": 17
+            },
+            {
+              "alerts": 39,
+              "per_kloc": 0.014,
+              "rule": "js.child_process.shell",
+              "true_hits": 209
+            },
+            {
+              "alerts": 36,
+              "per_kloc": 0.013,
+              "rule": "js.crypto.weak_hash",
+              "true_hits": 1
+            },
+            {
+              "alerts": 21,
+              "per_kloc": 0.008,
+              "rule": "js.exec.eval",
+              "true_hits": 4
+            },
+            {
+              "alerts": 16,
+              "per_kloc": 0.006,
+              "rule": "js.redirect.open",
+              "true_hits": 0
+            },
+            {
+              "alerts": 13,
+              "per_kloc": 0.005,
+              "rule": "secret.generic",
+              "true_hits": 0
+            },
+            {
+              "alerts": 11,
+              "per_kloc": 0.004,
+              "rule": "js.tls.reject_unauthorized",
+              "true_hits": 0
+            },
+            {
+              "alerts": 11,
+              "per_kloc": 0.004,
+              "rule": "js.proto.pollution",
+              "true_hits": 1
+            },
+            {
+              "alerts": 6,
+              "per_kloc": 0.002,
+              "rule": "js.path.traversal",
+              "true_hits": 3
+            },
+            {
+              "alerts": 4,
+              "per_kloc": 0.001,
+              "rule": "js.ssrf.request",
+              "true_hits": 1
+            },
+            {
+              "alerts": 3,
+              "per_kloc": 0.001,
+              "rule": "js.crypto.insecure_random",
+              "true_hits": 0
+            }
+          ],
+          "missed_by_family": [
+            {
+              "family": "ssrf",
+              "missed": 459,
+              "missed_with_other_finding_near": 0,
+              "pairs": 460
+            },
+            {
+              "family": "xss",
+              "missed": 427,
+              "missed_with_other_finding_near": 1,
+              "pairs": 459
+            },
+            {
+              "family": "pathtraver",
+              "missed": 350,
+              "missed_with_other_finding_near": 20,
+              "pairs": 353
+            },
+            {
+              "family": "protopollution",
+              "missed": 316,
+              "missed_with_other_finding_near": 0,
+              "pairs": 317
+            },
+            {
+              "family": "cmdi",
+              "missed": 294,
+              "missed_with_other_finding_near": 0,
+              "pairs": 361
+            },
+            {
+              "family": "codeinj",
+              "missed": 231,
+              "missed_with_other_finding_near": 3,
+              "pairs": 234
+            },
+            {
+              "family": "sqli",
+              "missed": 140,
+              "missed_with_other_finding_near": 1,
+              "pairs": 147
+            },
+            {
+              "family": "redos",
+              "missed": 65,
+              "missed_with_other_finding_near": 0,
+              "pairs": 65
+            },
+            {
+              "family": "redirect",
+              "missed": 63,
+              "missed_with_other_finding_near": 1,
+              "pairs": 63
+            },
+            {
+              "family": "csrf",
+              "missed": 62,
+              "missed_with_other_finding_near": 1,
+              "pairs": 62
+            },
+            {
+              "family": "secrets",
+              "missed": 35,
+              "missed_with_other_finding_near": 1,
+              "pairs": 35
+            },
+            {
+              "family": "cors",
+              "missed": 26,
+              "missed_with_other_finding_near": 1,
+              "pairs": 26
+            }
+          ],
+          "rules_with_true_hits": [
+            {
+              "rule": "js.child_process.shell",
+              "true_hits": 209
+            },
+            {
+              "rule": "js.dom.xss_sink",
+              "true_hits": 42
+            },
+            {
+              "rule": "js.sql.string_built",
+              "true_hits": 17
+            },
+            {
+              "rule": "js.exec.eval",
+              "true_hits": 4
+            },
+            {
+              "rule": "js.path.traversal",
+              "true_hits": 3
+            },
+            {
+              "rule": "js.ssrf.request",
+              "true_hits": 1
+            },
+            {
+              "rule": "js.crypto.weak_hash",
+              "true_hits": 1
+            },
+            {
+              "rule": "js.proto.pollution",
+              "true_hits": 1
+            }
+          ],
+          "unmapped_findings_top_rules": []
+        }
+      },
+      "families": {
+        "js_ts": {
+          "cmdi": {
+            "detection": {
+              "ci95": [
+                0.076902,
+                0.393156
+              ],
+              "k": 85.0,
+              "n": 449.0,
+              "rate": 0.18931
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.060601,
+                0.36116
+              ],
+              "k": 76.0,
+              "n": 449.0,
+              "rate": 0.169265
+            },
+            "pairs": 449
+          },
+          "codeinj": {
+            "detection": {
+              "ci95": [
+                0.005549,
+                0.053896
+              ],
+              "k": 7.0,
+              "n": 298.0,
+              "rate": 0.02349
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.003913,
+                0.04688
+              ],
+              "k": 6.0,
+              "n": 298.0,
+              "rate": 0.020134
+            },
+            "pairs": 298
+          },
+          "cors": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 26.0,
+              "rate": 0.0
+            },
+            "pairs": 26
+          },
+          "csrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 111.0,
+              "rate": 0.0
+            },
+            "pairs": 111
+          },
+          "debug": {
+            "detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 3
+          },
+          "deserialization": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 24.0,
+              "rate": 0.0
+            },
+            "pairs": 24
+          },
+          "hash": {
+            "detection": {
+              "k": 1.0,
+              "n": 7.0,
+              "rate": 0.142857
+            },
+            "fix_aware_detection": {
+              "k": 1.0,
+              "n": 7.0,
+              "rate": 0.142857
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 7
+          },
+          "jwt": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "pairs": 34
+          },
+          "ldapi": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "pathtraver": {
+            "detection": {
+              "ci95": [
+                0.001198,
+                0.030018
+              ],
+              "k": 5.0,
+              "n": 463.0,
+              "rate": 0.010799
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.008773
+              ],
+              "k": 1.0,
+              "n": 463.0,
+              "rate": 0.00216
+            },
+            "pairs": 463
+          },
+          "protopollution": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.014286
+              ],
+              "k": 2.0,
+              "n": 508.0,
+              "rate": 0.003937
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.014286
+              ],
+              "k": 2.0,
+              "n": 508.0,
+              "rate": 0.003937
+            },
+            "pairs": 508
+          },
+          "redirect": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.08002
+              ],
+              "k": 2.0,
+              "n": 90.0,
+              "rate": 0.022222
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.08002
+              ],
+              "k": 2.0,
+              "n": 90.0,
+              "rate": 0.022222
+            },
+            "pairs": 90
+          },
+          "redos": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 155.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 155.0,
+              "rate": 0.0
+            },
+            "pairs": 155
+          },
+          "secrets": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 36.0,
+              "rate": 0.0
+            },
+            "pairs": 36
+          },
+          "securecookie": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "sqli": {
+            "detection": {
+              "ci95": [
+                0.00621,
+                0.162606
+              ],
+              "k": 10.0,
+              "n": 191.0,
+              "rate": 0.052356
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.042377
+              ],
+              "k": 2.0,
+              "n": 191.0,
+              "rate": 0.010471
+            },
+            "pairs": 191
+          },
+          "ssrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.008611
+              ],
+              "k": 2.0,
+              "n": 641.0,
+              "rate": 0.00312
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.004038
+              ],
+              "k": 1.0,
+              "n": 641.0,
+              "rate": 0.00156
+            },
+            "pairs": 641
+          },
+          "tempfile": {
+            "detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 11.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 11
+          },
+          "timing": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 27.0,
+              "rate": 0.0
+            },
+            "pairs": 27
+          },
+          "tls": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.571429
+              ],
+              "k": 2.0,
+              "n": 13.0,
+              "rate": 0.153846
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.571429
+              ],
+              "k": 2.0,
+              "n": 13.0,
+              "rate": 0.153846
+            },
+            "pairs": 13
+          },
+          "weakrand": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 15.0,
+              "rate": 0.0
+            },
+            "pairs": 15
+          },
+          "xss": {
+            "detection": {
+              "ci95": [
+                0.0828,
+                0.179843
+              ],
+              "k": 131.0,
+              "n": 1058.0,
+              "rate": 0.123819
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.050709,
+                0.145508
+              ],
+              "k": 95.0,
+              "n": 1058.0,
+              "rate": 0.089792
+            },
+            "pairs": 1058
+          },
+          "xxe": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          }
+        },
+        "python": {
+          "cmdi": {
+            "detection": {
+              "ci95": [
+                0.047042,
+                0.191205
+              ],
+              "k": 15.0,
+              "n": 159.0,
+              "rate": 0.09434
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.014488,
+                0.102054
+              ],
+              "k": 7.0,
+              "n": 159.0,
+              "rate": 0.044025
+            },
+            "pairs": 159
+          },
+          "codeinj": {
+            "detection": {
+              "ci95": [
+                0.029579,
+                0.135292
+              ],
+              "k": 26.0,
+              "n": 448.0,
+              "rate": 0.058036
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.018842,
+                0.10991
+              ],
+              "k": 20.0,
+              "n": 448.0,
+              "rate": 0.044643
+            },
+            "pairs": 448
+          },
+          "cors": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 29.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 29.0,
+              "rate": 0.0
+            },
+            "pairs": 29
+          },
+          "csrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 116.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 116.0,
+              "rate": 0.0
+            },
+            "pairs": 116
+          },
+          "deserialization": {
+            "detection": {
+              "ci95": [
+                0.174495,
+                0.468476
+              ],
+              "k": 40.0,
+              "n": 137.0,
+              "rate": 0.291971
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.124977,
+                0.39806
+              ],
+              "k": 32.0,
+              "n": 137.0,
+              "rate": 0.233577
+            },
+            "pairs": 137
+          },
+          "hash": {
+            "detection": {
+              "k": 0.0,
+              "n": 5.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 5.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 5
+          },
+          "jwt": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 63.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 63.0,
+              "rate": 0.0
+            },
+            "pairs": 63
+          },
+          "pathtraver": {
+            "detection": {
+              "ci95": [
+                0.001988,
+                0.021693
+              ],
+              "k": 4.0,
+              "n": 417.0,
+              "rate": 0.009592
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.017753
+              ],
+              "k": 3.0,
+              "n": 417.0,
+              "rate": 0.007194
+            },
+            "pairs": 417
+          },
+          "protopollution": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "redirect": {
+            "detection": {
+              "ci95": [
+                0.005586,
+                0.370448
+              ],
+              "k": 19.0,
+              "n": 225.0,
+              "rate": 0.084444
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.321102
+              ],
+              "k": 15.0,
+              "n": 225.0,
+              "rate": 0.066667
+            },
+            "pairs": 225
+          },
+          "redos": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 102.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 102.0,
+              "rate": 0.0
+            },
+            "pairs": 102
+          },
+          "secrets": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.2
+              ],
+              "k": 1.0,
+              "n": 12.0,
+              "rate": 0.083333
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 12.0,
+              "rate": 0.0
+            },
+            "pairs": 12
+          },
+          "securecookie": {
+            "detection": {
+              "k": 0.0,
+              "n": 2.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 2.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 2
+          },
+          "sqli": {
+            "detection": {
+              "ci95": [
+                0.003372,
+                0.300076
+              ],
+              "k": 13.0,
+              "n": 864.0,
+              "rate": 0.015046
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.000607,
+                0.129032
+              ],
+              "k": 5.0,
+              "n": 864.0,
+              "rate": 0.005787
+            },
+            "pairs": 864
+          },
+          "ssrf": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.018024
+              ],
+              "k": 2.0,
+              "n": 344.0,
+              "rate": 0.005814
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 344.0,
+              "rate": 0.0
+            },
+            "pairs": 344
+          },
+          "tempfile": {
+            "detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 1.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 1
+          },
+          "timing": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 16.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 16.0,
+              "rate": 0.0
+            },
+            "pairs": 16
+          },
+          "tls": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.074074
+              ],
+              "k": 1.0,
+              "n": 34.0,
+              "rate": 0.029412
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 34.0,
+              "rate": 0.0
+            },
+            "pairs": 34
+          },
+          "trustbound": {
+            "detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "fix_aware_detection": {
+              "k": 0.0,
+              "n": 3.0,
+              "rate": 0.0
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 3
+          },
+          "weakrand": {
+            "detection": {
+              "k": 3.0,
+              "n": 6.0,
+              "rate": 0.5
+            },
+            "fix_aware_detection": {
+              "k": 3.0,
+              "n": 6.0,
+              "rate": 0.5
+            },
+            "note": "fewer than 12 pairs, no interval",
+            "pairs": 6
+          },
+          "xss": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.022061
+              ],
+              "k": 2.0,
+              "n": 326.0,
+              "rate": 0.006135
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.022061
+              ],
+              "k": 2.0,
+              "n": 326.0,
+              "rate": 0.006135
+            },
+            "pairs": 326
+          },
+          "xxe": {
+            "detection": {
+              "ci95": [
+                0.0,
+                0.111111
+              ],
+              "k": 1.0,
+              "n": 40.0,
+              "rate": 0.025
+            },
+            "fix_aware_detection": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "k": 0.0,
+              "n": 40.0,
+              "rate": 0.0
+            },
+            "pairs": 40
+          }
+        }
+      },
+      "files_not_parsed_by_kind": {
+        "a": 149,
+        "b": 145,
+        "u": 152
+      },
+      "files_per_second": 35.8,
+      "files_scanned": 39420,
+      "findings": 8265,
+      "run": "base",
+      "scan_seconds_summed_over_shards": 1102.6,
+      "subsets": {
+        "all": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              0.295907,
+              0.596284
+            ],
+            "k": 4235.0,
+            "n": 10100.212999999996,
+            "rate": 0.419298
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.030433,
+              0.057311
+            ],
+            "k": 545.0,
+            "n": 13107.0,
+            "rate": 0.041581
+          },
+          "detection": {
+            "ci95": [
+              0.039566,
+              0.079353
+            ],
+            "k": 374.0,
+            "n": 6634.0,
+            "rate": 0.056376
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.06857,
+              0.103866
+            ],
+            "k": 187.27312687070497,
+            "n": 2214.0,
+            "rate": 0.084586
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.307597,
+              0.694798
+            ],
+            "k": 3362.0,
+            "n": 7261.624,
+            "rate": 0.462982
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.221335,
+              0.412508
+            ],
+            "k": 864.0,
+            "n": 2838.5890000000004,
+            "rate": 0.304377
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.027645,
+              0.060869
+            ],
+            "k": 275.0,
+            "n": 6634.0,
+            "rate": 0.041453
+          },
+          "pairs": 13107,
+          "pairs_in_scope": 6634,
+          "precision": {
+            "ci95": [
+              0.101109,
+              0.201749
+            ],
+            "k": 707.0,
+            "n": 4933.0,
+            "rate": 0.14332
+          },
+          "unchanged_files": 13206
+        },
+        "javascript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              0.791785,
+              2.126025
+            ],
+            "k": 2366.0,
+            "n": 1700.984,
+            "rate": 1.39096
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.055532,
+              0.105773
+            ],
+            "k": 178.0,
+            "n": 2331.0,
+            "rate": 0.076362
+          },
+          "detection": {
+            "ci95": [
+              0.063288,
+              0.138332
+            ],
+            "k": 132.0,
+            "n": 1402.0,
+            "rate": 0.094151
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.076735,
+              0.123407
+            ],
+            "k": 71.88080808080808,
+            "n": 729.2175574340454,
+            "rate": 0.098573
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.860947,
+              2.58126
+            ],
+            "k": 2021.0,
+            "n": 1237.4569999999999,
+            "rate": 1.633188
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.508263,
+              1.025251
+            ],
+            "k": 345.0,
+            "n": 463.527,
+            "rate": 0.744293
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.034597,
+              0.107532
+            ],
+            "k": 90.0,
+            "n": 1402.0,
+            "rate": 0.064194
+          },
+          "pairs": 2331,
+          "pairs_in_scope": 1402,
+          "precision": {
+            "ci95": [
+              0.055361,
+              0.152245
+            ],
+            "k": 230.0,
+            "n": 2596.0,
+            "rate": 0.088598
+          },
+          "unchanged_files": 2685
+        },
+        "js_ts": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              0.334496,
+              1.062093
+            ],
+            "k": 2748.0,
+            "n": 4494.606999999998,
+            "rate": 0.611399
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.027021,
+              0.066211
+            ],
+            "k": 308.0,
+            "n": 7384.0,
+            "rate": 0.041712
+          },
+          "detection": {
+            "ci95": [
+              0.047068,
+              0.099225
+            ],
+            "k": 247.0,
+            "n": 3629.0,
+            "rate": 0.068063
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.064325,
+              0.104568
+            ],
+            "k": 110.05756713803996,
+            "n": 1343.9631646691878,
+            "rate": 0.08189
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.361107,
+              1.224752
+            ],
+            "k": 2364.0,
+            "n": 3436.149999999999,
+            "rate": 0.687979
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.225829,
+              0.592513
+            ],
+            "k": 384.0,
+            "n": 1058.4569999999999,
+            "rate": 0.362792
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.032965,
+              0.08031
+            ],
+            "k": 188.0,
+            "n": 3629.0,
+            "rate": 0.051805
+          },
+          "pairs": 7384,
+          "pairs_in_scope": 3629,
+          "precision": {
+            "ci95": [
+              0.096782,
+              0.249363
+            ],
+            "k": 508.0,
+            "n": 3256.0,
+            "rate": 0.15602
+          },
+          "unchanged_files": 6519
+        },
+        "python": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              0.212955,
+              0.33195
+            ],
+            "k": 1487.0,
+            "n": 5605.606,
+            "rate": 0.26527
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.026934,
+              0.063415
+            ],
+            "k": 237.0,
+            "n": 5723.0,
+            "rate": 0.041412
+          },
+          "detection": {
+            "ci95": [
+              0.024011,
+              0.073036
+            ],
+            "k": 127.0,
+            "n": 3005.0,
+            "rate": 0.042263
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.059399,
+              0.126474
+            ],
+            "k": 77.21555973266499,
+            "n": 870.0368353308123,
+            "rate": 0.08875
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.20907,
+              0.339009
+            ],
+            "k": 998.0,
+            "n": 3825.4739999999997,
+            "rate": 0.260883
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.178441,
+              0.388971
+            ],
+            "k": 480.0,
+            "n": 1780.1320000000005,
+            "rate": 0.269643
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.015105,
+              0.05322
+            ],
+            "k": 87.0,
+            "n": 3005.0,
+            "rate": 0.028952
+          },
+          "pairs": 5723,
+          "pairs_in_scope": 3005,
+          "precision": {
+            "ci95": [
+              0.078359,
+              0.166243
+            ],
+            "k": 199.0,
+            "n": 1677.0,
+            "rate": 0.118664
+          },
+          "unchanged_files": 6687
+        },
+        "typescript": {
+          "all_findings_per_kloc_after_and_unchanged": {
+            "ci95": [
+              0.071896,
+              0.283349
+            ],
+            "k": 382.0,
+            "n": 2793.6229999999987,
+            "rate": 0.13674
+          },
+          "any_finding_near_change": {
+            "ci95": [
+              0.013261,
+              0.052204
+            ],
+            "k": 130.0,
+            "n": 5053.0,
+            "rate": 0.025727
+          },
+          "detection": {
+            "ci95": [
+              0.027229,
+              0.093273
+            ],
+            "k": 115.0,
+            "n": 2227.0,
+            "rate": 0.051639
+          },
+          "detection_fix_weighted": {
+            "ci95": [
+              0.042133,
+              0.093652
+            ],
+            "k": 38.176759057231884,
+            "n": 614.7456072351424,
+            "rate": 0.062102
+          },
+          "false_alarms_per_kloc_after": {
+            "ci95": [
+              0.077597,
+              0.333568
+            ],
+            "k": 343.0,
+            "n": 2198.6929999999993,
+            "rate": 0.156002
+          },
+          "false_alarms_per_kloc_unchanged": {
+            "ci95": [
+              0.035024,
+              0.137875
+            ],
+            "k": 39.0,
+            "n": 594.9300000000001,
+            "rate": 0.065554
+          },
+          "fix_aware_detection": {
+            "ci95": [
+              0.020751,
+              0.082777
+            ],
+            "k": 98.0,
+            "n": 2227.0,
+            "rate": 0.044005
+          },
+          "pairs": 5053,
+          "pairs_in_scope": 2227,
+          "precision": {
+            "ci95": [
+              0.250448,
+              0.584927
+            ],
+            "k": 278.0,
+            "n": 660.0,
+            "rate": 0.421212
+          },
+          "unchanged_files": 3834
+        }
+      },
+      "version": "0.1.0"
+    }
+  }
+}
