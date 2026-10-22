@@ -1,0 +1,614 @@
+{
+  "schema_version": 1,
+  "generated": "2026-10-22",
+  "note": "End-of-life branches and critical advisories for software that sites announce in response headers. Offline, bundled, refreshed by hand with scripts/refresh_exposure_data.py. 'eol' is the last day of vendor support (YYYY-MM-DD, or YYYY-MM when the vendor gives only a month); null means the vendor says 'no longer supported' without a date.",
+  "products": {
+    "php": {
+      "label": "PHP",
+      "method": "script",
+      "source": "https://www.php.net/eol.php",
+      "branches": [
+        {
+          "branch": "8.5",
+          "status": "eol",
+          "eol": "2029-12-31",
+          "source": "https://www.php.net/supported-versions.php"
+        },
+        {
+          "branch": "8.4",
+          "status": "eol",
+          "eol": "2028-12-31",
+          "source": "https://www.php.net/supported-versions.php"
+        },
+        {
+          "branch": "8.3",
+          "status": "eol",
+          "eol": "2027-12-31",
+          "source": "https://www.php.net/supported-versions.php"
+        },
+        {
+          "branch": "8.2",
+          "status": "eol",
+          "eol": "2026-12-31",
+          "source": "https://www.php.net/supported-versions.php"
+        },
+        {
+          "branch": "8.1",
+          "status": "eol",
+          "eol": "2025-12-31",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "8.0",
+          "status": "eol",
+          "eol": "2023-11-26",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "7.4",
+          "status": "eol",
+          "eol": "2022-11-28",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "7.3",
+          "status": "eol",
+          "eol": "2021-12-06",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "7.2",
+          "status": "eol",
+          "eol": "2020-11-30",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "7.1",
+          "status": "eol",
+          "eol": "2019-12-01",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "7.0",
+          "status": "eol",
+          "eol": "2019-01-10",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.6",
+          "status": "eol",
+          "eol": "2018-12-31",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.5",
+          "status": "eol",
+          "eol": "2016-07-21",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.4",
+          "status": "eol",
+          "eol": "2015-09-03",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.3",
+          "status": "eol",
+          "eol": "2014-08-14",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.2",
+          "status": "eol",
+          "eol": "2011-01-06",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.1",
+          "status": "eol",
+          "eol": "2006-08-24",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "5.0",
+          "status": "eol",
+          "eol": "2005-09-05",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "4.4",
+          "status": "eol",
+          "eol": "2008-08-07",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "4.3",
+          "status": "eol",
+          "eol": "2005-03-31",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "4.2",
+          "status": "eol",
+          "eol": "2002-09-06",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "4.1",
+          "status": "eol",
+          "eol": "2002-03-12",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "4.0",
+          "status": "eol",
+          "eol": "2001-06-23",
+          "source": "https://www.php.net/eol.php"
+        },
+        {
+          "branch": "3.0",
+          "status": "eol",
+          "eol": "2000-10-20",
+          "source": "https://www.php.net/eol.php"
+        }
+      ]
+    },
+    "node": {
+      "label": "Node.js",
+      "method": "script",
+      "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json",
+      "branches": [
+        {
+          "branch": "27",
+          "status": "eol",
+          "eol": "2030-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "26",
+          "status": "eol",
+          "eol": "2029-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "25",
+          "status": "eol",
+          "eol": "2026-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "24",
+          "status": "eol",
+          "eol": "2028-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "23",
+          "status": "eol",
+          "eol": "2025-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "22",
+          "status": "eol",
+          "eol": "2027-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "21",
+          "status": "eol",
+          "eol": "2024-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "20",
+          "status": "eol",
+          "eol": "2026-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "19",
+          "status": "eol",
+          "eol": "2023-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "18",
+          "status": "eol",
+          "eol": "2025-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "17",
+          "status": "eol",
+          "eol": "2022-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "16",
+          "status": "eol",
+          "eol": "2023-09-11",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "15",
+          "status": "eol",
+          "eol": "2021-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "14",
+          "status": "eol",
+          "eol": "2023-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "13",
+          "status": "eol",
+          "eol": "2020-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "12",
+          "status": "eol",
+          "eol": "2022-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "11",
+          "status": "eol",
+          "eol": "2019-06-01",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "10",
+          "status": "eol",
+          "eol": "2021-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "9",
+          "status": "eol",
+          "eol": "2018-06-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "8",
+          "status": "eol",
+          "eol": "2019-12-31",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "7",
+          "status": "eol",
+          "eol": "2017-06-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "6",
+          "status": "eol",
+          "eol": "2019-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "5",
+          "status": "eol",
+          "eol": "2016-06-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "4",
+          "status": "eol",
+          "eol": "2018-04-30",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "0.12",
+          "status": "eol",
+          "eol": "2016-12-31",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "0.10",
+          "status": "eol",
+          "eol": "2016-10-31",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        },
+        {
+          "branch": "0.8",
+          "status": "eol",
+          "eol": "2014-07-31",
+          "source": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json"
+        }
+      ]
+    },
+    "nginx": {
+      "label": "nginx",
+      "method": "manual",
+      "source": "https://nginx.org/en/download.html",
+      "branches": [
+        {
+          "branch": "1.28",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.26",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.24",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.22",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.20",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.18",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.16",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.14",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.12",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.10",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.8",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.6",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.4",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.2",
+          "status": "legacy"
+        },
+        {
+          "branch": "1.0",
+          "status": "legacy"
+        },
+        {
+          "branch": "0.8",
+          "status": "legacy"
+        },
+        {
+          "branch": "0.7",
+          "status": "legacy"
+        },
+        {
+          "branch": "0.6",
+          "status": "legacy"
+        },
+        {
+          "branch": "0.5",
+          "status": "legacy"
+        }
+      ]
+    },
+    "apache": {
+      "label": "Apache httpd",
+      "method": "manual",
+      "source": "https://httpd.apache.org/download.cgi",
+      "branches": [
+        {
+          "branch": "2.2",
+          "status": "eol",
+          "eol": "2017-12",
+          "note": "The Apache HTTP Server project says 2.2 is end of life since December 2017 and should not be used.",
+          "source": "https://httpd.apache.org/security/vulnerabilities_22.html"
+        },
+        {
+          "branch": "2.0",
+          "status": "eol",
+          "severity": "high",
+          "note": "The Apache HTTP Server project says 2.0 has had no new releases since 2013 and should not be used.",
+          "source": "https://httpd.apache.org/security/vulnerabilities_20.html"
+        },
+        {
+          "branch": "1.3",
+          "status": "eol",
+          "severity": "high",
+          "note": "The Apache HTTP Server project says 1.3 has had no new releases since 2010 and should not be used.",
+          "source": "https://httpd.apache.org/security/vulnerabilities_13.html"
+        }
+      ]
+    },
+    "iis": {
+      "label": "Microsoft IIS",
+      "method": "manual",
+      "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis",
+      "branches": [
+        {
+          "branch": "8.5",
+          "status": "eol",
+          "eol": "2023-10-10",
+          "note": "IIS 8.5 follows Windows Server 2012 R2 (support ended 2023-10-10); on Windows 8.1 it ended 2023-01-10. Extended Security Updates may exist through Microsoft volume licensing.",
+          "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis"
+        },
+        {
+          "branch": "8.0",
+          "status": "eol",
+          "eol": "2023-10-10",
+          "note": "IIS 8 follows Windows Server 2012.",
+          "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis"
+        },
+        {
+          "branch": "7.5",
+          "status": "eol",
+          "eol": "2020-01-14",
+          "note": "IIS 7.5 follows Windows 7 and Windows Server 2008 R2; Extended Security Updates were offered through specific volume licensing programs.",
+          "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis"
+        },
+        {
+          "branch": "7.0",
+          "status": "eol",
+          "eol": "2020-01-14",
+          "note": "IIS 7.0 follows Windows Server 2008; Extended Security Updates were offered through specific volume licensing programs.",
+          "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis"
+        },
+        {
+          "branch": "6.0",
+          "status": "eol",
+          "eol": "2015-07-14",
+          "note": "IIS 6.0 follows Windows Server 2003.",
+          "source": "https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis"
+        }
+      ]
+    },
+    "openssl": {
+      "label": "OpenSSL",
+      "method": "manual",
+      "source": "https://openssl-library.org/policies/releasestrat/index.html",
+      "branches": [
+        {
+          "branch": "3.4",
+          "status": "eol",
+          "eol": "2026-10-22",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "3.6",
+          "status": "eol",
+          "eol": "2026-11-01",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "4.0",
+          "status": "eol",
+          "eol": "2027-05-14",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "3.5",
+          "status": "eol",
+          "eol": "2030-04-08",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "3.0",
+          "status": "eol",
+          "note": "The OpenSSL release strategy page lists 3.0 as no longer supported (extended support is sold separately).",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "1.1.1",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 1.1.1 as no longer supported (extended support is sold separately).",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "1.1.0",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 1.1.0 as no longer supported.",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "1.0.2",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 1.0.2 as no longer supported (extended support is sold separately).",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "1.0.1",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 1.0.1 as no longer supported.",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "1.0.0",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 1.0.0 as no longer supported.",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        },
+        {
+          "branch": "0.9.8",
+          "status": "eol",
+          "severity": "high",
+          "note": "The OpenSSL release strategy page lists 0.9.8 as no longer supported.",
+          "source": "https://openssl-library.org/policies/releasestrat/index.html"
+        }
+      ]
+    },
+    "drupal": {
+      "label": "Drupal",
+      "method": "manual",
+      "source": "https://www.drupal.org/about/core/policies/core-release-cycles/schedule",
+      "branches": [
+        {
+          "branch": "7",
+          "status": "eol",
+          "eol": "2025-01-05",
+          "source": "https://www.drupal.org/about/core/policies/core-release-cycles/schedule"
+        },
+        {
+          "branch": "8",
+          "status": "eol",
+          "eol": "2021-11-17",
+          "source": "https://www.drupal.org/about/core/policies/core-release-cycles/schedule"
+        },
+        {
+          "branch": "9",
+          "status": "eol",
+          "eol": "2023-11-01",
+          "source": "https://www.drupal.org/about/core/policies/core-release-cycles/schedule"
+        },
+        {
+          "branch": "10",
+          "status": "eol",
+          "eol": "2026-12-09",
+          "source": "https://www.drupal.org/about/core/policies/core-release-cycles/schedule"
+        }
+      ]
+    }
+  },
+  "advisories": [
+    {
+      "id": "php-2026-10-21",
+      "product": "php",
+      "cves": [
+        "CVE-2026-109618",
+        "CVE-2026-109619"
+      ],
+      "title": "PHP critical remote code execution (out-of-memory corruption; stale global state)",
+      "published": "2026-10-21",
+      "fixed": {
+        "8.2": "8.2.35",
+        "8.3": "8.3.36",
+        "8.4": "8.4.27",
+        "8.5": "8.5.12"
+      },
+      "unfixed_note": "php.net's advisory of 2026-10-21 says PHP 8.1 and older no longer receive updates from the PHP project; some distributions and LTS vendors provide backported fixes, so check with your vendor.",
+      "source": "https://www.php.net/archive/2026.php#2026-10-21-5",
+      "references": [
+        "https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w",
+        "https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp"
+      ]
+    }
+  ]
+}

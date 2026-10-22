@@ -6,6 +6,16 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Website check: announced software versions.** The check reads the versions a response announces (`Server`,
+  `X-Powered-By`, `Via`, `X-AspNet-Version`, `X-AspNetMvc-Version`, `X-Generator`, `<meta name="generator">`) and
+  compares them with a bundled offline data file of vendor end-of-life dates and critical advisories
+  (`src/kestrix/webcheck/data/exposure.json`, refreshed by hand with `scripts/refresh_exposure_data.py`). New findings:
+  `exposure.eol_version` (medium or high), `exposure.known_vulnerable_version` (high; currently PHP CVE-2026-109618 and
+  CVE-2026-109619, fixed in 8.2.35, 8.3.36, 8.4.27 and 8.5.12), `exposure.outdated_branch` (low) and
+  `disclosure.generator_version` (low). Findings gain an optional `cwe` list and reports an optional `notes` list that
+  says when the bundled data is more than 30 days old. No extra requests are sent. A banner can be wrong or hidden, so a
+  missing finding is not proof of safety.
+
 - **Link and file checker benchmark and round-1 rules.** `kestrixlinkfilebench` (research tooling, not in the wheel)
   measures `kestrix.forensics` on PhiUSIIL, Majestic Million and Govdocs1 plus synthetic file cases; results are in
   `docs/research/linkfile-benchmark.md` (development split only). New file findings: `macro_office_file`,

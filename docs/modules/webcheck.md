@@ -174,6 +174,33 @@ A browser enforces every CSP it receives: several `Content-Security-Policy` head
 | --- | --- | --- |
 | `disclosure.server_version` | low | The `Server` header contains a version number such as `nginx/1.25.3`. |
 | `disclosure.powered_by` | low | An `X-Powered-By` header is present. |
+| `disclosure.generator_version` | low | A `<meta name="generator">` tag or an `X-Generator`, `X-AspNet-Version` or `X-AspNetMvc-Version` header names a WordPress, Drupal, Joomla or ASP.NET version. |
+| `exposure.eol_version` | medium or high | A header or generator tag announces a branch that its vendor no longer supports (see the next table). High when the end of life is a year or more old, when the vendor gives no date and says not to use it, or when a critical advisory leaves the branch unfixed; medium otherwise. |
+| `exposure.known_vulnerable_version` | high | A header announces a version below the first fixed release that an official advisory in the bundled data states for that branch. |
+| `exposure.outdated_branch` | low | A header announces an nginx branch that nginx.org lists as a legacy version rather than the current stable or mainline release. |
+
+#### Announced software versions
+
+The disclosure and `exposure.*` findings read the versions a response announces: the `Server`, `X-Powered-By`, `Via`, `X-AspNet-Version`, `X-AspNetMvc-Version` and `X-Generator` headers, and `<meta name="generator">` on each checked page. They recognise PHP, nginx, Apache httpd, Microsoft IIS, OpenSSL (inside `Server`), Node.js, Drupal, WordPress, Joomla and ASP.NET, with bounded, tolerant parsing, and send no request beyond the page GETs already made. `X-Powered-By: Express` carries no version, so it is only the existing `disclosure.powered_by` finding.
+
+The versions are compared with a bundled offline data file, `src/kestrix/webcheck/data/exposure.json`, generated 2026-10-22. Every entry has its own source URL:
+
+| Product | What the data holds | Source |
+| --- | --- | --- |
+| PHP | End-of-life date of every branch from 3.0 to 8.5 (a supported branch's date is the end of its security support, so it turns end of life after that day) | [php.net/eol.php](https://www.php.net/eol.php), [supported-versions.php](https://www.php.net/supported-versions.php) |
+| Node.js | `end` date of every release line | [nodejs/Release schedule.json](https://raw.githubusercontent.com/nodejs/Release/main/schedule.json) |
+| nginx | Branches listed as "Legacy versions" | [nginx.org/en/download.html](https://nginx.org/en/download.html) |
+| Apache httpd | 2.2 (end of life December 2017), 2.0 and 1.3 (the project says they should not be used) | [httpd.apache.org](https://httpd.apache.org/security/vulnerabilities_22.html) security pages for 2.2, 2.0 and 1.3 |
+| Microsoft IIS | End of support of IIS 6.0, 7.0, 7.5, 8.0 and 8.5 (IIS 10 depends on the Windows release and is not judged) | [Microsoft Lifecycle](https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis) |
+| OpenSSL | End-of-support dates the policy page gives (3.4, 3.5, 3.6, 4.0) and the branches it lists as no longer supported (3.0, 1.1.1 and older) | [OpenSSL release strategy](https://openssl-library.org/policies/releasestrat/index.html) |
+| Drupal | End of life of Drupal 7, 8, 9 and 10 | [drupal.org release schedule](https://www.drupal.org/about/core/policies/core-release-cycles/schedule) |
+| Advisories | PHP, CVE-2026-109618 and CVE-2026-109619 (critical remote code execution, published 2026-10-21): fixed in 8.2.35, 8.3.36, 8.4.27 and 8.5.12; php.net says PHP 8.1 and older get no update from the project | [php.net announcement](https://www.php.net/archive/2026.php#2026-10-21-5), GitHub advisories GHSA-w8hw-w9fx-j79w and GHSA-6wmf-4rv5-p3rp (affected: below each fixed version) |
+
+A branch or product that is not in the file gets no end-of-life claim, and WordPress and Joomla versions are only reported as announced because their sources give no end-of-life dates. An advisory range is used only when the vendor's advisory states it; the PHP 8.1 and older branches are reported as end of life, not as "vulnerable", because the advisory gives no affected range for them.
+
+Refresh the file by hand: `uv run python scripts/refresh_exposure_data.py` rewrites the PHP and Node.js entries from their official pages; the other entries and the advisories are edited from their source URLs, then `--confirm-manual` sets the `generated` date. When that date is more than 30 days old, the report carries a note in `notes`.
+
+Evidence shows the header (or tag) and value, the matched branch, its end-of-life date and the source URL. The recommendation is to upgrade to a supported branch and to stop announcing the version (`expose_php = Off`, nginx `server_tokens off;`, Apache `ServerTokens Prod`). A whole-site scan merges each id across pages like other findings.
 
 ### Cookies
 
@@ -198,7 +225,7 @@ These checks run on every `Set-Cookie` header of each checked page's final respo
 | `redirect_chain` | One entry per hop: `url`, `address` (the IP connected to), `status_code`, `elapsed_ms`. |
 | `tls` | `host`, `status`, `detail`, `protocol`, `issuer`, `not_after`, `days_remaining`. `status` is `ok`, `not_https`, `expired`, `not_yet_valid`, `hostname_mismatch`, `untrusted`, `outdated_protocol` or `handshake_failed`. |
 | `grade`, `score` | The letter and the 0 to 100 score. |
-| `findings` | Sorted high, medium, low, info. |
+| `findings` | Sorted high, medium, low, info. The software-version findings also carry `cwe` (CWE-1104, CWE-937 or CWE-200). |
 | `timings` | `total_ms`, `http_ms`, `tls_ms`. |
 | `profile` | `kind` (the profile used for grading), `detected`, `declared`, `reasons`, `decided_by` (the page that set the kind) and `evidence`. `null` when headers were not checked. |
 | `scope` | `site` or `page`. Every field above describes the start page and the site's connection in both cases; `findings` and `profile` cover all checked pages when `scope` is `site`. |
@@ -206,6 +233,7 @@ These checks run on every `Set-Cookie` header of each checked page's final respo
 | `requests_sent` | GET requests actually sent. |
 | `limits_reached` | `page_cap`, `deadline` and `request_budget`, whichever stopped the scan early. |
 | `links_skipped`, `sitemap_entries` | Links not fetched (see above) and addresses read from the sitemap. |
+| `notes` | Caveats about the check itself. Currently one: the bundled software-version data is more than 30 days old. |
 
 A finding in a whole-site scan also has `pages` (paths, at most 20) and `pages_total`. Reports saved before whole-site scans have none of the new fields and describe a single page.
 
@@ -218,6 +246,7 @@ A finding in a whole-site scan also has `pages` (paths, at most 20) and `pages_t
 - Only the first resolved address is contacted. Sites behind several addresses or a CDN may answer differently elsewhere.
 - `--allow-private` removes the address protections for that run. Use it only for hosts you control.
 - Certificate revocation (OCSP or CRL) is not checked.
+- The software-version findings trust a banner. A banner can be wrong, hidden or set by a proxy, and distribution packages keep an old version number while backporting fixes, so a finding is a strong hint and the absence of one is not proof that the software is current or safe. The data is a small bundled snapshot: it does not cover every product, and it does not list every vulnerability, only the end-of-life branches and the critical advisories named above.
 
 ## How the checks are verified
 
