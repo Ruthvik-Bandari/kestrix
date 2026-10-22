@@ -178,3 +178,20 @@ def test_bash_command_scans_at_most_twenty_files(tmp_path: Path) -> None:
     payload = {"hook_event_name": "PostToolUse", "tool_name": "Bash", "cwd": str(tmp_path), "kestrix_files": names}
     reply = json.loads(hook.hook_response(json.dumps(payload)) or "{}")
     assert reply["kestrix"]["new"] == hook.MAX_BASH_FILES
+
+
+def test_a_single_finding_keeps_its_explanation_and_fix(tmp_path: Path) -> None:
+    """With room to spare, the taint explanation and the whole fix both reach Claude."""
+    from kestrix_scan.hook import hook_response
+
+    target = tmp_path / "ping.py"
+    target.write_text(
+        "import subprocess\nfrom flask import request\n\n\ndef ping():\n"
+        '    return subprocess.run("ping -c 2 " + request.args["h"], shell=True)\n'
+    )
+    payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}, "tool_response": {"type": "create"}}
+    reply = hook_response(json.dumps({**payload, "cwd": str(tmp_path)}))
+    assert reply is not None
+    context = json.loads(reply)["hookSpecificOutput"]["additionalContext"]
+    assert "request.args" in context and "Fix: Pass the command as a list" in context
+    assert "…" not in context

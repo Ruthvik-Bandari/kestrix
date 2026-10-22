@@ -816,7 +816,9 @@ def session_start(payload: dict[str, Any]) -> None:
             **notice,
             "hookSpecificOutput": {
                 "hookEventName": "SessionStart",
-                "additionalContext": f"Kestrix security hooks are active: every file you write or edit is scanned with `kestrix-scan --hook` and findings come back as context to fix right away (Stop gate {gate}).",
+                "additionalContext": f"Kestrix security hooks are active: every file you write or edit is scanned with `kestrix-scan --hook` and findings come back as context to fix right away (Stop gate {gate}). "
+                "When the user asks whether code is safe or for a security review, use the kestrix:secure-code-review "
+                "skill, which runs `kestrix-scan` and verifies fixes, rather than reviewing by reading alone.",
             },
         }
     )

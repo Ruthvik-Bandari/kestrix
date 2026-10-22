@@ -53,7 +53,8 @@ from .walk import Candidate, Unreadable, is_within, read_text, rel_path
 MAX_STDIN_BYTES = 10 * 1024 * 1024
 MAX_SHOWN = 5
 MAX_CONTEXT_CHARS = 2400  # Claude Code caps hook context at 10,000 characters
-MAX_LINE_CHARS = 320
+MAX_LINE_CHARS = 320  # per entry when the budget is shared by many; fewer entries get more room
+MAX_ENTRY_CHARS = 600
 MAX_STOP_FILES = 200
 MAX_BASH_FILES = 20
 BEFORE_KEY = "kestrix_before"
@@ -238,7 +239,9 @@ def render_context(new: list[Finding], existing: int, origin: str = "edit") -> s
     entries = list(groups.values())
     shown = entries[:MAX_SHOWN]
     lines = [f"Kestrix: this {origin} introduced {len(new)} security issue(s) at medium severity or above:"]
-    lines.extend(describe(group[0], [f.line for f in group[1:]]) for group in shown)
+    # Share the context budget among the entries shown, so one finding keeps its explanation and trace.
+    room = max(MAX_LINE_CHARS, min(MAX_ENTRY_CHARS, (MAX_CONTEXT_CHARS - 600) // max(1, len(shown))))
+    lines.extend(describe(group[0], [f.line for f in group[1:]], room) for group in shown)
     hidden = sum(len(group) for group in entries[MAX_SHOWN:])
     if hidden:
         lines.append(f"+{hidden} more (run /kestrix:scan to list them).")
@@ -248,8 +251,8 @@ def render_context(new: list[Finding], existing: int, origin: str = "edit") -> s
     return "\n".join(lines)[:MAX_CONTEXT_CHARS]
 
 
-def describe(finding: Finding, also: list[int] | None = None) -> str:
-    """``path:line [SEVERITY] rule_id (CWE): message [trace: L3→L5] — Fix: … (also at lines 9, 14)``, at most ``MAX_LINE_CHARS``.
+def describe(finding: Finding, also: list[int] | None = None, room: int = MAX_LINE_CHARS) -> str:
+    """``path:line [SEVERITY] rule_id (CWE): message [trace: L3→L5] — Fix: … (also at lines 9, 14)``, at most ``room``.
 
     The fix is the part Claude acts on, so it is cut last: when the line is too long the trace goes first,
     then the message is cut to its first sentence, and only then is the fix cut (at a word boundary).
@@ -260,7 +263,7 @@ def describe(finding: Finding, also: list[int] | None = None) -> str:
     if also:
         named = ", ".join(str(n) for n in also[:8]) + (", ..." if len(also) > 8 else "")
         tail = f" (also at lines {named})"
-    limit = MAX_LINE_CHARS - len(tail)
+    limit = room - len(tail)
     head = f"- {finding.path}:{finding.line} [{finding.severity.upper()}] {finding.rule_id} ({finding.cwe}): "
     steps = [step.line for step in finding.trace]
     lines = [n for i, n in enumerate(steps) if i == 0 or n != steps[i - 1]]
