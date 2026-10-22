@@ -69,6 +69,10 @@ class MailReport(BaseModel):
     verdict: Verdict = Field(
         description="clean, suspicious, malicious or insufficient_evidence; see docs/modules/mail.md."
     )
+    verdict_reason: str | None = Field(
+        default=None,
+        description="Set when the verdict comes from combining several low findings rather than one medium or high finding.",
+    )
     heuristic_score: int = Field(
         ge=0,
         le=100,

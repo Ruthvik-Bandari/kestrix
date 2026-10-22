@@ -179,14 +179,21 @@ def test_return_path_mismatch_is_low() -> None:
     assert severity_of(report, "mail.sender.return_path_mismatch") == "low"
 
 
-@pytest.mark.parametrize(
-    "sender",
-    ['"support@paypal.com" <x@evil.example>', '"PayPal.com Billing" <x@evil.example>'],
-)
-def test_display_name_naming_another_domain(sender: str) -> None:
+@pytest.mark.parametrize("sender", ['"support@paypal.com" <x@evil.example>', '"PayPal.com" <x@evil.example>'])
+def test_display_name_that_is_another_address_or_domain_is_malicious(sender: str) -> None:
     report = analyze(message(sender=sender))
     assert ids(report) == ["mail.sender.display_name_spoof"]
+    assert severity_of(report, "mail.sender.display_name_spoof") == "high"
     assert report.verdict == "malicious"
+    assert "paypal.com" in (report.findings[0].evidence or "")
+
+
+def test_display_name_with_a_site_name_among_other_words_is_medium() -> None:
+    """Genuine newsletters put their site name in the display name, so a bare domain flags without condemning."""
+    report = analyze(message(sender='"PayPal.com Billing" <x@evil.example>'))
+    assert ids(report) == ["mail.sender.display_name_spoof"]
+    assert severity_of(report, "mail.sender.display_name_spoof") == "medium"
+    assert report.verdict == "suspicious"
     assert "paypal.com" in (report.findings[0].evidence or "")
 
 

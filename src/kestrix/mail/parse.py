@@ -46,6 +46,7 @@ MAX_HREF_CHARS = 2048
 MAX_LINK_TEXT_CHARS = 300
 MAX_NAME_CHARS = 255
 MAX_MAILER_CHARS = 200
+MAX_LIST_HEADER_CHARS = 300
 HEAD_BYTES = 8
 
 # Headers that only a message has; a blob with none of these (and no From) is not a message.
@@ -126,6 +127,11 @@ class ParsedMessage:
     part_count: int
     text_truncated: bool
     links_truncated: bool
+    # Mailing-list headers (RFC 2369, RFC 2919, Precedence), each cut to 300 characters.
+    list_id: str | None = None
+    list_post: str | None = None
+    list_unsubscribe: str | None = None
+    precedence: str | None = None
 
 
 def parse_message(raw: bytes) -> ParsedMessage:
@@ -171,6 +177,10 @@ def _parsed(raw: bytes, msg: EmailMessage) -> ParsedMessage:
         part_count=len(parts),
         text_truncated=collector.text_truncated,
         links_truncated=len(collector.links) > MAX_LINKS,
+        list_id=_cut(_header(msg, "list-id"), MAX_LIST_HEADER_CHARS),
+        list_post=_cut(_header(msg, "list-post"), MAX_LIST_HEADER_CHARS),
+        list_unsubscribe=_cut(_header(msg, "list-unsubscribe"), MAX_LIST_HEADER_CHARS),
+        precedence=_cut(_header(msg, "precedence"), MAX_LIST_HEADER_CHARS),
     )
 
 

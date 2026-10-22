@@ -2,7 +2,7 @@
 
 This page records how well `kestrix.mail` detects phishing and spam on public corpora, why it misses or over-flags, and what signal weights a simple explainable model learns from the same data. It is research tooling: the package is [`src/kestrixmailbench/`](../../src/kestrixmailbench/) (not in the published wheel), the jobs are `hpc/mail_*`, and the aggregate outputs are in [`docs/data/mail/`](../data/mail/README.md).
 
-**Status (2026-10-21).** Everything below is **development-split** numbers. The locked test split has not been opened. No learned weights are wired into `kestrix.mail`; `docs/modules/mail.md` still says Kestrix has not measured detection or false-alarm rates, and that stays true until the locked test has run and the owner decides.
+**Status (2026-10-22).** Everything below is **development-split** numbers. Sections up to "Learned weights" describe the rules as shipped when the benchmark ran; [Round 1](#round-1-rule-changes-measured-on-dev) records the rule changes made from that analysis and their before and after numbers. The locked test split has not been opened. No learned weights are wired into `kestrix.mail`; `docs/modules/mail.md` still says Kestrix has not measured detection or false-alarm rates, and that stays true until the locked test has run and the owner decides.
 
 ## What the dev numbers say
 
@@ -321,6 +321,88 @@ In words:
 
 The thresholds, targets, L2 strengths, cross-validation losses and a hash of the dev training IDs are inside each weights file ([`docs/data/mail/`](../data/mail/README.md)).
 
+## Round 1: rule changes measured on dev
+
+The dev error analysis above pointed at five things: mailing-list mail flagged for its own `Reply-To`, high-severity findings on legitimate HTML mail, many weak findings that never add up, no signal for generic spam wording, and phishing with no finding at all. Round 1 changes `kestrix.mail` for each, **one change at a time, re-measured on the full dev split after each**, and keeps a change only if it raises catch without false alarms moving beyond noise, or cuts false alarms without losing catch. The locked test was not run, and the round tooling cannot run it: `features --splits dev` never analyzes a test message.
+
+**Setup.** Same dev split and the same *content only* feature set as the baseline table (every `auth` finding removed; flagged is `suspicious` or `malicious`; intervals are the same grouped bootstrap, `msg` where a cohort has fewer than 8 groups). `hpc/mail_round.sh NAME` runs the changed analyzers over every dev message (16-task array, about a minute each) and then the dev metrics, into `/scratch/$USER/kestrix/mailbench-rules/NAME/`; the benchmark's own `reports/` and `features/` were not touched. The code ran from `~/kestrix-mailrules` (rounds record `MAILBENCH_SHA` there), not `~/kestrix`, so another sync could not change it mid-round. Aggregate probes (`python -m kestrixmailbench probe`, `hpc/mail_probe.sbatch`) counted coarse properties and curated candidate terms per cohort inside Slurm jobs and wrote counts only (cells under 3 messages dropped): [`mail-probe-baseline.json`](../data/mail/mail-probe-baseline.json). Re-running the shipped rules through this tooling (`r0`) reproduced the baseline to the digit. All rounds: [`mail-rules-round1.json`](../data/mail/mail-rules-round1.json); the final dev metrics: [`mail-dev-metrics-round1.json`](../data/mail/mail-dev-metrics-round1.json).
+
+### Per change, dev, content only
+
+Each row builds on the kept changes above it, and the decision column is what the code now does. Columns: phishing flagged (and malicious), spam flagged, SpamAssassin ham false alarms (flagged, malicious) and Enron ham false alarms.
+
+| Round | Change | Phishing flagged | Phishing malicious | Spam flagged | SA ham flagged | SA ham malicious | Enron ham flagged | Decision |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| r0 | Shipped rules (baseline) | 52.9% (45.5-58.8) | 13.1% (10.0-17.2) | 31.3% (msg 29.1-33.7) | 19.8% (msg 18.4-21.4) | 2.5% (msg 1.9-3.1) | 0.5% (0.3-0.8) | n/a |
+| r1 | 1a. List `Reply-To` is info | 52.9% (45.5-58.8) | 13.1% (10.0-17.2) | 30.4% (msg 28.2-32.8) | 3.6% (msg 3.0-4.3) | 2.5% (msg 1.9-3.1) | 0.5% (0.3-0.8) | keep |
+| r1b | 1b. Link text via a click tracker is low | 52.6% (45.3-58.6) | 12.8% (9.8-16.8) | 30.1% (msg 27.9-32.5) | 3.3% (msg 2.6-3.9) | 2.1% (msg 1.6-2.7) | 0.5% (0.3-0.8) | revert |
+| r1c | 1c. Display-name domain is medium unless it holds an address | 52.9% (45.5-58.8) | 9.4% (7.5-11.7) | 30.4% (msg 28.2-32.8) | 3.6% (msg 3.0-4.3) | 0.8% (msg 0.4-1.1) | 0.5% (0.3-0.8) | superseded by 1d |
+| r2 | 2a. 3 low findings from 2 analyzers (on 1a, 1c) | 61.1% (52.0-68.3) | 9.4% (7.5-11.7) | 34.5% (msg 32.2-37.0) | 16.0% (msg 14.7-17.5) | 0.8% (msg 0.4-1.1) | 0.5% (0.3-0.8) | revert |
+| r2b | 2b. Same, `return_path_mismatch` does not count | 59.1% (50.2-66.3) | 9.4% (7.5-11.7) | 32.1% (msg 29.9-34.6) | 4.1% (msg 3.4-4.8) | 0.8% (msg 0.4-1.1) | 0.5% (0.3-0.8) | keep |
+| r2c | 1d. Display name that is only a domain stays high | 59.1% (50.2-66.3) | 11.4% (9.5-13.9) | 32.1% (msg 29.9-34.6) | 4.1% (msg 3.4-4.8) | 0.8% (msg 0.4-1.1) | 0.5% (0.3-0.8) | keep |
+| r3 | 3a. `intent.spam_offer`, 36 phrases | 59.2% (50.2-66.4) | 11.4% (9.5-13.9) | 46.9% (msg 44.4-49.5) | 4.6% (msg 3.8-5.4) | 0.8% (msg 0.4-1.1) | 0.9% (0.7-1.2) | superseded by 3b |
+| r3b | 3b. `spam_offer` pruned to 23 phrases | 59.1% (50.2-66.3) | 11.4% (9.5-13.9) | 43.8% (msg 41.4-46.4) | 4.3% (msg 3.6-5.0) | 0.8% (msg 0.4-1.1) | 0.6% (0.4-0.9) | keep |
+| r4 | 4a. `links.shared_page_host`, low | 59.2% (50.3-66.3) | 11.4% (9.5-13.9) | 43.8% (msg 41.4-46.4) | 4.3% (msg 3.6-5.0) | 0.8% (msg 0.4-1.1) | 0.6% (0.4-0.9) | revert |
+| r6 | 4b. Looser credential wording | 67.9% (60.1-74.0) | 11.4% (9.5-13.9) | 44.0% (msg 41.7-46.6) | 4.5% (msg 3.7-5.3) | 0.8% (msg 0.4-1.1) | 0.7% (0.5-1.0) | superseded by 4c |
+| r7 | 4c. Those patterns need "your" | 67.5% (59.4-73.8) | 11.4% (9.5-13.9) | 43.9% (msg 41.5-46.4) | 4.5% (msg 3.7-5.3) | 0.8% (msg 0.4-1.1) | 0.7% (0.5-1.0) | keep (final) |
+
+**1a. Mailing-list `Reply-To` (kept).** Of the 472 SpamAssassin ham messages with `reply_to_mismatch`, 95% carry a `Reply-To` in the same organization as a domain named by some list header (92% by `List-Unsubscribe`, 73% by `List-Id`); 96% have `Precedence: bulk`. The rule uses `List-Id`, `List-Post` and `List-Unsubscribe` only: a foreign `Reply-To` whose organization matches a domain named there becomes the info finding `mail.sender.reply_to_mailing_list`; any other foreign `Reply-To` still raises `reply_to_mismatch`, and `Precedence` alone explains nothing because it names no domain. The rule explains 446 of the 472, and SpamAssassin ham false alarms fell from 19.8% to 3.6% (`easy_ham` from 18.7% to 0.3%). Phishing catch did not move (no phishing message gained the exemption) and spam catch fell 0.9 points (14 messages), inside the interval overlap. Forged list headers are a way around the exemption in principle; none of the dev phishing used it, but the data cannot show that an adversary would not.
+
+**What else makes `hard_ham` malicious (1b to 1d).** After 1a, 69 SpamAssassin ham messages are `malicious`: `display_name_spoof` on 51 and `text_href_mismatch` on 18. The 51 display names are 96% a bare domain (not an address), 98% with other words around it (88% with three words or more), all `.com`. In phishing the same finding fires on 289 messages: 233 bare domains, 56 addresses, and in 126 of them the whole display name is just a domain, which at most 2 ham messages did (the probe drops cells under 3). So an address or a lone domain stays high, and a domain among other words ("Shop.com Deals") becomes medium: it is flagged as before, but no longer `malicious` (SpamAssassin ham malicious 2.5% to 0.8%; `hard_ham` 17.4% and 22.6% to 6.2% and 5.3%). The first version, which made every bare domain medium (1c), also cost 3.7 points of phishing malicious; 1d recovered 2 of them. Phishing malicious ends at 11.4% against 13.1% at the start, a real cost of the change. For `text_href_mismatch`, 11 of the 18 ham cases went through click-tracker hosts (against 17 of 465 in phishing); downgrading those (1b) cut ham false alarms from 100 to 91 messages but lost 14 phishing messages, so it did not pay and was reverted. The 18 stay.
+
+**2. Weak-signal combination (kept, with one exclusion).** The proposed rule (3 distinct low findings from 2 analyzers, `auth.missing` and info excluded) lifted phishing 52.9% to 61.1% but SpamAssassin ham false alarms from 3.6% to 16.0%, because list mail with a tracker routinely has `return_path_mismatch`, `plain_http` and `random_host` together. A sweep over stored dev findings, with no change to code (job 11292604), shows where the false alarms come from:
+
+| Rule (lows needed / analyzers needed, ignored ids) | Phishing | Spam | SA ham | Enron ham |
+| --- | --- | --- | --- | --- |
+| none (round 1 state) | 52.9% | 30.4% | 3.6% | 0.5% |
+| 3 / 2 | 61.1% | 34.5% | 16.0% | 0.5% |
+| 4 / 2 | 54.5% | 31.2% | 4.0% | 0.5% |
+| 5 / 2 | 53.0% | 30.4% | 3.6% | 0.5% |
+| 3 / 3 | 56.2% | 32.9% | 5.0% | 0.5% |
+| 3 / 2 without `plain_http` | 54.7% | 31.3% | 4.1% | 0.5% |
+| 3 / 2 without `plain_http` and `return_path_mismatch` | 54.2% | 30.4% | 3.6% | 0.5% |
+| 3 / 2 without `return_path_mismatch` | 59.1% | 32.1% | 4.1% | 0.5% |
+| 2 / 2 without `plain_http` | 62.5% | 34.2% | 13.8% | 0.5% |
+| 2 / 2 | 73.7% | 55.6% | 40.3% | 1.6% |
+
+The shipped rule is "3 / 2 without `return_path_mismatch`": the finding's own text already says lists and mail services do this routinely, which is a reason not to count it as an independent signal. It lifts phishing by 6.2 points (about 380 messages) for 0.5 points more SpamAssassin ham false alarms and none on Enron. The rule is explicit in the verdict (`mail.analyze.verdict`, rule 3) and in the report (`verdict_reason`, for example `3 weak findings from different analyzers add up: ...`); `heuristic_score` is unchanged, so three lows score 15. This sweep is 12 variants chosen on dev; the choice carries a selection effect.
+
+**3. Spam wording (kept, pruned).** From curated candidate phrases written before looking at any counts, cohort counts per phrase were taken inside a job (11292761). The first family (36 phrases, r3) lifted spam catch from 32.1% to 46.9% but Enron false alarms from 0.5% to 0.9%. Phrases were pruned where ham hits were not far below spam hits (`penis`, `money-back guarantee`, `free money`, `cash bonus`, `free cash`, `satisfaction guaranteed`, `earn $`, `hot stock`, `penny stock`, `stock alert`, `investment opportunity`, `xxx`, `diet pills`); the 23 that remain (for example `mortgage rates`, `bad credit`, `debt consolidation`, `lose weight`, `weight loss`, `home-based business`, `100% guaranteed`, `bulk e-mail`) add 17 Enron ham messages (0.1% of Enron). Result: spam 32.1% to 43.8% (+11.7), SpamAssassin ham +0.2 points, Enron +0.1 point. `unsubscribe`, `free`, `click` and `viagra` were not used: they are common in the SpamAssassin ham, which is mailing lists, partly about spam (`unsubscribe` is in 15% of that ham and 84% of `hard_ham`, `viagra` in 3%). Pruning used dev ham counts, so these rates are optimistic, and the phrases are 2000s spam.
+
+**4. Phishing with no finding (7%).** Among the 427 dev phishing messages with no content finding: 28% have no link at all, 12% an empty text, 8% no subject (Enron ham: 3.7%, so unusable), 81% no attachment, and 19% one or more attachments (PDF 6%, images 8%), against 3% of SpamAssassin ham; 10% have at most 200 characters of text plus an attachment, in none of the 83 SpamAssassin ham with attachments (Enron's release has none, so this cannot be checked); 9% link to a free page or form host (Google Docs or Forms 5%), against 0.3% of SpamAssassin ham (blogs) and no Enron ham. No single one of these separates the group from ham by enough to flag on, and the era problem is acute (2002 ham has no Google Forms, and modern business mail attaches PDFs with a one-line body). Two checks were tried or ruled out. A low `mail.links.shared_page_host` (free page and form hosts) added 4 phishing messages through the combination rule and was reverted (r4). Private or intranet addresses in links (the `links.ip_host` false alarms on Enron): the 51 Enron messages link to public addresses (45) or numeric hosts (5), and fewer than 3 have a private address (the probe drops smaller cells), so there is nothing to lower and `ip_host` is unchanged. What did pay is wording: 30% of the no-finding group use a verify, confirm or validate word and 33% say "account", but the cue phrases were too narrow. Looser patterns (a verify, confirm, validate, update, restore, unlock or secure word within three words of account, password, login or credentials; an account alarm such as "your account has been limited"; "unusual activity"; "click here to verify") fire on 25% of the phishing the rules had missed, 0.4% of SpamAssassin ham, 0.1% of Enron ham and 0.3% of spam (job 11292963; that count also included a "security alert" phrase that was not shipped). Added to `mail.intent.credential_request` they lift phishing from 59.1% to 67.9% (+8.8) for +0.2 points of SpamAssassin ham false alarms and +0.1 on Enron. Reading the regenerated landing-page sample showed one wart: "Confirm the new account" in a payment-change message matched, which is not a credential request. Requiring "your" after the verify, confirm, validate, update, restore, unlock or secure word (or the word directly before "account", "identity", "login" or "credentials") removed that, cost 0.4 points (67.5%) and changed nothing else (r7, job 11293037 for the counts). "Close to firing" checks (thresholds not quite reached) were not analyzed beyond this.
+
+### Cumulative result and what it does and does not show
+
+| Measure on dev (content only) | Before | After |
+| --- | --- | --- |
+| Phishing flagged | 52.9% (45.5-58.8) | 67.5% (59.4-73.8) |
+| Phishing malicious | 13.1% (10.0-17.2) | 11.4% (9.5-13.9) |
+| Spam flagged | 31.3% (msg 29.1-33.7) | 43.9% (msg 41.5-46.4) |
+| Spam malicious | 3.8% (msg 2.8-4.7) | 3.8% (msg 2.8-4.7) |
+| SpamAssassin ham flagged | 19.8% (msg 18.4-21.4) | 4.5% (msg 3.7-5.3) |
+| SpamAssassin ham malicious | 2.5% (msg 1.9-3.1) | 0.8% (msg 0.4-1.1) |
+| Enron ham flagged | 0.5% (0.3-0.8) | 0.7% (0.5-1.0) |
+| All ham flagged | 3.7% (0.5-7.6) | 1.3% (0.7-2.3) |
+| All ham malicious | 0.5% (0.0-1.1) | 0.2% (0.0-0.4) |
+| `hard_ham` flagged (2002, 2003) | 26.8%, 27.8% | 26.8%, 27.1% |
+| `hard_ham` malicious (2002, 2003) | 17.4%, 22.6% | 6.2%, 5.3% |
+| Same corpus, SpamAssassin 2002: spam flagged / ham flagged | 31.3% / 19.8% | 43.9% / 4.5% |
+| Ham 2002-2005 vs positives 2005-2007: flagged / false alarms | 64.4% / 14.7% | 78.0% / 3.7% |
+| Phishing flagged, all findings / content, no header-era ids | 53.8% / 52.9% | 68.5% / 64.7% |
+| Precision, phishing vs ham (flagged, corpus class mix) | 83.9% (59.7-98.0) | 94.8% (87.5-97.9) |
+| Synthetic families | all ham clean, all positives flagged | unchanged |
+
+Phishing by Nazario file, flagged before and after: `phishing0.mbox` 69.3% to 77.8%, `phishing2.mbox` 59.8% to 74.4%, `phishing3.mbox` 68.0% to 77.3%, `private-phishing4.mbox` 50.8% to 70.3%, 2015 40.8% to 64.0%, 2017 35.5% to 55.1%, 2020 54.4% to 59.9%, 2023 41.3% to 49.2%, 2025 32.3% to 37.1%. Gains are smaller on the newest phishing.
+
+**Caveats.**
+
+- **Everything is tuned on dev.** Round 1 made about a dozen rule decisions, a 12-variant combination sweep and a phrase pruning, all on the dev split. The numbers above are optimistic by an unknown amount; only the locked test, not yet run, can say how much. The groups behind the intervals were not resampled for the selection.
+- **Part of the phishing gain follows the era.** `plain_http` and `outdated_mailer` carry the combination rule on old mail (in the dev phishing it fires on, `plain_http` is in 98% and `outdated_mailer` in 67%). With the two header-era ids removed the phishing figure is 64.7% instead of 67.5%, and the combination rule is worth less on mail where plain HTTP and old mailer names no longer occur.
+- **False alarms are low on corpora that cannot show the modern ones.** Enron has no attachments, `Reply-To` or list headers; SpamAssassin ham is one person's 2002 lists, several about spam. Modern ham (shared Google documents, HTTPS-only marketing mail with trackers, forwarded mail) is absent, and the looser credential wording could fire on genuine "verify your account" mail from a real provider; with DMARC passing, such a finding is already low, as before.
+- **Malicious phishing fell** from 13.1% to 11.4% because of 1d, and from 13.2% to 11.5% with all findings. Suspicious and malicious are different promises; this trades some `malicious` for fewer `malicious` ham.
+- **No learned weights are involved.** The learned weights in this document were fitted to the shipped rules; their findings (era leakage) still apply, and they were not refitted for the new ids.
+- **One new report field.** `verdict_reason` is added to the report (`null` unless the combination rule alone decided). It is additive; `docs/api.md` and the dashboard's type for the report do not list it yet.
+
 ## What is not claimed
 
 - No test-set number exists yet. Dev numbers, and especially the learned-versus-baseline comparison, are for choosing what to test, not for quoting.
@@ -350,6 +432,13 @@ Run order after the dev review (once, on the owner's go-ahead):
 ssh explorer 'cd ~/kestrix && sbatch hpc/mail_locked.sbatch --name mail-v1 \
   --weights /scratch/$USER/kestrix/mailbench/reports/mail-weights-content.json \
   --weights /scratch/$USER/kestrix/mailbench/reports/mail-weights-content_noera.json'
+```
+
+Round 1 (dev only; run from a code tree of your choice, here `~/kestrix-mailrules`, which shares the virtual environment in `~/kestrix`):
+
+```bash
+ssh explorer 'cd ~/kestrix-mailrules && export KESTRIX_CODE=$HOME/kestrix-mailrules && bash hpc/mail_round.sh NAME'   # dev features, then dev metrics
+ssh explorer 'cd ~/kestrix-mailrules && export KESTRIX_CODE=$HOME/kestrix-mailrules && sbatch hpc/mail_probe.sbatch'  # aggregate cohort probe
 ```
 
 `/scratch` is purged on the first Tuesday of each month (next: 2026-11-03). The manifest lets every download be repeated; the learned weights and aggregate reports are committed under `docs/data/mail/`.

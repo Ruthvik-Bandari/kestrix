@@ -3,7 +3,8 @@
 """Heuristic cues of business email compromise (BEC), phishing and spam offers in the subject and text.
 
 These are small, curated phrase lists, not a language model or a classifier: English for every
-family, plus Russian for the gambling and prize offers. They miss paraphrases and other languages,
+family, plus Russian for the gambling and prize offers. ``spam_offer`` is a short list of classic bulk-mail
+offers (loans, pills, home-based income) that the benchmark found almost only in spam. They miss paraphrases and other languages,
 and ordinary mail can use the same words. Each cue family is reported at most once, with the
 matched phrase (at most 60 characters) as evidence. A payment or gift-card request together with
 urgency or secrecy is the classic BEC shape and raises one more, high finding. A run of invisible
@@ -40,6 +41,32 @@ class _Family:
     explanation: str
     pattern: re.Pattern[str]
 
+
+SPAM_OFFER_PHRASES = (
+    r"credit card offers?",
+    r"pre-?approved (?:for )?(?:a )?(?:loan|credit|mortgage|home)",
+    r"bad credit",
+    r"debt consolidation",
+    r"lowest (?:mortgage|interest|loan) rates?",
+    r"mortgage (?:rates?|quotes?|lenders?|refinanc\w+)",
+    r"refinanc\w+ (?:your|now|today|rates?)",
+    r"lose weight",
+    r"weight loss",
+    r"enlarge(?:ment)? your",
+    r"(?:work|working) (?:from|at) home (?:opportunity|business|and (?:earn|make))",
+    r"be your own boss",
+    r"home[- ]based business",
+    r"100% guaranteed",
+    r"easy money",
+    r"extra income",
+    r"make money (?:fast|online|easily|at home|from home)",
+    r"earn money (?:online|fast|at home)",
+    r"bulk e-?mail",
+    r"million (?:e-?mail )?addresses",
+    r"online pharmacy",
+    r"no prescription",
+    r"live cams?",
+)
 
 _FAMILIES = (
     _Family(
@@ -108,6 +135,19 @@ _FAMILIES = (
             r"(?:sign|log)(?:-| )?in to (?:continue|confirm|verify|restore|unlock)",
             r"unusual (?:sign|log)(?:-| )?in",
             r"(?:re-?enter|update) your (?:password|credentials|login details)",
+            # Looser wording seen in phishing (benchmark round 1): an action word followed by "your" and the thing
+            # being protected, an alarm about the account, or a call to click in order to verify.
+            r"(?:verify|confirm|validate) (?:\w+ ){0,3}your (?:\w+ ){0,2}(?:account|password|login|identity|credentials)",
+            r"(?:verify|confirm|validate) (?:account|identity|login|credentials)",
+            r"(?:update|restore|unlock|reactivate|secure) (?:\w+ ){0,3}your (?:\w+ ){0,2}"
+            r"(?:account|password|login|credentials|billing information|payment information)",
+            r"(?:account|password|login|mailbox) (?:\w+ ){0,4}"
+            r"(?:suspended|locked|limited|restricted|expired|compromised|disabled|deactivated|terminated|closed|unauthorized)",
+            r"(?:your|the) (?:\w+ )?account (?:has been|was|will be|is) (?:\w+ )?"
+            r"(?:suspended|locked|limited|restricted|closed|disabled|deactivated|terminated|compromised)",
+            r"(?:unusual|suspicious|unauthorized) (?:\w+ ){0,2}(?:activity|access|attempt|sign-?in|log-?in)",
+            r"click (?:here|below|the link|this link|on the link) to "
+            r"(?:verify|confirm|validate|update|restore|unlock|secure|log ?in|sign ?in|login)",
         ),
     ),
     _Family(
@@ -127,6 +167,15 @@ _FAMILIES = (
             r"без депозита",
             r"бонус\w* (?:на|за|к) (?:первый )?депозит\w*",
         ),
+    ),
+    _Family(
+        "spam_offer",
+        "medium",
+        "Advertises a bulk-mail offer such as loans, pills or easy money",
+        "Unsolicited offers for mortgages, credit, weight-loss or health products, home-based income and bulk "
+        "e-mail lists are the classic subject matter of spam. Legitimate mail from a business you deal with seldom "
+        "uses these phrases; a discussion about spam does, so this is a hint, not proof.",
+        _cue(*SPAM_OFFER_PHRASES),
     ),
     _Family(
         "prize_claim",

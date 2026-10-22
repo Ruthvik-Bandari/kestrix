@@ -19,7 +19,7 @@ from pathlib import Path
 
 from .common import Layout
 
-COMMANDS = ("acquire", "build", "split", "features", "dev-metrics", "learn", "locked-test")
+COMMANDS = ("acquire", "build", "split", "features", "dev-metrics", "probe", "learn", "locked-test")
 
 
 def _years(text: str) -> tuple[int, int]:
@@ -38,6 +38,12 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, help="build: at most this many messages per input file (smoke runs)")
     p.add_argument("--enron-sample", type=int, default=20_000)
     p.add_argument("--shard", type=int, help="features: shard number")
+    p.add_argument(
+        "--splits",
+        default="dev,test",
+        help="features: comma-separated splits to analyze; rule rounds use 'dev' so the locked test is never run",
+    )
+    p.add_argument("--baseline-root", type=Path, help="probe: root of the earlier run whose dev verdicts form cohorts")
     p.add_argument("--shards", type=int, default=16, help="number of corpus shards (build and all later stages)")
     p.add_argument("--bootstrap", type=int, default=1000)
     p.add_argument("--era-ham-years", type=_years, default=(2002, 2005))
@@ -116,7 +122,7 @@ def _run(args: argparse.Namespace, layout: Layout) -> int:
         if args.shard is None:
             raise SystemExit("features needs --shard N")
         meta = {m["id"]: m for m in read_meta(layout)}
-        result = run_shard(layout, args.shard, meta, read_split(layout))
+        result = run_shard(layout, args.shard, meta, read_split(layout), tuple(args.splits.split(",")))
         print(result)
         return 1 if result["errors"] and sum(result["errors"].values()) > 0.01 * sum(result["analyzed"].values()) else 0
     return _analysis(args, layout)
@@ -131,6 +137,12 @@ def _analysis(args: argparse.Namespace, layout: Layout) -> int:
 
         dev_metrics(layout, strata, args.bootstrap)
         print(f"wrote {layout.reports / 'mail-dev-metrics.json'}")
+        return 0
+    if args.command == "probe":
+        from .probe import REPORT, run_probe
+
+        run_probe(layout, Layout(args.baseline_root or args.root, args.shards))
+        print(f"wrote {layout.reports / REPORT}")
         return 0
     if args.command == "learn":
         from .common import write_json
