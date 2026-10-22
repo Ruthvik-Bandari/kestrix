@@ -1,0 +1,32 @@
+{
+  "created_at": "2026-10-22T09:39:38+00:00",
+  "ids_sha256_all": "49ada9cac17fde931258423369adf70cddc0bd23424eb169e7a2ce863b25067f",
+  "kind": "link",
+  "schema_version": 1,
+  "seed": "kestrixlinkfile-v1",
+  "splits": {
+    "dev": {
+      "by_source_label": {
+        "majestic/benign": 19802,
+        "phiusiil/benign": 94344,
+        "phiusiil/phishing": 66593
+      },
+      "groups": 142071,
+      "ids_sha256": "d0925b9a4e29f731b4e2f025bcd6750269bf1ef7f09464888a658790dbe0b545",
+      "items": 180739
+    },
+    "test": {
+      "by_source_label": {
+        "majestic/benign": 8468,
+        "phiusiil/benign": 40463,
+        "phiusiil/phishing": 28531
+      },
+      "groups": 60167,
+      "ids_sha256": "f5907fb7ca04c0acca0795aa3ed99a0480faa7b2585b1a8a8436d5f8170d5e48",
+      "items": 77462
+    }
+  },
+  "stratified_by": "commonest source and label of the group",
+  "test_fraction_target": 0.3,
+  "unit": "group = registered domain (offline approximation, coarser than the Public Suffix List)"
+}

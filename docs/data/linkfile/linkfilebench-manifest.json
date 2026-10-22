@@ -1,0 +1,273 @@
+{
+  "generated_at": "2026-10-22T09:07:13+00:00",
+  "schema_version": 1,
+  "sources": [
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-22T09:00:00+00:00",
+          "filename": "phiusiil.zip",
+          "kind": "phiusiil_zip",
+          "last_modified": null,
+          "sha256": "0a639fd03aea6308c5b1c10c92aa23c2ce1505447a9137271865cd0badc9a59a",
+          "size": 15376007,
+          "url": "https://archive.ics.uci.edu/static/public/967/phiusiil+phishing+url+dataset.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:00:01+00:00",
+          "filename": "uci-967.html",
+          "kind": "document",
+          "last_modified": null,
+          "sha256": "18656f042a7eb77b2453190495bb5122f2ad5d1bb0cbb1f700a91cc289b40881",
+          "size": 232543,
+          "url": "https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset"
+        }
+      ],
+      "landing_url": "https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset",
+      "license": {
+        "attribution": "Prasad, A. & Chandra, S. (2024). PhiUSIIL Phishing URL (Website) [Dataset]. UCI Machine Learning Repository. https://doi.org/10.1016/j.cose.2023.103545 (CC BY 4.0)",
+        "note": "CC BY 4.0 per the UCI Machine Learning Repository page; attribution required. Label coding in the CSV is 1 = legitimate, 0 = phishing (inverted here and tested). Phishing and legitimate URLs were collected differently, so class differences can be collection artifacts (see the leakage section).",
+        "spdx": "CC-BY-4.0"
+      },
+      "schema_version": 1,
+      "source": "phiusiil",
+      "title": "PhiUSIIL Phishing URL (Website) dataset, UCI 967"
+    },
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-22T09:00:06+00:00",
+          "filename": "majestic_million.csv",
+          "kind": "majestic_csv",
+          "last_modified": "Thu, 22 Oct 2026 05:00:20 GMT",
+          "sha256": "78b104b10b80f1761729030d03569f8e878d6e292d7e0e83b1f0ac18fd2a8a3c",
+          "size": 78945327,
+          "url": "https://downloads.majestic.com/majestic_million.csv"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:00:08+00:00",
+          "filename": "majestic-million.html",
+          "kind": "document",
+          "last_modified": null,
+          "sha256": "e32a022cc26b5f4548bc47a6f188a8f8ac90f8701007dc0f184a4136e388fd4a",
+          "size": 319098,
+          "url": "https://majestic.com/reports/majestic-million"
+        }
+      ],
+      "landing_url": "https://majestic.com/reports/majestic-million",
+      "license": {
+        "attribution": "Majestic, Majestic Million. https://majestic.com/reports/majestic-million (CC BY 3.0)",
+        "note": "CC BY 3.0 Unported per majestic.com/reports/majestic-million; attribution required. Only domain names are used, turned into host-root URLs (https://domain/, half with www.); they carry no path or query, so they stand for popular sites, not for what a legitimate link usually looks like.",
+        "spdx": "CC-BY-3.0"
+      },
+      "schema_version": 1,
+      "source": "majestic",
+      "title": "Majestic Million (top one million domains)"
+    },
+    {
+      "capture_method": "https download, size and SHA-256 recorded on first download (trust on first use)",
+      "files": [
+        {
+          "downloaded_at": "2026-10-22T09:00:26+00:00",
+          "filename": "144.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 00:40:14 GMT",
+          "sha256": "66957a6b2c209d26b84f32e46826fb4f07f42b67deef4e5ed187a8ad159f563d",
+          "size": 459840883,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/144.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:00:48+00:00",
+          "filename": "152.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 00:41:59 GMT",
+          "sha256": "f1ec264f79985516fcbe52c45d78f7d5b4f4a62848ea2c9f2a6382fcfc9e1d98",
+          "size": 301837464,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/152.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:00:59+00:00",
+          "filename": "217.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 00:55:45 GMT",
+          "sha256": "2509362fab9b6972414569a3e609915071c32cb22035cf3dd21e00b7a21c0aea",
+          "size": 270594844,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/217.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:01:11+00:00",
+          "filename": "240.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:00:10 GMT",
+          "sha256": "856804e8c89b4e921902edf6e526429bf6ebdc897e9b9ac60ebf55c83b7329c1",
+          "size": 285665856,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/240.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:01:30+00:00",
+          "filename": "264.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:05:09 GMT",
+          "sha256": "b6b33a689d9abddf7b292c555e46661a8a687e8d8b5513701c0d6c28b49f54ca",
+          "size": 460133594,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/264.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:01:47+00:00",
+          "filename": "327.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:15:07 GMT",
+          "sha256": "ecd14c41cd69e38e4625ef90eda0cc6bb0ed7dc03918d7e9627987d2d723a693",
+          "size": 337876982,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/327.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:02:00+00:00",
+          "filename": "366.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:19:17 GMT",
+          "sha256": "2da3c498e042a46bb3f4712d1829c31c05eb9a18ba1c0464853802a4a5e2d30f",
+          "size": 213253347,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/366.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:02:20+00:00",
+          "filename": "444.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:27:07 GMT",
+          "sha256": "8d81be6598e71085fe69c81c560a15b614aa32ad2e5edca35fa69c09b8758a29",
+          "size": 331307148,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/444.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:02:40+00:00",
+          "filename": "470.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:30:03 GMT",
+          "sha256": "870a1dff6186417038b918a1a09da86035fc519c2532354d8aeb9b18202930cd",
+          "size": 363141291,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/470.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:02:54+00:00",
+          "filename": "489.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:32:24 GMT",
+          "sha256": "9f836836a54894ecf4060dfc3f0988b73cf6feed3fe800b5c0e957c0e14e52af",
+          "size": 254193417,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/489.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:03:55+00:00",
+          "filename": "536.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:39:50 GMT",
+          "sha256": "ee232036994c23a938879c872f45bf7273e3b5f2758c1d690b7a99ad3bea66a0",
+          "size": 963725474,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/536.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:04:08+00:00",
+          "filename": "553.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:42:22 GMT",
+          "sha256": "873045c80db4bc76d6080364e250a4c40b710c6bf87877886b1d2c2ee7b562c9",
+          "size": 279664678,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/553.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:04:22+00:00",
+          "filename": "569.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:44:04 GMT",
+          "sha256": "3b73d8e9c6772aeaf125dd729b318eb5c683da736aa874988a6224ffc218724d",
+          "size": 279910595,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/569.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:04:31+00:00",
+          "filename": "653.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:52:17 GMT",
+          "sha256": "532aab08c1e778b6f724fdb073dd0b35c3abeb7dc2a1e2ba1ac701b633d6f931",
+          "size": 195710739,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/653.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:05:41+00:00",
+          "filename": "656.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:52:41 GMT",
+          "sha256": "507da78a6a5858d00d66a4a41738e0fb0df2dced3745c3b805cc21b59f6a6e97",
+          "size": 1417636926,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/656.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:05:52+00:00",
+          "filename": "683.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 01:58:00 GMT",
+          "sha256": "02190676180ad84b9386f04c3d5cc9c050440b629c322c33336218769e8a6846",
+          "size": 282632073,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/683.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:06:07+00:00",
+          "filename": "763.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 02:06:38 GMT",
+          "sha256": "ef83b4b5204e4cb82e65e95d080c1e7753db95f31df2c19742a55a36db40ece1",
+          "size": 375027223,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/763.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:06:20+00:00",
+          "filename": "822.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 02:12:57 GMT",
+          "sha256": "9ad6e8c0ce915b88a20f16523bf6feb05c4b3f8c6edbfbd3bfe4fb552ba214ca",
+          "size": 303067916,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/822.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:06:35+00:00",
+          "filename": "827.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 02:13:31 GMT",
+          "sha256": "6325c92d0098e029e03a55fc2fba3ff0e457c9c9ad3a8052fa4f539006def5ac",
+          "size": 387005182,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/827.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:07:12+00:00",
+          "filename": "880.zip",
+          "kind": "govdocs_zip",
+          "last_modified": "Sun, 22 Nov 2020 02:20:25 GMT",
+          "sha256": "e4da3d3975456a8f52964ced660d123c8d313e0e566fdc77c95d36de694ced38",
+          "size": 367206014,
+          "url": "https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/880.zip"
+        },
+        {
+          "downloaded_at": "2026-10-22T09:07:13+00:00",
+          "filename": "digitalcorpora-files.html",
+          "kind": "document",
+          "last_modified": null,
+          "sha256": "b109bc5a344e203f634ca192937a4ed1b5bec736972f397482a876a0209124bc",
+          "size": 84447,
+          "url": "https://digitalcorpora.org/corpora/file-corpora/files/"
+        }
+      ],
+      "landing_url": "https://digitalcorpora.org/corpora/file-corpora/files/",
+      "license": {
+        "attribution": "Garfinkel, S., Farrell, P., Roussev, V., & Dinolt, G. (2009). Bringing science to digital forensics with standardized forensic corpora. Digital Investigation, 6, S2-S11 (DFRWS 2009). https://digitalcorpora.org/corpora/file-corpora/files/",
+        "note": "Digital Corpora states the documents are freely available for research and, to the best of its knowledge, freely redistributable; no formal license is named. The files are verbatim copies of US government web documents and can include malware (not removed), so 'benign' means presumed benign. Never opened or executed here: read as bytes only. Raw files stay on the cluster.",
+        "spdx": "LicenseRef-Govdocs1-freely-redistributable"
+      },
+      "schema_version": 1,
+      "source": "govdocs1",
+      "title": "Govdocs1 (Digital Corpora), 20 seeded zip threads of 1,000"
+    }
+  ]
+}

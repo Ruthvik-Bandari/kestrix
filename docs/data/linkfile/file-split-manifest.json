@@ -1,0 +1,32 @@
+{
+  "created_at": "2026-10-22T09:34:50+00:00",
+  "ids_sha256_all": "9efd4fc1162e8b0fd70fa83ea8911692e27aece7b5c6bba4e46f7231665e3b28",
+  "kind": "file",
+  "schema_version": 1,
+  "seed": "kestrixlinkfile-v1",
+  "splits": {
+    "dev": {
+      "by_source_label": {
+        "govdocs1/benign": 12816,
+        "synthetic/benign": 240,
+        "synthetic/malicious": 360
+      },
+      "groups": 43,
+      "ids_sha256": "c4805e0e2cc4a8bb5ba9dc84ae0796007d94c96499aca3de1e3f5ef8e24ce701",
+      "items": 13416
+    },
+    "test": {
+      "by_source_label": {
+        "govdocs1/benign": 6877,
+        "synthetic/benign": 120,
+        "synthetic/malicious": 180
+      },
+      "groups": 37,
+      "ids_sha256": "2b0659ee6f4dab48300911c16a497c049011669ad4a4102f8974c56efac472af",
+      "items": 7177
+    }
+  },
+  "stratified_by": "commonest source and label of the group",
+  "test_fraction_target": 0.3,
+  "unit": "group = Govdocs1 zip thread"
+}

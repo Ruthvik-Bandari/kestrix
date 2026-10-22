@@ -1,0 +1,155 @@
+{
+  "cohorts": {
+    "benign_majestic": {
+      "n": 19802,
+      "tags": {
+        "dots_ge3": 975,
+        "host_len_ge35": 59,
+        "label_digits_ge3": 549,
+        "label_entropy_ge3_5_len_ge10": 1496,
+        "label_hyphens_ge1": 2462,
+        "label_hyphens_ge2": 382,
+        "label_len_ge20": 916,
+        "label_numeric_only": 46,
+        "subdomain_digits_ge3": 14,
+        "tld_len_ge5": 301
+      }
+    },
+    "benign_majestic_bare_https": {
+      "n": 19802,
+      "tags": {
+        "dots_ge3": 975,
+        "host_len_ge35": 59,
+        "label_digits_ge3": 549,
+        "label_entropy_ge3_5_len_ge10": 1496,
+        "label_hyphens_ge1": 2462,
+        "label_hyphens_ge2": 382,
+        "label_len_ge20": 916,
+        "label_numeric_only": 46,
+        "subdomain_digits_ge3": 14,
+        "tld_len_ge5": 301
+      }
+    },
+    "benign_phiusiil": {
+      "n": 94344,
+      "tags": {
+        "dots_ge3": 14139,
+        "host_len_ge35": 369,
+        "label_digits_ge3": 615,
+        "label_entropy_ge3_5_len_ge10": 6584,
+        "label_hyphens_ge1": 7010,
+        "label_hyphens_ge2": 679,
+        "label_len_ge20": 4522,
+        "label_numeric_only": 43,
+        "subdomain_digits_ge3": 93,
+        "tld_len_ge5": 355
+      }
+    },
+    "benign_phiusiil_bare_https": {
+      "n": 94344,
+      "tags": {
+        "dots_ge3": 14139,
+        "host_len_ge35": 369,
+        "label_digits_ge3": 615,
+        "label_entropy_ge3_5_len_ge10": 6584,
+        "label_hyphens_ge1": 7010,
+        "label_hyphens_ge2": 679,
+        "label_len_ge20": 4522,
+        "label_numeric_only": 43,
+        "subdomain_digits_ge3": 93,
+        "tld_len_ge5": 355
+      }
+    },
+    "phishing": {
+      "n": 66593,
+      "tags": {
+        "at_in_query_or_path": 437,
+        "dots_ge3": 15636,
+        "double_slash_in_path": 257,
+        "host_len_ge35": 10567,
+        "label_digits_ge3": 2433,
+        "label_entropy_ge3_5_len_ge10": 3293,
+        "label_hyphens_ge1": 6588,
+        "label_hyphens_ge2": 1037,
+        "label_len_ge20": 2110,
+        "label_numeric_only": 704,
+        "path_deep_ge3": 3855,
+        "path_has_ext_php_html_asp": 6543,
+        "percent_encoding_ge3": 176,
+        "platform:dynamic_dns_or_tunnel": 686,
+        "platform:form_or_doc_service": 22,
+        "platform:site_builder": 3808,
+        "platform:static_or_cloud_hosting": 10317,
+        "query_has_url": 196,
+        "subdomain_digits_ge3": 13866,
+        "tld_len_ge5": 1179
+      }
+    },
+    "phishing_bare_https": {
+      "n": 18832,
+      "tags": {
+        "dots_ge3": 3432,
+        "host_len_ge35": 5971,
+        "label_digits_ge3": 130,
+        "label_entropy_ge3_5_len_ge10": 298,
+        "label_hyphens_ge1": 879,
+        "label_hyphens_ge2": 169,
+        "label_len_ge20": 241,
+        "label_numeric_only": 19,
+        "platform:dynamic_dns_or_tunnel": 23,
+        "platform:site_builder": 2614,
+        "platform:static_or_cloud_hosting": 8500,
+        "subdomain_digits_ge3": 8549,
+        "tld_len_ge5": 48
+      }
+    },
+    "phishing_bare_https_missed_below_medium": {
+      "n": 18748,
+      "tags": {
+        "dots_ge3": 3399,
+        "host_len_ge35": 5941,
+        "label_digits_ge3": 129,
+        "label_entropy_ge3_5_len_ge10": 298,
+        "label_hyphens_ge1": 873,
+        "label_hyphens_ge2": 168,
+        "label_len_ge20": 237,
+        "label_numeric_only": 18,
+        "platform:dynamic_dns_or_tunnel": 23,
+        "platform:site_builder": 2611,
+        "platform:static_or_cloud_hosting": 8472,
+        "subdomain_digits_ge3": 8530,
+        "tld_len_ge5": 48
+      }
+    },
+    "phishing_missed_below_medium": {
+      "n": 65257,
+      "tags": {
+        "at_in_query_or_path": 434,
+        "dots_ge3": 14680,
+        "double_slash_in_path": 256,
+        "host_len_ge35": 10213,
+        "label_digits_ge3": 2243,
+        "label_entropy_ge3_5_len_ge10": 3221,
+        "label_hyphens_ge1": 6318,
+        "label_hyphens_ge2": 998,
+        "label_len_ge20": 2073,
+        "label_numeric_only": 533,
+        "path_deep_ge3": 3780,
+        "path_has_ext_php_html_asp": 6181,
+        "percent_encoding_ge3": 144,
+        "platform:dynamic_dns_or_tunnel": 676,
+        "platform:form_or_doc_service": 22,
+        "platform:site_builder": 3786,
+        "platform:static_or_cloud_hosting": 10271,
+        "query_has_url": 129,
+        "subdomain_digits_ge3": 13563,
+        "tld_len_ge5": 1157
+      }
+    }
+  },
+  "generated_at": "2026-10-22T10:57:06+00:00",
+  "kind": "link",
+  "min_cell": 3,
+  "schema_version": 1,
+  "split": "dev"
+}
