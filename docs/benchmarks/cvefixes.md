@@ -189,3 +189,30 @@ ssh explorer 'cd ~/kestrix-codebench && sbatch hpc/codebench_locked.sbatch --nam
 ## Attribution and licenses
 
 CVEfixes: Bhandari, G., Naseer, A. and Moonen, L. (2021), *CVEfixes: automated collection of vulnerabilities and their fixes from open-source software*, PROMISE '21 (data CC BY 4.0). GitHub Advisory Database (CC BY 4.0), <https://github.com/github/advisory-database>. The mined files keep their projects' licenses and are not redistributed; only counts, rates and rule ids are published. Tool licenses and the Semgrep decision are in [`dataset-licenses.md`](../research/dataset-licenses.md).
+
+## Locked test (2026-10-22)
+
+Run once (job 11300842, code `51669cf+9230f191`, claim `LOCKED_EVAL.json`) on the test half: 619 projects, 1,679
+CVEs, 4,367 file pairs (2,172 in scope). Report: [`codebench-locked-codebench-v1.json`](../data/codebench/codebench-locked-codebench-v1.json).
+95% repository-bootstrap intervals.
+
+| Tool | Language | Detection | Fix-aware | False alarms per KLOC (fixed files) |
+| --- | --- | --- | --- | --- |
+| kestrix-scan | Python | 4.4% [2.4, 6.6] | 3.2% [1.5, 5.2] | **0.29** [0.17, 0.44] |
+| Bandit 1.9.4 | Python | 6.2% [4.3, 8.3] | 3.9% [2.2, 6.0] | 1.42 [0.99, 1.92] |
+| kestrix-scan | JS/TS | 5.6% [3.9, 7.7] | **3.6%** [2.1, 5.4] | **0.91** [0.52, 1.45] |
+| eslint-plugin-security 4.2.0 | JS/TS | 10.4% [7.6, 13.4] | 1.6% [0.8, 2.5] | 15.62 [13.25, 18.26] |
+| eslint-plugin-security without `detect-object-injection` | JS/TS | 5.6% [3.2, 7.9] | 1.2% [0.6, 2.0] | 1.45 [1.04, 2.05] |
+
+What the locked test shows, without spin:
+
+- **Kestrix detects less than Bandit on Python** (−1.8 points, paired interval −3.6 to −0.3) at about a fifth of
+  Bandit's false-alarm rate, and **less than full ESLint security on JS/TS** (−4.9 points, −8.4 to −1.3), whose lead
+  comes with 17x the false alarms. Against ESLint without its noisiest rule, detection is equal and Kestrix raises
+  fewer false alarms and is more often right that the fix removed the problem (fix-aware 3.6% vs 1.2%).
+- **The tools find different bugs.** Kestrix with Bandit detects 7.1% of Python pairs; Kestrix with ESLint 15.1% of
+  JS/TS pairs. Running them together beats either alone.
+- **Absolute detection is low for every tool**, partly because the ground truth is coarse (a changed file of a fix
+  commit, often without the weakness) and partly because many CVEs are design flaws (authorization, CSRF, logic) that
+  pattern rules do not see. These numbers are not a claim that a scan finds most vulnerabilities.
+- The locked test is now spent; later rule rounds need new held-out data.
