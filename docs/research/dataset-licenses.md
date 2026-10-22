@@ -77,3 +77,18 @@ The code benchmark ([`docs/benchmarks/cvefixes.md`](../benchmarks/cvefixes.md)) 
 | Semgrep CE with the registry rules | Semgrep Rules License (not OSS) | **not used** | The registry rules' license restricts this use, and no OSS-licensed local ruleset was available, so Semgrep was skipped. |
 
 Raw files stay under `/scratch/$USER/kestrix/codebench/` (directories 0700, files 0600). Reports hold counts, rates, intervals and rule ids only.
+
+## Link and file benchmark datasets (`kestrixlinkfilebench`)
+
+The link and file accuracy benchmark ([`linkfile-benchmark.md`](linkfile-benchmark.md)) measures `kestrix.forensics` on the datasets below. Tier **eval** means used to measure and to choose rule changes on a development split; no model is trained. License audit of 2026-10-21 as approved by the owner; not legal advice.
+
+| Dataset | License | URL | Tier | Notes |
+| --- | --- | --- | --- | --- |
+| PhiUSIIL Phishing URL dataset (UCI 967) | CC BY 4.0 | <https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset> | eval | **Attribution required**: Prasad, A. & Chandra, S. (2024), doi:10.1016/j.cose.2023.103545. Label 1 is legitimate and 0 is phishing. Classes were collected differently (see the leakage section). URLs only, text, never visited. |
+| Majestic Million | CC BY 3.0 | <https://majestic.com/reports/majestic-million> | eval | **Attribution required.** Only domains, used as host-root URLs. |
+| Govdocs1, 20 seeded zip threads | "Freely redistributable" per Digital Corpora, no formal license | <https://digitalcorpora.org/corpora/file-corpora/files/> | eval | Cite Garfinkel, Farrell, Roussev & Dinolt (2009), DFRWS. Verbatim government web files that can include malware; read as bytes only, never opened; stay on the cluster. |
+| Synthetic files | Generated here (Apache-2.0) | `src/kestrixlinkfilebench/synth.py` | eval only | No real malware. Reported separately, never pooled. |
+| OpenPhish, URLhaus | Terms forbid this use | | not used | |
+| PhishTank | Terms conflict (archived 2006 personal-use text, registration, no automated access without permission) | <https://phishtank.org/terms.php> | not used | Skipped; PhiUSIIL's URLs derive from it and carry PhiUSIIL's license. |
+| MalwareBazaar, VirusShare, SOREL, UNSAFE-DOCS | Live malware | | not used | Never downloaded. |
+

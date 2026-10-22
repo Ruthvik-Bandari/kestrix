@@ -11,6 +11,7 @@ from __future__ import annotations
 import codecs
 import hashlib
 import math
+import re
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
@@ -38,10 +39,13 @@ MAX_FILE_BYTES = 50 * MIB
 CHUNK_BYTES = MIB
 BLOCK_BYTES = 4096
 HEAD_BYTES = 64 * 1024
+TAIL_BYTES = 64 * 1024
 MAX_ENTROPY_POINTS = 512
 HIGH_ENTROPY_BITS = 7.2
 MIN_REGION_BLOCKS = 2
 MAX_REGIONS = 32
+MAX_PE_CANDIDATES = 64
+MAX_E_LFANEW = 0x400
 
 _PRINTABLE = frozenset({9, 10, 13, *range(32, 127)})
 _TEXT_CONTROLS = frozenset({9, 10, 12, 13, 27})
@@ -97,7 +101,12 @@ KINDS = {
             "zip jar apk aar war ear ipa xpi epub odt ods odp odg whl nupkg vsix kmz appx msix 3mf",
             compressed=True,
         ),
-        _kind("ole2", "Legacy Office or Installer file (OLE2)", "doc dot xls xlt ppt pps pot msi msg vsd pub"),
+        _kind(
+            "ole2",
+            "Legacy Office or Installer file (OLE2)",
+            "doc dot xls xlt ppt pps pot msi msg vsd pub",
+            compressed=True,  # legacy Office files embed compressed images and objects
+        ),
         _kind("png", "PNG image", "png", compressed=True),
         _kind("jpeg", "JPEG image", "jpg jpeg jpe jfif", compressed=True),
         _kind("gif", "GIF image", "gif", compressed=True),
@@ -108,6 +117,7 @@ KINDS = {
         _kind("xz", "xz compressed data", "xz txz", compressed=True),
         _kind("7z", "7-Zip archive", "7z", compressed=True),
         _kind("rar", "RAR archive", "rar", compressed=True),
+        _kind("swf", "Adobe Flash movie (SWF)", "swf spl", compressed=True),
         _kind("sqlite", "SQLite database", "db sqlite sqlite3 db3"),
         _kind("text", "Plain text", ""),
         _kind("empty", "Empty file", ""),
@@ -143,6 +153,16 @@ _BINARY_ONLY = _words(
     "class wasm sqlite mp3 mp4 mov avi"
 )
 _EXIF_KINDS = frozenset({"jpeg", "png", "tiff", "webp"})
+_OFFICE_KINDS = frozenset({"docx", "xlsx", "pptx", "ooxml"})
+_MACRO_PART = b"vbaProject.bin"
+# Office Open XML extensions that promise a document without macros (Word and Excel refuse a macro part there).
+_MACRO_FREE = _words("docx xlsx pptx dotx xltx potx ppsx")
+# Formats that never hold a program: one found inside is an appended or smuggled payload.
+_NO_PROGRAM_KINDS = frozenset({"pdf", "jpeg", "png", "gif", "webp", "tiff", "docx", "xlsx", "pptx", "ooxml"})
+_SVG = re.compile(rb"<svg[\s>]", re.IGNORECASE)
+_ACTIVE = re.compile(rb"<script|javascript:|\bon(?:load|error|click|mouseover|begin)\s*=", re.IGNORECASE)
+# Script files Windows runs on a double click (JavaScript is common on the web, so it is only a low signal).
+_WINDOWS_SCRIPTS = _words("vbs vbe jse wsf wsh hta bat cmd ps1 psm1 scf")
 # Double-extension lure: a document-like name followed by an extension Windows will run.
 _RUNNABLE = _words("exe scr com bat cmd pif js jse vbs vbe wsf hta msi lnk ps1 jar")
 _DECOY = _words("pdf doc docx xls xlsx ppt pptx txt rtf jpg jpeg png gif mp3 mp4 avi mov zip rar csv")
@@ -157,6 +177,7 @@ class _Scan:
     histogram: list[int]
     block_entropy: list[float]
     head: bytes
+    tail: bytes
 
 
 def analyze_file(stream: BinaryIO, filename: str, max_bytes: int = MAX_FILE_BYTES) -> FileReport:
@@ -178,6 +199,7 @@ def analyze_file(stream: BinaryIO, filename: str, max_bytes: int = MAX_FILE_BYTE
     findings = [
         *_name_findings(filename, name),
         *_type_findings(kind, extension, mismatch),
+        *_content_findings(kind, extension, scan),
         *_entropy_findings(kind, entropy, scan.size),
         *(exif_findings(exif) if exif else []),
     ]
@@ -254,6 +276,8 @@ def detect_kind(head: bytes) -> Kind:
         return KINDS["macho_fat" if int.from_bytes(head[4:8], "big") < 45 else "java_class"]
     if head.startswith((b"PK\x03\x04", b"PK\x05\x06")):
         return _zip_kind(head)
+    if head[:3] in (b"CWS", b"ZWS", b"FWS") and len(head) > 8 and head[3] < 64 and not _looks_like_text(head[:32]):
+        return KINDS["swf"]
     if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
         return KINDS["webp"]
     for magic, kind_id in _PREFIXES:
@@ -299,6 +323,7 @@ def _scan(stream: BinaryIO, max_bytes: int) -> _Scan:
     histogram = [0] * 256
     block_entropy: list[float] = []
     head = bytearray()
+    tail = b""
     carry = b""
     size = 0
     while chunk := stream.read(CHUNK_BYTES):
@@ -309,6 +334,7 @@ def _scan(stream: BinaryIO, max_bytes: int) -> _Scan:
             hasher.update(chunk)
         if len(head) < HEAD_BYTES:
             head += chunk[: HEAD_BYTES - len(head)]
+        tail = (tail + chunk)[-TAIL_BYTES:]
         data = carry + chunk
         whole = len(data) - len(data) % BLOCK_BYTES
         for start in range(0, whole, BLOCK_BYTES):
@@ -317,7 +343,7 @@ def _scan(stream: BinaryIO, max_bytes: int) -> _Scan:
     if carry:
         block_entropy.append(_count_block(carry, histogram))
     hashes = Hashes(md5=md5.hexdigest(), sha1=sha1.hexdigest(), sha256=sha256.hexdigest(), sha512=sha512.hexdigest())
-    return _Scan(size, hashes, histogram, block_entropy, bytes(head))
+    return _Scan(size, hashes, histogram, block_entropy, bytes(head), tail)
 
 
 def _count_block(block: bytes, histogram: list[int]) -> float:
@@ -428,6 +454,127 @@ def _type_findings(kind: Kind, extension: str | None, mismatch: bool) -> list[Fi
             )
         )
     return findings
+
+
+def _content_findings(kind: Kind, extension: str | None, scan: _Scan) -> list[Finding]:
+    """Findings from what the content holds: macros, encryption, a hidden program, a script, or a runnable script name."""
+    return [
+        *_office_findings(kind, extension, scan),
+        *_archive_findings(kind, scan.head),
+        *_embedded_findings(kind, scan.head),
+        *_svg_findings(kind, scan.head),
+        *_script_name_findings(kind, extension),
+    ]
+
+
+def _office_findings(kind: Kind, extension: str | None, scan: _Scan) -> list[Finding]:
+    if kind.id not in _OFFICE_KINDS or not (_MACRO_PART in scan.head or _MACRO_PART in scan.tail):
+        return []
+    hidden = extension in _MACRO_FREE
+    warning = (
+        f"The name ends in .{extension}, an extension that promises no macros, which is a further warning sign."
+        if hidden
+        else "Many legitimate documents use macros too, so check where it came from before enabling them."
+    )
+    return [
+        _finding(
+            "macro_office_file",
+            "high" if hidden else "medium",
+            "Office document contains macros",
+            "The package holds a VBA macro project (vbaProject.bin). Macros are the most common way malicious Office "
+            f"documents run code once the reader clicks 'Enable content'. {warning}",
+        )
+    ]
+
+
+def _zip_encrypted(head: bytes) -> bool:
+    """True when a local file header in the header sample sets the encryption flag (bit 0 of the general flags)."""
+    start = 0
+    while (at := head.find(b"PK\x03\x04", start)) >= 0 and at + 8 <= len(head):
+        if head[at + 6] & 1:
+            return True
+        start = at + 4
+    return False
+
+
+def _archive_findings(kind: Kind, head: bytes) -> list[Finding]:
+    if kind.id != "zip" or not _zip_encrypted(head):
+        return []
+    return [
+        _finding(
+            "encrypted_archive",
+            "medium",
+            "Password-protected archive",
+            "At least one file in this ZIP is encrypted, so its contents cannot be inspected. Attackers send "
+            "password-protected archives, with the password in the message, so that scanners cannot look inside. "
+            "Legitimate archives are sometimes protected too; open it only if you expected it.",
+        )
+    ]
+
+
+def _has_embedded_pe(head: bytes) -> bool:
+    """True when a PE image starts after offset 0: an MZ header whose e_lfanew points at ``PE\\0\\0``."""
+    at = head.find(b"MZ", 1)
+    for _ in range(MAX_PE_CANDIDATES):
+        if at < 0:
+            return False
+        if len(head) >= at + 0x40:
+            offset = int.from_bytes(head[at + 0x3C : at + 0x40], "little")
+            if 0x40 <= offset <= MAX_E_LFANEW and head[at + offset : at + offset + 4] == b"PE\x00\x00":
+                return True
+        at = head.find(b"MZ", at + 1)
+    return False
+
+
+def _embedded_findings(kind: Kind, head: bytes) -> list[Finding]:
+    if kind.id not in _NO_PROGRAM_KINDS or not _has_embedded_pe(head):
+        return []
+    return [
+        _finding(
+            "embedded_executable",
+            "high",
+            "A Windows program is hidden inside this file",
+            f"Besides its {kind.label} content, the file holds what looks like a Windows program (a PE image). "
+            "Documents and images do not carry programs; attackers append one to a harmless-looking file so that it "
+            "passes a type check, and a second stage extracts and runs it.",
+        )
+    ]
+
+
+def _svg_findings(kind: Kind, head: bytes) -> list[Finding]:
+    if kind.id != "text" or not _SVG.search(head[:4096]) or not _ACTIVE.search(head):
+        return []
+    return [
+        _finding(
+            "active_content_svg",
+            "medium",
+            "Image contains a script",
+            "This SVG image holds a <script> element, a javascript: link or an event handler. A browser runs it when "
+            "the image is opened on its own, which is how SVG attachments redirect to phishing pages or run code. "
+            "Ordinary pictures do not need scripts.",
+        )
+    ]
+
+
+def _script_name_findings(kind: Kind, extension: str | None) -> list[Finding]:
+    if kind.id not in {"text", "script"} or extension is None:
+        return []
+    if extension not in _WINDOWS_SCRIPTS and extension != "js":
+        return []
+    advice = (
+        "JavaScript files are also ordinary web content."
+        if extension == "js"
+        else "Run it only if you wrote it or trust the sender."
+    )
+    return [
+        _finding(
+            "runnable_script_file",
+            "low" if extension == "js" else "medium",
+            f"Script file (.{extension})",
+            f"A .{extension} file is a program in text form that Windows can run when it is opened. Malware is "
+            f"often sent as a script because mail filters let it through more easily than an .exe. {advice}",
+        )
+    ]
 
 
 def _entropy_findings(kind: Kind, entropy: EntropyProfile, size: int) -> list[Finding]:

@@ -13,17 +13,22 @@ or link is safe.
 | `extension_mismatch` | high for programs, medium otherwise | The extension does not fit the detected content. |
 | `executable_file` | info | The content is a program or script. |
 | `empty_file` | info | The file has no content. |
-| `expected_high_entropy` | info | Random-looking data in a format that normally stores compressed data (PDF, Office Open XML, ZIP, PNG, JPEG and similar). |
+| `expected_high_entropy` | info | Random-looking data in a format that normally stores compressed data (PDF, Office Open XML, legacy Office OLE2, ZIP, SWF, PNG, JPEG and similar). |
 | `possible_packing` | medium | A program has random-looking regions. Packers, encrypted payloads, installers and compressed resources all look like this. |
 | `high_entropy_file` | medium | The whole file is at or above 7.2 bits per byte, in a format that does not explain it. |
 | `high_entropy_region` | low | Part of a file looks random, in a format that does not explain it. |
+| `macro_office_file` | high for `.docx`, `.xlsx`, `.pptx` and other macro-free extensions, medium otherwise | An Office Open XML package holds a `vbaProject.bin` macro part (found in the first or last 64 KiB). Legitimate macro-enabled documents look the same. |
+| `encrypted_archive` | medium | A ZIP has the encryption flag set in a local file header, so its contents cannot be inspected. |
+| `embedded_executable` | high | A PDF, image or Office Open XML file holds a Windows program (an `MZ` header whose `e_lfanew` points at `PE\0\0`) after offset 0. |
+| `active_content_svg` | medium | An SVG image holds `<script`, a `javascript:` link or an `onload`-style event handler. |
+| `runnable_script_file` | medium for `.vbs`, `.vbe`, `.jse`, `.wsf`, `.wsh`, `.hta`, `.bat`, `.cmd`, `.ps1`, `.psm1`, `.scf`; low for `.js` | Text content under a script extension that Windows runs on a double click. |
 | `gps_location` | high | A photo has GPS tags. Decoded coordinates are shown when complete. |
 | `identifying_metadata` | low | A photo includes `Make`, `Model`, `BodySerialNumber`, `LensSerialNumber`, `CameraOwnerName`, `Artist`, `Software` or `DateTimeOriginal`. |
 
 `file_type.id` is detected from content, never the name: programs `pe`, `dos_mz`, `elf`, `macho`,
 `macho_fat`, `script`; code `java_class`, `wasm`; documents `pdf`, `docx`, `xlsx`, `pptx`, `ooxml`,
 `ole2`; archives `zip`, `gzip`, `bzip2`, `xz`, `7z`, `rar`; images `png`, `jpeg`, `gif`, `webp`, `tiff`;
-other `sqlite`, `text`, `empty`, `unknown`.
+other `swf`, `sqlite`, `text`, `empty`, `unknown`.
 
 `exif_status`: `ok`, `no_exif`, `not_image`, `pillow_not_installed` (install the `kestrix[exif]` extra),
 `unreadable`, `too_many_pixels`.
@@ -41,6 +46,8 @@ other `sqlite`, `text`, `empty`, `unknown`.
 | `brand_in_subdomain` | high | 25 | A known brand, or a close imitation, appears in a subdomain of a domain that is not the brand's own. |
 | `brand_in_domain` | medium | 20 | A known brand, or a close imitation, appears inside the registered domain name. |
 | `many_subdomains` | medium | 10 | Three or more subdomain levels, not counting `www`. |
+| `hosting_platform_subdomain` | low | 10 | The host is a user subdomain of a free publishing, static-hosting or dynamic-DNS service from a fixed list (`weebly.com`, `github.io`, `duckdns.org` and similar). The service's own root does not count. |
+| `digits_in_subdomain` | low | 5 | The subdomain labels (not the registered domain) hold three or more digits in total. |
 | `suspicious_tld` | low | 10 | The top-level domain is on a fixed list of endings common in abuse reports, such as `.top`, `.xyz` or `.zip`. |
 | `url_shortener` | medium | 15 | The host is a known link shortener such as `bit.ly`. |
 | `userinfo_in_url` | high | 30 | The URL has text before `@` in the authority, which browsers ignore. |

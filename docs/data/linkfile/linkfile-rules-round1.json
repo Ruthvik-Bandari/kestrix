@@ -1,0 +1,230 @@
+{
+  "code": {
+    "baseline": "51669cf+worktree-9a3e7c6e4069",
+    "final": "51669cf+worktree-5d270e3abc6b"
+  },
+  "decision_rule": "files: keep if the target synthetic family is caught more, no family or control gets worse, and Govdocs dev false alarms at medium or higher rise by at most 0.1 point (or fall); links: keep if catch rises by at least 0.5 point on the full set and on the matched subset and false alarms of each benign cohort at the same level rise by at most 0.1 point.",
+  "file": {
+    "baseline": {
+      "benign_control_alarms_medium": 0,
+      "govdocs_false_alarm_security_low_pct": 8.583,
+      "govdocs_false_alarm_security_medium_pct": 5.002,
+      "synthetic_families_fully_caught": 9,
+      "synthetic_malicious_caught_medium": 180
+    },
+    "changes": {
+      "E1": {
+        "change": "OLE2 counts as a compressed format",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 0.749,
+          "govdocs_false_alarm_security_medium_pct": 0.734,
+          "synthetic_families_fully_caught": 9,
+          "synthetic_malicious_caught_medium": 180
+        }
+      },
+      "E2": {
+        "change": "SWF recognised as a compressed format",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.068,
+          "govdocs_false_alarm_security_medium_pct": 4.494,
+          "synthetic_families_fully_caught": 9,
+          "synthetic_malicious_caught_medium": 180
+        }
+      },
+      "F1": {
+        "change": "macro_office_file",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.583,
+          "govdocs_false_alarm_security_medium_pct": 5.002,
+          "synthetic_families_fully_caught": 12,
+          "synthetic_malicious_caught_medium": 240
+        }
+      },
+      "F2": {
+        "change": "encrypted_archive",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.583,
+          "govdocs_false_alarm_security_medium_pct": 5.002,
+          "synthetic_families_fully_caught": 10,
+          "synthetic_malicious_caught_medium": 200
+        }
+      },
+      "F3": {
+        "change": "embedded_executable",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.583,
+          "govdocs_false_alarm_security_medium_pct": 5.002,
+          "synthetic_families_fully_caught": 11,
+          "synthetic_malicious_caught_medium": 220
+        }
+      },
+      "F4": {
+        "change": "active_content_svg",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.583,
+          "govdocs_false_alarm_security_medium_pct": 5.002,
+          "synthetic_families_fully_caught": 10,
+          "synthetic_malicious_caught_medium": 200
+        }
+      },
+      "F5": {
+        "change": "runnable_script_file",
+        "decision": "keep",
+        "result": {
+          "benign_control_alarms_medium": 0,
+          "govdocs_false_alarm_security_low_pct": 8.583,
+          "govdocs_false_alarm_security_medium_pct": 5.002,
+          "synthetic_families_fully_caught": 9,
+          "synthetic_malicious_caught_medium": 196
+        }
+      }
+    },
+    "final": {
+      "benign_control_alarms_medium": 0,
+      "govdocs_false_alarm_security_low_pct": 0.234,
+      "govdocs_false_alarm_security_medium_pct": 0.226,
+      "synthetic_families_fully_caught": 16,
+      "synthetic_malicious_caught_medium": 336
+    }
+  },
+  "link": {
+    "baseline": {
+      "catch_low_or_higher_pct": 63.651,
+      "catch_medium_or_higher_pct": 2.006,
+      "false_alarm_majestic_low_pct": 1.616,
+      "false_alarm_phiusiil_low_pct": 0.129,
+      "matched_catch_low_pct": 9.006,
+      "matched_catch_medium_pct": 0.326,
+      "matched_false_alarm_low_pct": 0.243
+    },
+    "changes": {
+      "L1": {
+        "change": "hosting_platform_subdomain",
+        "decision": "keep (benign side cannot test it, see caveat)",
+        "result": {
+          "catch_low_or_higher_pct": 81.165,
+          "catch_medium_or_higher_pct": 2.602,
+          "false_alarm_majestic_low_pct": 1.621,
+          "false_alarm_phiusiil_low_pct": 0.129,
+          "matched_catch_low_pct": 56.687,
+          "matched_catch_medium_pct": 0.921,
+          "matched_false_alarm_low_pct": 0.243
+        }
+      },
+      "L2": {
+        "change": "digits_in_subdomain",
+        "decision": "keep",
+        "result": {
+          "catch_low_or_higher_pct": 76.564,
+          "catch_medium_or_higher_pct": 2.763,
+          "false_alarm_majestic_low_pct": 1.646,
+          "false_alarm_phiusiil_low_pct": 0.187,
+          "matched_catch_low_pct": 45.397,
+          "matched_catch_medium_pct": 2.151,
+          "matched_false_alarm_low_pct": 0.26
+        }
+      },
+      "L3": {
+        "change": "long_host",
+        "decision": "reject",
+        "result": {
+          "catch_low_or_higher_pct": 72.533,
+          "catch_medium_or_higher_pct": 2.538,
+          "false_alarm_majestic_low_pct": 1.899,
+          "false_alarm_phiusiil_low_pct": 0.518,
+          "matched_catch_low_pct": 14.371,
+          "matched_catch_medium_pct": 0.636,
+          "matched_false_alarm_low_pct": 3.314
+        }
+      }
+    },
+    "final": {
+      "catch_low_or_higher_pct": 86.424,
+      "catch_medium_or_higher_pct": 3.039,
+      "false_alarm_majestic_low_pct": 1.651,
+      "false_alarm_phiusiil_low_pct": 0.187,
+      "matched_catch_low_pct": 75.929,
+      "matched_catch_medium_pct": 2.486,
+      "matched_false_alarm_low_pct": 0.26
+    }
+  },
+  "schema_version": 1,
+  "slurm_jobs": {
+    "acquire": "transfer node, nohup (no Slurm)",
+    "baseline": {
+      "file_build": 11297535,
+      "file_dev_metrics": 11297618,
+      "file_features": 11297617,
+      "link_build": 11297611,
+      "link_dev_metrics": 11297620,
+      "link_features": 11297614,
+      "probes": [
+        11298354,
+        11298355
+      ]
+    },
+    "rounds": {
+      "E1": [
+        11298622,
+        11298623
+      ],
+      "E2": [
+        11298624,
+        11298625
+      ],
+      "F1": [
+        11298580,
+        11298581
+      ],
+      "F2": [
+        11298588,
+        11298589
+      ],
+      "F3": [
+        11298590,
+        11298591
+      ],
+      "F4": [
+        11298592,
+        11298593
+      ],
+      "F5": [
+        11298620,
+        11298621
+      ],
+      "L1": [
+        11298782,
+        11298783
+      ],
+      "L2": [
+        11298784,
+        11298785
+      ],
+      "L3": [
+        11298786,
+        11298787
+      ],
+      "final_file": [
+        11300850,
+        11300851
+      ],
+      "final_link": [
+        11300846,
+        11300849
+      ]
+    }
+  },
+  "split": "dev"
+}

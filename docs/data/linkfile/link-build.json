@@ -1,0 +1,35 @@
+{
+  "dropped": {
+    "majestic/benign|conflicting_label": 13,
+    "majestic/benign|duplicate_exact": 837,
+    "majestic/benign|duplicate_near": 880,
+    "phiusiil/benign|conflicting_label": 43,
+    "phiusiil/phishing|conflicting_label": 56,
+    "phiusiil/phishing|duplicate_exact": 1004,
+    "phiusiil/phishing|duplicate_near": 4761
+  },
+  "generated_at": "2026-10-22T09:39:34+00:00",
+  "groups": 202238,
+  "kept": {
+    "majestic/benign": 28270,
+    "phiusiil/benign": 134807,
+    "phiusiil/phishing": 95124
+  },
+  "kept_total": 258201,
+  "kind": "link",
+  "majestic": {
+    "hosts_requested": 30000,
+    "url_form": "https://[www.]domain/ (host root only)"
+  },
+  "phiusiil_raw_label_counts": {
+    "0_phishing": 100945,
+    "1_legitimate_to_benign": 134850
+  },
+  "read": {
+    "majestic/benign": 30000,
+    "phiusiil/benign": 134850,
+    "phiusiil/phishing": 100945
+  },
+  "schema_version": 1,
+  "seed": "kestrixlinkfile-v1"
+}

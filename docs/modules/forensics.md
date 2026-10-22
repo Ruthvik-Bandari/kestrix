@@ -60,7 +60,7 @@ The format comes from the first bytes of the content, never from the name. Recog
 - documents: `pdf`, `docx`, `xlsx`, `pptx`, `ooxml`, `ole2`;
 - archives: `zip`, `gzip`, `bzip2`, `xz`, `7z`, `rar`;
 - images: `png`, `jpeg`, `gif`, `webp`, `tiff`;
-- other: `sqlite`, `text`, `empty`, `unknown`.
+- other: `swf`, `sqlite`, `text`, `empty`, `unknown`.
 
 `extension_mismatch` is true when the extension is not one normally used for the detected format. For `text`, it is true only when the extension belongs to a binary-only format such as `.exe` or `.pdf`. It is never set for `unknown` or `empty` content.
 
@@ -73,10 +73,15 @@ The format comes from the first bytes of the content, never from the name. Recog
 | `extension_mismatch` | high for programs, medium otherwise | The extension does not fit the detected content. |
 | `executable_file` | info | The content is a program or script. |
 | `empty_file` | info | The file has no content. |
-| `expected_high_entropy` | info | Random-looking data in a format that normally stores compressed data (PDF, Office Open XML, ZIP, PNG, JPEG and similar). |
+| `expected_high_entropy` | info | Random-looking data in a format that normally stores compressed data (PDF, Office Open XML, legacy Office OLE2, ZIP, SWF, PNG, JPEG and similar). |
 | `possible_packing` | medium | A program has random-looking regions. Packers, encrypted payloads, installers and compressed resources all look like this. |
 | `high_entropy_file` | medium | The whole file is at or above 7.2 bits per byte, in a format that does not explain it. |
 | `high_entropy_region` | low | Part of a file looks random, in a format that does not explain it. |
+| `macro_office_file` | high for `.docx`, `.xlsx`, `.pptx` and other macro-free extensions, medium otherwise | An Office Open XML package holds a `vbaProject.bin` macro part (found in the first or last 64 KiB). Legitimate macro-enabled documents look the same. |
+| `encrypted_archive` | medium | A ZIP has the encryption flag set in a local file header, so its contents cannot be inspected. |
+| `embedded_executable` | high | A PDF, image or Office Open XML file holds a Windows program (an `MZ` header whose `e_lfanew` points at `PE\0\0`) after offset 0. |
+| `active_content_svg` | medium | An SVG image holds `<script`, a `javascript:` link or an `onload`-style event handler. |
+| `runnable_script_file` | medium for `.vbs`, `.vbe`, `.jse`, `.wsf`, `.wsh`, `.hta`, `.bat`, `.cmd`, `.ps1`, `.psm1`, `.scf`; low for `.js` | Text content under a script extension that Windows runs on a double click. |
 | `gps_location` | high | A photo has GPS tags. Decoded coordinates are shown when complete. |
 | `identifying_metadata` | low | A photo includes `Make`, `Model`, `BodySerialNumber`, `LensSerialNumber`, `CameraOwnerName`, `Artist`, `Software` or `DateTimeOriginal`. |
 
@@ -126,6 +131,8 @@ The score is the sum of the weights of the checks that fired, capped at 100. It 
 | `brand_in_subdomain` | high | 25 | A known brand, or a close imitation, appears in a subdomain of a domain that is not the brand's own. |
 | `brand_in_domain` | medium | 20 | A known brand, or a close imitation, appears inside the registered domain name. |
 | `many_subdomains` | medium | 10 | Three or more subdomain levels, not counting `www`. |
+| `hosting_platform_subdomain` | low | 10 | The host is a user subdomain of a free publishing, static-hosting or dynamic-DNS service from a fixed list (`weebly.com`, `github.io`, `duckdns.org` and similar). The service's own root does not count. |
+| `digits_in_subdomain` | low | 5 | The subdomain labels (not the registered domain) hold three or more digits in total. |
 | `suspicious_tld` | low | 10 | The top-level domain is on a fixed list of endings common in abuse reports, such as `.top`, `.xyz` or `.zip`. |
 | `url_shortener` | medium | 15 | The host is a known link shortener such as `bit.ly`. |
 | `userinfo_in_url` | high | 30 | The URL has text before `@` in the authority, which browsers ignore. |
@@ -139,6 +146,10 @@ The score is the sum of the weights of the checks that fired, capped at 100. It 
 **Registered domain.** The registered domain is an offline estimate: the last two labels, or three for a short list of common second-level suffixes such as `co.uk` and `com.au`. It is not the full Public Suffix List, so some domains are split incorrectly.
 
 **Input rules.** A URL without a scheme, such as `example.com/login`, is accepted and reported with `scheme: null`, so `not_https` cannot fire for it. A scheme other than `http` or `https`, an empty URL, a missing host, an invalid DNS label or a host over 253 characters is refused with `invalid_url`. URLs over 8,192 characters are refused with `input_too_large`.
+
+## Measured accuracy
+
+Dev-split measurements on public data are in [`docs/research/linkfile-benchmark.md`](../research/linkfile-benchmark.md); the locked test has not been run. In short: on Govdocs1 (presumed-benign real files) 0.2% of files raise a security finding at `medium` or higher after the benchmark's round-1 rules (5.0% before); on synthetic cases the file checker catches 336 of 360 at `medium` or higher, which says the rules fire as intended and not how real malware fares. For links, 86% of PhiUSIIL phishing URLs reach `low` or higher but only 3% reach `medium`, 54% of the phishing there is flagged by `not_https` alone because every legitimate URL in the data is an `https` host root, and the benign data has no URLs with paths, so false-alarm rates on real browsing are unmeasured.
 
 ## Limits
 

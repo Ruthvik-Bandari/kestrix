@@ -1,0 +1,3221 @@
+{
+  "bootstrap": {
+    "resamples": 1000,
+    "seed": 0,
+    "unit": "registered domain (offline approximation)"
+  },
+  "by_shape": {
+    "benign_majestic/https/bare": {
+      "low_or_higher": {
+        "ci95": [
+          0.014588,
+          0.018262
+        ],
+        "ci95_message": [
+          0.014796,
+          0.018383
+        ],
+        "groups": 19768,
+        "k": 327,
+        "n": 19802,
+        "rate": 0.016513
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "n": 19802
+    },
+    "benign_phiusiil/https/bare": {
+      "low_or_higher": {
+        "ci95": [
+          0.001233,
+          0.002842
+        ],
+        "ci95_message": [
+          0.001611,
+          0.002141
+        ],
+        "groups": 91325,
+        "k": 176,
+        "n": 94344,
+        "rate": 0.001866
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "n": 94344
+    },
+    "phishing/http/bare": {
+      "low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 22655,
+        "k": 31308,
+        "n": 31308,
+        "rate": 1.0
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.016348,
+          0.023656
+        ],
+        "ci95_message": [
+          0.01811,
+          0.021177
+        ],
+        "groups": 22655,
+        "k": 613,
+        "n": 31308,
+        "rate": 0.01958
+      },
+      "n": 31308
+    },
+    "phishing/http/path_or_query": {
+      "low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 2157,
+        "k": 4872,
+        "n": 4872,
+        "rate": 1.0
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.094871,
+          0.17613
+        ],
+        "ci95_message": [
+          0.120069,
+          0.138757
+        ],
+        "groups": 2157,
+        "k": 629,
+        "n": 4872,
+        "rate": 0.129105
+      },
+      "n": 4872
+    },
+    "phishing/https/bare": {
+      "low_or_higher": {
+        "ci95": [
+          0.576918,
+          0.902234
+        ],
+        "ci95_message": [
+          0.810268,
+          0.821422
+        ],
+        "groups": 2548,
+        "k": 15366,
+        "n": 18832,
+        "rate": 0.815952
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.009931,
+          0.050708
+        ],
+        "ci95_message": [
+          0.028728,
+          0.033667
+        ],
+        "groups": 2548,
+        "k": 586,
+        "n": 18832,
+        "rate": 0.031117
+      },
+      "n": 18832
+    },
+    "phishing/https/path_or_query": {
+      "low_or_higher": {
+        "ci95": [
+          0.455393,
+          0.579393
+        ],
+        "ci95_message": [
+          0.509367,
+          0.527763
+        ],
+        "groups": 4874,
+        "k": 6006,
+        "n": 11581,
+        "rate": 0.518608
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.011355,
+          0.025025
+        ],
+        "ci95_message": [
+          0.014763,
+          0.019342
+        ],
+        "groups": 4874,
+        "k": 196,
+        "n": 11581,
+        "rate": 0.016924
+      },
+      "n": 11581
+    }
+  },
+  "by_tld": {
+    "au": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.001044,
+          0.012533
+        ],
+        "ci95_message": [
+          0.002874,
+          0.010057
+        ],
+        "groups": 1682,
+        "k": 13,
+        "n": 2088,
+        "rate": 0.006226
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1682,
+        "k": 0,
+        "n": 2088,
+        "rate": 0.0
+      },
+      "n_benign": 2088,
+      "n_phishing": 239,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.540907,
+          0.710129
+        ],
+        "ci95_message": [
+          0.573222,
+          0.694561
+        ],
+        "groups": 161,
+        "k": 151,
+        "n": 239,
+        "rate": 0.631799
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.014496
+        ],
+        "ci95_message": [
+          0.0,
+          0.012552
+        ],
+        "groups": 161,
+        "k": 1,
+        "n": 239,
+        "rate": 0.004184
+      }
+    },
+    "ca": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.002556
+        ],
+        "ci95_message": [
+          0.0,
+          0.002479
+        ],
+        "groups": 1058,
+        "k": 1,
+        "n": 1210,
+        "rate": 0.000826
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1058,
+        "k": 0,
+        "n": 1210,
+        "rate": 0.0
+      },
+      "n_benign": 1210,
+      "n_phishing": 83,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.804878,
+          0.942561
+        ],
+        "ci95_message": [
+          0.807229,
+          0.951807
+        ],
+        "groups": 80,
+        "k": 73,
+        "n": 83,
+        "rate": 0.879518
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 80,
+        "k": 0,
+        "n": 83,
+        "rate": 0.0
+      }
+    },
+    "cf": {
+      "false_alarm_low_or_higher": null,
+      "false_alarm_medium_or_higher": null,
+      "n_benign": 0,
+      "n_phishing": 840,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 812,
+        "k": 840,
+        "n": 840,
+        "rate": 1.0
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.002412,
+          0.015348
+        ],
+        "ci95_message": [
+          0.002381,
+          0.015476
+        ],
+        "groups": 812,
+        "k": 7,
+        "n": 840,
+        "rate": 0.008333
+      }
+    },
+    "co": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.011876
+        ],
+        "ci95_message": [
+          0.0,
+          0.011876
+        ],
+        "groups": 421,
+        "k": 2,
+        "n": 421,
+        "rate": 0.004751
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 421,
+        "k": 0,
+        "n": 421,
+        "rate": 0.0
+      },
+      "n_benign": 421,
+      "n_phishing": 4164,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.79045,
+          0.994781
+        ],
+        "ci95_message": [
+          0.980067,
+          0.987992
+        ],
+        "groups": 238,
+        "k": 4098,
+        "n": 4164,
+        "rate": 0.98415
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.002837,
+          0.02069
+        ],
+        "ci95_message": [
+          0.002155,
+          0.00577
+        ],
+        "groups": 238,
+        "k": 16,
+        "n": 4164,
+        "rate": 0.003842
+      }
+    },
+    "com": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.000372,
+          0.000744
+        ],
+        "ci95_message": [
+          0.000354,
+          0.000744
+        ],
+        "groups": 56418,
+        "k": 31,
+        "n": 56479,
+        "rate": 0.000549
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 56418,
+        "k": 0,
+        "n": 56479,
+        "rate": 0.0
+      },
+      "n_benign": 56479,
+      "n_phishing": 31792,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.818261,
+          0.908936
+        ],
+        "ci95_message": [
+          0.864777,
+          0.872296
+        ],
+        "groups": 14883,
+        "k": 27615,
+        "n": 31792,
+        "rate": 0.868615
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.011129,
+          0.038632
+        ],
+        "ci95_message": [
+          0.02444,
+          0.027932
+        ],
+        "groups": 14883,
+        "k": 830,
+        "n": 31792,
+        "rate": 0.026107
+      }
+    },
+    "de": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.000333,
+          0.00323
+        ],
+        "ci95_message": [
+          0.00033,
+          0.003303
+        ],
+        "groups": 2932,
+        "k": 5,
+        "n": 3028,
+        "rate": 0.001651
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 2932,
+        "k": 0,
+        "n": 3028,
+        "rate": 0.0
+      },
+      "n_benign": 3028,
+      "n_phishing": 445,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.707684,
+          0.801419
+        ],
+        "ci95_message": [
+          0.714607,
+          0.793258
+        ],
+        "groups": 384,
+        "k": 336,
+        "n": 445,
+        "rate": 0.755056
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.007093
+        ],
+        "ci95_message": [
+          0.0,
+          0.006742
+        ],
+        "groups": 384,
+        "k": 1,
+        "n": 445,
+        "rate": 0.002247
+      }
+    },
+    "edu": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.003608
+        ],
+        "ci95_message": [
+          0.0,
+          0.003759
+        ],
+        "groups": 853,
+        "k": 2,
+        "n": 1330,
+        "rate": 0.001504
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 853,
+        "k": 0,
+        "n": 1330,
+        "rate": 0.0
+      },
+      "n_benign": 1330,
+      "n_phishing": 0,
+      "phishing_caught_low_or_higher": null,
+      "phishing_caught_medium_or_higher": null
+    },
+    "fr": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.003564
+        ],
+        "ci95_message": [
+          0.0,
+          0.003592
+        ],
+        "groups": 1345,
+        "k": 2,
+        "n": 1392,
+        "rate": 0.001437
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1345,
+        "k": 0,
+        "n": 1392,
+        "rate": 0.0
+      },
+      "n_benign": 1392,
+      "n_phishing": 276,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.359736,
+          0.717595
+        ],
+        "ci95_message": [
+          0.481884,
+          0.597826
+        ],
+        "groups": 188,
+        "k": 149,
+        "n": 276,
+        "rate": 0.539855
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 188,
+        "k": 0,
+        "n": 276,
+        "rate": 0.0
+      }
+    },
+    "ga": {
+      "false_alarm_low_or_higher": {
+        "ci95": null,
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 4,
+        "k": 4,
+        "n": 4,
+        "rate": 1.0
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": null,
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 4,
+        "k": 0,
+        "n": 4,
+        "rate": 0.0
+      },
+      "n_benign": 4,
+      "n_phishing": 804,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 792,
+        "k": 804,
+        "n": 804,
+        "rate": 1.0
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0025,
+          0.018541
+        ],
+        "ci95_message": [
+          0.003731,
+          0.017413
+        ],
+        "groups": 792,
+        "k": 8,
+        "n": 804,
+        "rate": 0.00995
+      }
+    },
+    "io": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.006637
+        ],
+        "ci95_message": [
+          0.0,
+          0.006637
+        ],
+        "groups": 452,
+        "k": 1,
+        "n": 452,
+        "rate": 0.002212
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 452,
+        "k": 0,
+        "n": 452,
+        "rate": 0.0
+      },
+      "n_benign": 452,
+      "n_phishing": 1962,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.291644,
+          0.904098
+        ],
+        "ci95_message": [
+          0.513252,
+          0.557607
+        ],
+        "groups": 89,
+        "k": 1052,
+        "n": 1962,
+        "rate": 0.536188
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.002562,
+          0.029364
+        ],
+        "ci95_message": [
+          0.006116,
+          0.015303
+        ],
+        "groups": 89,
+        "k": 21,
+        "n": 1962,
+        "rate": 0.010703
+      }
+    },
+    "it": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.002063
+        ],
+        "ci95_message": [
+          0.0,
+          0.002056
+        ],
+        "groups": 1439,
+        "k": 1,
+        "n": 1459,
+        "rate": 0.000685
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1439,
+        "k": 0,
+        "n": 1459,
+        "rate": 0.0
+      },
+      "n_benign": 1459,
+      "n_phishing": 155,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.63114,
+          0.843256
+        ],
+        "ci95_message": [
+          0.677419,
+          0.819355
+        ],
+        "groups": 110,
+        "k": 116,
+        "n": 155,
+        "rate": 0.748387
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 110,
+        "k": 0,
+        "n": 155,
+        "rate": 0.0
+      }
+    },
+    "jp": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.002732,
+          0.023455
+        ],
+        "ci95_message": [
+          0.006636,
+          0.016335
+        ],
+        "groups": 1747,
+        "k": 22,
+        "n": 1959,
+        "rate": 0.01123
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1747,
+        "k": 0,
+        "n": 1959,
+        "rate": 0.0
+      },
+      "n_benign": 1959,
+      "n_phishing": 97,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.682681,
+          0.841479
+        ],
+        "ci95_message": [
+          0.670103,
+          0.845361
+        ],
+        "groups": 71,
+        "k": 74,
+        "n": 97,
+        "rate": 0.762887
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.072074
+        ],
+        "ci95_message": [
+          0.0,
+          0.072165
+        ],
+        "groups": 71,
+        "k": 3,
+        "n": 97,
+        "rate": 0.030928
+      }
+    },
+    "ml": {
+      "false_alarm_low_or_higher": null,
+      "false_alarm_medium_or_higher": null,
+      "n_benign": 0,
+      "n_phishing": 712,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 691,
+        "k": 712,
+        "n": 712,
+        "rate": 1.0
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.011315,
+          0.035311
+        ],
+        "ci95_message": [
+          0.01264,
+          0.033708
+        ],
+        "groups": 691,
+        "k": 16,
+        "n": 712,
+        "rate": 0.022472
+      }
+    },
+    "net": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.000295,
+          0.002946
+        ],
+        "ci95_message": [
+          0.000295,
+          0.002946
+        ],
+        "groups": 3391,
+        "k": 5,
+        "n": 3394,
+        "rate": 0.001473
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 3391,
+        "k": 0,
+        "n": 3394,
+        "rate": 0.0
+      },
+      "n_benign": 3394,
+      "n_phishing": 2205,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.863385,
+          0.933499
+        ],
+        "ci95_message": [
+          0.888435,
+          0.913379
+        ],
+        "groups": 1327,
+        "k": 1988,
+        "n": 2205,
+        "rate": 0.901587
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.012445,
+          0.03156
+        ],
+        "ci95_message": [
+          0.014059,
+          0.026757
+        ],
+        "groups": 1327,
+        "k": 45,
+        "n": 2205,
+        "rate": 0.020408
+      }
+    },
+    "nl": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.002784
+        ],
+        "ci95_message": [
+          0.0,
+          0.002782
+        ],
+        "groups": 1793,
+        "k": 2,
+        "n": 1797,
+        "rate": 0.001113
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1793,
+        "k": 0,
+        "n": 1797,
+        "rate": 0.0
+      },
+      "n_benign": 1797,
+      "n_phishing": 146,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.734558,
+          0.942029
+        ],
+        "ci95_message": [
+          0.787671,
+          0.90411
+        ],
+        "groups": 132,
+        "k": 124,
+        "n": 146,
+        "rate": 0.849315
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 132,
+        "k": 0,
+        "n": 146,
+        "rate": 0.0
+      }
+    },
+    "org": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.000229,
+          0.001147
+        ],
+        "ci95_message": [
+          0.000229,
+          0.001071
+        ],
+        "groups": 13019,
+        "k": 8,
+        "n": 13072,
+        "rate": 0.000612
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 13019,
+        "k": 0,
+        "n": 13072,
+        "rate": 0.0
+      },
+      "n_benign": 13072,
+      "n_phishing": 1826,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.849718,
+          0.958809
+        ],
+        "ci95_message": [
+          0.909091,
+          0.933735
+        ],
+        "groups": 859,
+        "k": 1683,
+        "n": 1826,
+        "rate": 0.921687
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.007697,
+          0.045936
+        ],
+        "ci95_message": [
+          0.021906,
+          0.038335
+        ],
+        "groups": 859,
+        "k": 55,
+        "n": 1826,
+        "rate": 0.03012
+      }
+    },
+    "ru": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1120,
+        "k": 0,
+        "n": 1134,
+        "rate": 0.0
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 1120,
+        "k": 0,
+        "n": 1134,
+        "rate": 0.0
+      },
+      "n_benign": 1134,
+      "n_phishing": 2581,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.84083,
+          0.973618
+        ],
+        "ci95_message": [
+          0.931809,
+          0.950019
+        ],
+        "groups": 616,
+        "k": 2429,
+        "n": 2581,
+        "rate": 0.941108
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.000911,
+          0.014439
+        ],
+        "ci95_message": [
+          0.001937,
+          0.006974
+        ],
+        "groups": 616,
+        "k": 11,
+        "n": 2581,
+        "rate": 0.004262
+      }
+    },
+    "site": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 14,
+        "k": 0,
+        "n": 14,
+        "rate": 0.0
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 14,
+        "k": 0,
+        "n": 14,
+        "rate": 0.0
+      },
+      "n_benign": 14,
+      "n_phishing": 1178,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.833333,
+          0.996007
+        ],
+        "ci95_message": [
+          0.97708,
+          0.991511
+        ],
+        "groups": 133,
+        "k": 1160,
+        "n": 1178,
+        "rate": 0.98472
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.023343
+        ],
+        "ci95_message": [
+          0.013582,
+          0.029711
+        ],
+        "groups": 133,
+        "k": 25,
+        "n": 1178,
+        "rate": 0.021222
+      }
+    },
+    "top": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 135,
+        "k": 135,
+        "n": 135,
+        "rate": 1.0
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 135,
+        "k": 0,
+        "n": 135,
+        "rate": 0.0
+      },
+      "n_benign": 135,
+      "n_phishing": 1593,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 960,
+        "k": 1593,
+        "n": 1593,
+        "rate": 1.0
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.224612,
+          0.293039
+        ],
+        "ci95_message": [
+          0.23666,
+          0.279975
+        ],
+        "groups": 960,
+        "k": 410,
+        "n": 1593,
+        "rate": 0.257376
+      }
+    },
+    "uk": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          0.0,
+          0.000592
+        ],
+        "ci95_message": [
+          0.0,
+          0.00058
+        ],
+        "groups": 4956,
+        "k": 1,
+        "n": 5170,
+        "rate": 0.000193
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 4956,
+        "k": 0,
+        "n": 5170,
+        "rate": 0.0
+      },
+      "n_benign": 5170,
+      "n_phishing": 220,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          0.785079,
+          0.887893
+        ],
+        "ci95_message": [
+          0.790909,
+          0.890909
+        ],
+        "groups": 196,
+        "k": 185,
+        "n": 220,
+        "rate": 0.840909
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.014086
+        ],
+        "ci95_message": [
+          0.0,
+          0.013636
+        ],
+        "groups": 196,
+        "k": 1,
+        "n": 220,
+        "rate": 0.004545
+      }
+    },
+    "xyz": {
+      "false_alarm_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 106,
+        "k": 106,
+        "n": 106,
+        "rate": 1.0
+      },
+      "false_alarm_medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 106,
+        "k": 0,
+        "n": 106,
+        "rate": 0.0
+      },
+      "n_benign": 106,
+      "n_phishing": 979,
+      "phishing_caught_low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 742,
+        "k": 979,
+        "n": 979,
+        "rate": 1.0
+      },
+      "phishing_caught_medium_or_higher": {
+        "ci95": [
+          0.082902,
+          0.181409
+        ],
+        "ci95_message": [
+          0.112334,
+          0.154239
+        ],
+        "groups": 742,
+        "k": 130,
+        "n": 979,
+        "rate": 0.132789
+      }
+    }
+  },
+  "causes": {
+    "false_alarms": {
+      "benign_majestic": {
+        "low_or_higher": {
+          "cohort_size": 19802,
+          "false_alarm_rate": 0.0165,
+          "flagged": 327,
+          "ids_among_flagged": [
+            {
+              "id": "suspicious_tld",
+              "items": 283,
+              "share": 0.8654
+            },
+            {
+              "id": "international_host",
+              "items": 17,
+              "share": 0.052
+            },
+            {
+              "id": "brand_in_domain",
+              "items": 13,
+              "share": 0.0398
+            },
+            {
+              "id": "digits_in_subdomain",
+              "items": 6,
+              "share": 0.0183
+            },
+            {
+              "id": "suspicious_keywords",
+              "items": 6,
+              "share": 0.0183
+            },
+            {
+              "id": "brand_in_subdomain",
+              "items": 1,
+              "share": 0.0031
+            },
+            {
+              "id": "url_shortener",
+              "items": 1,
+              "share": 0.0031
+            },
+            {
+              "id": "hosting_platform_subdomain",
+              "items": 1,
+              "share": 0.0031
+            }
+          ]
+        },
+        "medium_or_higher": {
+          "cohort_size": 19802,
+          "false_alarm_rate": 0.0,
+          "flagged": 0,
+          "ids_among_flagged": []
+        }
+      },
+      "benign_phiusiil": {
+        "low_or_higher": {
+          "cohort_size": 94344,
+          "false_alarm_rate": 0.0019,
+          "flagged": 176,
+          "ids_among_flagged": [
+            {
+              "id": "digits_in_subdomain",
+              "items": 54,
+              "share": 0.3068
+            },
+            {
+              "id": "suspicious_tld",
+              "items": 38,
+              "share": 0.2159
+            },
+            {
+              "id": "many_subdomains",
+              "items": 37,
+              "share": 0.2102
+            },
+            {
+              "id": "brand_in_domain",
+              "items": 34,
+              "share": 0.1932
+            },
+            {
+              "id": "suspicious_keywords",
+              "items": 8,
+              "share": 0.0455
+            },
+            {
+              "id": "brand_in_subdomain",
+              "items": 3,
+              "share": 0.017
+            },
+            {
+              "id": "url_shortener",
+              "items": 2,
+              "share": 0.0114
+            }
+          ]
+        },
+        "medium_or_higher": {
+          "cohort_size": 94344,
+          "false_alarm_rate": 0.0,
+          "flagged": 0,
+          "ids_among_flagged": []
+        }
+      }
+    },
+    "missed": {
+      "below_medium": {
+        "cohort_size": 66593,
+        "ids_among_missed": [
+          {
+            "id": "not_https",
+            "items": 34938,
+            "share": 0.5411
+          },
+          {
+            "id": "hosting_platform_subdomain",
+            "items": 14080,
+            "share": 0.2181
+          },
+          {
+            "id": "digits_in_subdomain",
+            "items": 13021,
+            "share": 0.2017
+          },
+          {
+            "id": "suspicious_tld",
+            "items": 5516,
+            "share": 0.0854
+          },
+          {
+            "id": "suspicious_keywords",
+            "items": 2476,
+            "share": 0.0383
+          },
+          {
+            "id": "long_url",
+            "items": 1851,
+            "share": 0.0287
+          },
+          {
+            "id": "many_subdomains",
+            "items": 1054,
+            "share": 0.0163
+          },
+          {
+            "id": "url_shortener",
+            "items": 663,
+            "share": 0.0103
+          },
+          {
+            "id": "brand_in_subdomain",
+            "items": 88,
+            "share": 0.0014
+          },
+          {
+            "id": "brand_in_domain",
+            "items": 83,
+            "share": 0.0013
+          },
+          {
+            "id": "international_host",
+            "items": 70,
+            "share": 0.0011
+          },
+          {
+            "id": "unusual_port",
+            "items": 7,
+            "share": 0.0001
+          }
+        ],
+        "miss_rate": 0.9696,
+        "missed": 64569,
+        "with_no_finding": 9041
+      },
+      "none": {
+        "cohort_size": 66593,
+        "ids_among_missed": [],
+        "miss_rate": 0.1358,
+        "missed": 9041,
+        "with_no_finding": 9041
+      }
+    }
+  },
+  "code": [
+    "51669cf+worktree-5d270e3abc6b"
+  ],
+  "feature_errors": {},
+  "finding_rates": {
+    "brand_in_domain": {
+      "benign_majestic": {
+        "ci95": [
+          0.000354,
+          0.001013
+        ],
+        "ci95_message": [
+          0.000303,
+          0.00106
+        ],
+        "groups": 19768,
+        "k": 13,
+        "n": 19802,
+        "rate": 0.000656
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.000245,
+          0.00048
+        ],
+        "ci95_message": [
+          0.000244,
+          0.000488
+        ],
+        "groups": 91325,
+        "k": 34,
+        "n": 94344,
+        "rate": 0.00036
+      },
+      "phishing": {
+        "ci95": [
+          0.003429,
+          0.005585
+        ],
+        "ci95_message": [
+          0.003904,
+          0.00491
+        ],
+        "groups": 31104,
+        "k": 291,
+        "n": 66593,
+        "rate": 0.00437
+      }
+    },
+    "brand_in_subdomain": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.000152
+        ],
+        "ci95_message": [
+          0.0,
+          0.000151
+        ],
+        "groups": 19768,
+        "k": 1,
+        "n": 19802,
+        "rate": 5e-05
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          7.4e-05
+        ],
+        "ci95_message": [
+          0.0,
+          7.4e-05
+        ],
+        "groups": 91325,
+        "k": 3,
+        "n": 94344,
+        "rate": 3.2e-05
+      },
+      "phishing": {
+        "ci95": [
+          0.009054,
+          0.02308
+        ],
+        "ci95_message": [
+          0.015017,
+          0.016939
+        ],
+        "groups": 31104,
+        "k": 1062,
+        "n": 66593,
+        "rate": 0.015948
+      }
+    },
+    "digits_in_subdomain": {
+      "benign_majestic": {
+        "ci95": [
+          0.000101,
+          0.000556
+        ],
+        "ci95_message": [
+          0.000101,
+          0.000555
+        ],
+        "groups": 19768,
+        "k": 6,
+        "n": 19802,
+        "rate": 0.000303
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          9.6e-05,
+          0.001453
+        ],
+        "ci95_message": [
+          0.000413,
+          0.000731
+        ],
+        "groups": 91325,
+        "k": 54,
+        "n": 94344,
+        "rate": 0.000572
+      },
+      "phishing": {
+        "ci95": [
+          0.11688,
+          0.279218
+        ],
+        "ci95_message": [
+          0.202288,
+          0.208567
+        ],
+        "groups": 31104,
+        "k": 13680,
+        "n": 66593,
+        "rate": 0.205427
+      }
+    },
+    "hosting_platform_subdomain": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.000152
+        ],
+        "ci95_message": [
+          0.0,
+          0.000151
+        ],
+        "groups": 19768,
+        "k": 1,
+        "n": 19802,
+        "rate": 5e-05
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          0.071017,
+          0.365794
+        ],
+        "ci95_message": [
+          0.215578,
+          0.222036
+        ],
+        "groups": 31104,
+        "k": 14570,
+        "n": 66593,
+        "rate": 0.218792
+      }
+    },
+    "international_host": {
+      "benign_majestic": {
+        "ci95": [
+          0.000455,
+          0.001263
+        ],
+        "ci95_message": [
+          0.000454,
+          0.001313
+        ],
+        "groups": 19768,
+        "k": 17,
+        "n": 19802,
+        "rate": 0.000858
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          0.000911,
+          0.001686
+        ],
+        "ci95_message": [
+          0.000991,
+          0.001532
+        ],
+        "groups": 31104,
+        "k": 84,
+        "n": 66593,
+        "rate": 0.001261
+      }
+    },
+    "ip_address_host": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          0.001847,
+          0.003444
+        ],
+        "ci95_message": [
+          0.002192,
+          0.002958
+        ],
+        "groups": 31104,
+        "k": 171,
+        "n": 66593,
+        "rate": 0.002568
+      }
+    },
+    "long_url": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          0.02357,
+          0.042255
+        ],
+        "ci95_message": [
+          0.030438,
+          0.033112
+        ],
+        "groups": 31104,
+        "k": 2113,
+        "n": 66593,
+        "rate": 0.03173
+      }
+    },
+    "many_subdomains": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.000148,
+          0.000709
+        ],
+        "ci95_message": [
+          0.000265,
+          0.00053
+        ],
+        "groups": 91325,
+        "k": 37,
+        "n": 94344,
+        "rate": 0.000392
+      },
+      "phishing": {
+        "ci95": [
+          0.015559,
+          0.04237
+        ],
+        "ci95_message": [
+          0.024551,
+          0.026955
+        ],
+        "groups": 31104,
+        "k": 1711,
+        "n": 66593,
+        "rate": 0.025693
+      }
+    },
+    "not_https": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          0.44101,
+          0.658663
+        ],
+        "ci95_message": [
+          0.539485,
+          0.547205
+        ],
+        "groups": 31104,
+        "k": 36180,
+        "n": 66593,
+        "rate": 0.5433
+      }
+    },
+    "suspicious_keywords": {
+      "benign_majestic": {
+        "ci95": [
+          0.000101,
+          0.000556
+        ],
+        "ci95_message": [
+          0.000101,
+          0.000555
+        ],
+        "groups": 19768,
+        "k": 6,
+        "n": 19802,
+        "rate": 0.000303
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          3.2e-05,
+          0.000148
+        ],
+        "ci95_message": [
+          3.2e-05,
+          0.000148
+        ],
+        "groups": 91325,
+        "k": 8,
+        "n": 94344,
+        "rate": 8.5e-05
+      },
+      "phishing": {
+        "ci95": [
+          0.036471,
+          0.048682
+        ],
+        "ci95_message": [
+          0.040575,
+          0.043683
+        ],
+        "groups": 31104,
+        "k": 2804,
+        "n": 66593,
+        "rate": 0.042107
+      }
+    },
+    "suspicious_tld": {
+      "benign_majestic": {
+        "ci95": [
+          0.01263,
+          0.015921
+        ],
+        "ci95_message": [
+          0.012726,
+          0.016059
+        ],
+        "groups": 19768,
+        "k": 283,
+        "n": 19802,
+        "rate": 0.014291
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.000286,
+          0.000549
+        ],
+        "ci95_message": [
+          0.000276,
+          0.000541
+        ],
+        "groups": 91325,
+        "k": 38,
+        "n": 94344,
+        "rate": 0.000403
+      },
+      "phishing": {
+        "ci95": [
+          0.072953,
+          0.115755
+        ],
+        "ci95_message": [
+          0.090324,
+          0.09477
+        ],
+        "groups": 31104,
+        "k": 6161,
+        "n": 66593,
+        "rate": 0.092517
+      }
+    },
+    "unusual_port": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          9.6e-05,
+          0.000353
+        ],
+        "ci95_message": [
+          0.000105,
+          0.00033
+        ],
+        "groups": 31104,
+        "k": 14,
+        "n": 66593,
+        "rate": 0.00021
+      }
+    },
+    "url_shortener": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.000152
+        ],
+        "ci95_message": [
+          0.0,
+          0.000151
+        ],
+        "groups": 19768,
+        "k": 1,
+        "n": 19802,
+        "rate": 5e-05
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          5.3e-05
+        ],
+        "ci95_message": [
+          0.0,
+          5.3e-05
+        ],
+        "groups": 91325,
+        "k": 2,
+        "n": 94344,
+        "rate": 2.1e-05
+      },
+      "phishing": {
+        "ci95": [
+          0.003411,
+          0.019901
+        ],
+        "ci95_message": [
+          0.00925,
+          0.010752
+        ],
+        "groups": 31104,
+        "k": 664,
+        "n": 66593,
+        "rate": 0.009971
+      }
+    },
+    "userinfo_in_url": {
+      "benign_majestic": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 19768,
+        "k": 0,
+        "n": 19802,
+        "rate": 0.0
+      },
+      "benign_phiusiil": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 91325,
+        "k": 0,
+        "n": 94344,
+        "rate": 0.0
+      },
+      "phishing": {
+        "ci95": [
+          5.1e-05,
+          0.000283
+        ],
+        "ci95_message": [
+          6e-05,
+          0.000255
+        ],
+        "groups": 31104,
+        "k": 10,
+        "n": 66593,
+        "rate": 0.00015
+      }
+    }
+  },
+  "generated_at": "2026-10-22T13:45:44+00:00",
+  "items": 180739,
+  "kind": "link",
+  "leakage": {
+    "matched": {
+      "cells": 5,
+      "design": "equal numbers of phishing and PhiUSIIL benign URLs per (https, path, query, length band) cell",
+      "finding_gaps": {
+        "brand_in_domain": {
+          "benign_full": 0.0004,
+          "benign_matched": 0.0004,
+          "collection_driven": false,
+          "gap_full": 0.004,
+          "gap_matched": 0.0033,
+          "phishing_full": 0.0044,
+          "phishing_matched": 0.0037
+        },
+        "brand_in_subdomain": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0003,
+          "collection_driven": false,
+          "gap_full": 0.0159,
+          "gap_matched": 0.0286,
+          "phishing_full": 0.0159,
+          "phishing_matched": 0.0289
+        },
+        "digits_in_subdomain": {
+          "benign_full": 0.0006,
+          "benign_matched": 0.0002,
+          "collection_driven": false,
+          "gap_full": 0.2049,
+          "gap_matched": 0.3904,
+          "phishing_full": 0.2054,
+          "phishing_matched": 0.3905
+        },
+        "hosting_platform_subdomain": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.2188,
+          "gap_matched": 0.4929,
+          "phishing_full": 0.2188,
+          "phishing_matched": 0.4929
+        },
+        "international_host": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.0013,
+          "gap_matched": 0.0012,
+          "phishing_full": 0.0013,
+          "phishing_matched": 0.0012
+        },
+        "ip_address_host": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.0026,
+          "gap_matched": 0.0001,
+          "phishing_full": 0.0026,
+          "phishing_matched": 0.0001
+        },
+        "long_url": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": true,
+          "gap_full": 0.0317,
+          "gap_matched": 0.0,
+          "phishing_full": 0.0317,
+          "phishing_matched": 0.0
+        },
+        "many_subdomains": {
+          "benign_full": 0.0004,
+          "benign_matched": 0.0015,
+          "collection_driven": true,
+          "gap_full": 0.0253,
+          "gap_matched": 0.0069,
+          "phishing_full": 0.0257,
+          "phishing_matched": 0.0084
+        },
+        "not_https": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": true,
+          "gap_full": 0.5433,
+          "gap_matched": 0.0,
+          "phishing_full": 0.5433,
+          "phishing_matched": 0.0
+        },
+        "suspicious_keywords": {
+          "benign_full": 0.0001,
+          "benign_matched": 0.0001,
+          "collection_driven": true,
+          "gap_full": 0.042,
+          "gap_matched": 0.0161,
+          "phishing_full": 0.0421,
+          "phishing_matched": 0.0162
+        },
+        "suspicious_tld": {
+          "benign_full": 0.0004,
+          "benign_matched": 0.0002,
+          "collection_driven": true,
+          "gap_full": 0.0921,
+          "gap_matched": 0.0358,
+          "phishing_full": 0.0925,
+          "phishing_matched": 0.036
+        },
+        "unusual_port": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.0002,
+          "gap_matched": 0.0001,
+          "phishing_full": 0.0002,
+          "phishing_matched": 0.0001
+        },
+        "url_shortener": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.0099,
+          "gap_matched": 0.0001,
+          "phishing_full": 0.01,
+          "phishing_matched": 0.0001
+        },
+        "userinfo_in_url": {
+          "benign_full": 0.0,
+          "benign_matched": 0.0,
+          "collection_driven": false,
+          "gap_full": 0.0002,
+          "gap_matched": 0.0001,
+          "phishing_full": 0.0002,
+          "phishing_matched": 0.0001
+        }
+      },
+      "length_band_edges": [
+        20,
+        30,
+        40,
+        55,
+        75,
+        100,
+        150
+      ],
+      "metrics": {
+        "groups": {
+          "benign_all": 11655,
+          "benign_majestic": 0,
+          "benign_phiusiil": 11655,
+          "phishing": 2309
+        },
+        "level_share": {
+          "benign_all": {
+            "high": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "low": {
+              "ci95": [
+                0.001345,
+                0.004158
+              ],
+              "ci95_message": [
+                0.001674,
+                0.003515
+              ],
+              "groups": 11655,
+              "k": 31,
+              "n": 11948,
+              "rate": 0.002595
+            },
+            "medium": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "none": {
+              "ci95": [
+                0.995842,
+                0.998655
+              ],
+              "ci95_message": [
+                0.996485,
+                0.998326
+              ],
+              "groups": 11655,
+              "k": 11917,
+              "n": 11948,
+              "rate": 0.997405
+            }
+          },
+          "phishing": {
+            "high": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 2309,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "low": {
+              "ci95": [
+                0.465959,
+                0.840574
+              ],
+              "ci95_message": [
+                0.726312,
+                0.7423
+              ],
+              "groups": 2309,
+              "k": 8775,
+              "n": 11948,
+              "rate": 0.734433
+            },
+            "medium": {
+              "ci95": [
+                0.007525,
+                0.047254
+              ],
+              "ci95_message": [
+                0.022263,
+                0.027871
+              ],
+              "groups": 2309,
+              "k": 297,
+              "n": 11948,
+              "rate": 0.024858
+            },
+            "none": {
+              "ci95": [
+                0.134304,
+                0.522352
+              ],
+              "ci95_message": [
+                0.233257,
+                0.248661
+              ],
+              "groups": 2309,
+              "k": 2876,
+              "n": 11948,
+              "rate": 0.24071
+            }
+          }
+        },
+        "levels": {
+          "high": {
+            "false_alarm_benign_all": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "false_alarm_benign_majestic": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            },
+            "false_alarm_benign_phiusiil": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "phishing_caught": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 2309,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "precision_vs_benign_all": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            },
+            "precision_vs_benign_majestic": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            },
+            "precision_vs_benign_phiusiil": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            }
+          },
+          "low_or_higher": {
+            "false_alarm_benign_all": {
+              "ci95": [
+                0.001345,
+                0.004158
+              ],
+              "ci95_message": [
+                0.001674,
+                0.003515
+              ],
+              "groups": 11655,
+              "k": 31,
+              "n": 11948,
+              "rate": 0.002595
+            },
+            "false_alarm_benign_majestic": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            },
+            "false_alarm_benign_phiusiil": {
+              "ci95": [
+                0.001345,
+                0.004158
+              ],
+              "ci95_message": [
+                0.001674,
+                0.003515
+              ],
+              "groups": 11655,
+              "k": 31,
+              "n": 11948,
+              "rate": 0.002595
+            },
+            "phishing_caught": {
+              "ci95": [
+                0.477648,
+                0.865696
+              ],
+              "ci95_message": [
+                0.751339,
+                0.766743
+              ],
+              "groups": 2309,
+              "k": 9072,
+              "n": 11948,
+              "rate": 0.75929
+            },
+            "precision_vs_benign_all": {
+              "ci95": [
+                0.987717,
+                0.998593
+              ],
+              "ci95_message": [
+                0.995386,
+                0.997803
+              ],
+              "groups": 611,
+              "k": 9072,
+              "n": 9103,
+              "rate": 0.996595
+            },
+            "precision_vs_benign_majestic": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "ci95_message": [
+                1.0,
+                1.0
+              ],
+              "groups": 587,
+              "k": 9072,
+              "n": 9072,
+              "rate": 1.0
+            },
+            "precision_vs_benign_phiusiil": {
+              "ci95": [
+                0.987717,
+                0.998593
+              ],
+              "ci95_message": [
+                0.995386,
+                0.997803
+              ],
+              "groups": 611,
+              "k": 9072,
+              "n": 9103,
+              "rate": 0.996595
+            }
+          },
+          "medium_or_higher": {
+            "false_alarm_benign_all": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "false_alarm_benign_majestic": {
+              "ci95": null,
+              "ci95_message": null,
+              "groups": 0,
+              "k": 0,
+              "n": 0,
+              "rate": null
+            },
+            "false_alarm_benign_phiusiil": {
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "ci95_message": [
+                0.0,
+                0.0
+              ],
+              "groups": 11655,
+              "k": 0,
+              "n": 11948,
+              "rate": 0.0
+            },
+            "phishing_caught": {
+              "ci95": [
+                0.007525,
+                0.047254
+              ],
+              "ci95_message": [
+                0.022263,
+                0.027871
+              ],
+              "groups": 2309,
+              "k": 297,
+              "n": 11948,
+              "rate": 0.024858
+            },
+            "precision_vs_benign_all": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "ci95_message": [
+                1.0,
+                1.0
+              ],
+              "groups": 41,
+              "k": 297,
+              "n": 297,
+              "rate": 1.0
+            },
+            "precision_vs_benign_majestic": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "ci95_message": [
+                1.0,
+                1.0
+              ],
+              "groups": 41,
+              "k": 297,
+              "n": 297,
+              "rate": 1.0
+            },
+            "precision_vs_benign_phiusiil": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "ci95_message": [
+                1.0,
+                1.0
+              ],
+              "groups": 41,
+              "k": 297,
+              "n": 297,
+              "rate": 1.0
+            }
+          }
+        },
+        "n": {
+          "benign_all": 11948,
+          "benign_majestic": 0,
+          "benign_phiusiil": 11948,
+          "phishing": 11948
+        }
+      },
+      "n_per_class": 11948,
+      "phishing_retained_share": 0.1794,
+      "probes_auc_matched": {
+        "has_path": 0.5,
+        "has_query": 0.5,
+        "host_digits": 0.7929,
+        "host_dots": 0.4091,
+        "host_hyphens": 0.704,
+        "https": 0.5,
+        "length": 0.6294,
+        "n_benign": 11948,
+        "n_phishing": 11948
+      },
+      "shape": {
+        "benign_phiusiil": {
+          "has_path": 0.0,
+          "has_query": 0.0,
+          "https": 1.0,
+          "median_length": 32,
+          "n": 11948,
+          "p90_length": 40
+        },
+        "phishing": {
+          "has_path": 0.0,
+          "has_query": 0.0,
+          "https": 1.0,
+          "median_length": 34,
+          "n": 11948,
+          "p90_length": 40
+        }
+      }
+    },
+    "probes_auc_full": {
+      "has_path": 0.6191,
+      "has_query": 0.5212,
+      "host_digits": 0.6684,
+      "host_dots": 0.4914,
+      "host_hyphens": 0.6229,
+      "https": 0.2283,
+      "length": 0.7117,
+      "n_benign": 94344,
+      "n_phishing": 66593
+    },
+    "shape": {
+      "benign_majestic": {
+        "has_path": 0.0,
+        "has_query": 0.0,
+        "https": 1.0,
+        "median_length": 25,
+        "n": 19802,
+        "p90_length": 33
+      },
+      "benign_phiusiil": {
+        "has_path": 0.0,
+        "has_query": 0.0,
+        "https": 1.0,
+        "median_length": 27,
+        "n": 94344,
+        "p90_length": 34
+      },
+      "phishing": {
+        "has_path": 0.2383,
+        "has_query": 0.0425,
+        "https": 0.4567,
+        "median_length": 34,
+        "n": 66593,
+        "p90_length": 64
+      }
+    }
+  },
+  "metrics": {
+    "groups": {
+      "benign_all": 111058,
+      "benign_majestic": 19768,
+      "benign_phiusiil": 91325,
+      "phishing": 31104
+    },
+    "level_share": {
+      "benign_all": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 111058,
+          "k": 0,
+          "n": 114146,
+          "rate": 0.0
+        },
+        "low": {
+          "ci95": [
+            0.003748,
+            0.0053
+          ],
+          "ci95_message": [
+            0.004047,
+            0.004818
+          ],
+          "groups": 111058,
+          "k": 503,
+          "n": 114146,
+          "rate": 0.004407
+        },
+        "medium": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 111058,
+          "k": 0,
+          "n": 114146,
+          "rate": 0.0
+        },
+        "none": {
+          "ci95": [
+            0.9947,
+            0.996252
+          ],
+          "ci95_message": [
+            0.995182,
+            0.995953
+          ],
+          "groups": 111058,
+          "k": 113643,
+          "n": 114146,
+          "rate": 0.995593
+        }
+      },
+      "phishing": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.000147
+          ],
+          "ci95_message": [
+            1.5e-05,
+            0.00012
+          ],
+          "groups": 31104,
+          "k": 4,
+          "n": 66593,
+          "rate": 6e-05
+        },
+        "low": {
+          "ci95": [
+            0.79612,
+            0.864672
+          ],
+          "ci95_message": [
+            0.830942,
+            0.83671
+          ],
+          "groups": 31104,
+          "k": 55528,
+          "n": 66593,
+          "rate": 0.833841
+        },
+        "medium": {
+          "ci95": [
+            0.023763,
+            0.037852
+          ],
+          "ci95_message": [
+            0.029057,
+            0.031686
+          ],
+          "groups": 31104,
+          "k": 2020,
+          "n": 66593,
+          "rate": 0.030334
+        },
+        "none": {
+          "ci95": [
+            0.10515,
+            0.17326
+          ],
+          "ci95_message": [
+            0.133137,
+            0.138408
+          ],
+          "groups": 31104,
+          "k": 9041,
+          "n": 66593,
+          "rate": 0.135765
+        }
+      }
+    },
+    "levels": {
+      "high": {
+        "false_alarm_benign_all": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 111058,
+          "k": 0,
+          "n": 114146,
+          "rate": 0.0
+        },
+        "false_alarm_benign_majestic": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 19768,
+          "k": 0,
+          "n": 19802,
+          "rate": 0.0
+        },
+        "false_alarm_benign_phiusiil": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 91325,
+          "k": 0,
+          "n": 94344,
+          "rate": 0.0
+        },
+        "phishing_caught": {
+          "ci95": [
+            0.0,
+            0.000147
+          ],
+          "ci95_message": [
+            1.5e-05,
+            0.00012
+          ],
+          "groups": 31104,
+          "k": 4,
+          "n": 66593,
+          "rate": 6e-05
+        },
+        "precision_vs_benign_all": {
+          "ci95": null,
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 3,
+          "k": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "precision_vs_benign_majestic": {
+          "ci95": null,
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 3,
+          "k": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "precision_vs_benign_phiusiil": {
+          "ci95": null,
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 3,
+          "k": 4,
+          "n": 4,
+          "rate": 1.0
+        }
+      },
+      "low_or_higher": {
+        "false_alarm_benign_all": {
+          "ci95": [
+            0.003748,
+            0.0053
+          ],
+          "ci95_message": [
+            0.004047,
+            0.004818
+          ],
+          "groups": 111058,
+          "k": 503,
+          "n": 114146,
+          "rate": 0.004407
+        },
+        "false_alarm_benign_majestic": {
+          "ci95": [
+            0.014588,
+            0.018262
+          ],
+          "ci95_message": [
+            0.014796,
+            0.018383
+          ],
+          "groups": 19768,
+          "k": 327,
+          "n": 19802,
+          "rate": 0.016513
+        },
+        "false_alarm_benign_phiusiil": {
+          "ci95": [
+            0.001233,
+            0.002842
+          ],
+          "ci95_message": [
+            0.001611,
+            0.002141
+          ],
+          "groups": 91325,
+          "k": 176,
+          "n": 94344,
+          "rate": 0.001866
+        },
+        "phishing_caught": {
+          "ci95": [
+            0.82674,
+            0.89485
+          ],
+          "ci95_message": [
+            0.861592,
+            0.866863
+          ],
+          "groups": 31104,
+          "k": 57552,
+          "n": 66593,
+          "rate": 0.864235
+        },
+        "precision_vs_benign_all": {
+          "ci95": [
+            0.988113,
+            0.99359
+          ],
+          "ci95_message": [
+            0.990543,
+            0.992042
+          ],
+          "groups": 27249,
+          "k": 57552,
+          "n": 58055,
+          "rate": 0.991336
+        },
+        "precision_vs_benign_majestic": {
+          "ci95": [
+            0.992677,
+            0.995726
+          ],
+          "ci95_message": [
+            0.993694,
+            0.994938
+          ],
+          "groups": 27139,
+          "k": 57552,
+          "n": 57879,
+          "rate": 0.99435
+        },
+        "precision_vs_benign_phiusiil": {
+          "ci95": [
+            0.994724,
+            0.998182
+          ],
+          "ci95_message": [
+            0.996501,
+            0.997367
+          ],
+          "groups": 26924,
+          "k": 57552,
+          "n": 57728,
+          "rate": 0.996951
+        }
+      },
+      "medium_or_higher": {
+        "false_alarm_benign_all": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 111058,
+          "k": 0,
+          "n": 114146,
+          "rate": 0.0
+        },
+        "false_alarm_benign_majestic": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 19768,
+          "k": 0,
+          "n": 19802,
+          "rate": 0.0
+        },
+        "false_alarm_benign_phiusiil": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 91325,
+          "k": 0,
+          "n": 94344,
+          "rate": 0.0
+        },
+        "phishing_caught": {
+          "ci95": [
+            0.023853,
+            0.037926
+          ],
+          "ci95_message": [
+            0.029132,
+            0.03176
+          ],
+          "groups": 31104,
+          "k": 2024,
+          "n": 66593,
+          "rate": 0.030394
+        },
+        "precision_vs_benign_all": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 791,
+          "k": 2024,
+          "n": 2024,
+          "rate": 1.0
+        },
+        "precision_vs_benign_majestic": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 791,
+          "k": 2024,
+          "n": 2024,
+          "rate": 1.0
+        },
+        "precision_vs_benign_phiusiil": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 791,
+          "k": 2024,
+          "n": 2024,
+          "rate": 1.0
+        }
+      }
+    },
+    "n": {
+      "benign_all": 114146,
+      "benign_majestic": 19802,
+      "benign_phiusiil": 94344,
+      "phishing": 66593
+    }
+  },
+  "schema_version": 1,
+  "split": "dev",
+  "split_manifest_sha256": "9869cdff57aa8e6f6a393a023593a3da98d0d4b1e1c29aa537cc1a66b1c1ad75"
+}

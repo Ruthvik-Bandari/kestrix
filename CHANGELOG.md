@@ -6,6 +6,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Link and file checker benchmark and round-1 rules.** `kestrixlinkfilebench` (research tooling, not in the wheel)
+  measures `kestrix.forensics` on PhiUSIIL, Majestic Million and Govdocs1 plus synthetic file cases; results are in
+  `docs/research/linkfile-benchmark.md` (development split only). New file findings: `macro_office_file`,
+  `encrypted_archive`, `embedded_executable`, `active_content_svg`, `runnable_script_file`; legacy Office (OLE2) and
+  SWF files no longer raise `high_entropy_file`/`high_entropy_region` (their compressed data is expected); the file
+  checker also reads the last 64 KiB. New URL findings: `hosting_platform_subdomain` (low, 10) and
+  `digits_in_subdomain` (low, 5). Report fields are unchanged.
 - **Recent results: per-user result history** ([ADR 0008](docs/adr/0008-per-user-result-history.md)). After a
   successful email check, website check, file analysis or URL analysis, the report (never the upload) is kept for 30
   days. New routes in both modes: `GET /api/history` (paginated, newest first), `GET /api/history/{id}`,

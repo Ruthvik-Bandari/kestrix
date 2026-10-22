@@ -228,7 +228,7 @@ def test_random_file_without_a_format_looks_encrypted() -> None:
 
 
 def test_high_entropy_is_expected_in_compressed_formats() -> None:
-    report = analyze(b"PK\x03\x04" + random_bytes(64 * 1024), "bundle.zip")
+    report = analyze(b"PK\x03\x04" + bytes(26) + random_bytes(64 * 1024), "bundle.zip")  # flags 0: not encrypted
     assert finding_ids(report) == ["expected_high_entropy"]
     assert report.findings[0].severity == "info"
 
