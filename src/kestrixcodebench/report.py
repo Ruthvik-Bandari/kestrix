@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +30,7 @@ from .metrics import (
     read_findings,
     read_reports,
 )
-from .scan import TOOLS, scan_shard
+from .scan import TOOLS, TUNING, base_tool, scan_shard
 
 # eslint-plugin-security without detect-object-injection (47k findings, the rule most projects switch off)
 VARIANT = "eslint-no-object-injection"
@@ -47,9 +48,13 @@ DEV_REPORT = "codebench-dev-{label}.json"
 LOCKED_REPORT = "codebench-locked-{name}.json"
 
 
-def load_frame(layout: Layout, split: str, reps: int = REPS, seed: int = SEED) -> Frame:
-    pairs = [r for r in read_jsonl(layout.pairs) if r["split"] == split]
-    unchanged = [r for r in read_jsonl(layout.unchanged) if r["split"] == split]
+def load_frame(
+    layout: Layout, split: str, reps: int = REPS, seed: int = SEED, only: Callable[[dict[str, Any]], bool] | None = None
+) -> Frame:
+    sides = {"dev", "test"} if split == TUNING else {split}
+    keep = only or (lambda row: True)
+    pairs = [r for r in read_jsonl(layout.pairs) if r["split"] in sides and keep(r)]
+    unchanged = [r for r in read_jsonl(layout.unchanged) if r["split"] in sides and keep(r)]
     if not pairs:
         raise CodeBenchError(f"no {split} pairs; run build first")
     return Frame(pairs, unchanged, reps, seed)
@@ -89,11 +94,10 @@ def evaluate_report(
         for name, found in variants.items():
             ev = evaluate_tool(frame, name, found)
             evals[name] = ev
-            subsets = {sub: metrics_for(frame, ev, SUBSETS[sub]) for sub in TOOL_SUBSETS[name]}
-            errors = {sub: error_analysis(frame, ev, SUBSETS[sub]) for sub in TOOL_SUBSETS[name] if sub != "js_ts"}
-            families = {
-                sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in ("python", "js_ts") if sub in TOOL_SUBSETS[name]
-            }
+            wanted = TOOL_SUBSETS[base_tool(name)]
+            subsets = {sub: metrics_for(frame, ev, SUBSETS[sub]) for sub in wanted}
+            errors = {sub: error_analysis(frame, ev, SUBSETS[sub]) for sub in wanted if sub != "js_ts"}
+            families = {sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in ("python", "js_ts") if sub in wanted}
             tools[name] = {
                 **tool_summary(reports),
                 "run": run,
@@ -110,18 +114,25 @@ def evaluate_report(
     return {"tools": tools, "overlap": overlaps}
 
 
-def dev_report(layout: Layout, runs: dict[str, str], label: str, reps: int = REPS) -> Path:
-    frame = load_frame(layout, "dev", reps)
+TUNING_NOTE = "round-1 dev plus the round-1 test (spent: LOCKED_EVAL.json); tuning data, not a held-out measurement"
+
+
+def dev_report(layout: Layout, runs: dict[str, str], label: str, reps: int = REPS, split: str = "dev") -> Path:
+    frame = load_frame(layout, split, reps)
     manifest = json.loads(layout.split_manifest.read_text(encoding="utf-8"))
+    sides = ("dev", "test") if split == TUNING else (split,)
     body = {
         "schema_version": 1,
-        "split": "dev",
+        "split": split,
+        "note": TUNING_NOTE if split == TUNING else "development data",
         "label": label,
         "generated_at": now(),
         "bootstrap": {"resamples": reps, "seed": SEED, "unit": "repository", "margin_lines": MARGIN},
         "split_manifest_sha256": manifest["manifest_sha256"],
-        "dev_data": manifest["splits"]["dev"],
-        **evaluate_report(layout, frame, runs, "dev"),
+        "dev_data": {side: manifest["splits"][side] for side in sides}
+        if split == TUNING
+        else manifest["splits"]["dev"],
+        **evaluate_report(layout, frame, runs, split),
     }
     out = layout.reports / DEV_REPORT.format(label=label)
     write_json(out, body)
@@ -186,15 +197,13 @@ def _change_parts(frame: Frame, ev: ToolEval, languages: tuple[str, ...]) -> dic
     }
 
 
-def compare_runs(layout: Layout, base: str, new: str, label: str, reps: int = REPS) -> Path:
-    """Paired change between two kestrix runs on dev: the same repository resamples for both, so each difference has
-    its own interval. ``alerts_per_kloc`` pools alerts on after-files and unchanged files."""
-    frame = load_frame(layout, "dev", reps)
-    evals = {run: evaluate_tool(frame, "kestrix", read_findings(layout, run, "kestrix", SHARDS)) for run in (base, new)}
+def paired_change(frame: Frame, base: ToolEval, new: ToolEval) -> dict[str, Any]:
+    """Paired change of ``new`` against ``base`` per language subset: the same repository resamples for both, so each
+    difference has its own interval. ``alerts_per_kloc`` pools alerts on after-files and unchanged files."""
     out: dict[str, Any] = {}
     for name, languages in SUBSETS.items():
-        first = _change_parts(frame, evals[base], languages)
-        second = _change_parts(frame, evals[new], languages)
+        first = _change_parts(frame, base, languages)
+        second = _change_parts(frame, new, languages)
         out[name] = {
             metric: {
                 **frame.difference(second[metric], first[metric]),
@@ -205,9 +214,19 @@ def compare_runs(layout: Layout, base: str, new: str, label: str, reps: int = RE
             }
             for metric in first
         }
+    return out
+
+
+def compare_runs(layout: Layout, base: str, new: str, label: str, *, reps: int = REPS, split: str = "dev") -> Path:
+    """Paired change between two kestrix runs on dev (or on the tuning data)."""
+    frame = load_frame(layout, split, reps)
+    evals = {run: evaluate_tool(frame, "kestrix", read_findings(layout, run, "kestrix", SHARDS)) for run in (base, new)}
     path = layout.reports / f"codebench-compare-{label}.json"
     bootstrap = {"resamples": reps, "unit": "repository"}
-    write_json(path, {"schema_version": 1, "base": base, "new": new, "bootstrap": bootstrap, "subsets": out})
+    out = paired_change(frame, evals[base], evals[new])
+    write_json(
+        path, {"schema_version": 1, "split": split, "base": base, "new": new, "bootstrap": bootstrap, "subsets": out}
+    )
     return path
 
 

@@ -19,7 +19,19 @@ from pathlib import Path
 
 from .common import SHARDS, CodeBenchError, Layout
 
-COMMANDS = ("build", "scan", "dev-metrics", "compare", "examples", "table", "locked-test")
+COMMANDS = (
+    "build",
+    "scan",
+    "dev-metrics",
+    "compare",
+    "examples",
+    "table",
+    "locked-test",
+    "test2-select",
+    "test2-fetch",
+    "test2-build",
+    "locked-test2",
+)
 
 
 def _runs(items: list[str] | None, default: str, tools: tuple[str, ...]) -> dict[str, str]:
@@ -51,7 +63,22 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--family", help="examples: family to list")
     p.add_argument("--count", type=int, default=8, help="examples: how many")
     p.add_argument("--report", type=Path, help="table: a dev or locked report")
-    p.add_argument("--name", default="codebench-v1", help="locked-test: name of this evaluation")
+    p.add_argument("--name", default="codebench-v1", help="locked-test, locked-test2: name of this evaluation")
+    p.add_argument(
+        "--split", default="dev", help="scan, dev-metrics, compare: dev, or tuning (round-1 dev + spent test)"
+    )
+    p.add_argument(
+        "--kestrix-tree", action="append", help="scan, locked-test2: LABEL=CODE_TREE of another kestrix scanner"
+    )
+    p.add_argument("--old-root", type=Path, help="test2-select, test2-build: the round-1 benchmark root")
+    p.add_argument(
+        "--allow-known-repos", action="store_true", help="test2-select: also take repositories of the old data"
+    )
+    p.add_argument(
+        "--allow-morefixes", action="store_true", help="test2-select: also take commits only MoreFixes holds"
+    )
+    p.add_argument("--workers", type=int, default=8, help="test2-fetch: repositories in parallel")
+    p.add_argument("--interval", type=float, default=1.0, help="test2-fetch: seconds between git requests")
     return p
 
 
@@ -63,6 +90,52 @@ def main(argv: list[str] | None = None) -> int:
     except CodeBenchError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def _trees(items: list[str] | None) -> dict[str, Path]:
+    out = {}
+    for item in items or []:
+        label, _, path = item.partition("=")
+        if not label or not path:
+            raise CodeBenchError("--kestrix-tree expects LABEL=CODE_TREE")
+        out[label] = Path(path)
+    return out
+
+
+def _test2(args: argparse.Namespace, layout: Layout, code_sha: str) -> int:
+    from . import heldout
+
+    if args.command == "locked-test2":
+        print(heldout.locked_test2(layout, args.name, _trees(args.kestrix_tree), code_sha, reps=args.bootstrap))
+        return 0
+    if args.command == "test2-fetch":
+        print(
+            json.dumps(
+                heldout.fetch_targets(layout.root, workers=args.workers, interval=args.interval, limit=args.limit)[
+                    "counts"
+                ]
+            )
+        )
+        return 0
+    _need(args.old_root and args.vul_root, "--old-root and --vul-root")
+    if args.command == "test2-select":
+        report = heldout.select_targets(
+            layout.root,
+            args.old_root,
+            args.vul_root,
+            allow_morefixes=args.allow_morefixes,
+            allow_known_repos=args.allow_known_repos,
+        )
+        print(json.dumps({k: report[k] for k in ("counts", "tiers", "selected")}))
+        return 0
+    body = heldout.build_heldout(layout, args.old_root, args.vul_root)
+    print(
+        json.dumps(
+            {k: body["splits"]["test"][k] for k in ("pairs", "pairs_in_scope", "projects", "cves", "unchanged_files")}
+            | {"overlap": body["overlap_with_existing"]}
+        )
+    )
+    return 0
 
 
 def _need(value: object, flag: str) -> None:
@@ -95,24 +168,30 @@ def _run(args: argparse.Namespace) -> int:
         )
         return 0
     if args.command == "scan":
-        from .scan import TOOLS, scan_shard
+        from .scan import TOOLS, base_tool, scan_shard
 
-        if args.tool not in TOOLS:
+        if base_tool(args.tool) not in TOOLS:
             raise SystemExit(f"scan needs --tool from {', '.join(TOOLS)}")
+        trees = _trees(args.kestrix_tree)
+        tree = trees.get(args.tool.partition("@")[2]) if "@" in args.tool else None
         for shard in [args.shard] if args.shard is not None else range(SHARDS):
-            print(scan_shard(layout, args.tool, "dev", shard, run=args.run, code_sha=code_sha))
+            print(scan_shard(layout, args.tool, args.split, shard, run=args.run, code_sha=code_sha, tree=tree))
         return 0
     if args.command == "dev-metrics":
         from .report import dev_report
         from .scan import TOOLS
 
-        print(dev_report(layout, _runs(args.tool_run, args.run, TOOLS), args.label, args.bootstrap))
+        tools = ("kestrix",) if args.split == "tuning" else TOOLS  # the baselines were scanned on dev only
+        runs = _runs(args.tool_run, args.run, tools)
+        print(dev_report(layout, runs, args.label, reps=args.bootstrap, split=args.split))
         return 0
     if args.command == "compare":
         from .report import compare_runs
 
-        print(compare_runs(layout, args.base_run, args.run, args.label, args.bootstrap))
+        print(compare_runs(layout, args.base_run, args.run, args.label, reps=args.bootstrap, split=args.split))
         return 0
+    if args.command.startswith(("test2-", "locked-test2")):
+        return _test2(args, layout, code_sha)
     if args.command == "examples":
         from .examples import list_examples
 
@@ -123,7 +202,7 @@ def _run(args: argparse.Namespace) -> int:
     from .report import locked_test
     from .scan import TOOLS
 
-    print(locked_test(layout, args.name, _runs(args.tool_run, args.run, TOOLS), code_sha, args.bootstrap))
+    print(locked_test(layout, args.name, _runs(args.tool_run, args.run, TOOLS), code_sha, reps=args.bootstrap))
     return 0
 
 

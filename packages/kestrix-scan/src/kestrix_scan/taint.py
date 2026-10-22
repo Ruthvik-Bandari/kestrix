@@ -114,8 +114,66 @@ CONFIDENCE: dict[str, Confidence] = {
 }
 _KIND_ORDER = {"llm": 0, "request": 1, "cli": 2, "env": 3, WEAK_RANDOM: 4}
 
-_FLASK_SOURCES = frozenset({"args", "form", "values", "json", "get_json", "files", "headers", "cookies", "data"})
+_FLASK_SOURCES = frozenset(
+    {
+        "args",
+        "form",
+        "values",
+        "json",
+        "get_json",
+        "files",
+        "headers",
+        "cookies",
+        "data",
+        "get_data",
+        "view_args",
+        "query_string",
+        "stream",
+    }
+)
+_FLASK_ROUTES = frozenset({"route", "get", "post", "put", "patch", "delete"})
+_FLASK_URL_PART = re.compile(r"<(?:(?P<converter>[A-Za-z_]\w*)(?:\([^)]*\))?:)?(?P<name>[A-Za-z_]\w*)>")
+_NUMERIC_CONVERTERS = frozenset({"int", "float", "uuid"})  # the converter validates the value before the handler runs
 _DJANGO_SOURCES = frozenset({"GET", "POST", "body", "headers", "COOKIES", "FILES", "META"})
+# Other frameworks' request objects, on a name `request` that is not an import: Django REST (data, query_params),
+# Starlette (query_params, path_params, json(), form(), body()), aiohttp (match_info, query, post(), json()),
+# Pyramid (params, matchdict, json_body), Sanic and Bottle (args, forms, query).
+_REQUEST_OBJECT_SOURCES = frozenset(
+    {
+        "data",
+        "query_params",
+        "path_params",
+        "match_info",
+        "matchdict",
+        "params",
+        "json_body",
+        "query",
+        "args",
+        "form",
+        "forms",
+        "json",
+        "get_json",
+        "post",
+        "text",
+        "read",
+        "query_string",
+    }
+)
+_TORNADO_CALLS = frozenset(
+    {
+        "get_argument",
+        "get_arguments",
+        "get_query_argument",
+        "get_query_arguments",
+        "get_body_argument",
+        "get_body_arguments",
+        "get_cookie",
+        "get_secure_cookie",
+    }
+)
+_TORNADO_REQUEST = frozenset({"arguments", "query_arguments", "body_arguments", "uri", "query", "path", "body"})
+_FALCON_REQUEST = frozenset({"params", "media", "get_param", "get_media", "bounded_stream", "query_string"})
+_BOTTLE_SOURCES = frozenset({"query", "forms", "params", "json", "GET", "POST", "files", "cookies", "body"})
 _ENV_CALLS = frozenset({"os.environ.get", "os.getenv"})
 _CLEARING_CALLS: dict[str, frozenset[str]] = {
     "shlex.quote": frozenset({SHELL}),
@@ -209,7 +267,9 @@ _STR_METHODS = frozenset(
     }
 )
 _ARG_STR_METHODS = frozenset({"format", "format_map", "join", "replace"})  # the arguments end up in the result
-_CONTAINER_METHODS = frozenset({"get", "getlist", "pop", "values", "items", "keys", "copy", "setdefault", "to_dict"})
+_CONTAINER_METHODS = frozenset(
+    {"get", "getlist", "pop", "values", "items", "keys", "copy", "setdefault", "to_dict", "read"}
+)
 _PATH_METHODS = frozenset({"joinpath", "with_name", "with_suffix", "with_stem", "absolute", "expanduser"})
 _FASTAPI_ROUTES = frozenset({"get", "post", "put", "patch", "delete", "head", "options", "api_route", "websocket"})
 _STRINGY = frozenset({"str", "bytes", "Any", "typing.Any"})
@@ -219,7 +279,7 @@ _TERMINATORS = frozenset({"abort", "flask.abort", "sys.exit", "exit", "quit"})
 _FIXED_HOST = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^/?#{}\s]+[/?#]")
 _FIXED_PATH = re.compile(r"^/[^/\\]")
 _TAINT_HINTS = re.compile(
-    r"request|input|argv|environ|getenv|fastapi|anthropic|openai|litellm|ollama|langchain|genai|random"
+    r"request|input|argv|environ|getenv|fastapi|flask|tornado|falcon|anthropic|openai|litellm|ollama|langchain|genai|random"
 )
 
 
@@ -381,18 +441,42 @@ class _Flow:
     # ----- FastAPI parameters
 
     def parameters(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> State:
+        state = self._flask_url_parameters(node) if "flask" in self.r.imported else {}
         if not self.fastapi or not any(self._route(d) for d in node.decorator_list):
-            return {}
+            return state
         args = node.args
         positional = [*args.posonlyargs, *args.args]
         defaults: list[ast.expr | None] = [None] * (len(positional) - len(args.defaults)) + list(args.defaults)
         pairs = [*zip(positional, defaults, strict=True), *zip(args.kwonlyargs, args.kw_defaults, strict=True)]
-        state: State = {}
         for arg, default in pairs:
             if arg.arg in ("self", "cls") or self._depends(default) or not self._stringy(arg.annotation):
                 continue
             label = f"FastAPI parameter `{arg.arg}`"
             state[arg.arg] = (Origin("request", label, frozenset(), (TraceStep(arg.lineno, f"{label} (source)"),)),)
+        return state
+
+    @staticmethod
+    def _flask_url_parameters(node: ast.FunctionDef | ast.AsyncFunctionDef) -> State:
+        """Parameters of a Flask view named in the route's ``<name>`` or ``<path:name>`` parts (not ``int:``,
+        ``float:`` or ``uuid:``): the client chooses them."""
+        names = {a.arg: a for a in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]}
+        state: State = {}
+        for decorator in node.decorator_list:
+            if not (
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Attribute)
+                and decorator.func.attr in _FLASK_ROUTES
+                and decorator.args
+                and isinstance(decorator.args[0], ast.Constant)
+                and isinstance(decorator.args[0].value, str)
+            ):
+                continue
+            for part in _FLASK_URL_PART.finditer(decorator.args[0].value):
+                arg = names.get(part["name"])
+                if arg is not None and part["converter"] not in _NUMERIC_CONVERTERS:
+                    label = f"Flask URL parameter `{arg.arg}`"
+                    step = TraceStep(arg.lineno, f"{label} (source)")
+                    state[arg.arg] = (Origin("request", label, frozenset(), (step,)),)
         return state
 
     @staticmethod
@@ -882,14 +966,37 @@ class _Flow:
                 return self._origin("request", f"flask {name.removeprefix('flask.')}", node)
             if name == "sys.argv":
                 return self._origin("cli", "sys.argv", node)
+            if name.startswith("bottle.request.") and name.split(".")[2] in _BOTTLE_SOURCES and name.count(".") == 2:
+                return self._origin("request", f"bottle {name.removeprefix('bottle.')}", node)
             return None
         holder = node.value
-        if node.attr not in _DJANGO_SOURCES:
-            return None
-        if (isinstance(holder, ast.Name) and holder.id == "request" and "request" not in self.r.aliases) or (
+        imported = self.r.imported
+        is_request = (isinstance(holder, ast.Name) and holder.id == "request" and "request" not in self.r.aliases) or (
             isinstance(holder, ast.Attribute) and holder.attr == "request"
-        ):
+        )
+        if is_request and (node.attr in _DJANGO_SOURCES or node.attr in _REQUEST_OBJECT_SOURCES):
             return self._origin("request", f"request.{node.attr}", node)
+        if (
+            "tornado" in imported
+            and isinstance(holder, ast.Name)
+            and holder.id == "self"
+            and node.attr in _TORNADO_CALLS
+        ):
+            return self._origin("request", f"tornado self.{node.attr}", node)
+        if (
+            "tornado" in imported
+            and isinstance(holder, ast.Attribute)
+            and holder.attr == "request"
+            and node.attr in _TORNADO_REQUEST
+        ):
+            return self._origin("request", f"tornado request.{node.attr}", node)
+        if (
+            "falcon" in imported
+            and isinstance(holder, ast.Name)
+            and holder.id == "req"
+            and node.attr in _FALCON_REQUEST
+        ):
+            return self._origin("request", f"falcon req.{node.attr}", node)
         return None
 
     @staticmethod

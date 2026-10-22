@@ -8,8 +8,12 @@
 set -euo pipefail
 LABEL="${1:?usage: bash hpc/codebench_round.sh LABEL}"
 cd "$(dirname "$0")/.."
-scan=$(sbatch --parsable --export=ALL,TOOL=kestrix,RUN="$LABEL" hpc/codebench_scan.sbatch)
-dev=$(sbatch --parsable --dependency=afterok:"$scan" hpc/codebench_dev.sbatch --label "$LABEL" \
-  --tool-run kestrix="$LABEL" --tool-run bandit=base --tool-run eslint=base)
-cmp=$(sbatch --parsable --dependency=afterok:"$scan" hpc/codebench_compare.sbatch --base-run "${BASE_RUN:-base}" --run "$LABEL" --label "$LABEL")
+# the Slurm controller sometimes answers "Unexpected message received": retry a few times
+sb() { local out; for _ in 1 2 3 4 5 6; do if out=$(sbatch "$@" 2>/dev/null); then echo "$out"; return 0; fi; sleep 10; done; return 1; }
+scan=$(sb --parsable --export=ALL,TOOL=kestrix,RUN="$LABEL",SPLIT="${SPLIT:-dev}" hpc/codebench_scan.sbatch)
+# SPLIT=tuning scores kestrix only, on round-1 dev + the spent round-1 test (the baselines were scanned on dev only)
+runs=(--tool-run kestrix="$LABEL")
+if [ "${SPLIT:-dev}" = dev ]; then runs+=(--tool-run bandit=base --tool-run eslint=base); fi
+dev=$(sb --parsable --dependency=afterok:"$scan" hpc/codebench_dev.sbatch --label "$LABEL" --split "${SPLIT:-dev}" "${runs[@]}")
+cmp=$(sb --parsable --dependency=afterok:"$scan" hpc/codebench_compare.sbatch --base-run "${BASE_RUN:-base}" --run "$LABEL" --label "$LABEL" --split "${SPLIT:-dev}")
 echo "$LABEL scan $scan dev-metrics $dev compare $cmp" | tee -a "/scratch/$USER/kestrix/codebench/logs/rounds.ids"

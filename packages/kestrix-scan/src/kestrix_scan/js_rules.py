@@ -50,7 +50,13 @@ _LLM_CWE = {CODE: "CWE-94", SHELL: "CWE-78", HTML: "CWE-79"}
 _LLM_WHAT = {CODE: "code", SHELL: "command", HTML: "HTML"}
 
 _STRING_TIMERS = frozenset({"setTimeout", "setInterval", "setImmediate"})
-_SHELL_ALWAYS = frozenset({"child_process.exec", "child_process.execSync"})
+_SHELL_ALWAYS = frozenset(
+    {"child_process.exec", "child_process.execSync"}
+    | {"shelljs.exec", "execa.command", "execa.commandSync", "execa.execaCommand", "execa.execaCommandSync"}
+    | {"execa.shell", "execa.shellSync", "execa.execaShell", "child-process-promise.exec"}
+)
+_SHELL_PROGRAMS = frozenset({"sh", "bash", "dash", "zsh", "/bin/sh", "/bin/bash", "cmd", "cmd.exe", "powershell"})
+_SHELL_FLAGS = frozenset({"-c", "-lc", "-ec", "/c", "/C", "-Command", "-command"})
 _SHELL_OPTION = {
     "child_process.spawn": 2,
     "child_process.spawnSync": 2,
@@ -77,7 +83,58 @@ _FS_SINKS = frozenset(
         "rmSync",
         "open",
         "openSync",
+        "readdir",
+        "readdirSync",
+        "stat",
+        "statSync",
+        "lstat",
+        "lstatSync",
+        "access",
+        "accessSync",
+        "exists",
+        "existsSync",
+        "rename",
+        "renameSync",
+        "copyFile",
+        "copyFileSync",
+        "cp",
+        "cpSync",
+        "mkdir",
+        "mkdirSync",
+        "rmdir",
+        "rmdirSync",
+        "opendir",
+        "opendirSync",
+        "readlink",
+        "truncate",
     )
+) | frozenset(
+    f"fs.{name}"  # fs-extra resolves to fs
+    for name in (
+        "readFile",
+        "readFileSync",
+        "writeFile",
+        "writeFileSync",
+        "readJson",
+        "readJsonSync",
+        "writeJson",
+        "outputFile",
+        "outputJson",
+        "remove",
+        "removeSync",
+        "copy",
+        "copySync",
+        "move",
+        "moveSync",
+        "ensureDir",
+        "ensureFile",
+        "pathExists",
+        "emptyDir",
+    )
+)
+_FS_TWO_PATHS = frozenset(
+    {"fs.rename", "fs.renameSync", "fs.copyFile", "fs.copyFileSync", "fs.cp", "fs.cpSync"}
+    | {"fs.copy", "fs.copySync", "fs.move", "fs.moveSync"}
 )
 _HTTP_VERBS = ("get", "post", "put", "patch", "delete", "head", "options", "request")
 _URL_SINKS = frozenset(
@@ -86,7 +143,8 @@ _URL_SINKS = frozenset(
     | {f"{lib}.{verb}" for lib in ("axios", "got", "superagent") for verb in _HTTP_VERBS}
 )
 _CONFIG_URL_CALLS = frozenset({"axios", "axios.request"})
-_REDIRECT_RECEIVERS = frozenset({"res", "response", "ctx", "reply"})
+_REDIRECT_RECEIVERS = frozenset({"res", "response", "ctx", "reply", "h"})
+_LOCATION_HEADERS = frozenset({"setHeader", "header", "set", "append"})
 _MERGES = frozenset({"lodash.merge", "lodash.mergeWith", "lodash.defaultsDeep"})
 _PROTO_KEYS = frozenset({"__proto__", "constructor", "prototype"})
 _KEY_CHECKS = frozenset({"has", "includes", "hasOwnProperty"})
@@ -392,10 +450,32 @@ class _Checker:
                 message=None if fixed else message,
             )
         else:
+            script = self._shell_script(command, args)
+            if script is not None:
+                message = f"{short}() starts a shell with a script built from a template or concatenation."
+                self._sink("js.child_process.shell", at, script, sink_class=SHELL, sink=f"{short}()", message=message)
+                return
             origins = ix.taint(*command)
             llm = best(origins, SHELL, _LLM)
             if llm is not None:
                 self._llm(at, llm, SHELL, f"{short}()")
+
+    def _shell_script(self, command: tuple[int, int], args: tuple[tuple[int, int], ...]) -> tuple[int, int] | None:
+        """The built script of ``spawn('sh', ['-c', script])``, or None."""
+        ix = self.ix
+        program = ix.string_value(*command)
+        if program is None or program not in _SHELL_PROGRAMS or len(args) < 2:
+            return None
+        lo, hi = args[1]
+        if not is_punct(self.toks[lo], "[") or ix.close_of(lo) + 1 != hi:
+            return None
+        items = ix.split(lo + 1, hi - 1)
+        for position, item in enumerate(items[:-1]):
+            flag = ix.string_value(*item)
+            if flag in _SHELL_FLAGS:
+                script = items[position + 1]
+                return script if self._stringy(*script) == "built" else None
+        return None
 
     def _jquery(self, call: Call) -> bool:
         segs = call.callee.segs
@@ -444,6 +524,8 @@ class _Checker:
         receiver = segs[0].value if len(segs) == 2 and segs[0].kind == "name" else ""
         if name in _FS_SINKS:
             self._path(at, first, f"{name}()")
+            if name in _FS_TWO_PATHS and len(args) >= 2:
+                self._path(at, args[1], f"{name}()")
         elif last == "sendFile" and len(segs) >= 2:
             entries = ix.object_entries(*args[1]) if len(args) >= 2 else None
             if entries is None or "root" not in entries:
@@ -462,6 +544,20 @@ class _Checker:
         elif last == "redirect" and receiver in _REDIRECT_RECEIVERS:
             sink = f"{receiver}.redirect()"
             self._taint_hit("js.redirect.open", at, args[-1], sink_class=REDIRECT, sink=sink, verb="redirects to")
+        elif last == "location" and receiver in _REDIRECT_RECEIVERS:
+            sink = f"{receiver}.location()"
+            self._taint_hit("js.redirect.open", at, first, sink_class=REDIRECT, sink=sink, verb="redirects to")
+        elif last in _LOCATION_HEADERS and receiver in _REDIRECT_RECEIVERS and len(args) >= 2:
+            header = ix.string_value(*first)
+            if header is not None and header.lower() == "location":
+                sink = f"{receiver}.{last}('Location')"
+                self._taint_hit("js.redirect.open", at, args[1], sink_class=REDIRECT, sink=sink, verb="redirects to")
+        elif last == "writeHead" and receiver in _REDIRECT_RECEIVERS and len(args) >= 2:
+            entries = ix.object_entries(*args[1])
+            location = None if entries is None else entries.get("Location") or entries.get("location")
+            if location is not None:
+                sink = f"{receiver}.writeHead(Location)"
+                self._taint_hit("js.redirect.open", at, location, sink_class=REDIRECT, sink=sink, verb="redirects to")
         elif name in _MERGES:
             for arg in args[1:]:
                 origin = best(ix.taint(*arg), KEY, _REQUEST)

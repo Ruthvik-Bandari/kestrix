@@ -5,6 +5,24 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **CVE-fix benchmark, round 2 (measured on the tuning data of `docs/benchmarks/cvefixes.md`: round-1 dev plus the
+  spent round-1 test).** Nine changes kept, all of them wider sources or sinks of existing rules (no new rule id),
+  fourteen tried and reverted. Each change was measured alone against the round-1 scanner.
+  - Python sources: Flask route parameters (`<name>`, `<path:name>`), `request.view_args`, `get_data()`, `query_string`,
+    `stream`; the request objects of Django REST, Starlette, aiohttp, Pyramid, Sanic, Tornado, Bottle and Falcon.
+  - `py.ssrf.request` also reports `.get`/`.post`/`.request` on HTTP sessions and clients, `urlretrieve` and
+    `http.client` hosts; `py.xss.markup` also reports `Markup`/`mark_safe` of Markdown renderer output with no
+    sanitizer; `py.archive.extract` also reports `shutil.unpack_archive` without `filter=`.
+  - JavaScript sources: `req.url`, `originalUrl`, `path`, `baseUrl`, `payload`, `rawBody`, `nextUrl`, Koa `ctx.url`
+    and `ctx.path`. `js.path.traversal` also covers `readdir`, `stat`, `exists`, `rename`, `copyFile`, `mkdir`, `rmdir`
+    and fs-extra, `js.redirect.open` also covers `res.location`, a `Location` header and `h.redirect`, and
+    `js.child_process.shell` also covers `spawn('sh', ['-c', script])`, `shelljs.exec` and `execa.command`.
+  - Rule titles and texts of `py.xss.markup`, `py.archive.extract`, `js.child_process.shell`, `js.redirect.open` and
+    `js.path.traversal` changed, so the SARIF rule descriptions did.
+  - Tried and reverted: more Python file sinks (two forms), Django URL parameters, template-source and
+    `subprocess` argument sinks, a Jinja2 `autoescape` rule (two forms), more JS HTTP clients, `vm` and template
+    engine code sinks, `spawn` argument taint, reflected `res.send`, DOM `href`/`src` assignment, and two narrower
+    forms of `js.dom.xss_sink` (alerts down 35 to 54%, detection down 0.5 to 2.5 points).
 - **CVE-fix benchmark, round 1 (measured on the development half of `docs/benchmarks/cvefixes.md`).** Two changes
   kept, three reverted.
   - New rule `py.archive.extract` (CWE-22, medium severity, low confidence): `tarfile` `extract` and `extractall` on

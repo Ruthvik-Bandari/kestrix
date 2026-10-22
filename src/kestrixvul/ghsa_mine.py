@@ -259,6 +259,7 @@ class FetchConfig:
     max_bytes: int = 500 * 1024 * 1024
     retries: int = 3
     sampled_files: int = SAMPLED_FILES
+    max_changed_files: int | None = None  # keep at most this many changed files per commit (a seeded sample)
 
 
 def remote_url(repo: str) -> str:
@@ -457,6 +458,12 @@ def fetch_commit(
             excluded.append({"path": path, "reason": reason})
             continue
         changed.append((status, path, None if old == ZERO else old, None if new == ZERO else new))
+    cap_dropped = 0
+    if config.max_changed_files is not None and len(changed) > config.max_changed_files:
+        order = random.Random(f"kestrixcodebench-test2-files\x1f{sha}")  # noqa: S311 - sampling, not security
+        picked = set(order.sample(range(len(changed)), config.max_changed_files))
+        cap_dropped = len(changed) - len(picked)
+        changed = [c for i, c in enumerate(changed) if i in picked]
     changed_paths = {p for _, p, _, _ in changed}
     candidates = sorted(
         (p, o) for p, o in tree_files(git, parent) if p not in changed_paths and language_of(p) and not path_reason(p)
@@ -484,6 +491,7 @@ def fetch_commit(
             for s, p, a, b in changed
         ],
         "excluded": excluded,
+        "cap_dropped": cap_dropped,
         "other_code_changed": sorted(other_code),
         "sampled": [{"path": p, "text": texts.get(o)} for p, o in sampled if texts.get(o) is not None],
     }
