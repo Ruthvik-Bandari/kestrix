@@ -71,11 +71,13 @@ Bodies sent with chunked transfer encoding and no `Content-Length` are counted a
 
 | Header | Value |
 | --- | --- |
-| `Content-Security-Policy` | `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `no-referrer` |
 | `X-Frame-Options` | `DENY` |
 | `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+| `Permissions-Policy` | every powerful feature (camera, microphone, geolocation, payment, USB and the like) switched off with `()` |
 
 ## Errors
 
@@ -228,7 +230,7 @@ Results older than 30 days are deleted whenever a result is stored and when the 
 With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, signed-in service. Setup, security properties and limits are in [hosted.md](hosted.md). Everything above still applies, with these differences:
 
 - **Host and origin.** `Host` must be the host of `KESTRIX_PUBLIC_ORIGIN` (no loopback names), else 421. On state-changing requests, `Origin`, when sent, must equal `KESTRIX_PUBLIC_ORIGIN` exactly, else 403 `cross_site_request`.
-- **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and every `/api/` response carries `Cache-Control: no-store`.
+- **Headers.** Every response also carries `Strict-Transport-Security: max-age=63072000; includeSubDomains` (plus `; preload` when the owner sets `KESTRIX_HSTS_PRELOAD=1`) and `upgrade-insecure-requests` in its CSP, and every `/api/` response carries `Cache-Control: no-store`. A 422 validation error names the field but omits `input` and `ctx`, so a rejected value is never echoed.
 - **No API schema.** `GET /api/openapi.json` is not served (401 without a session, 404 with one).
 - **Not served.** `/api/detect/*`, `/api/bitcoin/*`, `/api/settings` and `/api/settings/*` return 404 `not_found` for every method, signed in or not, except `PUT /api/settings/history` (see [Result history](#result-history)).
 - **Sign-in required.** Every `/api/` route except `GET /api/health` and the `/api/auth/*` routes marked public below needs a valid access token (the `__Host-kx_at` cookie, [ADR 0007](adr/0007-jwt-access-and-rotating-refresh-tokens.md)). Without one it returns 401 with one of two reasons:

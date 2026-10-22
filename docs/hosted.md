@@ -29,7 +29,7 @@ The local install is unchanged. Hosted mode is on only when `KESTRIX_MODE=hosted
 | Analyses | In the server process | In a separate worker process with CPU, memory and time limits |
 | Concurrency | No limit | One module request at a time per user; at most 2 analyses and 8 website checks at once |
 | Rate limits | None | Per user and per IP (see below) |
-| Headers | CSP and friends | The same, plus `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, and `Cache-Control: no-store` on every `/api/` response |
+| Headers | CSP and friends | The same, plus `Strict-Transport-Security: max-age=63072000; includeSubDomains` (`; preload` only when `KESTRIX_HSTS_PRELOAD=1`), `upgrade-insecure-requests` in the CSP, and `Cache-Control: no-store` on every `/api/` response |
 | API schema | `/api/openapi.json` | Not served |
 | Logs | uvicorn's access log | A privacy-safe access line per request; uvicorn's access log is off |
 
@@ -52,6 +52,7 @@ All settings come from environment variables, which on a hosting platform should
 | `KESTRIX_LOG_SALT` | No | At least 16 bytes. Salt for the user-id hash in logs. Default: derived from the pepper. |
 | `KESTRIX_ABUSE_CONTACT` | No | Printable ASCII, at most 200 characters, such as `abuse@kestrix.example.org`. Added to the website check's `User-Agent`. |
 | `KESTRIX_CLIENT_IP_HEADER` | No | A header your platform's proxy always overwrites with the client address, such as `Fly-Client-IP`; used for per-IP sign-in limits. Cannot be combined with `KESTRIX_TRUST_PROXY_HEADERS`. See [deploy.md](deploy.md#client-ips-and-rate-limits). |
+| `KESTRIX_HSTS_PRELOAD` | No | `1` adds `preload` to the HSTS header. Off by default: the preload list covers the whole registrable domain and every subdomain and is slow to undo, so it is the owner's decision ([deploy.md](deploy.md#go-live-checklist)). |
 | `KESTRIX_TRUST_PROXY_HEADERS` | No | `1` to take the client IP for rate limits from the right-most `X-Forwarded-For` entry. See [Limitations](#limitations). |
 | `PORT` | No | Listening port for `kestrix serve-hosted` (default 8000). |
 
@@ -106,6 +107,9 @@ Routes and status codes are in [api.md](api.md#hosted-mode).
 
 ## Security properties
 
+- **Browser hardening.** Every response, including refusals, carries a Content-Security-Policy with `script-src 'self'` and `style-src 'self'` (no `'unsafe-inline'`, no `'unsafe-eval'`), `object-src 'none'`, `frame-src 'none'`, `base-uri 'none'`, `form-action 'self'` and `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, and a `Permissions-Policy` that turns off every powerful feature. The dashboard needs none of the relaxations: it has no inline script or style, and React sets styles through the CSSOM. Files under `/assets/` carry a content hash and are served `immutable`; `index.html` is `no-cache`; a missing bundle file is a 404, never the page. There is no CORS: no response carries an `Access-Control-*` header, and a preflight gets 405. The code is in [`server/headers.py`](../src/kestrix/server/headers.py); [`scripts/deploy_preflight.py`](../scripts/deploy_preflight.py) re-checks it on a real deployment.
+- **Generic errors.** An unexpected exception is a JSON 500 `unexpected error` (only the exception type is logged). A request body that fails validation is a 422 that names the field (`loc`, `type`, `msg`) but, unlike FastAPI's default, does not echo the rejected value, so a mistyped secret or another person's upload field never comes back in a response.
+- **Audit log.** `kestrix.auth` writes one line for each sign-in (provider, salted user hash, whether the account is new), sign-out, account deletion, refused refresh, detected refresh-token reuse and failed sign-in (a fixed reason code). Sign-in, sign-out and account deletion carry the salted user hash; refusals carry only a fixed reason code. No line holds an email, name, provider id, token or IP address.
 - **Sign-in.**
   - OAuth 2.0 authorization code with PKCE (S256), a random `state`, and for Google an OpenID Connect `nonce`.
   - The pending attempt (provider, PKCE verifier, nonce, `next`) is stored server-side under a keyed hash of `state`, expires after 10 minutes, and is deleted on first use, so a `state` works once.

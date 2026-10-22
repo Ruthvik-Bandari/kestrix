@@ -9,7 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from kestrix.server.app import HSTS, create_app
+from kestrix.server.app import create_app
+from kestrix.server.headers import HSTS
 from kestrix.server.ratelimit import RateLimiter, client_ip
 from kestrix.server.settings import Settings
 from kestrix.webcheck import api as webcheck_api
@@ -58,7 +59,9 @@ def test_writes_from_the_public_origin_are_allowed(hosted, providers):
 
 def test_hsts_and_existing_headers_only_in_hosted_mode(hosted):
     resp = hosted.get("/api/health")
-    assert resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains; preload"
+    assert (
+        resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains"
+    )  # preload is the owner's choice
     assert "frame-ancestors 'none'" in resp.headers["content-security-policy"]
     assert resp.headers["x-frame-options"] == "DENY"
     assert hosted.get("/api/webcheck").headers["strict-transport-security"] == HSTS  # on refusals too

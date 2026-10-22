@@ -33,6 +33,8 @@ from urllib.parse import urlsplit
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException
@@ -53,6 +55,7 @@ from ..webcheck.api import router as webcheck_router
 from ..webcheck.fetch import user_agent
 from .auth import AuthService, current_session
 from .auth_api import auth_router
+from .headers import IMMUTABLE, NO_STORE, REVALIDATE, SECURITY_HEADERS, hosted_headers
 from .history import LOCAL_USER, HistoryCipher, HistoryRecorder, HistoryStore
 from .history_api import history_router
 from .hosted import AccessLog, HostedGate, site_scan_counter
@@ -91,19 +94,8 @@ _STATUS = {
 
 _HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 413: "input_too_large"}
 
-_SECURITY_HEADERS = {
-    "Content-Security-Policy": (
-        "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; "
-        "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
-    ),
-    "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "no-referrer",
-    "X-Frame-Options": "DENY",
-    "Cross-Origin-Opener-Policy": "same-origin",
-}
-HSTS = "max-age=63072000; includeSubDomains; preload"
-_HOSTED_HEADERS = {**_SECURITY_HEADERS, "Strict-Transport-Security": HSTS}
-_NO_STORE = {"Cache-Control": "no-store"}
+_SECURITY_HEADERS = SECURITY_HEADERS
+_NO_STORE = NO_STORE
 
 log = logging.getLogger("kestrix.server")
 webcheck_log = logging.getLogger("kestrix.webcheck")
@@ -235,6 +227,40 @@ def _request_user(request: Request) -> int:
     return session.user_id
 
 
+async def _hosted_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 without echoing the rejected values: FastAPI's default body repeats each one (``input``, ``ctx``),
+    so another person's upload field or a mistyped secret would land in a response and any log of it."""
+    problems = [{"type": e["type"], "loc": e["loc"], "msg": e["msg"]} for e in exc.errors()]
+    return JSONResponse({"detail": jsonable_encoder(problems)}, status_code=422)
+
+
+def _serve_static(path: str) -> Response:
+    """A bundle file, else the dashboard page for a client-side route (``spa`` below)."""
+    if path.startswith("api/"):
+        return JSONResponse({"reason": "not_found", "detail": path}, status_code=404)
+    static = STATIC_DIR.resolve()
+    try:
+        candidate = (static / path).resolve()
+        found = bool(path) and candidate.is_file() and candidate.is_relative_to(static)
+    except (OSError, ValueError):  # an embedded NUL or an over-long name is just a path that is not there
+        found = False
+    if found:
+        hashed = candidate.is_relative_to(static / "assets")
+        return FileResponse(candidate, headers={"Cache-Control": IMMUTABLE if hashed else REVALIDATE})
+    if path.startswith("assets/"):  # a missing bundle file is an error, not the page (it would be cached as a script)
+        return JSONResponse({"reason": "not_found", "detail": path}, status_code=404)
+    index = STATIC_DIR / "index.html"
+    if index.is_file():
+        return FileResponse(index, headers={"Cache-Control": REVALIDATE})
+    return JSONResponse(
+        {
+            "reason": "dashboard_not_built",
+            "detail": "Build it with `npm --prefix frontend run build`; the API schema is at /api/openapi.json",
+        },
+        status_code=503,
+    )
+
+
 def create_app(
     extra_hosts: frozenset[str] = frozenset(),
     *,
@@ -270,7 +296,7 @@ def create_app(
             _LocalOnly,
             allowed_hosts=frozenset({hosted.public_host}),
             public_origin=hosted.public_origin,
-            headers=_HOSTED_HEADERS,
+            headers=hosted_headers(hsts_preload=hosted.hsts_preload),
             body_limits=limits,
         )
         app.add_middleware(AccessLog, auth=auth)
@@ -285,6 +311,9 @@ def create_app(
         return JSONResponse(
             {"reason": exc.reason.value, "detail": exc.detail}, status_code=_STATUS.get(exc.reason, 400)
         )
+
+    if hosted is not None:
+        app.add_exception_handler(RequestValidationError, _hosted_validation_error)  # type: ignore[arg-type]
 
     if auth is None:
 
@@ -341,21 +370,7 @@ def create_app(
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str) -> Response:
-        if path.startswith("api/"):
-            return JSONResponse({"reason": "not_found", "detail": path}, status_code=404)
-        candidate = (STATIC_DIR / path).resolve()
-        if path and candidate.is_file() and candidate.is_relative_to(STATIC_DIR.resolve()):
-            return FileResponse(candidate)
-        index = STATIC_DIR / "index.html"
-        if index.is_file():
-            return FileResponse(index)
-        return JSONResponse(
-            {
-                "reason": "dashboard_not_built",
-                "detail": "Build it with `npm --prefix frontend run build`; the API schema is at /api/openapi.json",
-            },
-            status_code=503,
-        )
+        return _serve_static(path)
 
     app.state.history = history
     return app

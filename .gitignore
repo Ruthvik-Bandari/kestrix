@@ -26,6 +26,11 @@ src/kestrix/server/static/*
 *.pem
 *.key
 secrets/
+secrets.json
+*.sqlite3
+*.sqlite3-*
+kestrix*.db
+kestrix*.db-*
 data/raw/
 data/locked/
 

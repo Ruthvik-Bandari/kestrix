@@ -80,6 +80,9 @@ class HostedSettings:
     # A header that the platform's proxy always overwrites with the client address (Fly: Fly-Client-IP).
     client_ip_header: str | None = None
     abuse_contact: str | None = None
+    # Owner choice (docs/deploy.md): add ``preload`` to HSTS. Off by default because preloading
+    # covers every subdomain and is slow to undo.
+    hsts_preload: bool = False
     # Fixed service limits (not read from the environment); tests shrink them.
     max_mail_bytes: int = 10 * MIB
     max_file_bytes: int = 10 * MIB
@@ -247,5 +250,6 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
             trust_proxy_headers=_flag(env, "KESTRIX_TRUST_PROXY_HEADERS"),
             client_ip_header=_client_ip_header(env),
             abuse_contact=_abuse_contact(env),
+            hsts_preload=_flag(env, "KESTRIX_HSTS_PRELOAD"),
         ),
     )

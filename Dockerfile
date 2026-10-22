@@ -52,7 +52,9 @@ LABEL org.opencontainers.image.title="kestrix" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/Ruthvik-Bandari/kestrix"
 # The base image's pip is not needed at runtime. The service account has no home and no login shell.
+# No setuid or setgid file stays in the image, so a code-execution bug cannot climb through su, mount or the like.
 RUN python -m pip uninstall --yes --quiet pip \
+ && find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -exec chmod a-s {} + \
  && groupadd --system --gid 10001 kestrix \
  && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin kestrix \
  && mkdir -p /data \
