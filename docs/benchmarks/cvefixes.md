@@ -317,3 +317,32 @@ ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codeb
 - test2 shares 332 of its 522 repositories (1,568 pairs) with the tuning data, though no file, CVE, advisory or commit; the separate never-scanned-repository subset (401 pairs) answers whether that matters. 1,243 commits are ones MoreFixes also holds.
 - Fixes touching more than 3 changed source files contribute a seeded sample of 3, so a few "changed files" are not the file with the weakness.
 - The path, SSRF and XSS gains are small because the scanner has no whole-program data flow; see the error analysis above.
+
+## Round 2 on the fresh held-out set (test2, 2026-10-22)
+
+Run once (job 11308164, claim `LOCKED_EVAL_TEST2.json`) on test2: 1,024 in-scope pairs from 522 projects, with no
+advisory, CVE, fix commit or file content shared with any tuning data (332 repositories do overlap; the 239
+in-scope pairs from never-scanned repositories are reported separately in the JSON). Report:
+[`codebench-locked-test2-v1.json`](../data/codebench/codebench-locked-test2-v1.json). 95% repository-bootstrap
+intervals.
+
+| Tool | Language | Detection | False alarms per KLOC (fixed files) |
+| --- | --- | --- | --- |
+| kestrix-scan round 2 | Python | 7.7% [4.2, 12.0] | **0.23** [0.16, 0.29] |
+| kestrix-scan round 1 | Python | 7.5% [4.0, 11.6] | 0.22 [0.15, 0.29] |
+| Bandit 1.9.4 | Python | 10.2% [6.3, 14.2] | 0.99 [0.77, 1.21] |
+| kestrix-scan round 2 | JS/TS | 10.3% [7.2, 13.9] | **0.43** [0.24, 0.70] |
+| kestrix-scan round 1 | JS/TS | 9.0% [5.8, 12.9] | 0.40 [0.22, 0.66] |
+| eslint-plugin-security | JS/TS | 12.4% [8.8, 16.1] | 16.93 [14.09, 19.90] |
+| eslint-plugin-security without `detect-object-injection` | JS/TS | 7.0% [4.3, 9.8] | 1.51 [1.08, 2.10] |
+
+What test2 shows:
+
+- **Round 2 helped, a little, on unseen code:** detection 8.3% to 9.1% overall (+0.8 points, paired interval +0.1 to
+  +1.6; 85 to 93 pairs), mostly in JavaScript and TypeScript, for 3% more alerts (+0.009 per KLOC, interval +0.004 to
+  +0.016).
+- **Bandit still detects more Python** (−2.5 points, interval −4.7 to −0.2) at about four times the false alarms.
+  On JS/TS full ESLint security's lead (−2.0 points, interval −6.3 to +2.8) is not established, at about forty
+  times the false alarms; without its noisiest rule ESLint detects less than Kestrix.
+- **Using two tools still catches the most:** Kestrix with Bandit detects 11.8% of Python pairs.
+- test2 is now spent.
