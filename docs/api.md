@@ -93,7 +93,8 @@ Kestrix errors use one envelope:
 | --- | --- |
 | 400 | Any rejected input not listed below, for example `invalid_input`, `invalid_url`, `invalid_rule`, `unsupported_modifier`, `invalid_mapping`, `invalid_fixture`, `malformed_yaml`, `engine_error`, `index_count_mismatch` |
 | 401 | `sign_in_required`, `token_expired` (hosted mode only) |
-| 403 | `target_not_allowed`, `cross_site_request` from the middleware, and `csrf_failed` (hosted mode only) |
+| 403 | `target_not_allowed`, `cross_site_request` from the middleware, and `csrf_failed` and `reauth_required` (hosted mode only) |
+| 408 | `request_timeout` (hosted mode only): a request body paused for more than 10 seconds, or took longer than 30 seconds (120 for an upload) |
 | 404 | `not_found`, for an unknown path under `/api/` |
 | 413 | `input_too_large` |
 | 421 | `host_not_allowed` |
@@ -251,14 +252,16 @@ With `KESTRIX_MODE=hosted` (or `kestrix serve-hosted`) the server is a public, s
 | `GET /api/auth/login/{provider}` | Yes | Optional `?next=` a same-origin path starting with `/` (not `//`, no backslashes, control characters or spaces); anything else is ignored. Optional `intent=signup` from the Sign up tab; any other value means log in | 302 to the provider's authorization page, with a 10-minute `__Host-kx_login` cookie. An unknown or disabled provider gives 404. |
 | `GET /api/auth/callback/{provider}` | Yes | The provider's `code` and `state` | 303 to `next` (default `/app`) with the `__Host-kx_at` (access, 15 minutes) and `__Host-kx_rt` (refresh) cookies. A new account created with `intent=signup` records `terms_accepted_at`; one created without it gets `welcome=created` added to `next`. Any failure gives 303 to `/welcome?signin=failed` with no detail. |
 | `GET /api/auth/me` | Yes | none | `{"signed_in": true, "user": {"display_name", "email", "provider"}, "csrf_token": string, "access_expires_at": epoch seconds}`; without a usable access token but with a live refresh family, `{"signed_in": false, "refreshable": true, "csrf_token": string}`; else `{"signed_in": false}`. Never rotates anything. Sent with `Cache-Control: no-store`. |
-| `POST /api/auth/refresh` | Yes | `X-CSRF-Token`; the `__Host-kx_rt` cookie | 200 `{"access_expires_at": epoch seconds}` with new `__Host-kx_at` and `__Host-kx_rt` cookies (the refresh token rotates). 403 `csrf_failed` without the family's token. 401 `sign_in_required`, clearing both cookies, for a missing, unknown or ended family, or for a refresh token that was already rotated, which also revokes its whole family. |
+| `POST /api/auth/refresh` | Yes | `X-CSRF-Token`; the `__Host-kx_rt` cookie | 200 `{"access_expires_at": epoch seconds}` with new `__Host-kx_at` and `__Host-kx_rt` cookies (the refresh token rotates). 403 `csrf_failed` without the family's token. 401 `sign_in_required`, clearing both cookies, for a missing, unknown or ended family, or for a refresh token that was already rotated, which also revokes its whole family. Exception: the immediately previous token presented again within 10 seconds of its rotation, with the same `User-Agent` and before its successor was used, gets 200 with the same refresh token as the first answer and a new access token. |
 | `POST /api/auth/logout` | Yes | none; `X-CSRF-Token` when there is a family to end (from the access token, else the refresh cookie) | 204. Revokes the refresh family, so its access tokens stop working at once, and clears both cookies. |
-| `DELETE /api/auth/account` | No | `X-CSRF-Token` | 204. Deletes the user, every refresh family of that user, their result history and history setting, and their rate-limit counters, then clears both cookies. |
+| `DELETE /api/auth/account` | No | `X-CSRF-Token`; a sign-in from the last 10 minutes | 204. 403 `reauth_required` (nothing is deleted) when the session's sign-in is older: sign in again, then repeat. Deletes the user, every refresh family of that user, their result history and history setting, and their rate-limit counters, then clears both cookies. |
 
 ```json
 {"reason": "sign_in_required", "detail": "sign in to use this feature"}
 {"reason": "token_expired", "detail": "your sign-in needs refreshing; call POST /api/auth/refresh"}
 {"reason": "csrf_failed", "detail": "missing or invalid X-CSRF-Token header"}
+{"reason": "reauth_required", "detail": "sign in again to confirm; deleting an account needs a sign-in from the last 10 minutes"}
+{"reason": "request_timeout", "detail": "the request body was sent too slowly"}
 {"reason": "rate_limited", "detail": "too many requests; try again in 1200 seconds"}
 {"reason": "busy", "detail": "your previous check is still running; try again when it finishes"}
 {"reason": "analysis_timeout", "detail": "the analysis took too long and was stopped; the input may be too complex to check here"}

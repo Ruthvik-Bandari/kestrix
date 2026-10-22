@@ -253,10 +253,38 @@ def check_operations(env: Mapping[str, str], report: Report, *, dry_run: bool) -
             FAIL,
             "neither KESTRIX_CLIENT_IP_HEADER nor KESTRIX_TRUST_PROXY_HEADERS is set; behind a proxy every user shares one rate-limit address",
         )
+    check_rate_limit_store(env, report)
     if hasattr(os, "geteuid") and os.geteuid() == 0:
         report.add("non-root", WARN, "running as root; the container runs as uid 10001")
     else:
         report.add("non-root", PASS, "not running as root")
+
+
+def check_rate_limit_store(env: Mapping[str, str], report: Report) -> None:
+    """Rate limits are per process unless ``KESTRIX_RATE_LIMIT_STORE=sqlite``; warn when several workers share the limit."""
+    store = env.get("KESTRIX_RATE_LIMIT_STORE", "").strip().lower() or "memory"
+    workers_value = env.get("WEB_CONCURRENCY", "").strip()
+    workers = int(workers_value) if workers_value.isdigit() else 1
+    if store not in {"memory", "sqlite"}:
+        report.add("rate-limit-store", FAIL, "KESTRIX_RATE_LIMIT_STORE must be memory or sqlite")
+    elif workers > 1 and store == "memory":
+        report.add(
+            "rate-limit-store",
+            WARN,
+            f"WEB_CONCURRENCY={workers} but rate limits are per process, so each limit is multiplied by {workers}; "
+            "set KESTRIX_RATE_LIMIT_STORE=sqlite (docs/hosted.md, Limitations)",
+        )
+    elif workers > 1:
+        report.add(
+            "rate-limit-store",
+            WARN,
+            f"WEB_CONCURRENCY={workers}: rate limits are shared through SQLite, but the per-user busy slot, the "
+            "concurrency caps and the 30-second revocation cache stay per process",
+        )
+    elif store == "sqlite":
+        report.add("rate-limit-store", PASS, "rate limits are kept in a shared SQLite file")
+    else:
+        report.add("rate-limit-store", PASS, "rate limits are kept in this process (one worker)")
 
 
 def check_database(db_path: Path, report: Report, *, dry_run: bool) -> None:
@@ -524,7 +552,7 @@ def run(args: argparse.Namespace, base_env: Mapping[str, str] | None = None) -> 
         if args.dry_run:
             env = dry_run_env(workdir)
         else:
-            env = {k: v for k, v in base_env.items() if k.startswith(("KESTRIX_", "PORT"))}
+            env = {k: v for k, v in base_env.items() if k.startswith(("KESTRIX_", "PORT")) or k == "WEB_CONCURRENCY"}
         report = Report([])
         if args.env_file:
             path = Path(args.env_file)

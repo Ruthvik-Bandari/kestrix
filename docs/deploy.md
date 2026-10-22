@@ -8,6 +8,7 @@ This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004
 - [Try the image locally](#try-the-image-locally)
 - [Deploy to Fly.io](#deploy-to-flyio)
 - [Client IPs and rate limits](#client-ips-and-rate-limits)
+- [Slow requests and proxy timeouts](#slow-requests-and-proxy-timeouts)
 - [Backups](#backups)
 - [Rotating secrets](#rotating-secrets)
 - [Cost](#cost)
@@ -199,7 +200,38 @@ The sign-in limits (20 sign-in starts and 10 callbacks per 10 minutes) are count
 
 Without `KESTRIX_CLIENT_IP_HEADER` every visitor shares one sign-in bucket; treat that as a launch blocker for anything beyond a small private preview.
 
-`auto_stop_machines = "stop"` in `fly.toml` is the cheapest setting: the machine stops when idle and starts on the next request. Every stop clears the in-memory counters, so a user who waits for the machine to stop gets a fresh hourly allowance. For launch, set `auto_stop_machines = "off"` and `min_machines_running = 1`.
+`auto_stop_machines = "stop"` in `fly.toml` is the cheapest setting: the machine stops when idle and starts on the next request. Every stop clears the in-memory counters, so a user who waits for the machine to stop gets a fresh hourly allowance. For launch, set `auto_stop_machines = "off"` and `min_machines_running = 1`. Alternatively set `KESTRIX_RATE_LIMIT_STORE=sqlite`: the counters then live in `/data/kestrix-ratelimit.db` on the volume and survive a stop or restart (see [hosted.md, Limitations](hosted.md#limitations) for what it does and does not share). The default stays in memory.
+
+## Slow requests and proxy timeouts
+
+uvicorn has no read timeout for a slowly sent request line, header block or body, so a client that trickles bytes can hold a connection (and, for a body, a handler) open. The app and uvicorn bound what they can; the proxy in front must bound the rest.
+
+**What Kestrix enforces itself** (`kestrix serve-hosted`):
+
+| Limit | Value | Where |
+| --- | --- | --- |
+| Pause between pieces of a request body | 10 seconds, then 408 `request_timeout` | `_StreamedBodyLimit` in `server/app.py` |
+| Total time to receive a body | 30 seconds; 120 seconds for the two upload routes (10 MiB is about 0.7 Mbit/s) | same |
+| Request line and headers | 16 KiB (`h11_max_incomplete_event_size`) | uvicorn |
+| Idle keep-alive connection | 5 seconds (`timeout_keep_alive`) | uvicorn |
+| Open connections plus running requests | 100, then 503 (`limit_concurrency`; Fly's `hard_limit` is 50) | uvicorn |
+| Time to finish requests on SIGTERM | 25 seconds (`fly.toml` waits 30) | uvicorn |
+
+Only a signed-in user reaches a body read: the sign-in gate refuses other requests before any body is read. The body deadline starts at the first read, so it does not cover a connection that sends nothing at all, or a header block that never ends. That is the proxy's job.
+
+**What the proxy must enforce.** Set these (or the platform's equivalent) in whatever terminates TLS in front of the app. The examples are starting points that were not run against a deployment here; check the names against your proxy's version.
+
+| Setting | Suggested value | nginx | Caddy (v2, `servers { timeouts { ... } }`) |
+| --- | --- | --- | --- |
+| Time to receive the request headers | 10 s | `client_header_timeout 10s;` | `read_header 10s` |
+| Gap between two reads of the body | 10 s | `client_body_timeout 10s;` | `read_body 130s` (a total, not a gap; keep it at or above the 120 s upload bound) |
+| Largest body | 11 MiB (10 MiB plus multipart framing) | `client_max_body_size 11m;` | `request_body { max_size 11MB }` |
+| Header size | 8 KiB per header, 4 headers' worth | `large_client_header_buffers 4 8k;` | `max_header_size 16KB` |
+| Idle keep-alive | 30 s or less | `keepalive_timeout 30s;` | `idle 30s` |
+| Writing the response | 30 s | `send_timeout 30s;` | `write 30s` |
+| Connections per client address | about 20 | `limit_conn` | (a plugin) |
+
+On Fly.io the proxy ("Fly Proxy") terminates TLS and applies its own connection and idle limits, and `fly.toml` sets the concurrency limits (`soft_limit = 20`, `hard_limit = 50`). Fly does not let you set header or body read timeouts per app, and its limits are not documented in enough detail to rely on here, so treat the app-level body deadline above as the control you can verify, and re-read Fly's current proxy documentation before launch. If you need header and body read timeouts you control, put nginx or Caddy in front of the app on a host you run.
 
 ## Backups
 
@@ -274,6 +306,7 @@ What it checks:
 | `headers:*`, `cache:*` | CSP (script-src `'self'`, no unsafe-inline/eval, object-src, base-uri and frame-ancestors `'none'`), HSTS of a year or more with `includeSubDomains`, nosniff, COOP and CORP `same-origin`, Referrer-Policy, Permissions-Policy; `/api/` is `no-store`, `index.html` is `no-cache` |
 | `private-targets` | webcheck refuses loopback, link-local, private and `localhost` targets (403 `target_not_allowed`) |
 | `rate-limits:*` | per-user and per-address limits are defined, and the 21st sign-in start from one address gets 429 |
+| `rate-limit-store` | `KESTRIX_RATE_LIMIT_STORE` is `memory` or `sqlite`; a warning when `WEB_CONCURRENCY` is above 1 with `memory` (every limit is multiplied by the worker count), or above 1 with `sqlite` (counters are shared, but concurrency slots and the revocation cache are not) |
 | `hsts-preload` | a warning when `KESTRIX_HSTS_PRELOAD=1`, so the owner confirms it on purpose |
 
 Sample (the production image started with CI's placeholder values, so it correctly says NOT READY; secrets never appear):
@@ -304,7 +337,8 @@ Items marked **[OWNER]** can only be done by the person who owns the domain, the
 - [ ] **[OWNER] OAuth redirect URIs.** Google: `https://<domain>/api/auth/callback/google`, with the consent screen published (not in testing) and test users removed. GitHub: `https://<domain>/api/auth/callback/github`. Remove any localhost or staging redirect URI from the production apps. Use separate OAuth apps for staging.
 - [ ] **[OWNER] Secrets.** Generate three different production secrets and never reuse them from staging or this repository (commands in [Set the secrets](#5-set-the-secrets)): the session pepper and the JWT secret (`secrets.token_urlsafe(48)`) and the history key (32 random bytes in base64). Store them in Fly's secret store and in a password manager; leave `KESTRIX_JWT_SECRET_PREVIOUS` and `KESTRIX_HISTORY_KEY_PREVIOUS` unset.
 - [ ] **[OWNER] Abuse contact.** `KESTRIX_ABUSE_CONTACT` is a mailbox you read. Website checks send it in their `User-Agent`, and operators of checked sites will write to it. Decide how you answer a report (`kestrix hosted hash-host`, `disable-user`; see [hosted.md](hosted.md#abuse-handling)). Consider publishing the same address in `SECURITY.md` and a `/.well-known/security.txt`.
-- [ ] **Rate limits.** `KESTRIX_CLIENT_IP_HEADER=Fly-Client-IP` is set and the spoofing check in [Client IPs and rate limits](#client-ips-and-rate-limits) passes (the 21st forged request gets 429). `auto_stop_machines = "off"` and `min_machines_running = 1` so the limits are not reset by idle stops. Exactly one machine.
+- [ ] **Rate limits.** `KESTRIX_CLIENT_IP_HEADER=Fly-Client-IP` is set and the spoofing check in [Client IPs and rate limits](#client-ips-and-rate-limits) passes (the 21st forged request gets 429). `auto_stop_machines = "off"` and `min_machines_running = 1` so the limits are not reset by idle stops. Exactly one machine (or, for several workers on one machine, `KESTRIX_RATE_LIMIT_STORE=sqlite`; the preflight warns otherwise).
+- [ ] **Slow requests.** The proxy in front of the app has header and body read timeouts, a body cap of about 11 MiB and a header size cap, as in [Slow requests and proxy timeouts](#slow-requests-and-proxy-timeouts). On Fly, which does not expose these, accept that only the app's body deadline applies, or put a proxy you control in front.
 - [ ] **HSTS preload is an owner decision.** The server sends `max-age=63072000; includeSubDomains` and not `preload`. **[OWNER]** Add `KESTRIX_HSTS_PRELOAD=1` and submit to [hstspreload.org](https://hstspreload.org) only if the registrable domain and every present and future subdomain will always serve HTTPS; removal takes months. A subdomain-only deployment cannot be preloaded.
 - [ ] **Image and dependencies.** CI is green, including `container` and `security`. The base image digests in the `Dockerfile` are recent (`docker buildx imagetools inspect python:3.12-slim`), and `docker scout quickview` or another scanner shows no fixable critical or high issues.
 

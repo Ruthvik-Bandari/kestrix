@@ -39,7 +39,7 @@ from typing import Any
 from starlette.concurrency import run_in_threadpool
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from .store import _private_file
+from .store import private_file
 
 RETENTION_DAYS = 30
 RETENTION_S = RETENTION_DAYS * 24 * 3600
@@ -168,7 +168,7 @@ class HistoryStore:
     clock: Callable[[], float] = field(default=time.time)
 
     def __post_init__(self) -> None:
-        _private_file(self.path)
+        private_file(self.path)
         self._lock = threading.Lock()
         self._db = sqlite3.connect(self.path, check_same_thread=False)
         with self._lock:

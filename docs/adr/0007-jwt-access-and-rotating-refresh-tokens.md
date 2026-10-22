@@ -100,3 +100,50 @@ to move it aside, as before. The opaque session cookie and its code are removed.
   tabs with the Web Locks API, and a lost refresh response signs the user out, the safe failure.
 - Operators must set and protect a second secret, `KESTRIX_JWT_SECRET`.
 - The privacy notice names the two new cookies and `terms_accepted_at`.
+
+## Amendment 1 (2026-10-22): idempotent rotation, and re-authentication to delete an account
+
+Written before launch, after the security review listed three gaps. The text above is left as it was; where it
+differs, this section governs.
+
+### Idempotent refresh rotation
+
+The consequence "two tabs refreshing with the same token at once would look like reuse" is narrowed. A rotated
+refresh token is still never valid on its own, but presenting it again **within 10 seconds** (`REFRESH_GRACE_S`)
+of its rotation returns the *same* successor that the first request was given, with a fresh access token, instead
+of revoking the family. It does not rotate again and does not change `last_used_at`. The replay is accepted only
+when all of these hold, and any other presentation of a rotated token is reuse and revokes the family as before:
+
+1. the family is live and the `X-CSRF-Token` matches (a mismatch is 403 and does not revoke);
+2. the token was rotated at most 10 seconds ago;
+3. the token is the family's *immediately previous* one, that is, its successor is still the family's current token.
+   If the successor has already been used to rotate again, or the token is any older generation, it is reuse;
+4. the client fingerprint matches the one recorded when the token was rotated. The fingerprint is
+   `HMAC-SHA256(pepper, User-Agent)`: a weak check that a thief on another browser cannot pass without copying the
+   header. The client IP is not compared, because a mobile client can change network between two tabs.
+
+The service never stores a raw token. The successor is generated as 32 random bytes and stored in
+`rotated_refresh_tokens.successor` as those bytes XOR `HMAC-SHA256(rotated token, "kx-grace-pad")`, so only a holder
+of the rotated token can unseal it; the unsealed value is checked against the family's current hash with a constant
+time comparison before it is returned. Each rotated row also records `rotated_at` and the fingerprint. The schema
+check refuses a database from before this amendment, as in the migration section above (nothing has launched).
+
+Two requests handled in different threads can both read the current token; the one that loses the compare-and-swap
+looks again, finds the winner's rotation inside the window, and returns the winner's successor.
+
+What this costs: during 10 seconds after each rotation, a party holding the previous token and the same
+`User-Agent` can obtain the successor once (and again, with the same value). That is the same capability the
+previous token's holder had a moment earlier, but a thief who copies a token and its `User-Agent` and uses it
+within 10 seconds of the user's refresh is no longer detected by that request. Detection still happens when either
+party next presents an older token, or the successor and a later token race. The dashboard's Web Locks
+serialization is unchanged and still avoids the duplicate in browsers that support it.
+
+### Re-authentication to delete an account
+
+`DELETE /api/auth/account` also requires that the session's sign-in is at most 10 minutes old (`reauth_window_s`,
+measured from the refresh family's creation, which happens at every sign-in; a refresh does not renew it). An older
+sign-in gets 403 `reauth_required` and nothing is deleted; the user signs in again (a new family) and repeats the
+request. The CSRF token and the typed `DELETE` confirmation in the dashboard remain. The provider may sign the user
+in without asking for a password again, so this proves possession of a live browser session, not of the password;
+it stops a stolen or forgotten long-lived session from erasing the account and its stored reports on its own.
+

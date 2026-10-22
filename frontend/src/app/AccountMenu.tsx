@@ -6,7 +6,7 @@ import { Dialog } from "../components/Dialog";
 import { Icon } from "../components/Icon";
 import { ErrorState, Spinner } from "../components/ui";
 import { providerName } from "../features/auth/providers";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { browser } from "../lib/browser";
 import { useMe } from "../lib/queries";
 import { landingPath } from "./paths";
@@ -17,6 +17,10 @@ export function DeleteAccountDialog({ onClose, onDeleted }: { onClose: () => voi
   const [typed, setTyped] = useState("");
   const inputId = useId();
   const remove = useMutation({ mutationFn: api.deleteAccount, onSuccess: onDeleted });
+  const me = useMe();
+  const provider = me.data?.signed_in ? me.data.user.provider : null;
+  // The server wants a sign-in from the last few minutes before it deletes anything (403 reauth_required).
+  const reauth = remove.error instanceof ApiError && remove.error.reason === "reauth_required" && provider !== null;
   const ready = typed === CONFIRM_WORD && !remove.isPending;
   return (
     <Dialog title="Delete your account?" onClose={onClose}>
@@ -46,7 +50,15 @@ export function DeleteAccountDialog({ onClose, onDeleted }: { onClose: () => voi
             }}
           />
         </div>
-        {remove.isError ? <ErrorState error={remove.error} /> : null}
+        {remove.isError ? (
+          <ErrorState error={remove.error}>
+            {reauth ? (
+              <a className="font-medium underline" href={`/api/auth/login/${provider}?next=${encodeURIComponent("/app")}`}>
+                Sign in again to confirm
+              </a>
+            ) : null}
+          </ErrorState>
+        ) : null}
         <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Cancel

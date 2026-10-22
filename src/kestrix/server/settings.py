@@ -92,6 +92,16 @@ class HostedSettings:
     analysis_memory_bytes: int = 384 * MIB
     analysis_wall_s: float = 20.0
     access_ttl_s: int = 15 * 60
+    # Deleting an account needs a sign-in at most this old (the session's own sign-in, not its last refresh).
+    reauth_window_s: int = 10 * 60
+    # Slow-request limits for request bodies (server/app.py ``_StreamedBodyLimit``): longest wait for
+    # the next piece of a body, and longest total time to receive one (uploads get the larger bound).
+    body_idle_s: float = 10.0
+    body_total_s: float = 30.0
+    upload_total_s: float = 120.0
+    # Where the rate-limit counters live: "memory" (this process) or "sqlite" (shared by every process
+    # that opens the same database folder; docs/hosted.md).
+    rate_limit_store: Literal["memory", "sqlite"] = "memory"
 
 
 @dataclass(frozen=True)
@@ -154,6 +164,15 @@ def _client_ip_header(env: Mapping[str, str]) -> str | None:
     if _flag(env, "KESTRIX_TRUST_PROXY_HEADERS"):
         raise SettingsError("set KESTRIX_CLIENT_IP_HEADER or KESTRIX_TRUST_PROXY_HEADERS, not both")
     return value.lower()
+
+
+def _rate_limit_store(env: Mapping[str, str]) -> Literal["memory", "sqlite"]:
+    value = env.get("KESTRIX_RATE_LIMIT_STORE", "").strip().lower() or "memory"
+    if value == "memory":
+        return "memory"
+    if value == "sqlite":
+        return "sqlite"
+    raise SettingsError("KESTRIX_RATE_LIMIT_STORE must be memory or sqlite")
 
 
 def _abuse_contact(env: Mapping[str, str]) -> str | None:
@@ -250,6 +269,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, mode: str | None = No
             trust_proxy_headers=_flag(env, "KESTRIX_TRUST_PROXY_HEADERS"),
             client_ip_header=_client_ip_header(env),
             abuse_contact=_abuse_contact(env),
+            rate_limit_store=_rate_limit_store(env),
             hsts_preload=_flag(env, "KESTRIX_HSTS_PRELOAD"),
         ),
     )

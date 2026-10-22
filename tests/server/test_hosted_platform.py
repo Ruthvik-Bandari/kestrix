@@ -323,6 +323,7 @@ def test_logs_hold_no_personal_data_tokens_or_queries(hosted, providers, clock, 
     new_access, new_refresh = cookie_value(rotated, ACCESS), cookie_value(rotated, REFRESH)
     stolen = TestClient(hosted.app, base_url=ORIGIN)
     stolen.cookies.set(REFRESH, first_refresh, domain="kestrix.example")
+    clock.advance(11)  # past the refresh grace window
     assert refresh(stolen, token).status_code == 401  # reuse: logged as a security event
     hosted.cookies.clear()
     sign_in(hosted, providers)
