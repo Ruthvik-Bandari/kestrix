@@ -137,7 +137,7 @@ Every tool and guide page shares one frame (`components/toolframe.tsx`, `feature
 
 ## Emerald direction (2026-10-22)
 
-Owner-chosen visual reference: `docs/design/2026-10-22-emerald/reference.png` (style only). Replaces the graphite/lime hero and the code rain. Tokens live in `frontend/src/index.css`; `.scope-dark` re-applies the dark set inside a light page (the landing opening).
+Owner-chosen visual reference: a third-party Dribbble shot of a fictional security product, used for style only and kept out of the repository because it is someone else's artwork. Replaces the graphite/lime hero and the code rain. Tokens live in `frontend/src/index.css`; `.scope-dark` re-applies the dark set inside a light page (the landing opening).
 
 | Token | Light | Dark |
 |---|---|---|

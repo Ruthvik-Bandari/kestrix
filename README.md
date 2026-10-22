@@ -372,24 +372,74 @@ properties are in [docs/hosted.md](docs/hosted.md).
 
 ## Architecture
 
+Every way of using Kestrix reaches the same core functions, so a result is the same from the CLI, the dashboard, the
+hosted service or Claude Code. Dashed lines leave your machine, and only when you ask for it.
+
 ```mermaid
 flowchart LR
-  CLI["kestrix CLI (Typer)"] --> Core
-  CLI --> Scan["kestrix-scan (stdlib only): rules, secrets, SARIF, hook, Claude plugin"]
-  UI["Dashboard (React SPA, bundled)"] -->|"/api (loopback only)"| API["FastAPI"]
-  API --> Core
-  subgraph Core["kestrix core modules"]
-    D["detect: parse, profile, replay, diagnose, repair, validate"]
-    F["forensics: hashes, entropy, magic, EXIF, URL heuristics"]
-    W["webcheck: guarded fetch, TLS probe, header/cookie checks"]
-    M["mail: bounded MIME parse, auth/sender/lookalike/link/attachment/intent checks"]
-    B["bitcoin: address decoding, risk, migration, guardian"]
+  you(("You"))
+
+  subgraph entry["Ways in"]
+    cli["kestrix CLI"]
+    ui["Dashboard<br/>(React, bundled)"]
+    cc["Claude Code<br/>+ Kestrix plugin"]
+    ci["CI · pre-commit · pytest"]
   end
-  D --> ES[("Elasticsearch 8.19.3 (Docker, pinned digest)")]
-  W -.->|"opt-in, validated IP"| Internet((Your website))
-  B -.->|"opt-in"| Mempool((mempool.space))
-  B -.->|"opt-in, your key"| Claude((Anthropic API))
+
+  subgraph server["Kestrix server (FastAPI)"]
+    local["Local mode<br/>loopback only, no accounts"]
+    hosted["Hosted mode<br/>Google/GitHub sign-in, JWT + rotating refresh,<br/>CSRF, rate limits, strict CSP"]
+    iso["Isolated worker processes<br/>for every upload"]
+    hist[("Recent results<br/>30 days, encrypted when hosted")]
+  end
+
+  subgraph core["One shared core"]
+    mail["Email check<br/>parse → 6 analyzers → verdict"]
+    web["Website check<br/>whole site or one page"]
+    foren["File & link check<br/>bytes and text only"]
+    det["Detection repair<br/>diagnose → bounded repair → replay"]
+    btc["Bitcoin quantum risk"]
+    guard["Guards: safe parsing,<br/>netguard, size limits"]
+  end
+
+  subgraph scanner["kestrix-scan (zero dependencies)"]
+    rules["60 rules: Python, JS/TS,<br/>secrets, agent config"]
+    taint["Source → sink traces"]
+    osv[("Local OSV<br/>vulnerability index")]
+  end
+
+  you --> cli & ui & cc & ci
+  ui --> local & hosted
+  hosted --> iso
+  local & iso --> core
+  cli --> core
+  local & hosted --> hist
+  cc -->|"hook on every edit"| scanner
+  ci --> scanner
+  cli -->|"kestrix code scan"| scanner
+  rules --- taint
+  rules --- osv
+  mail & web & foren & det & btc --- guard
+
+  web -.->|"read-only GETs to a site you<br/>own or may test"| site((Target website))
+  det -.->|"loopback"| es[("Pinned<br/>Elasticsearch 8.19.3")]
+  btc -.->|"opt-in lookup"| mempool((mempool.space))
+  btc -.->|"opt-in, your key"| anthropic((Anthropic API))
+  osv -.->|"db update, on request"| osvnet((OSV.dev))
+
+  classDef zone fill:#0a1712,stroke:#1fd17a,color:#e9f5ee
+  classDef ext fill:#ffffff,stroke:#7d8d82,color:#162320
+  classDef store fill:#e9f5ec,stroke:#0c6b4b,color:#14532d
+  class cli,ui,cc,ci,local,hosted,iso,mail,web,foren,det,btc,guard,rules,taint zone
+  class site,es,mempool,anthropic,osvnet ext
+  class hist,osv store
 ```
+
+| Boundary | What crosses it |
+| --- | --- |
+| Your machine → the internet | Nothing by default. Website checks, the Bitcoin chain lookup, the AI guardian and `db update` connect only when you start them. |
+| Browser → hosted server | Your upload or URL, over HTTPS with sign-in, CSRF and rate limits. Uploads are processed in a worker and never stored; the report is kept 30 days, encrypted. |
+| Claude Code → kestrix-scan | The files Claude edits, scanned locally; only new findings go back to Claude as context. |
 
 The design decisions are recorded in [docs/adr](docs/adr). The research plan behind detection repair is in
 [docs/CyberGuard_Engineering_Plan.md](docs/CyberGuard_Engineering_Plan.md).
