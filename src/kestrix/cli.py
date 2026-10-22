@@ -111,6 +111,15 @@ def dashboard(
     uvicorn.run(create_app(extra_hosts=extra, server_settings=Settings()), host=host, port=port, log_level="info")
 
 
+# Connection limits for the public service. uvicorn has no read timeout for a slowly sent header or body:
+# the body deadline is in the app (server/app.py ``_StreamedBodyLimit``), the header and idle timeouts are the
+# proxy's (docs/deploy.md, "Slow requests"). These are what uvicorn itself can enforce.
+HOSTED_KEEP_ALIVE_S = 5  # seconds an idle keep-alive connection may stay open (uvicorn's default, pinned)
+HOSTED_MAX_HEADER_BYTES = 16 * 1024  # request line and headers h11 buffers before refusing the request
+HOSTED_MAX_CONNECTIONS = 100  # open connections plus running requests; more get 503 (Fly's hard limit is 50)
+HOSTED_SHUTDOWN_S = 25  # seconds to finish requests on SIGTERM; fly.toml allows 30
+
+
 @app.command("serve-hosted")
 def serve_hosted(
     port: int | None = typer.Option(None, min=1, max=65535, help="Port to listen on. Default: $PORT, then 8000."),
@@ -144,6 +153,10 @@ def serve_hosted(
         server_header=False,
         access_log=False,
         log_level="info",
+        timeout_keep_alive=HOSTED_KEEP_ALIVE_S,
+        h11_max_incomplete_event_size=HOSTED_MAX_HEADER_BYTES,
+        limit_concurrency=HOSTED_MAX_CONNECTIONS,
+        timeout_graceful_shutdown=HOSTED_SHUTDOWN_S,
     )
 
 

@@ -56,7 +56,10 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS sessions_user_id ON sessions (user_id);
 CREATE TABLE IF NOT EXISTS rotated_refresh_tokens (
     refresh_hash TEXT PRIMARY KEY,
-    session_id TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE
+    session_id TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+    rotated_at INTEGER NOT NULL,
+    successor TEXT NOT NULL,
+    fingerprint TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS rotated_refresh_tokens_session_id ON rotated_refresh_tokens (session_id);
 CREATE TABLE IF NOT EXISTS login_attempts (
@@ -73,6 +76,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 _REQUIRED_COLUMNS = {
     "users": {"disabled_at", "terms_accepted_at"},
     "sessions": {"refresh_hash", "family_created_at", "last_used_at", "revoked_at"},
+    "rotated_refresh_tokens": {"rotated_at", "successor", "fingerprint"},
     "login_attempts": {"intent"},
 }
 
@@ -114,9 +118,20 @@ class FamilyRow:
 
 
 @dataclass(frozen=True)
+class RotatedRow:
+    """What is kept about a refresh token that was rotated: see ``Store.find_refresh``."""
+
+    rotated_at: int
+    successor: str = field(repr=False)  # sealed under the rotated token; useless without it
+    fingerprint: str = field(repr=False)
+    current_hash: str = field(repr=False)  # the family's current refresh hash now
+
+
+@dataclass(frozen=True)
 class RefreshLookup:
     family: FamilyRow
-    current: bool  # False: the token was already rotated (reuse)
+    current: bool  # False: the token was already rotated (a grace replay or reuse)
+    rotated: RotatedRow | None = None
 
 
 _FAMILY_COLUMNS = (
@@ -126,7 +141,7 @@ _FAMILY_COLUMNS = (
 _FAMILY_JOIN = "FROM sessions s JOIN users u ON u.id = s.user_id"
 
 
-def _private_file(path: Path) -> None:
+def private_file(path: Path) -> None:
     """Create the parent directory ``0700`` and the database file ``0600`` before SQLite opens it."""
     parent = path.parent
     parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -139,7 +154,7 @@ def _private_file(path: Path) -> None:
 
 class Store:
     def __init__(self, path: Path) -> None:
-        _private_file(path)
+        private_file(path)
         self._lock = threading.Lock()
         self._db = sqlite3.connect(path, check_same_thread=False)
         with self._lock:
@@ -275,25 +290,31 @@ class Store:
         return None if row is None else FamilyRow(*row)
 
     def find_refresh(self, refresh_hash: str) -> RefreshLookup | None:
-        """The family whose current or a rotated refresh token has this hash (user not disabled)."""
+        """The family whose current or a rotated refresh token has this hash (user not disabled).
+        For a rotated token the lookup also carries its rotation record."""
         with self._tx() as db:
             row = db.execute(
                 f"SELECT {_FAMILY_COLUMNS} {_FAMILY_JOIN} WHERE s.refresh_hash = ? AND u.disabled_at IS NULL",
                 (refresh_hash,),
             ).fetchone()
-            current = row is not None
-            if row is None:
-                row = db.execute(
-                    f"SELECT {_FAMILY_COLUMNS} {_FAMILY_JOIN} "
-                    "JOIN rotated_refresh_tokens r ON r.session_id = s.id "
-                    "WHERE r.refresh_hash = ? AND u.disabled_at IS NULL",
-                    (refresh_hash,),
-                ).fetchone()
-        return None if row is None else RefreshLookup(FamilyRow(*row), current)
+            if row is not None:
+                return RefreshLookup(FamilyRow(*row), True)
+            row = db.execute(
+                f"SELECT {_FAMILY_COLUMNS}, r.rotated_at, r.successor, r.fingerprint, s.refresh_hash {_FAMILY_JOIN} "
+                "JOIN rotated_refresh_tokens r ON r.session_id = s.id "
+                "WHERE r.refresh_hash = ? AND u.disabled_at IS NULL",
+                (refresh_hash,),
+            ).fetchone()
+        if row is None:
+            return None
+        return RefreshLookup(FamilyRow(*row[:9]), False, RotatedRow(*row[9:]))
 
-    def rotate_refresh(self, sid: str, old_hash: str, new_hash: str, now: int) -> bool:
+    def rotate_refresh(
+        self, sid: str, old_hash: str, new_hash: str, now: int, *, successor: str, fingerprint: str
+    ) -> bool:
         """Replace the family's refresh hash if it is still ``old_hash`` (compare and swap) and keep
-        the old one for reuse detection. False when another request rotated it first."""
+        the old one, with its sealed successor and the rotating client's fingerprint, for reuse
+        detection and the grace window. False when another request rotated it first."""
         with self._tx() as db:
             changed = db.execute(
                 "UPDATE sessions SET refresh_hash = ?, last_used_at = ? "
@@ -302,7 +323,9 @@ class Store:
             ).rowcount
             if changed:
                 db.execute(
-                    "INSERT INTO rotated_refresh_tokens (refresh_hash, session_id) VALUES (?, ?)", (old_hash, sid)
+                    "INSERT INTO rotated_refresh_tokens (refresh_hash, session_id, rotated_at, successor, fingerprint) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (old_hash, sid, now, successor, fingerprint),
                 )
         return bool(changed)
 

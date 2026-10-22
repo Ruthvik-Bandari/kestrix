@@ -251,6 +251,26 @@ describe("account menu", () => {
     expect(deletion?.headers.get("X-CSRF-Token")).toBe("csrf-token-1");
   });
 
+  it("asks the user to sign in again when the server wants a recent sign-in, and deletes nothing", async () => {
+    const assign = vi.spyOn(browser, "assign").mockImplementation(() => undefined);
+    hostedServer(SIGNED_IN, {
+      "DELETE /api/auth/account": {
+        status: 403,
+        body: { reason: "reauth_required", detail: "sign in again to confirm; deleting an account needs a sign-in from the last 10 minutes" },
+      },
+    });
+    renderApp("/app");
+    fireEvent.click((await screen.findAllByRole("button", { name: "Delete account" }))[0] as HTMLElement);
+    const dialog = screen.getByRole("dialog", { name: "Delete your account?" });
+    fireEvent.change(within(dialog).getByLabelText("Type DELETE to confirm"), { target: { value: "DELETE" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete account" }));
+    const alert = await within(dialog).findByRole("alert");
+    expect(alert.textContent).toContain("sign in again to confirm");
+    const link = within(alert).getByRole("link", { name: "Sign in again to confirm" });
+    expect(link.getAttribute("href")).toBe("/api/auth/login/google?next=%2Fapp");
+    expect(assign).not.toHaveBeenCalled();
+  });
+
   it("confirms the deletion on the landing page", async () => {
     hostedServer({ signed_in: false });
     renderApp("/?account=deleted");

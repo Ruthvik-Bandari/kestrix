@@ -258,3 +258,18 @@ def test_exit_codes_and_json_output(bundle, capsys):
     with pytest.raises(SystemExit) as usage:
         preflight.main(["--dry-run", "--env-file", "x.env"])
     assert usage.value.code == 2
+
+
+def test_the_rate_limit_store_is_checked_against_the_worker_count(strong_env, bundle):
+    assert statuses(preflight.run(args(bundle), strong_env))["rate-limit-store"] == "PASS"
+    assert statuses(preflight.run(args(bundle), {**strong_env, "WEB_CONCURRENCY": "1"}))["rate-limit-store"] == "PASS"
+    many = preflight.run(args(bundle), {**strong_env, "WEB_CONCURRENCY": "4"})
+    assert statuses(many)["rate-limit-store"] == "WARN" and not many.failed
+    assert "multiplied by 4" in next(i.message for i in many.items if i.id == "rate-limit-store")
+    shared = {**strong_env, "KESTRIX_RATE_LIMIT_STORE": "sqlite"}
+    assert statuses(preflight.run(args(bundle), shared))["rate-limit-store"] == "PASS"
+    shared_many = preflight.run(args(bundle), {**shared, "WEB_CONCURRENCY": "4"})
+    assert statuses(shared_many)["rate-limit-store"] == "WARN"
+    assert "shared through SQLite" in next(i.message for i in shared_many.items if i.id == "rate-limit-store")
+    bad = preflight.run(args(bundle), {**strong_env, "KESTRIX_RATE_LIMIT_STORE": "redis"})
+    assert statuses(bad)["rate-limit-store"] == "FAIL" and statuses(bad)["settings"] == "FAIL"

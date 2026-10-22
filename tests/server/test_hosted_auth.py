@@ -331,6 +331,7 @@ def test_reusing_a_rotated_refresh_token_revokes_the_family(hosted, providers, c
     stolen = cookie_value(sign_in(hosted, providers), REFRESH)
     headers = csrf(hosted)
     assert refresh(hosted, headers).status_code == 200  # the user's browser rotates it
+    clock.advance(11)  # past the refresh grace window (see test_hosted_refresh_grace.py)
     attacker = TestClient(hosted.app, base_url=str(hosted.base_url))
     attacker.cookies.set(REFRESH, stolen, domain="kestrix.example")
     reused = refresh(attacker, headers)

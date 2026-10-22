@@ -22,6 +22,12 @@ one again revokes the family. Every authenticated request verifies the JWT and t
 family is still live, through a 30-second in-process cache that logout, account deletion and reuse
 detection update at once. The CSRF token is derived from the ``sid`` with the pepper, so it stays
 the same for the family's life and is never stored.
+
+Two requests that present the same refresh token at the same instant (two tabs, a retried request)
+would look like reuse. A rotated token therefore keeps working for ``REFRESH_GRACE_S`` seconds, but
+only to be handed the *same* successor again, only from a client with the same fingerprint, and only
+while that successor has not itself been used (ADR 0007, amendment 1). The successor is stored
+sealed under the rotated token, never raw.
 """
 
 from __future__ import annotations
@@ -45,7 +51,7 @@ from starlette.requests import Request
 
 from .. import __version__
 from .settings import HostedSettings, OAuthClient
-from .store import FamilyRow, LoginAttempt, Store
+from .store import FamilyRow, LoginAttempt, RefreshLookup, Store
 
 if TYPE_CHECKING:
     from .tokens import AccessTokens
@@ -57,6 +63,7 @@ LOGIN_TTL_S = 10 * 60
 SESSION_IDLE_S = 7 * 24 * 3600
 SESSION_ABSOLUTE_S = 30 * 24 * 3600
 REVOCATION_CACHE_TTL_S = 30
+REFRESH_GRACE_S = 10
 REVOCATION_CACHE_MAX = 10_000
 MAX_TOKEN = 128
 CLOCK_SKEW_S = 5 * 60
@@ -125,6 +132,7 @@ class Session:
     display_name: str
     csrf_token: str = field(repr=False)
     access_expires_at: int
+    signed_in_at: int  # when this refresh family was created: the time of the sign-in itself
 
 
 @dataclass(frozen=True)
@@ -519,6 +527,7 @@ class AuthService:
             display_name=family.display_name,
             csrf_token=self.csrf_token(family.sid),
             access_expires_at=claims.expires_at,
+            signed_in_at=family.family_created_at,
         )
 
     def refreshable(self, refresh_token: str | None) -> FamilyRow | None:
@@ -530,30 +539,78 @@ class AuthService:
             return None
         return self._live(found.family, self._now())
 
-    def refresh(self, refresh_token: str | None, csrf_header: str | None) -> Tokens:
+    def fingerprint(self, user_agent: str | None) -> str:
+        """A keyed hash of the client's ``User-Agent``: the weak client fingerprint the grace window checks."""
+        return self._mac(b"kx-fingerprint\x00" + (user_agent or "")[:512].encode()).hex()
+
+    def _seal_pad(self, refresh_token: str) -> bytes:
+        return hmac.new(refresh_token.encode(), b"kx-grace-pad", hashlib.sha256).digest()
+
+    @staticmethod
+    def _xor(left: bytes, right: bytes) -> bytes:
+        return bytes(a ^ b for a, b in zip(left, right, strict=True))
+
+    def _grace_successor(self, found: RefreshLookup, refresh_token: str, fingerprint: str, now: int) -> str | None:
+        """The successor of a rotated token, when presenting it again is a harmless duplicate: the token
+        was rotated at most ``REFRESH_GRACE_S`` ago, by a client with this fingerprint, and the successor is
+        still the family's current token (it was not used to rotate again). Otherwise ``None``: reuse."""
+        rotated = found.rotated
+        if rotated is None or self._live(found.family, now) is None:
+            return None
+        if not 0 <= now - rotated.rotated_at <= REFRESH_GRACE_S:
+            return None
+        if not hmac.compare_digest(rotated.fingerprint.encode(), fingerprint.encode()):
+            return None
+        try:
+            sealed = bytes.fromhex(rotated.successor)
+        except ValueError:
+            return None
+        if len(sealed) != 32:
+            return None
+        successor = _b64url(self._xor(sealed, self._seal_pad(refresh_token)))
+        if not hmac.compare_digest(self.refresh_hash(successor).encode(), rotated.current_hash.encode()):
+            return None  # the successor was already used to rotate again: this is reuse
+        return successor
+
+    def refresh(self, refresh_token: str | None, csrf_header: str | None, user_agent: str | None = None) -> Tokens:
         """Rotate the refresh token and issue a new access token.
 
-        Raises ``AuthFailed``: ``csrf_failed`` for a missing or wrong CSRF token, ``refresh_reused`` (after
-        revoking the family) for a token that was already rotated, and other codes for an unknown or
-        ended family."""
+        A token that was rotated moments ago is answered with the same successor again (idempotent rotation,
+        ``REFRESH_GRACE_S``). Raises ``AuthFailed``: ``csrf_failed`` for a missing or wrong CSRF token,
+        ``refresh_reused`` (after revoking the family) for any other rotated token, and other codes for an
+        unknown or ended family."""
         if not refresh_token or len(refresh_token) > MAX_TOKEN:
             raise AuthFailed("refresh_missing")
         now = self._now()
         old_hash = self.refresh_hash(refresh_token)
-        found = self.store.find_refresh(old_hash)
-        if found is None:
-            raise AuthFailed("refresh_unknown")
-        family = found.family
-        if not found.current:
-            self._reuse_detected(family, now)
-        if self._live(family, now) is None:
-            raise AuthFailed("refresh_family_ended")
-        if not self.csrf_ok(self.csrf_token(family.sid), csrf_header):
-            raise AuthFailed("csrf_failed")
-        new_token = secrets.token_urlsafe(32)
-        if not self.store.rotate_refresh(family.sid, old_hash, self.refresh_hash(new_token), now):
-            self._reuse_detected(family, now)  # another request rotated it between the lookup and here
-        return self._tokens(family.user_id, family.sid, new_token, now, family.expires_at)
+        fingerprint = self.fingerprint(user_agent)
+        for _ in range(2):  # a second look is needed only when another request rotated it in between
+            found = self.store.find_refresh(old_hash)
+            if found is None:
+                raise AuthFailed("refresh_unknown")
+            family = found.family
+            if not found.current:
+                successor = self._grace_successor(found, refresh_token, fingerprint, now)
+                if successor is None:
+                    self._reuse_detected(family, now)
+                if not self.csrf_ok(self.csrf_token(family.sid), csrf_header):
+                    raise AuthFailed("csrf_failed")
+                log.info(
+                    "refresh replayed within grace; same successor returned user=%s", self.user_tag(family.user_id)
+                )
+                return self._tokens(family.user_id, family.sid, successor, now, family.expires_at)
+            if self._live(family, now) is None:
+                raise AuthFailed("refresh_family_ended")
+            if not self.csrf_ok(self.csrf_token(family.sid), csrf_header):
+                raise AuthFailed("csrf_failed")
+            raw = secrets.token_bytes(32)
+            new_token = _b64url(raw)
+            sealed = self._xor(raw, self._seal_pad(refresh_token)).hex()
+            if self.store.rotate_refresh(
+                family.sid, old_hash, self.refresh_hash(new_token), now, successor=sealed, fingerprint=fingerprint
+            ):
+                return self._tokens(family.user_id, family.sid, new_token, now, family.expires_at)
+        self._reuse_detected(family, now)  # lost the race twice in a row: not an ordinary duplicate
 
     def _reuse_detected(self, family: FamilyRow, now: int) -> NoReturn:
         self.store.revoke_family(family.sid, now)
@@ -596,6 +653,10 @@ class AuthService:
         """Remove the user row; its families go with it (``ON DELETE CASCADE``)."""
         self._forget(*self.store.delete_user(session.user_id))
         log.info("account deleted user=%s", self.user_tag(session.user_id))
+
+    def recently_signed_in(self, session: Session) -> bool:
+        """Whether this session's sign-in (not its last refresh) is at most ``reauth_window_s`` old."""
+        return self._now() - session.signed_in_at <= self.settings.reauth_window_s
 
     def user_tag(self, user_id: int) -> str:
         """A short salted hash of the user id for logs."""

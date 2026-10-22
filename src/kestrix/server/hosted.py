@@ -39,7 +39,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from ..core.errors import Reason
 from .auth import ACCESS_COOKIE, REFRESH_COOKIE, AuthService, Session, current_session
-from .ratelimit import RateLimiter, client_ip, ip_key
+from .ratelimit import Limiter, client_ip, ip_key
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 LOCAL_ONLY_PREFIXES = ("/api/detect", "/api/bitcoin", "/api/settings")
@@ -98,7 +98,7 @@ def user_limit_keys(user_id: int) -> set[str]:
     return {f"{bucket}:{user_id}" for bucket, _, _ in (*USER_LIMITS.values(), HISTORY_LIMIT, SITE_SCAN_LIMIT)}
 
 
-def site_scan_counter(limiter: RateLimiter) -> Callable[[Request], int | None]:
+def site_scan_counter(limiter: Limiter) -> Callable[[Request], int | None]:
     """Count one whole-site website check for the signed-in user; the seconds to wait once the limit is used up."""
 
     def count(request: Request) -> int | None:
@@ -120,7 +120,7 @@ def _hidden_cross_site(request: Request) -> bool:
 
 
 class HostedGate(BaseHTTPMiddleware):
-    def __init__(self, app: object, auth: AuthService, limiter: RateLimiter) -> None:
+    def __init__(self, app: object, auth: AuthService, limiter: Limiter) -> None:
         super().__init__(app)  # type: ignore[arg-type]
         self.auth = auth
         self.limiter = limiter
@@ -131,6 +131,12 @@ class HostedGate(BaseHTTPMiddleware):
         # Only touched on the event loop, between awaits, so no lock is needed.
         self._running = dict.fromkeys(self.caps, 0)
         self._busy_users: set[int] = set()
+
+    async def _hit(self, key: str, limit: int, window: float) -> int | None:
+        """Count one request; a shared (file-backed) limiter runs in a thread so a busy file never stalls the loop."""
+        if self.limiter.shared:
+            return await run_in_threadpool(self.limiter.hit, key, limit, window)
+        return self.limiter.hit(key, limit, window)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path, method = request.url.path, request.method
@@ -145,7 +151,7 @@ class HostedGate(BaseHTTPMiddleware):
                     trust_proxy_headers=self.auth.settings.trust_proxy_headers,
                     client_ip_header=self.auth.settings.client_ip_header,
                 )
-                retry = self.limiter.hit(f"{bucket}:{ip_key(ip)}", limit, window)
+                retry = await self._hit(f"{bucket}:{ip_key(ip)}", limit, window)
                 if retry is not None:
                     return _rate_limited(retry)
         public = not path.startswith("/api/") or path in PUBLIC_API or path.startswith(PUBLIC_API_PREFIXES)
@@ -167,7 +173,7 @@ class HostedGate(BaseHTTPMiddleware):
                 return _deny(Reason.CSRF_FAILED, "missing or invalid X-CSRF-Token header", 403)
             if _under(path, HISTORY_WRITE_PREFIXES):
                 bucket, limit, window = HISTORY_LIMIT
-                retry = self.limiter.hit(f"{bucket}:{session.user_id}", limit, window)
+                retry = await self._hit(f"{bucket}:{session.user_id}", limit, window)
                 if retry is not None:
                     return _rate_limited(retry)
             rule = USER_LIMITS.get(path)
@@ -183,7 +189,7 @@ class HostedGate(BaseHTTPMiddleware):
             return _busy(429, "your previous check is still running; try again when it finishes")
         if self._running[bucket] >= self.caps[bucket]:
             return _busy(503, "the service is busy; try again in a few seconds")
-        retry = self.limiter.hit(f"{bucket}:{user_id}", limit, window)
+        retry = await self._hit(f"{bucket}:{user_id}", limit, window)
         if retry is not None:
             return _rate_limited(retry)
         self._busy_users.add(user_id)

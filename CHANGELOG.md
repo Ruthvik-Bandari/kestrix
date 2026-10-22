@@ -23,6 +23,19 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   adds `cryptography`. Local: plaintext in `history.sqlite3` (`0600`) in the config folder. The privacy draft
   describes what is kept, why, for how long and how to delete it.
 
+### Security
+
+- **Pre-launch hosted-server hardening** (ADR 0007 amendment 1). A rotated refresh token presented again within 10
+  seconds, by the same `User-Agent` fingerprint and before its successor was used, now returns the same successor
+  instead of revoking the family, so two tabs refreshing together both succeed; any other reuse still revokes it. The
+  successor is stored only sealed under the rotated token. `DELETE /api/auth/account` needs a sign-in from the last
+  10 minutes (403 `reauth_required`; the dashboard offers "Sign in again to confirm"). Request bodies in hosted mode
+  end with 408 `request_timeout` after a 10-second pause or 30 seconds in all (120 for uploads), and `serve-hosted`
+  pins uvicorn's keep-alive, header-size, connection and shutdown limits; `docs/deploy.md` lists the proxy settings
+  still needed. `KESTRIX_RATE_LIMIT_STORE=sqlite` keeps rate-limit counters in a shared SQLite file (default
+  `memory`); the deploy preflight warns when `WEB_CONCURRENCY` is above 1. A hosted database from before this change
+  is refused at start-up (the `rotated_refresh_tokens` table gained columns).
+
 ### Changed
 
 - **Hosted sign-in uses JWT access tokens and rotating refresh tokens** ([ADR 0007](docs/adr/0007-jwt-access-and-rotating-refresh-tokens.md)).

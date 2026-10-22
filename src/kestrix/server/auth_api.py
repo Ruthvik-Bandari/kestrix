@@ -33,7 +33,7 @@ from .auth import (
 )
 from .history import HistoryStore
 from .hosted import user_limit_keys
-from .ratelimit import RateLimiter
+from .ratelimit import Limiter
 
 log = logging.getLogger("kestrix.auth")
 _NO_STORE = {"Cache-Control": "no-store"}
@@ -60,7 +60,7 @@ def _clear_tokens(response: Response) -> None:
     _clear_cookie(response, REFRESH_COOKIE, "strict")
 
 
-def auth_router(auth: AuthService, limiter: RateLimiter, history: HistoryStore) -> APIRouter:  # noqa: PLR0915 - one statement list per route
+def auth_router(auth: AuthService, limiter: Limiter, history: HistoryStore) -> APIRouter:  # noqa: PLR0915 - one statement list per route
     router = APIRouter(prefix="/api/auth", tags=["auth"])
 
     @router.get("/providers")
@@ -125,7 +125,11 @@ def auth_router(auth: AuthService, limiter: RateLimiter, history: HistoryStore) 
     def refresh(request: Request) -> Response:
         """Rotate the refresh token and issue a new access token. Requires ``X-CSRF-Token``."""
         try:
-            tokens = auth.refresh(request.cookies.get(REFRESH_COOKIE), request.headers.get("x-csrf-token"))
+            tokens = auth.refresh(
+                request.cookies.get(REFRESH_COOKIE),
+                request.headers.get("x-csrf-token"),
+                request.headers.get("user-agent"),
+            )
         except AuthFailed as exc:
             if exc.code == "csrf_failed":
                 raise Rejected(Reason.CSRF_FAILED, "missing or invalid X-CSRF-Token header") from None
@@ -153,10 +157,18 @@ def auth_router(auth: AuthService, limiter: RateLimiter, history: HistoryStore) 
     @router.delete("/account", status_code=204)
     def delete_account(request: Request) -> Response:
         """Delete the signed-in user, every refresh family of that user, their result history and their
-        rate-limit counters. Requires ``X-CSRF-Token``."""
+        rate-limit counters. Requires ``X-CSRF-Token`` and a sign-in at most ``reauth_window_s`` old
+        (403 ``reauth_required`` otherwise; nothing is deleted)."""
         session = current_session(request)
         if session is None:  # the gate already refuses this; kept so the route is safe on its own
             raise Rejected(Reason.SIGN_IN_REQUIRED, "sign in first")
+        if not auth.recently_signed_in(session):
+            minutes = max(1, auth.settings.reauth_window_s // 60)
+            raise Rejected(
+                Reason.REAUTH_REQUIRED,
+                "sign in again to confirm; deleting an account needs a sign-in from the last "
+                f"{minutes} minute{'s' if minutes != 1 else ''}",
+            )
         history.forget_user(session.user_id)
         auth.delete_account(session)
         limiter.forget(user_limit_keys(session.user_id))

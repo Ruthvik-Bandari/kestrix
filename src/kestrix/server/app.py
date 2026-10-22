@@ -25,7 +25,9 @@ config folder locally.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from collections.abc import Mapping
 from importlib.resources import files
 from pathlib import Path
@@ -60,7 +62,7 @@ from .history import LOCAL_USER, HistoryCipher, HistoryRecorder, HistoryStore
 from .history_api import history_router
 from .hosted import AccessLog, HostedGate, site_scan_counter
 from .isolation import Isolator, Limits
-from .ratelimit import RateLimiter
+from .ratelimit import Limiter, RateLimiter, SqliteRateLimiter, rate_limit_path
 from .settings import HostedSettings, Settings, load_settings
 from .store import Store
 
@@ -88,11 +90,12 @@ _STATUS = {
     Reason.SIGN_IN_REQUIRED: 401,
     Reason.TOKEN_EXPIRED: 401,
     Reason.CSRF_FAILED: 403,
+    Reason.REAUTH_REQUIRED: 403,
     Reason.RATE_LIMITED: 429,
     Reason.ANALYSIS_TIMEOUT: 422,
 }
 
-_HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 413: "input_too_large"}
+_HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 408: "request_timeout", 413: "input_too_large"}
 
 _SECURITY_HEADERS = SECURITY_HEADERS
 _NO_STORE = NO_STORE
@@ -180,25 +183,55 @@ def hosted_body_limits(settings: HostedSettings) -> dict[str, int]:
 
 class _StreamedBodyLimit:
     """Counts body bytes as they are received, so chunked uploads without a
-    Content-Length cannot exceed the cap either."""
+    Content-Length cannot exceed the cap either.
 
-    def __init__(self, app: ASGIApp, body_limits: Mapping[str, int] = LARGE_BODY_ROUTES) -> None:
+    With ``idle_s`` set (hosted mode) it also bounds how long a body may take, because uvicorn has no
+    read timeout of its own: a pause of more than ``idle_s`` seconds between pieces, or a body still
+    arriving after ``total_s`` (``upload_total_s`` for the routes in ``body_limits``) from its first read,
+    ends the request with 408 ``request_timeout``. Reads after the body is complete (the disconnect
+    watch of a streaming response) are never timed.
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        body_limits: Mapping[str, int] = LARGE_BODY_ROUTES,
+        idle_s: float | None = None,
+        total_s: float = 30.0,
+        upload_total_s: float = 120.0,
+    ) -> None:
         self.app = app
         self.body_limits = body_limits
+        self.idle_s = idle_s
+        self.total_s = total_s
+        self.upload_total_s = upload_total_s
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        limit, seen = body_limit(scope["path"], self.body_limits), 0
+        path = scope["path"]
+        limit, seen = body_limit(path, self.body_limits), 0
+        total = self.upload_total_s if path in self.body_limits else self.total_s
+        started: float | None = None
+        complete = False
 
         async def counted() -> Message:
-            nonlocal seen
-            message = await receive()
+            nonlocal seen, started, complete
+            if self.idle_s is None or complete:
+                message = await receive()
+            else:
+                started = time.monotonic() if started is None else started
+                remaining = started + total - time.monotonic()
+                try:
+                    message = await asyncio.wait_for(receive(), max(0.0, min(self.idle_s, remaining)))
+                except asyncio.TimeoutError:
+                    raise HTTPException(408, "the request body was sent too slowly") from None
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
                 if seen > limit:
                     raise HTTPException(413, f"request body exceeds {limit} bytes")
+                complete = not message.get("more_body", False)
             return message
 
         await self.app(scope, counted, send)
@@ -275,7 +308,7 @@ def create_app(
     openapi_url = "/api/openapi.json" if hosted is None else None
     app = FastAPI(title="Kestrix", version=__version__, docs_url=None, redoc_url=None, openapi_url=openapi_url)
     auth: AuthService | None = None
-    limiter: RateLimiter | None = None
+    limiter: Limiter | None = None
     if hosted is None:
         history = HistoryStore(config.config_dir() / "history.sqlite3")
         app.add_middleware(HistoryRecorder, history=history, user_of=lambda _scope: LOCAL_USER)
@@ -283,14 +316,24 @@ def create_app(
         app.add_middleware(_LocalOnly, allowed_hosts=LOOPBACK_HOSTS | extra_hosts)
     else:
         limits = hosted_body_limits(hosted)
-        limiter = RateLimiter()
+        limiter = (
+            SqliteRateLimiter(rate_limit_path(hosted.db_path), hosted.session_pepper)
+            if hosted.rate_limit_store == "sqlite"
+            else RateLimiter()
+        )
         auth = AuthService(hosted, Store(hosted.db_path), transport=provider_transport)
         app.state.auth = auth
         history = HistoryStore(
             history_path(hosted.db_path), HistoryCipher(hosted.history_key, hosted.history_key_previous)
         )
         app.add_middleware(HistoryRecorder, history=history, user_of=_scope_user)
-        app.add_middleware(_StreamedBodyLimit, body_limits=limits)
+        app.add_middleware(
+            _StreamedBodyLimit,
+            body_limits=limits,
+            idle_s=hosted.body_idle_s,
+            total_s=hosted.body_total_s,
+            upload_total_s=hosted.upload_total_s,
+        )
         app.add_middleware(HostedGate, auth=auth, limiter=limiter)
         app.add_middleware(
             _LocalOnly,
