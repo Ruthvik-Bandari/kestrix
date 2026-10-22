@@ -442,3 +442,35 @@ ssh explorer 'cd ~/kestrix-mailrules && export KESTRIX_CODE=$HOME/kestrix-mailru
 ```
 
 `/scratch` is purged on the first Tuesday of each month (next: 2026-11-03). The manifest lets every download be repeated; the learned weights and aggregate reports are committed under `docs/data/mail/`.
+
+
+## Locked test (2026-10-22)
+
+Run once each, after the round-1 rules were frozen, on the 10,897 locked-test messages (3,019 phishing, 238 spam,
+7,550 normal: 6,014 Enron and 1,536 SpamAssassin), in 135 split groups. Reports:
+[`mail-locked-rules-baseline.json`](../data/mail/mail-locked-rules-baseline.json) (the old rules, stored features; job
+11297308) and [`mail-locked-rules-round1.json`](../data/mail/mail-locked-rules-round1.json) (round-1 rules at
+`a3bfd06`, features recomputed on the cluster, job 11297304, evaluated by job 11297306). Content-only feature set;
+95% group-bootstrap intervals (SpamAssassin ham has too few groups for one and is shown without).
+
+| Measure | Old rules | Round 1 |
+| --- | --- | --- |
+| Phishing flagged (suspicious or malicious) | 49.4% (41.1–58.2) | **61.2% (54.0–69.3)** |
+| Phishing malicious | 13.6% (8.9–19.7) | 10.6% (7.8–14.5) |
+| Spam flagged | 31.1% (17.1–37.2) | **50.0% (27.9–54.9)** |
+| SpamAssassin ham flagged | 20.1% | **1.0%** |
+| Enron ham flagged | 1.1% (0.4–2.0) | 1.3% (0.6–2.2) |
+| All normal mail flagged | 5.0% (0.8–9.9) | **1.2% (0.7–2.0)** |
+| Precision, phishing vs normal (flagged) | 79.8% (51.3–97.2) | **95.2% (87.0–98.4)** |
+
+What the locked test shows:
+
+- **Round 1 held up on unseen mail.** Phishing caught rose by 11.8 points (12.6 on dev), spam by 18.9, and false
+  alarms on mailing-list mail fell from 20.1% to 1.0%. Enron false alarms are unchanged within noise.
+- **Fewer messages are called malicious** (13.6% to 10.6% of phishing), the trade-off accepted on dev for far fewer
+  malicious verdicts on normal mail.
+- **The learned weights are not adopted.** On the same messages they flag only 34.3% of phishing (94.3% precision),
+  though more as malicious (23.6%); the hand rules dominate at the flagged level.
+- **Limits:** the normal mail is 1999–2005 and Enron lacks most headers, so modern false-alarm rates are unknown; spam
+  has 238 test messages and wide intervals. The locked test is now spent; future rounds need new held-out data (for
+  example TREC 2007 if the usage agreement is approved).

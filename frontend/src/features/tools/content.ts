@@ -101,7 +101,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       ],
       limits: [
         "A `clean` verdict means none of the checks fired, not that the message is safe.",
-        "Detection and false-positive rates have not been measured, so none are claimed.",
+        "On a one-time locked test of public spam, phishing and normal mail (1999–2025), it flagged 61% of phishing and 50% of spam and wrongly flagged 1.2% of normal mail. That normal mail is old, so false alarms on modern mail are not measured.",
         "The scam phrase lists are small and curated: English, plus Russian for gambling and prize offers. Paraphrases and other languages are missed.",
         "The look-alike table is a curated subset of the Unicode confusables list, and organizations are grouped without the full Public Suffix List.",
         "The heuristic score orders messages for attention. It is not a probability.",
