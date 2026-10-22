@@ -8,6 +8,9 @@ Produced by `python -m kestrixmailbench` on the Explorer cluster; method, result
 | `build.json` | Messages read, dropped (by reason) and kept per source, label and year |
 | `split-manifest.json` | Dev/test counts per source, label and year, group counts, and SHA-256 of each split's message ids |
 | `mail-dev-metrics.json` | Baseline metrics on dev for three feature sets, same-era strata, per source, subset and year, miss and false-alarm causes, synthetic families, and the leakage report |
+| `mail-dev-metrics-round1.json` | The same report for the rules after round 1 (final code, dev only) |
+| `mail-rules-round1.json` | Headline dev numbers, decision and Slurm job ids of every round-1 rule change, content-only feature set |
+| `mail-probe-baseline.json` | Counts of coarse message properties and curated candidate terms per cohort of dev messages under the shipped rules (cells under 3 dropped); input to the round-1 decisions |
 | `mail-weights-<set>[_pooled].json` | Learned candidate weights, intercept, thresholds, targets, training manifest hashes. `<set>` is `all`, `content` (default), `content_strict` or `content_noera`; `_pooled` applies the false-alarm target to pooled ham instead of each ham source. Not wired into `kestrix.mail` |
 | `mail-learn-content.json`, `mail-learn-content_noera.json` | Cross-validated learned-versus-baseline tables for the two sets the write-up discusses. The other six reports stay on the cluster (`reports/mail-learn-*.json`) |
 

@@ -11,5 +11,5 @@
 # Baseline metrics on dev for every feature set, same-era strata, miss and false-alarm causes, leakage
 # controls: writes reports/mail-dev-metrics.json. Reads dev features only.
 set -euo pipefail
-source "$HOME/kestrix/hpc/mail_env.sh"
+source "${KESTRIX_CODE:-$HOME/kestrix}/hpc/mail_env.sh"
 mb dev-metrics dev-metrics --root "$MB" "$@"

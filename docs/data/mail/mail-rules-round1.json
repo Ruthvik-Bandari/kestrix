@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "split": "dev",
+  "feature_set": "content (every auth finding removed)",
+  "note": "Dev only; the locked test was not run. 'k' are flagged message counts. Intervals as in mail-dev-metrics.json.",
+  "rounds": [
+    {
+      "round": "r0-baseline",
+      "change": "Shipped rules re-run with the round tooling (reproduces the benchmark)",
+      "decision": "baseline",
+      "jobs": "features 11292228, dev-metrics 11292229",
+      "phishing_flagged": "52.9% (45.5-58.8)",
+      "phishing_malicious": "13.1% (10.0-17.2)",
+      "spam_flagged": "31.3% (msg 29.1-33.7)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "19.8% (msg 18.4-21.4)",
+      "sa_ham_malicious": "2.5% (msg 1.9-3.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3209,
+        "spam": 484,
+        "sa_ham": 546,
+        "enron": 72
+      }
+    },
+    {
+      "round": "r1-list",
+      "change": "1a. A foreign Reply-To that is the message's own mailing list is info (mail.sender.reply_to_mailing_list), not a mismatch",
+      "decision": "keep",
+      "jobs": "features 11292393, dev-metrics 11292394",
+      "phishing_flagged": "52.9% (45.5-58.8)",
+      "phishing_malicious": "13.1% (10.0-17.2)",
+      "spam_flagged": "30.4% (msg 28.2-32.8)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "3.6% (msg 3.0-4.3)",
+      "sa_ham_malicious": "2.5% (msg 1.9-3.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3208,
+        "spam": 470,
+        "sa_ham": 100,
+        "enron": 72
+      }
+    },
+    {
+      "round": "r1b-tracker",
+      "change": "1b. text_href_mismatch via a click-tracker host downgraded to low (on top of 1a)",
+      "decision": "revert",
+      "jobs": "features 11292454, dev-metrics 11292456",
+      "phishing_flagged": "52.6% (45.3-58.6)",
+      "phishing_malicious": "12.8% (9.8-16.8)",
+      "spam_flagged": "30.1% (msg 27.9-32.5)",
+      "spam_malicious": "3.4% (msg 2.5-4.4)",
+      "sa_ham_fa": "3.3% (msg 2.6-3.9)",
+      "sa_ham_malicious": "2.1% (msg 1.6-2.7)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3194,
+        "spam": 466,
+        "sa_ham": 90,
+        "enron": 72
+      }
+    },
+    {
+      "round": "r1c-dnbare",
+      "change": "1c. display_name_spoof is medium unless the display name holds an address (on top of 1a)",
+      "decision": "superseded by 1d",
+      "jobs": "features 11292497, dev-metrics 11292498",
+      "phishing_flagged": "52.9% (45.5-58.8)",
+      "phishing_malicious": "9.4% (7.5-11.7)",
+      "spam_flagged": "30.4% (msg 28.2-32.8)",
+      "spam_malicious": "3.2% (msg 2.3-4.1)",
+      "sa_ham_fa": "3.6% (msg 3.0-4.3)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3208,
+        "spam": 470,
+        "sa_ham": 100,
+        "enron": 72
+      }
+    },
+    {
+      "round": "r2-combo",
+      "change": "2a. 3 distinct low findings from 2 analyzers make a message suspicious (on top of 1a, 1c)",
+      "decision": "revert (false alarms)",
+      "jobs": "features 11292542, dev-metrics 11292546",
+      "phishing_flagged": "61.1% (52.0-68.3)",
+      "phishing_malicious": "9.4% (7.5-11.7)",
+      "spam_flagged": "34.5% (msg 32.2-37.0)",
+      "spam_malicious": "3.2% (msg 2.3-4.1)",
+      "sa_ham_fa": "16.0% (msg 14.7-17.5)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3706,
+        "spam": 534,
+        "sa_ham": 442,
+        "enron": 73
+      }
+    },
+    {
+      "round": "r2b-combo-no-rp",
+      "change": "2b. Same, return_path_mismatch does not count (on top of 1a, 1c)",
+      "decision": "keep",
+      "jobs": "features 11292624, dev-metrics 11292625",
+      "phishing_flagged": "59.1% (50.2-66.3)",
+      "phishing_malicious": "9.4% (7.5-11.7)",
+      "spam_flagged": "32.1% (msg 29.9-34.6)",
+      "spam_malicious": "3.2% (msg 2.3-4.1)",
+      "sa_ham_fa": "4.1% (msg 3.4-4.8)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3588,
+        "spam": 497,
+        "sa_ham": 113,
+        "enron": 73
+      }
+    },
+    {
+      "round": "r2c-dn-justdomain",
+      "change": "1d. display_name_spoof is high when the display name is an address or only a domain, medium when the domain is among other words (on top of 1a, 2b)",
+      "decision": "keep",
+      "jobs": "features 11292663, dev-metrics 11292664",
+      "phishing_flagged": "59.1% (50.2-66.3)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "32.1% (msg 29.9-34.6)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.1% (msg 3.4-4.8)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.5% (0.3-0.8)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3588,
+        "spam": 497,
+        "sa_ham": 113,
+        "enron": 73
+      }
+    },
+    {
+      "round": "r3-spam-offer",
+      "change": "3a. mail.intent.spam_offer with 36 phrases (on top of 1a, 1d, 2b)",
+      "decision": "superseded by 3b",
+      "jobs": "features 11292694, dev-metrics 11292696",
+      "phishing_flagged": "59.2% (50.2-66.4)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "46.9% (msg 44.4-49.5)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.6% (msg 3.8-5.4)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.9% (0.7-1.2)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3593,
+        "spam": 725,
+        "sa_ham": 127,
+        "enron": 129
+      }
+    },
+    {
+      "round": "r3b-spam-offer-pruned",
+      "change": "3b. spam_offer pruned to the 23 phrases with the fewest ham hits (on top of 1a, 1d, 2b)",
+      "decision": "keep",
+      "jobs": "features 11292793, dev-metrics 11292795",
+      "phishing_flagged": "59.1% (50.2-66.3)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "43.8% (msg 41.4-46.4)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.3% (msg 3.6-5.0)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.6% (0.4-0.9)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3590,
+        "spam": 677,
+        "sa_ham": 118,
+        "enron": 90
+      }
+    },
+    {
+      "round": "r4-shared-page-host",
+      "change": "4a. mail.links.shared_page_host, low (on top of 3b)",
+      "decision": "revert (+4 phishing messages)",
+      "jobs": "features 11292838, dev-metrics 11292854",
+      "phishing_flagged": "59.2% (50.3-66.3)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "43.8% (msg 41.4-46.4)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.3% (msg 3.6-5.0)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.6% (0.4-0.9)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3593,
+        "spam": 677,
+        "sa_ham": 118,
+        "enron": 90
+      }
+    },
+    {
+      "round": "r5-final",
+      "change": "Cumulative 1a+1d+2b+3b (code identical to r3b)",
+      "decision": "check",
+      "jobs": "features 11292897, dev-metrics 11292898",
+      "phishing_flagged": "59.1% (50.2-66.3)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "43.8% (msg 41.4-46.4)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.3% (msg 3.6-5.0)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.6% (0.4-0.9)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 3590,
+        "spam": 677,
+        "sa_ham": 118,
+        "enron": 90
+      }
+    },
+    {
+      "round": "r6-credential-wording",
+      "change": "4b. Looser credential wording added to mail.intent.credential_request (on top of 3b)",
+      "decision": "superseded by 4c",
+      "jobs": "features 11292982, dev-metrics 11292983",
+      "phishing_flagged": "67.9% (60.1-74.0)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "44.0% (msg 41.7-46.6)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.5% (msg 3.7-5.3)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.7% (0.5-1.0)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 4119,
+        "spam": 681,
+        "sa_ham": 123,
+        "enron": 102
+      }
+    },
+    {
+      "round": "r7-final-tight-wording",
+      "change": "4c. The verify, confirm, validate, update, restore, unlock and secure patterns need 'your' (so 'Confirm the new account' in a payment message is not a credential request); this is the final code",
+      "decision": "keep (final)",
+      "jobs": "features 11293088, dev-metrics 11293110",
+      "phishing_flagged": "67.5% (59.4-73.8)",
+      "phishing_malicious": "11.4% (9.5-13.9)",
+      "spam_flagged": "43.9% (msg 41.5-46.4)",
+      "spam_malicious": "3.8% (msg 2.8-4.7)",
+      "sa_ham_fa": "4.5% (msg 3.7-5.3)",
+      "sa_ham_malicious": "0.8% (msg 0.4-1.1)",
+      "enron_fa": "0.7% (0.5-1.0)",
+      "enron_malicious": "0.1% (0.0-0.1)",
+      "k": {
+        "phishing": 4096,
+        "spam": 678,
+        "sa_ham": 123,
+        "enron": 100
+      }
+    }
+  ],
+  "other_jobs": "probes 11292223 (baseline), 11292392, 11292453; low-ham-hit phrase counts 11292761; combination sweep 11292604; credential wording counts 11292963; tightened-wording counts 11293037"
+}

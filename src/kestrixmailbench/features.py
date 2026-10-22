@@ -36,15 +36,27 @@ def feature_row(data: bytes) -> dict[str, Any]:
     }
 
 
-def run_shard(layout: Layout, shard: int, meta: dict[str, dict[str, Any]], split_of: dict[str, str]) -> dict[str, Any]:
-    """Analyze every message of ``shard``; write dev and test feature files and a count report."""
-    rows: dict[str, list[dict[str, Any]]] = {side: [] for side in SPLITS}
+def run_shard(
+    layout: Layout,
+    shard: int,
+    meta: dict[str, dict[str, Any]],
+    split_of: dict[str, str],
+    splits: tuple[str, ...] = SPLITS,
+) -> dict[str, Any]:
+    """Analyze every message of ``shard`` in ``splits``; write one feature file per split and a count report.
+
+    A split left out of ``splits`` is neither analyzed nor written: rule rounds pass ``("dev",)`` so the
+    locked test messages are never even run through a changed analyzer.
+    """
+    rows: dict[str, list[dict[str, Any]]] = {side: [] for side in splits}
     errors: Counter[str] = Counter()
     path = layout.raw_shard(shard)
     if not path.is_file():
         raise MailBenchError(f"{path} is missing; run build first")
     for item in read_jsonl(path):
         info = meta[item["id"]]
+        if split_of[item["id"]] not in splits:
+            continue
         try:
             fields = feature_row(base64.b64decode(item["b64"]))
         except Rejected as exc:
@@ -56,12 +68,12 @@ def run_shard(layout: Layout, shard: int, meta: dict[str, dict[str, Any]], split
         row = {k: info[k] for k in ("id", "source", "subset", "label", "year", "group")}
         side = split_of[item["id"]]
         rows[side].append({**row, "split": side, **fields})
-    for side in SPLITS:
+    for side in splits:
         write_jsonl(layout.feature_file(shard, side), rows[side])
     report = {
         "schema_version": 1,
         "shard": shard,
-        "analyzed": {side: len(rows[side]) for side in SPLITS},
+        "analyzed": {side: len(rows[side]) for side in splits},
         "errors": dict(sorted(errors.items())),
     }
     write_json(layout.feature_report(shard), report)

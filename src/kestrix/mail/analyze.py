@@ -7,8 +7,13 @@ Verdict rules, applied in order:
 1. ``malicious``: any high finding from the sender, lookalike, links, attachments or intent
    analyzers, or a DMARC failure together with any other medium or high finding.
 2. ``suspicious``: any other medium or high finding (a DMARC failure on its own lands here).
-3. ``insufficient_evidence``: no trusted authentication results and no other finding above info.
-4. ``clean``: none of the above. It means no check fired, not that the message is safe.
+3. ``suspicious`` by weak-signal combination: at least 3 distinct low findings from at least 2 different
+   analyzers. Info findings never count, and neither does ``mail.sender.return_path_mismatch``, which mailing
+   lists and email service providers produce routinely (on dev it alone turned list mail into false alarms).
+   Each counted finding is weak on its own, and a message that trips several unrelated checks is still worth
+   a look; the report's ``verdict_reason`` names the findings.
+4. ``insufficient_evidence``: no trusted authentication results and no other finding above info.
+5. ``clean``: none of the above. It means no check fired, not that the message is safe.
 
 The heuristic score is the sum of per-severity weights (high 35, medium 15, low 5, info 0),
 capped at 100. It orders messages for attention; it is not a probability.
@@ -32,6 +37,10 @@ _WEIGHTS = {"high": 35, "medium": 15, "low": 5, "info": 0}
 _HOSTNAME = re.compile(r"(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}")
 _AUTHSERV_ID = re.compile(r"[a-z0-9](?:[a-z0-9._-]{0,251}[a-z0-9])?")
 _CONTENT_ANALYZERS = frozenset({"sender", "lookalike", "links", "attachments", "intent"})
+MIN_WEAK_FINDINGS = 3
+MIN_WEAK_ANALYZERS = 2
+# Low findings that never count toward the combination: routine on legitimate list and bulk mail.
+_NOT_COMBINED = frozenset({"mail.sender.return_path_mismatch"})
 
 
 def analyze(
@@ -60,11 +69,18 @@ def analyze(
             *_authenticated_alerts(analyze_intent(msg), dmarc_passed(msg, trusted)),
         ]
     )
+    result = verdict(findings)
+    weak = weak_signal_ids(findings)
     return MailReport(
         sha256=msg.sha256,
         subject=msg.subject[:MAX_SUBJECT_CHARS] if msg.subject is not None else None,
         from_address=msg.from_.address if msg.from_ else None,
-        verdict=verdict(findings),
+        verdict=result,
+        verdict_reason=(
+            f"{len(weak)} weak findings from different analyzers add up: {', '.join(weak)}."
+            if result == "suspicious" and weak and not _serious(findings)
+            else None
+        ),
         heuristic_score=min(100, sum(_WEIGHTS[finding.severity] for finding in findings)),
         findings=findings,
         counts=Counts(
@@ -110,15 +126,31 @@ def analyze_stream(
     return analyze(raw, protected_domains=protected_domains, trusted_authserv_ids=trusted_authserv_ids)
 
 
+def _serious(findings: list[Finding]) -> list[Finding]:
+    return [finding for finding in findings if finding.severity in {"medium", "high"}]
+
+
+def weak_signal_ids(findings: list[Finding]) -> list[str]:
+    """Ids of the distinct low findings when they are numerous and varied enough to combine, else none."""
+    low = {
+        finding.id: finding.analyzer
+        for finding in findings
+        if finding.severity == "low" and finding.id not in _NOT_COMBINED
+    }
+    if len(low) >= MIN_WEAK_FINDINGS and len(set(low.values())) >= MIN_WEAK_ANALYZERS:
+        return sorted(low)
+    return []
+
+
 def verdict(findings: list[Finding]) -> Verdict:
     """Apply the verdict rules in the module docstring."""
-    serious = [finding for finding in findings if finding.severity in {"medium", "high"}]
+    serious = _serious(findings)
     dmarc_fail = any(finding.id == "mail.auth.dmarc_fail" for finding in findings)
     if any(finding.severity == "high" and finding.analyzer in _CONTENT_ANALYZERS for finding in findings) or (
         dmarc_fail and len(serious) > 1
     ):
         return "malicious"
-    if serious:
+    if serious or weak_signal_ids(findings):
         return "suspicious"
     auth_missing = any(finding.id == "mail.auth.missing" for finding in findings)
     if auth_missing and not any(finding.severity != "info" for finding in findings):

@@ -2,7 +2,7 @@
 
 The mail module checks one saved email message (an `.eml` file) for common phishing and malware-delivery signs and explains each one. It reads the sender authentication results your mail provider stamped on the message, compares the sender's addresses, looks for domains that imitate ones you protect, checks links and attachments, and looks for the wording of payment and credential scams. Use it on a message you are unsure about before you click, reply or open anything. It is available from the CLI, the API and the dashboard's **Email check** page.
 
-It is a set of heuristics, not a classifier. A `clean` verdict means none of the checks fired, not that the message is safe. Kestrix has not yet measured detection or false-positive rates for this module, so none are claimed. The design is recorded in [ADR 0003](../adr/0003-mail-module.md); this page describes the first two delivery slices: the parser, the `auth`, `sender`, `lookalike`, `links`, `attachments` and `intent` analyzers, and the dashboard page. Source files are under [`src/kestrix/mail/`](../../src/kestrix/mail/).
+It is a set of heuristics, not a classifier. A `clean` verdict means none of the checks fired, not that the message is safe. Kestrix has not yet measured detection or false-positive rates for this module on held-out data, so none are claimed. Development-split numbers from a public-corpus benchmark, and the rule changes they led to, are in [the email benchmark](../research/mail-benchmark.md); they are tuning results, not accuracy. The design is recorded in [ADR 0003](../adr/0003-mail-module.md); this page describes the first two delivery slices: the parser, the `auth`, `sender`, `lookalike`, `links`, `attachments` and `intent` analyzers, and the dashboard page. Source files are under [`src/kestrix/mail/`](../../src/kestrix/mail/).
 
 ## Privacy
 
@@ -52,8 +52,9 @@ The rules are applied in this order ([`analyze.py`](../../src/kestrix/mail/analy
 
 1. `malicious`: any high finding from the `sender`, `lookalike`, `links`, `attachments` or `intent` analyzers, or `mail.auth.dmarc_fail` together with any other medium or high finding.
 2. `suspicious`: any other medium or high finding. A DMARC failure on its own lands here.
-3. `insufficient_evidence`: no trusted authentication results (`mail.auth.missing`) and no other finding above info.
-4. `clean`: none of the above.
+3. `suspicious` by combination: at least 3 distinct low findings from at least 2 different analyzers. Info findings never count, and neither does `mail.sender.return_path_mismatch`, which mailing lists and email service providers produce routinely. Each counted finding is weak alone; several unrelated ones are worth a look. The report's `verdict_reason` names them.
+4. `insufficient_evidence`: no trusted authentication results (`mail.auth.missing`) and no other finding above info.
+5. `clean`: none of the above.
 
 `heuristic_score` is the sum of per-severity weights of all findings (high 35, medium 15, low 5, info 0), capped at 100. It orders messages for attention. It is not a probability.
 
@@ -67,6 +68,7 @@ The rules are applied in this order ([`analyze.py`](../../src/kestrix/mail/analy
 | `subject` | Subject header, cut to 200 characters. |
 | `from_address` | The address in `From`, if one could be parsed. |
 | `verdict`, `heuristic_score` | See above. |
+| `verdict_reason` | `null`, or a sentence naming the low findings when rule 3 alone made the message `suspicious`. |
 | `findings` | Most severe first. Each has `id` (a stable reason code), `analyzer` (`auth`, `sender`, `lookalike`, `links`, `attachments` or `intent`), `severity`, `title`, `explanation` and `evidence` (at most 300 characters; never body text other than an `intent` cue phrase of at most 60 characters). |
 | `counts` | `parts`, `links`, `attachments`, and `text_truncated` / `links_truncated` when a limit below was reached. |
 
@@ -93,9 +95,10 @@ Comments in parentheses and quoted strings are handled. `ARC` results are not ju
 
 | `id` | Severity | Raised when |
 | --- | --- | --- |
-| `mail.sender.reply_to_mismatch` | medium | A `Reply-To` address is in another organization than `From`. |
+| `mail.sender.reply_to_mismatch` | medium | A `Reply-To` address is in another organization than `From` and is not the message's own mailing list (next row). |
+| `mail.sender.reply_to_mailing_list` | info | The message has a `List-Id`, `List-Post` or `List-Unsubscribe` header and a foreign `Reply-To` is in the same organization as a domain named there (the list identifier, a `mailto:` address or a URL), as when a list sets `Reply-To` to itself. It explains the `Reply-To` and adds nothing to the verdict. List headers are easy to forge, so they only explain a `Reply-To` that points at the list's own domain; `Precedence: list` or `bulk` alone names no domain and explains nothing. |
 | `mail.sender.return_path_mismatch` | low | `Return-Path` is in another organization than `From`. Mailing lists and email service providers do this routinely. |
-| `mail.sender.display_name_spoof` | high | The display name contains an email address or a domain outside the From organization. A bare word counts as a domain only with a common or two-letter top-level domain, so `invoice.pdf` does not. |
+| `mail.sender.display_name_spoof` | high; medium when a domain appears among other words | The display name contains an email address or a domain outside the From organization. A bare word counts as a domain only with a common or two-letter top-level domain, so `invoice.pdf` does not. It is high when the display name holds an address or is nothing but the domain (`PayPal.com`), and medium when the domain is one word among others (`PayPal.com Billing`), which genuine newsletters also do. |
 | `mail.sender.display_name_brand` | high | The display name contains the name of a protected domain (its first label, three characters or more) and `From` is outside that domain's organization. |
 | `mail.sender.random_domain` | low | A label of the From domain looks machine-generated (see **Machine-generated names** below). |
 | `mail.sender.outdated_mailer` | low | `X-Mailer` names a mail program discontinued long ago (`Outlook Express`, `Microsoft Internet Mail`, `Netscape Messenger` or `Communicator`, `Eudora`). Spam tools forge these; the header is easy to set, so it is a hint only. |
@@ -163,10 +166,11 @@ The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks fo
 | --- | --- | --- |
 | `mail.intent.payment_change` | medium | "bank details have changed", "new account number", "wire transfer", "update your payment"; also "invoice attached" when an urgency cue is present (evidence `invoice attached + <urgency cue>`). |
 | `mail.intent.gift_cards` | medium | A request: "buy some gift cards", "gift card codes", "iTunes cards", "scratch off the back". A mention such as "our gift cards never expire" does not fire. |
-| `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
+| `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in", and looser wording: "update your billing information", "restore your account", "your account has been limited", "suspicious activity", "click here to verify". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
 | `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
 | `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
 | `mail.intent.gambling_offer` | medium | "free spins", "no deposit bonus", "100 FS" (upper case only), "casino bonus"; in Russian "фриспины", "бесплатные спины", "без депозита", "бонус на депозит". |
+| `mail.intent.spam_offer` | medium | One of 23 classic spam-offer phrases: loans and mortgages ("credit card offers", "bad credit", "debt consolidation", "mortgage rates", "refinance now", "lowest interest rates"), health ("lose weight", "weight loss", "enlarge your", "online pharmacy", "no prescription"), home-based income ("be your own boss", "home-based business", "work from home opportunity", "make money online", "extra income", "easy money"), "100% guaranteed" and bulk e-mail lists ("bulk e-mail", "million addresses"). Chosen for being rare in ordinary mail on the benchmark; a discussion about spam uses them too. |
 | `mail.intent.prize_claim` | medium | "you have won", "claim your prize", "lottery winner"; in Russian "вы выиграли", "ваш приз", "получите выигрыш". |
 | `mail.intent.hidden_text` | low | The subject and text together hold 20 or more invisible characters (zero-width spaces and joiners, soft hyphens, word joiners, byte-order marks). The evidence gives the count and the most common one, for example `120 invisible characters, mostly U+200C`. Newsletters pad their preview line with a few; spam uses long runs. |
 | `mail.intent.bec_pattern` | high | `payment_change` or `gift_cards` together with `urgency` or `secrecy`. The evidence names the families, for example `gift_cards with secrecy`. |
@@ -204,4 +208,4 @@ Files over 25 MiB and more than 20 protected domains are refused in the browser 
 
 The checks marked "before parsing" run on the raw bytes, because the standard library's MIME parameter parsing slows down sharply with many parameters. They look at the message's own headers, the headers after every line that starts with `--` (any possible MIME boundary, however it is declared), and the headers of attached messages. The hosted service also caps messages at 10 MiB and runs each analysis in a limited worker process ([hosted.md](../hosted.md)).
 
-Input with none of the usual message headers (`From`, `Date`, `Message-ID`, `Received`, `Subject`, `To`, `MIME-Version`) is rejected with `invalid_input` rather than reported as clean. Bad character encodings are decoded with replacement characters. A header the standard library cannot parse at all (for example a NUL in a charset name) rejects the message with `invalid_input`, and undecodable header bytes appear as U+FFFD in the report.
+Input with none of the usual message headers (`From`, `Date`, `Message-ID`, `Received`, `Subject`, `To`, `MIME-Version`) is rejected with `invalid_input` rather than reported as clean. Bad character encodings are decoded with replacement characters. Mailing-list headers (`List-Id`, `List-Post`, `List-Unsubscribe`, `Precedence`) are each cut to 300 characters, and at most 10 domains are read from them. A header the standard library cannot parse at all (for example a NUL in a charset name) rejects the message with `invalid_input`, and undecodable header bytes appear as U+FFFD in the report.

@@ -329,6 +329,21 @@ def analyze_sender(msg: ParsedMessage, protected_domains: frozenset[str] = froze
         return []
     findings: list[Finding] = []
     other = [reply.domain for reply in msg.reply_to if not aligned(reply.domain, sender.domain)]
+    listed = list_domains(msg)
+    expected = sorted({domain for domain in other if org_domain(domain) in listed})
+    if expected:
+        findings.append(
+            _finding(
+                "mail.sender.reply_to_mailing_list",
+                "info",
+                "Replies go to the mailing list the message came through",
+                "The message carries mailing-list headers and Reply-To is in the same organization as the list "
+                "itself, so answering the list is how this list works. This is not the Reply-To mismatch of "
+                "invoice or payroll fraud. A sender can forge list headers, so it only explains the Reply-To.",
+                f"From domain {sender.domain}; Reply-To domain {', '.join(expected)}; list domains {', '.join(sorted(listed))[:120]}",
+            )
+        )
+        other = [domain for domain in other if domain not in expected]
     if other:
         findings.append(
             _finding(
@@ -380,26 +395,57 @@ def analyze_sender(msg: ParsedMessage, protected_domains: frozenset[str] = froze
     return findings
 
 
+_LIST_ID_DOMAIN = re.compile(r"[a-z0-9][a-z0-9.-]*\.[a-z]{2,}")
+_LIST_URL_DOMAIN = re.compile(r"(?:@|//)([a-z0-9][a-z0-9.-]*\.[a-z]{2,})")
+MAX_LIST_DOMAINS = 10
+
+
+def list_domains(msg: ParsedMessage) -> frozenset[str]:
+    """Organizational domains the mailing-list headers name, or none when the message is not list mail.
+
+    List mail has a ``List-Id`` (RFC 2919: a dotted identifier in angle brackets), ``List-Post`` or
+    ``List-Unsubscribe`` header (RFC 2369: ``mailto:`` and URLs), or ``Precedence: list`` or ``bulk``. The
+    domains come from the identifier and from the addresses and URLs in ``List-Post`` and ``List-Unsubscribe``.
+    ``Precedence`` alone names no domain, so it explains nothing by itself.
+    """
+    found: set[str] = set()
+    for value in (msg.list_post, msg.list_unsubscribe):
+        if value:
+            found.update(_LIST_URL_DOMAIN.findall(value.lower()))
+    if msg.list_id:
+        found.update(_LIST_ID_DOMAIN.findall(msg.list_id.lower()))
+    return frozenset(org_domain(domain) for domain in sorted(found)[:MAX_LIST_DOMAINS])
+
+
 def _display_name_findings(display: str, from_domain: str, protected_domains: frozenset[str]) -> list[Finding]:
     if not display:
         return []
     lowered = display.lower()
-    named = [match.group(1) for match in _EMAIL_IN_TEXT.finditer(lowered)]
-    named += [
-        host
+    emails = {normalize_domain(match.group(1))[0] for match in _EMAIL_IN_TEXT.finditer(lowered)}
+    named = {
+        normalize_domain(host)[0]
         for token in lowered.replace(",", " ").split()
         if "@" not in token and (host := _looks_like_domain(token.strip("()[]<>\"'"), explicit=False))
-    ]
-    foreign = sorted({normalize_domain(name)[0] for name in named} - {""})
-    foreign = [name for name in foreign if not aligned(name, from_domain)]
+    }
+    foreign = sorted(domain for domain in (emails | named) - {""} if not aligned(domain, from_domain))
     if foreign:
+        # An address in the display name, or a display name that is nothing but another domain, is what spoofing
+        # looks like. A site name among other words ("Shop.com Deals") is common on genuine newsletters: on dev it
+        # appears about as often in ham as in phishing, so it is medium.
+        bare = lowered.strip(" \"'()<>")
+        spoofed = any(domain in emails for domain in foreign) or bare in foreign
         return [
             _finding(
                 "mail.sender.display_name_spoof",
-                "high",
+                "high" if spoofed else "medium",
                 "Display name shows a different address or domain",
                 "Mail apps often show only the display name. Putting another address or domain there makes the "
-                "message look like it comes from someone it does not.",
+                "message look like it comes from someone it does not."
+                + (
+                    ""
+                    if spoofed
+                    else " The name only mentions a site among other words, which genuine newsletters also do."
+                ),
                 f"display name names {', '.join(foreign)}; actual From domain {from_domain}",
             )
         ]

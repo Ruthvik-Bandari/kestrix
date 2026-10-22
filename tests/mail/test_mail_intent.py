@@ -65,7 +65,6 @@ def test_clean_sample_and_newsletter_do_not_fire() -> None:
         ("Scratch off the back of each card.", "mail.intent.gift_cards", "medium", "Scratch off the back"),
         ("Reply urgently.", "mail.intent.urgency", "low", "urgently"),
         ("Respond within 24 hours.", "mail.intent.urgency", "low", "within 24 hours"),
-        ("Your account will be suspended.", "mail.intent.urgency", "low", "account will be suspended"),
         ("Please keep this confidential.", "mail.intent.secrecy", "low", "keep this confidential"),
         (
             "Don\N{RIGHT SINGLE QUOTATION MARK}t tell anyone yet.",
@@ -157,3 +156,38 @@ def test_credential_request_from_a_dmarc_proven_sender_is_low() -> None:
     report = analyze(message(text="We noticed an unusual sign-in. Verify your account."))
     assert intent(report) == [("mail.intent.credential_request", "low")]
     assert report.verdict == "clean"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Please validate your online banking login today.",
+        "Restore your account before it is locked.",
+        "We detected suspicious activity on your account.",
+        "Your account has been limited.",
+        "Click here to verify your details.",
+        "Your mailbox was disabled.",
+    ],
+)
+def test_looser_credential_wording_is_a_credential_request(text: str) -> None:
+    assert ("mail.intent.credential_request", "medium") in intent(text_report(text))
+
+
+def test_an_account_suspension_warning_is_urgent_and_a_credential_request() -> None:
+    report = text_report("Your account will be suspended.")
+    assert intent(report) == [("mail.intent.credential_request", "medium"), ("mail.intent.urgency", "low")]
+    assert evidence(report, "mail.intent.urgency") == "account will be suspended"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Please confirm the meeting time with Dana.",
+        "I will update the plan and send the account summary tomorrow.",
+        "The password policy document is on the wiki.",
+        "Verify the numbers, then confirm with finance.",
+        "Confirm the new account number with the supplier.",
+    ],
+)
+def test_ordinary_requests_are_not_credential_requests(text: str) -> None:
+    assert [item for item in intent(text_report(text)) if item[0] == "mail.intent.credential_request"] == []

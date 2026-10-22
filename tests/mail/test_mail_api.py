@@ -18,6 +18,7 @@ REPORT_KEYS = {
     "subject",
     "from_address",
     "verdict",
+    "verdict_reason",
     "heuristic_score",
     "findings",
     "counts",
