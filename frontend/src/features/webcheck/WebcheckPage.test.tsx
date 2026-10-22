@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setMode } from "../../lib/mode";
 import type { WebReport } from "../../lib/types";
+import { toolPageClient } from "../../test/fakeServer";
 import WebcheckPage, { HOSTED_NOTICE_PAGE, HOSTED_NOTICE_SITE, NOTICE_PAGE, NOTICE_SITE } from "./WebcheckPage";
 
 function renderPage() {
-  const client = new QueryClient({
-    defaultOptions: { mutations: { retry: false } },
-  });
+  const client = toolPageClient();
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -372,7 +371,7 @@ describe("whole-site scope", () => {
     renderPage();
     scanSite();
     expect(await screen.findByRole("heading", { name: "Pages checked" })).toBeTruthy();
-    const rows = [...document.querySelectorAll("section[aria-labelledby=pages-title] tbody tr")].map((r) => r.textContent);
+    const rows = [...document.querySelectorAll("section[aria-labelledby=web-pages-title] tbody tr")].map((r) => r.textContent);
     expect(rows).toHaveLength(5);
     expect(rows[2]).toContain("/admin/login");
     expect(rows[2]).toContain("Login address tried");

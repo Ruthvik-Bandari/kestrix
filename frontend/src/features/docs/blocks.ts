@@ -10,7 +10,9 @@ export type Block =
   /** Every tool, linked to its docs page, with its one-line summary (app/tools.ts). */
   | { kind: "tools" }
   /** A link to the public landing page. */
-  | { kind: "landing"; text: string };
+  | { kind: "landing"; text: string }
+  /** A link to another page of the app (the privacy notice, the terms), by an app path. */
+  | { kind: "route"; text: string; to: string };
 
 export interface DocSection {
   heading: string;

@@ -7,11 +7,12 @@ import {
   FindingTally,
   NextStep,
   ReasonCode,
+  ReportSection,
   useFocusOnArrival,
   VerdictCard,
 } from "../../components/report";
 import type { Tone } from "../../components/tone";
-import { CopyButton, Panel, RawJson } from "../../components/ui";
+import { CopyButton, RawJson } from "../../components/ui";
 import { plural } from "../../lib/format";
 import type { MailAnalyzer, MailReport, MailVerdict } from "../../lib/types";
 
@@ -73,9 +74,8 @@ export const verdictMeta: Record<MailVerdict, VerdictCopy> = {
 function MessagePanel({ report }: { report: MailReport }) {
   const { counts } = report;
   return (
-    <Panel as="aside" className="space-y-3">
-      <h3 className="text-lg font-semibold tracking-[-0.01em]">Message</h3>
-      <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-[0.875rem]">
+    <ReportSection as="aside" id="mail-message" icon="mail" title="Message">
+      <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[0.875rem]">
         <dt className="text-ink-3">Subject</dt>
         <dd className="break-words text-ink">{report.subject ?? "(no subject)"}</dd>
         <dt className="text-ink-3">From</dt>
@@ -86,25 +86,22 @@ function MessagePanel({ report }: { report: MailReport }) {
         </dd>
         <dt className="text-ink-3">SHA-256</dt>
         <dd className="min-w-0">
-          <code className="block text-[0.75rem] break-all text-ink">{report.sha256}</code>
+          <code className="block rounded-md border border-line bg-inset px-2 py-1.5 text-[0.75rem] break-all text-ink">{report.sha256}</code>
           <CopyButton text={report.sha256} label="Copy SHA-256 of the message" className="-ml-2 mt-1" />
         </dd>
       </dl>
-      <p className="text-[0.8125rem] text-ink-3">
+      <p className="mt-3 text-[0.8125rem] text-ink-3">
         The report keeps these details and the findings. The message body, Reply-To and date are not part of it.
       </p>
-    </Panel>
+    </ReportSection>
   );
 }
 
 function Limitations({ report }: { report: MailReport }) {
   return (
-    <section aria-labelledby="mail-limits" className="rounded-xl border border-line px-5 py-4 text-[0.875rem] text-ink-2">
-      <h3 id="mail-limits" className="font-semibold text-ink">
-        What this check can tell you
-      </h3>
-      <p className="mt-2">{report.notice}</p>
-    </section>
+    <ReportSection id="mail-limits" icon="info" title="What this check can tell you">
+      <p className="text-[0.875rem] text-ink-2">{report.notice}</p>
+    </ReportSection>
   );
 }
 
@@ -144,7 +141,7 @@ export function MailReportView({ report }: { report: MailReport }) {
         </p>
       ) : null}
 
-      <div className="grid items-start gap-6 @2xl:grid-cols-[minmax(0,1fr)_17rem] @4xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid items-start gap-6 @4xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0">
           {report.findings.length > 0 ? (
             <FindingList
@@ -163,15 +160,12 @@ export function MailReportView({ report }: { report: MailReport }) {
               )}
             />
           ) : (
-            <section aria-labelledby="mail-no-findings">
-              <h3 id="mail-no-findings" className="text-xl font-semibold tracking-[-0.015em]">
-                What Kestrix found
-              </h3>
-              <p className="mt-2 max-w-[68ch] text-ink-2">No findings. None of the checks fired for this message.</p>
-            </section>
+            <ReportSection id="mail-no-findings" icon="listChecks" title="What Kestrix found" count={0} flat>
+              <p className="max-w-[68ch] text-ink-2">No findings. None of the checks fired for this message.</p>
+            </ReportSection>
           )}
         </div>
-        <div className="min-w-0 space-y-4">
+        <div className="grid min-w-0 items-start gap-4 @2xl:grid-cols-2 @4xl:grid-cols-1">
           <MessagePanel report={report} />
           <Limitations report={report} />
         </div>

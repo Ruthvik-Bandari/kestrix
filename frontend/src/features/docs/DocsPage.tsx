@@ -112,6 +112,15 @@ function BlockView({ block }: { block: Block }) {
           ))}
         </ul>
       );
+    case "route":
+      return (
+        <p>
+          <Link to={block.to} className="link inline-flex items-center gap-1.5 font-semibold">
+            {block.text}
+            <Icon name="arrowRight" size={14} />
+          </Link>
+        </p>
+      );
     case "landing":
       return (
         <p>

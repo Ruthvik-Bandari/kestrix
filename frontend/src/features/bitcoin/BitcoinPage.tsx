@@ -5,13 +5,15 @@ import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
 import { dashboardPath } from "../../app/paths";
 import { Icon } from "../../components/Icon";
-import { FailedRequest, HelpPanel, LiveStatus, PendingPanel, ToolLayout, useFocusOnArrival, VerdictCard } from "../../components/report";
-import { Badge, Button, CopyButton, Field, Panel, RawJson, SectionTitle, Switch } from "../../components/ui";
+import { FailedRequest, LiveStatus, PendingPanel, ReportSection, ToolLayout, useFocusOnArrival, VerdictCard } from "../../components/report";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
+import { Badge, Button, CopyButton, Field, RawJson, Switch } from "../../components/ui";
 import { tones, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
 import { plural, satsToBtc } from "../../lib/format";
 import type { AddressAssessment, PublicTestnet, Risk, ScanResult } from "../../lib/types";
-import { ToolHeader } from "../tools/ToolHeader";
+import { outlines } from "../tools/frame";
+import { ToolFrame } from "../tools/ToolHeader";
 import { Guardian } from "./Guardian";
 
 const MAX_ADDRESSES = 100;
@@ -56,7 +58,8 @@ function summaryHeadline(result: ScanResult): { tone: Tone; title: string } {
 function AddressItem({ item }: { item: AddressAssessment }) {
   const meta = riskMeta[item.risk];
   return (
-    <li className="px-4 py-4 sm:px-5">
+    <li className="relative py-4 pr-4 pl-5 sm:pr-5 sm:pl-6">
+      <span className={`absolute inset-y-0 left-0 w-1 ${tones[meta.tone].mark}`} aria-hidden="true" />
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={meta.tone}>{meta.label} risk</Badge>
         <span className="text-[0.8125rem] text-ink-2">
@@ -125,14 +128,13 @@ function Results({ result, lookedUp }: { result: ScanResult; lookedUp: boolean }
           Nothing was moved or signed: Kestrix only reads public addresses.
         </p>
       </VerdictCard>
-      <section aria-labelledby="btc-addresses-title">
-        <SectionTitle id="btc-addresses-title">Addresses</SectionTitle>
+      <ReportSection id="btc-addresses" icon="listChecks" title="Addresses" count={result.results.length} level={2} flat>
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface-solid">
           {result.results.map((item, i) => (
             <AddressItem key={`${item.input}-${i}`} item={item} />
           ))}
         </ul>
-      </section>
+      </ReportSection>
       <RawJson data={result} filename="kestrix-bitcoin-scan.json" />
     </section>
   );
@@ -140,32 +142,22 @@ function Results({ result, lookedUp }: { result: ScanResult; lookedUp: boolean }
 
 function Before() {
   return (
-    <HelpPanel title="What the scan tells you">
-      <div className="grid gap-6 @2xl:grid-cols-2">
-        <div>
-          <h3 className="font-semibold">For each address</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-            <li>The address type and network.</li>
-            <li>Whether its public key is already visible on chain, hidden or unknown.</li>
-            <li>A risk level, with the reason and what to do next.</li>
-          </ul>
-        </div>
-        <div>
-          <h3 className="font-semibold">What stays uncertain</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-            <li>A hash-based address is unknown until its spend history is checked. Unknown is not safe.</li>
-            <li>The scan is read-only: it cannot move coins and never needs a private key.</li>
-            <li>
-              Moving coins is explained in a{" "}
-              <Link to={dashboardPath("bitcoin/migration/P2PKH")} className="link">
-                migration plan
-              </Link>{" "}
-              per address type.
-            </li>
-          </ul>
-        </div>
+    <ReportOutline sections={outlines.bitcoin}>
+      <div>
+        <h3 className="font-semibold">What stays uncertain</h3>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+          <li>A hash-based address is unknown until its spend history is checked. Unknown is not safe.</li>
+          <li>The scan is read-only: it cannot move coins and never needs a private key.</li>
+          <li>
+            Moving coins is explained in a{" "}
+            <Link to={dashboardPath("bitcoin/migration/P2PKH")} className="link">
+              migration plan
+            </Link>{" "}
+            per address type.
+          </li>
+        </ul>
       </div>
-    </HelpPanel>
+    </ReportOutline>
   );
 }
 
@@ -200,85 +192,112 @@ export default function BitcoinPage() {
   }
 
   const input = (
-    <Panel as="section">
-      <form onSubmit={submit} noValidate className="space-y-5" aria-label="Scan Bitcoin addresses">
-        <div className="flex gap-3 rounded-lg bg-inset px-3.5 py-3 text-[0.875rem]">
-          <Icon name="key" size={18} className="mt-0.5 flex-none text-accent-text" />
-          <p className="text-ink-2">
-            <span className="font-medium text-ink">Only paste public addresses.</span> Kestrix never needs your private keys or
-            seed phrase and will never ask for them. Anyone who asks for your seed phrase is trying to steal your coins.
-          </p>
-        </div>
-        <Field
-          htmlFor="btc-addresses"
-          label="Addresses"
-          hint={
-            <>
-              One per line, up to {MAX_ADDRESSES}.{" "}
-              <span className={tooMany ? "font-medium text-crit" : undefined}>
-                {addresses.length} / {MAX_ADDRESSES}
-              </span>
-            </>
-          }
-          error={error}
-        >
-          <textarea
-            id="btc-addresses"
-            className="field"
-            rows={7}
-            spellCheck={false}
-            autoComplete="off"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              setError(null);
-            }}
-            aria-invalid={error || tooMany ? true : undefined}
-            aria-describedby={`btc-addresses-hint${error ? " btc-addresses-error" : ""}`}
-            placeholder={"bc1q…\n1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"}
-          />
-        </Field>
-        <div className="space-y-3 border-t border-line pt-4">
-          <Switch
-            checked={lookup}
-            onChange={setLookup}
-            label="Look up spend history on the blockchain"
-            description="Off by default. When on, the addresses are sent to mempool.space, a public service, which can link them to your IP address. Without it, risk is judged from the address type alone."
-          />
-          {lookup ? (
-            <Field htmlFor="btc-testnet" label="Test network for test addresses" hint="Only used for tb1 / test-network addresses.">
-              <select
-                id="btc-testnet"
-                className="field max-w-60"
-                value={testnet}
-                onChange={(e) => {
-                  setTestnet(e.target.value === "signet" ? "signet" : "testnet4");
-                }}
-                aria-describedby="btc-testnet-hint"
-              >
-                <option value="testnet4">testnet4</option>
-                <option value="signet">signet</option>
-              </select>
-            </Field>
-          ) : null}
-          <Button type="submit" className="w-full" pending={scan.isPending} pendingLabel="Scanning…">
-            <Icon name="search" size={16} />
-            {lookup ? "Scan and look up on mempool.space" : "Scan addresses"}
-          </Button>
-          <p className="hint">
-            {lookup
-              ? "This sends your addresses and IP address to mempool.space."
-              : "Offline: nothing leaves this computer."}
-          </p>
-        </div>
-      </form>
-    </Panel>
+    <form onSubmit={submit} noValidate aria-label="Scan Bitcoin addresses">
+      <Workspace
+        steps={[
+          {
+            key: "addresses",
+            title: "Public addresses",
+            children: (
+              <>
+                <div className="flex gap-3 rounded-lg bg-inset px-3.5 py-3 text-[0.875rem]">
+                  <Icon name="key" size={18} className="mt-0.5 flex-none text-accent-text" />
+                  <p className="text-ink-2">
+                    <span className="font-medium text-ink">Only paste public addresses.</span> Kestrix never needs your private keys or
+                    seed phrase and will never ask for them. Anyone who asks for your seed phrase is trying to steal your coins.
+                  </p>
+                </div>
+                <Field
+                  htmlFor="btc-addresses"
+                  label="Addresses"
+                  hint={
+                    <>
+                      One per line, up to {MAX_ADDRESSES}.{" "}
+                      <span className={tooMany ? "font-medium text-crit" : undefined}>
+                        {addresses.length} / {MAX_ADDRESSES}
+                      </span>
+                    </>
+                  }
+                  error={error}
+                >
+                  <textarea
+                    id="btc-addresses"
+                    className="field"
+                    rows={7}
+                    spellCheck={false}
+                    autoComplete="off"
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setError(null);
+                    }}
+                    aria-invalid={error || tooMany ? true : undefined}
+                    aria-describedby={`btc-addresses-hint${error ? " btc-addresses-error" : ""}`}
+                    placeholder={"bc1q…\n1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"}
+                  />
+                </Field>
+              </>
+            ),
+          },
+          {
+            key: "lookup",
+            title: "Chain lookup",
+            optional: true,
+            children: (
+              <>
+                <Switch
+                  checked={lookup}
+                  onChange={setLookup}
+                  label="Look up spend history on the blockchain"
+                  description="Off by default. When on, the addresses are sent to mempool.space, a public service, which can link them to your IP address. Without it, risk is judged from the address type alone."
+                />
+                {lookup ? (
+                  <Field htmlFor="btc-testnet" label="Test network for test addresses" hint="Only used for tb1 / test-network addresses.">
+                    <select
+                      id="btc-testnet"
+                      className="field max-w-60"
+                      value={testnet}
+                      onChange={(e) => {
+                        setTestnet(e.target.value === "signet" ? "signet" : "testnet4");
+                      }}
+                      aria-describedby="btc-testnet-hint"
+                    >
+                      <option value="testnet4">testnet4</option>
+                      <option value="signet">signet</option>
+                    </select>
+                  </Field>
+                ) : null}
+              </>
+            ),
+          },
+          {
+            key: "run",
+            title: "Scan",
+            run: true,
+            children: (
+              <>
+                <Button type="submit" className="w-full" pending={scan.isPending} pendingLabel="Scanning…">
+                  <Icon name="search" size={16} />
+                  {lookup ? "Scan and look up on mempool.space" : "Scan addresses"}
+                </Button>
+                <p className="hint">
+                  {lookup
+                    ? "This sends your addresses and IP address to mempool.space."
+                    : "Offline: nothing leaves this computer."}
+                </p>
+              </>
+            ),
+          },
+        ]}
+      />
+    </form>
   );
 
+  const stage = stageOf({ ready: addresses.length > 0, pending: scan.isPending, failed: scan.isError, done: Boolean(scan.data) });
+
   return (
-    <>
-      <ToolHeader page="bitcoin" />
-      <ToolLayout input={input}>
+    <ToolFrame page="bitcoin">
+      <ToolLayout input={input} stage={stage}>
         <LiveStatus
           pending={scan.isPending}
           done={scan.isSuccess}
@@ -306,8 +325,7 @@ export default function BitcoinPage() {
           }}
         />
 
-        <section aria-labelledby="plans-title">
-          <SectionTitle id="plans-title">Migration plans by address type</SectionTitle>
+        <ReportSection id="btc-plans" icon="route" title="Migration plans by address type" level={2} flat>
           <ul className="flex flex-wrap gap-2">
             {(["P2PK", "P2PKH", "P2SH", "P2WPKH", "P2WSH", "P2TR"] as const).map((type) => (
               <li key={type}>
@@ -317,8 +335,8 @@ export default function BitcoinPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </ReportSection>
       </ToolLayout>
-    </>
+    </ToolFrame>
   );
 }

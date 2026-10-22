@@ -11,26 +11,28 @@ import {
   FileDrop,
   FindingList,
   FindingTally,
-  HelpPanel,
   LiveStatus,
   LocalProblem,
   PendingPanel,
   ReasonCode,
+  ReportSection,
   ToolLayout,
   useFocusOnArrival,
   VerdictCard,
 } from "../../components/report";
-import { Badge, CopyButton, Disclosure, Panel, RawJson, SectionTitle, Verdict } from "../../components/ui";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
+import { Badge, CopyButton, Disclosure, RawJson, Verdict } from "../../components/ui";
 import { severityTone, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
 import { slug } from "../../lib/download";
 import { formatBytes, hexOffset, plural } from "../../lib/format";
-import { isHosted } from "../../lib/mode";
+import { maxUploadBytes } from "../../lib/limits";
 import type { ExifStatus, FileReport, Severity } from "../../lib/types";
+import { outlines } from "../tools/frame";
 
 /** The server's upload cap: 50 MB locally, 10 MB on the hosted service. */
 function maxUpload(): number {
-  return (isHosted() ? 10 : 50) * 1024 * 1024;
+  return maxUploadBytes();
 }
 
 const exifText: Record<Exclude<ExifStatus, "ok">, string> = {
@@ -81,7 +83,7 @@ export function FileReportView({ report }: { report: FileReport }) {
     .slice(0, 12);
 
   return (
-    <section aria-labelledby="file-result" className="@container reveal scroll-mt-6 space-y-8">
+    <section aria-labelledby="file-result" className="@container reveal scroll-mt-6 space-y-6">
       <VerdictCard
         tone={verdict.tone}
         label={verdict.label}
@@ -111,11 +113,8 @@ export function FileReportView({ report }: { report: FileReport }) {
       ) : null}
 
       <div className="grid items-start gap-4 @4xl:grid-cols-2">
-        <Panel as="section">
-          <h3 id="type-title" className="font-semibold">
-            File type
-          </h3>
-          <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[0.875rem]">
+        <ReportSection id="file-type" icon="file" title="File type">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[0.875rem]">
             <dt className="text-ink-3">File</dt>
             <dd className="break-all">
               {report.filename} <span className="text-ink-3">({formatBytes(report.size)})</span>
@@ -143,13 +142,10 @@ export function FileReportView({ report }: { report: FileReport }) {
             <dt className="text-ink-3">Printable</dt>
             <dd>{Math.round(report.printable_ratio * 100)}% of bytes are plain text</dd>
           </dl>
-        </Panel>
+        </ReportSection>
 
-        <Panel as="section">
-          <h3 id="hash-title" className="font-semibold">
-            Fingerprints
-          </h3>
-          <p className="hint mt-1">Search the SHA-256 in a malware database to see if others have reported this file.</p>
+        <ReportSection id="file-hashes" icon="fingerprint" title="Fingerprints">
+          <p className="hint">Search the SHA-256 in a malware database to see if others have reported this file.</p>
           <ul className="mt-3 space-y-3">
             {(["sha256", "sha1", "md5", "sha512"] as const).map((name) => (
               <li key={name}>
@@ -159,15 +155,14 @@ export function FileReportView({ report }: { report: FileReport }) {
                   </span>
                   <CopyButton text={report.hashes[name]} label={`Copy ${name.toUpperCase()} hash`} />
                 </div>
-                <code className="block text-[0.75rem] break-all text-ink">{report.hashes[name]}</code>
+                <code className="mt-1 block rounded-md border border-line bg-inset px-2 py-1.5 text-[0.75rem] break-all text-ink">{report.hashes[name]}</code>
               </li>
             ))}
           </ul>
-        </Panel>
+        </ReportSection>
       </div>
 
-      <section aria-labelledby="entropy-title">
-        <SectionTitle id="entropy-title">Entropy across the file</SectionTitle>
+      <ReportSection id="file-entropy" icon="chart" title="Entropy across the file" level={2}>
         <p className="mb-3 max-w-[68ch] text-ink-2">
           Entropy measures how random the bytes look, from 0 to 8 bits per byte. Text sits around 4 to 5; compressed or
           encrypted data sits near 8. Overall: <span className="font-medium text-ink">{report.entropy.overall.toFixed(2)}</span>.
@@ -175,9 +170,7 @@ export function FileReportView({ report }: { report: FileReport }) {
             ? ` ${plural(report.entropy.high_entropy_region_count, "random-looking region")} cover ${formatBytes(report.entropy.high_entropy_bytes)} (shaded).`
             : " No random-looking regions."}
         </p>
-        <div className="panel p-4">
-          <EntropyChart entropy={report.entropy} size={report.size} />
-        </div>
+        <EntropyChart entropy={report.entropy} size={report.size} />
         <div className="mt-3">
           <Disclosure summary="Entropy data table">
             <p className="hint mb-2">
@@ -205,11 +198,13 @@ export function FileReportView({ report }: { report: FileReport }) {
             </div>
           </Disclosure>
         </div>
-      </section>
+      </ReportSection>
 
-      <section aria-labelledby="hist-title">
-        <SectionTitle
-          id="hist-title"
+      <ReportSection
+          id="file-bytes"
+          icon="chart"
+          title="Byte values"
+          level={2}
           aside={
             <label htmlFor={logId} className="flex cursor-pointer items-center gap-2 text-[0.875rem] text-ink-2">
               <input
@@ -225,15 +220,11 @@ export function FileReportView({ report }: { report: FileReport }) {
             </label>
           }
         >
-          Byte values
-        </SectionTitle>
         <p className="mb-3 max-w-[68ch] text-ink-2">
           How often each of the 256 possible byte values appears. Text clusters in the printable band; encrypted data is
           flat across all of them.
         </p>
-        <div className="panel p-4">
-          <ByteHistogram counts={report.byte_histogram} log={log} />
-        </div>
+        <ByteHistogram counts={report.byte_histogram} log={log} />
         <div className="mt-3">
           <Disclosure summary="Most common byte values">
             <table className="data-table">
@@ -260,10 +251,9 @@ export function FileReportView({ report }: { report: FileReport }) {
             </table>
           </Disclosure>
         </div>
-      </section>
+      </ReportSection>
 
-      <section aria-labelledby="exif-title">
-        <SectionTitle id="exif-title">Image metadata (EXIF)</SectionTitle>
+      <ReportSection id="file-exif" icon="pin" title="Image metadata (EXIF)" level={2}>
         {report.exif_status !== "ok" || !report.exif ? (
           <p className="text-ink-2">{report.exif_status === "ok" ? exifText.no_exif : exifText[report.exif_status]}</p>
         ) : (
@@ -298,7 +288,7 @@ export function FileReportView({ report }: { report: FileReport }) {
             </Disclosure>
           </div>
         )}
-      </section>
+      </ReportSection>
 
       <RawJson data={report} filename={`kestrix-forensics-${slug(report.filename)}.json`} />
     </section>
@@ -324,35 +314,54 @@ export function FileAnalyzer() {
   }
 
   const input = (
-    <Panel as="section" className="space-y-4">
-      <FileDrop
-        icon="file"
-        idleTitle="Drop a file here, or choose one"
-        hint={`Any file type, up to ${formatBytes(maxUpload())}.`}
-        chooseLabel="Choose a file"
-        chooseAnotherLabel="Choose another file"
-        file={file}
-        disabled={analyze.isPending}
-        onFile={accept}
-        onClear={() => {
-          setFile(null);
-          setLocalError(null);
-          analyze.reset();
-        }}
-      />
-      {localError ? <LocalProblem title="That file is too large" detail={localError} /> : null}
-      <div className="space-y-2">
-        <p className="flex gap-2 text-[0.875rem] text-ink-2">
-          <Icon name="shield" size={16} className="mt-0.5 flex-none text-ink-3" />
-          <span>The file is read as bytes and never run. Analysis starts as soon as you choose it.</span>
-        </p>
-        <DataNote subject="The file" />
-      </div>
-    </Panel>
+    <Workspace
+      steps={[
+        {
+          key: "file",
+          title: "Choose the file",
+          children: (
+            <>
+              <FileDrop
+                icon="file"
+                idleTitle="Drop a file here, or choose one"
+                hint={`Any file type, up to ${formatBytes(maxUpload())}.`}
+                chooseLabel="Choose a file"
+                chooseAnotherLabel="Choose another file"
+                file={file}
+                disabled={analyze.isPending}
+                onFile={accept}
+                onClear={() => {
+                  setFile(null);
+                  setLocalError(null);
+                  analyze.reset();
+                }}
+              />
+              {localError ? <LocalProblem title="That file is too large" detail={localError} /> : null}
+            </>
+          ),
+        },
+        {
+          key: "run",
+          title: "Analysis",
+          run: true,
+          children: (
+            <>
+              <p className="flex gap-2 text-[0.875rem] text-ink-2">
+                <Icon name="shield" size={16} className="mt-0.5 flex-none text-ink-3" />
+                <span>The file is read as bytes and never run. Analysis starts as soon as you choose it.</span>
+              </p>
+              <DataNote subject="The file" />
+            </>
+          ),
+        },
+      ]}
+    />
   );
 
+  const stage = stageOf({ ready: false, pending: analyze.isPending, failed: analyze.isError, done: Boolean(analyze.data) });
+
   return (
-    <ToolLayout input={input}>
+    <ToolLayout input={input} stage={stage}>
       <LiveStatus
         pending={analyze.isPending}
         done={analyze.isSuccess}
@@ -373,27 +382,22 @@ export function FileAnalyzer() {
       ) : analyze.data ? (
         <FileReportView report={analyze.data} />
       ) : (
-        <HelpPanel title="Inspect a file">
+        <ReportOutline sections={outlines.forensics}>
           <div className="grid gap-6 @2xl:grid-cols-2">
-            <div>
-              <h3 className="font-semibold">What the report contains</h3>
-              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-                <li>Whether the content matches the file name, or the type is a mismatch.</li>
-                <li>SHA-256, SHA-1, MD5 and SHA-512 fingerprints you can copy.</li>
-                <li>Entropy across the file and the byte values, with the random-looking regions marked.</li>
-                <li>Image metadata, including any embedded location, and findings with reason codes.</li>
-              </ul>
-            </div>
             <div>
               <h3 className="font-semibold">Good to know</h3>
               <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
                 <li>The type comes from the file&apos;s bytes, not its extension.</li>
                 <li>No findings is not a guarantee that a file is safe.</li>
-                <li>Use Link to check a web address instead; it is analyzed as text and never opened.</li>
+                <li>Image metadata can include where a photo was taken.</li>
               </ul>
             </div>
+            <div>
+              <h3 className="font-semibold">Checking a web address?</h3>
+              <p className="mt-2 text-ink-2">Use the Link tab. A link is analyzed as text and never opened.</p>
+            </div>
           </div>
-        </HelpPanel>
+        </ReportOutline>
       )}
     </ToolLayout>
   );

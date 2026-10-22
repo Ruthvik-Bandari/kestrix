@@ -7,23 +7,24 @@ import { Icon } from "../../components/Icon";
 import {
   FailedRequest,
   FileDrop,
-  HelpPanel,
   LiveStatus,
   LocalProblem,
   PendingPanel,
   ToolLayout,
 } from "../../components/report";
-import { Button, Disclosure, Field, Panel } from "../../components/ui";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
+import { Button, Disclosure, Field } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
 import type { MailOptions } from "../../lib/types";
-import { isHosted } from "../../lib/mode";
-import { ToolHeader } from "../tools/ToolHeader";
+import { maxMessageBytes } from "../../lib/limits";
+import { outlines } from "../tools/frame";
+import { ToolFrame } from "../tools/ToolHeader";
 import { MailReportView } from "./MailReportView";
 
 /** The server's message cap: 25 MB locally, 10 MB on the hosted service. */
 export function maxMessage(): number {
-  return (isHosted() ? 10 : 25) * 1024 * 1024;
+  return maxMessageBytes();
 }
 export const MAX_PROTECTED_DOMAINS = 20;
 
@@ -41,17 +42,6 @@ function HelpColumns() {
   return (
     <div className="grid gap-6 @2xl:grid-cols-2">
       <div>
-        <h3 className="font-semibold">What the report contains</h3>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-          <li>A verdict in words, with a plain summary and a suggested next step.</li>
-          <li>Findings from most to least severe, each with its evidence and reason code.</li>
-          <li>The message&apos;s subject, sender address, SHA-256 and how many parts, links and attachments it has.</li>
-        </ul>
-        <p className="mt-3 text-[0.875rem] text-ink-3">
-          Links are not visited and attachments are not opened. The score is a heuristic, not a probability.
-        </p>
-      </div>
-      <div>
         <h3 className="font-semibold">Save a message as an .eml file</h3>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-ink-2">
           <li>
@@ -64,6 +54,14 @@ function HelpColumns() {
           </li>
           <li>Come back here and choose the saved file.</li>
         </ol>
+      </div>
+      <div>
+        <h3 className="font-semibold">Good to know</h3>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+          <li>Links are not visited and attachments are not opened.</li>
+          <li>The score is a heuristic, not a probability.</li>
+          <li>The report keeps the subject, sender address and SHA-256, not the message body.</li>
+        </ul>
       </div>
     </div>
   );
@@ -122,82 +120,105 @@ export default function MailPage() {
   }
 
   const input = (
-    <Panel as="section" className="space-y-4">
-      <form onSubmit={submit} className="space-y-4" aria-label="Check a saved email">
-        <FileDrop
-          icon="mail"
-          idleTitle="Drop an .eml file here, or choose one"
-          hint={`An .eml file, up to ${formatBytes(maxMessage())}.`}
-          chooseLabel="Choose an .eml file"
-          chooseAnotherLabel="Choose another .eml file"
-          accept=".eml,message/rfc822"
-          file={file}
-          onFile={choose}
-          onClear={() => {
-            setFile(null);
-            setLocalError(null);
-            analyze.reset();
-          }}
-        />
-        {localError ? <LocalProblem title={localError.title} detail={localError.detail} /> : null}
-
-        <Disclosure summary="Advanced options">
-          <div className="space-y-4">
-            <Field
-              htmlFor="mail-protected"
-              label="Protected domains"
-              optional
-              hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
-            >
-              <input
-                id="mail-protected"
-                className="field font-mono"
-                type="text"
-                spellCheck={false}
-                autoComplete="off"
-                value={domains}
-                onChange={(e) => {
-                  setDomains(e.target.value);
-                }}
-                placeholder="example-bank.com, example.com"
-              />
-            </Field>
-            <Field
-              htmlFor="mail-authserv"
-              label="Trusted authserv-id"
-              optional
-              hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
-            >
-              <input
-                id="mail-authserv"
-                className="field font-mono"
-                type="text"
-                spellCheck={false}
-                autoComplete="off"
-                value={authservId}
-                onChange={(e) => {
-                  setAuthservId(e.target.value);
-                }}
-              />
-            </Field>
-          </div>
-        </Disclosure>
-
-        <div className="space-y-3">
-          <Button type="submit" className="w-full" disabled={!file} pending={analyze.isPending} pendingLabel="Checking…">
-            <Icon name="search" size={16} />
-            Check message
-          </Button>
-          <DataNote subject="The message" />
-        </div>
-      </form>
-    </Panel>
+    <form onSubmit={submit} aria-label="Check a saved email">
+      <Workspace
+        steps={[
+          {
+            key: "message",
+            title: "Choose the message",
+            children: (
+              <>
+                <FileDrop
+                  icon="mail"
+                  idleTitle="Drop an .eml file here, or choose one"
+                  hint={`An .eml file, up to ${formatBytes(maxMessage())}.`}
+                  chooseLabel="Choose an .eml file"
+                  chooseAnotherLabel="Choose another .eml file"
+                  accept=".eml,message/rfc822"
+                  file={file}
+                  onFile={choose}
+                  onClear={() => {
+                    setFile(null);
+                    setLocalError(null);
+                    analyze.reset();
+                  }}
+                />
+                {localError ? <LocalProblem title={localError.title} detail={localError.detail} /> : null}
+              </>
+            ),
+          },
+          {
+            key: "options",
+            title: "Options",
+            optional: true,
+            children: (
+              <Disclosure summary="Advanced options">
+                <div className="space-y-4">
+                  <Field
+                    htmlFor="mail-protected"
+                    label="Protected domains"
+                    optional
+                    hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
+                  >
+                    <input
+                      id="mail-protected"
+                      className="field font-mono"
+                      type="text"
+                      spellCheck={false}
+                      autoComplete="off"
+                      value={domains}
+                      onChange={(e) => {
+                        setDomains(e.target.value);
+                      }}
+                      placeholder="example-bank.com, example.com"
+                    />
+                  </Field>
+                  <Field
+                    htmlFor="mail-authserv"
+                    label="Trusted authserv-id"
+                    optional
+                    hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
+                  >
+                    <input
+                      id="mail-authserv"
+                      className="field font-mono"
+                      type="text"
+                      spellCheck={false}
+                      autoComplete="off"
+                      value={authservId}
+                      onChange={(e) => {
+                        setAuthservId(e.target.value);
+                      }}
+                    />
+                  </Field>
+                </div>
+              </Disclosure>
+            ),
+          },
+          {
+            key: "run",
+            title: "Check it",
+            run: true,
+            children: (
+              <>
+                <Button type="submit" className="w-full" disabled={!file} pending={analyze.isPending} pendingLabel="Checking…">
+                  <Icon name="search" size={16} />
+                  Check message
+                </Button>
+                <DataNote subject="The message" />
+              </>
+            ),
+          },
+        ]}
+      />
+    </form>
   );
 
+  const stage = stageOf({ ready: file !== null, pending: analyze.isPending, failed: analyze.isError, done: Boolean(analyze.data) });
+
   return (
-    <>
-      <ToolHeader page="mail" />
-      <ToolLayout input={input}>
+    <ToolFrame page="mail">
+      <ToolLayout input={input} stage={stage}>
         <LiveStatus
           pending={analyze.isPending}
           done={analyze.isSuccess}
@@ -213,11 +234,11 @@ export default function MailPage() {
         ) : analyze.data ? (
           <MailReportView report={analyze.data} />
         ) : (
-          <HelpPanel title="Check a saved email">
+          <ReportOutline sections={outlines.mail}>
             <HelpColumns />
-          </HelpPanel>
+          </ReportOutline>
         )}
       </ToolLayout>
-    </>
+    </ToolFrame>
   );
 }

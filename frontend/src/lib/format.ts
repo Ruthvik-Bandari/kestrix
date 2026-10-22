@@ -33,3 +33,15 @@ export function shortHash(hash: string): string {
 export function satsToBtc(sats: number): string {
   return `${(sats / 1e8).toLocaleString("en", { minimumFractionDigits: 0, maximumFractionDigits: 8 })} BTC`;
 }
+
+/** How long ago an epoch-seconds time was, in words: "just now", "5 min ago", "2 h ago", "3 days ago". */
+export function ago(epochSeconds: number, nowMs = Date.now()): string {
+  const seconds = Math.max(0, Math.round(nowMs / 1000 - epochSeconds));
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes.toString()} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours.toString()} h ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "1 day ago" : `${days.toString()} days ago`;
+}

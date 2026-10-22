@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { toolPageClient } from "../../test/fakeServer";
 import type { FileReport, UrlReport } from "../../lib/types";
 import ForensicsPage from "./ForensicsPage";
 
 function renderAt(path: string) {
-  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  const client = toolPageClient();
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
@@ -78,7 +79,7 @@ describe("file and link tabs", () => {
     renderAt("/forensics");
     expect(screen.getByRole("tab", { name: "File" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByLabelText(/choose a file/i)).toBeTruthy();
-    expect(screen.getByText(/never run/i)).toBeTruthy();
+    expect(screen.getByText(/read as bytes and never run/i)).toBeTruthy();
   });
 
   it("opens the Link tab from ?tab=url and says the link is never fetched", () => {

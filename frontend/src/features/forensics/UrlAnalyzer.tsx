@@ -8,19 +8,21 @@ import {
   FailedRequest,
   FindingList,
   FindingTally,
-  HelpPanel,
   LiveStatus,
   PendingPanel,
   ReasonCode,
+  ReportSection,
   ToolLayout,
   useFocusOnArrival,
   VerdictCard,
 } from "../../components/report";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
 import type { Tone } from "../../components/tone";
-import { Badge, Button, CopyButton, Field, Panel, RawJson } from "../../components/ui";
+import { Badge, Button, CopyButton, Field, RawJson } from "../../components/ui";
 import { api } from "../../lib/api";
 import { slug } from "../../lib/download";
 import type { UrlReport } from "../../lib/types";
+import { outlines } from "../tools/frame";
 
 export const levelMeta: Record<UrlReport["level"], { tone: Tone; label: string; heading: string; title: string }> = {
   none: {
@@ -71,15 +73,12 @@ export function UrlReportView({ report }: { report: UrlReport }) {
         <p>{report.score_note}</p>
       </VerdictCard>
 
-      <Panel as="section">
-        <h3 id="url-parts" className="font-semibold">
-          How the link breaks down
-        </h3>
-        <p className="hint mt-1">The link is analyzed as text. It was not opened or fetched.</p>
+      <ReportSection id="url-parts" icon="link" title="How the link breaks down">
+        <p className="hint">The link is analyzed as text. It was not opened or fetched.</p>
         <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-2 text-[0.875rem]">
           <dt className="text-ink-3">Link</dt>
           <dd className="min-w-0">
-            <code className="block break-all text-ink">{report.url}</code>
+            <code className="block rounded-md border border-line bg-inset px-2 py-1.5 break-all text-ink">{report.url}</code>
             <CopyButton text={report.url} label="Copy the link as text" className="-ml-2 mt-1" />
           </dd>
           <dt className="text-ink-3">Scheme</dt>
@@ -100,7 +99,7 @@ export function UrlReportView({ report }: { report: UrlReport }) {
             ) : null}
           </dd>
         </dl>
-      </Panel>
+      </ReportSection>
 
       {report.findings.length > 0 ? (
         <FindingList
@@ -135,40 +134,57 @@ export function UrlAnalyzer() {
   }
 
   const input = (
-    <Panel as="section">
-      <form onSubmit={submit} className="space-y-4">
-        <Field
-          htmlFor="url-input"
-          label="Link to check"
-          hint="Paste a link from an email or message. It is analyzed as text only and never opened."
-        >
-          <input
-            id="url-input"
-            className="field font-mono"
-            type="text"
-            inputMode="url"
-            spellCheck={false}
-            autoComplete="off"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-            }}
-            placeholder="https://"
-          />
-        </Field>
-        <div className="space-y-3">
-          <Button type="submit" className="w-full" disabled={!url.trim()} pending={check.isPending} pendingLabel="Checking…">
-            <Icon name="search" size={16} />
-            Check link
-          </Button>
-          <DataNote subject="The link" />
-        </div>
-      </form>
-    </Panel>
+    <form onSubmit={submit} aria-label="Check a link">
+      <Workspace
+        steps={[
+          {
+            key: "link",
+            title: "Paste the link",
+            children: (
+              <Field
+                htmlFor="url-input"
+                label="Link to check"
+                hint="Paste a link from an email or message. It is analyzed as text only and never opened."
+              >
+                <input
+                  id="url-input"
+                  className="field font-mono"
+                  type="text"
+                  inputMode="url"
+                  spellCheck={false}
+                  autoComplete="off"
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                  }}
+                  placeholder="https://"
+                />
+              </Field>
+            ),
+          },
+          {
+            key: "run",
+            title: "Check it",
+            run: true,
+            children: (
+              <>
+                <Button type="submit" className="w-full" disabled={!url.trim()} pending={check.isPending} pendingLabel="Checking…">
+                  <Icon name="search" size={16} />
+                  Check link
+                </Button>
+                <DataNote subject="The link" />
+              </>
+            ),
+          },
+        ]}
+      />
+    </form>
   );
 
+  const stage = stageOf({ ready: url.trim().length > 0, pending: check.isPending, failed: check.isError, done: Boolean(check.data) });
+
   return (
-    <ToolLayout input={input}>
+    <ToolLayout input={input} stage={stage}>
       <LiveStatus
         pending={check.isPending}
         done={check.isSuccess}
@@ -184,29 +200,17 @@ export function UrlAnalyzer() {
       ) : check.data ? (
         <UrlReportView report={check.data} />
       ) : (
-        <HelpPanel title="Check a link">
-          <div className="grid gap-6 @2xl:grid-cols-2">
-            <div>
-              <h3 className="font-semibold">What the report contains</h3>
-              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-                <li>The link split into scheme, subdomain, registered domain and host.</li>
-                <li>
-                  Signals that fired, such as look-alike characters or a brand name inside another domain, each with a reason
-                  code.
-                </li>
-                <li>A heuristic level and score. It is a rule-based estimate, not a probability.</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold">Good to know</h3>
-              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-                <li>The link is never opened, fetched or resolved, so a page that has since changed is not seen.</li>
-                <li>No signals is not a guarantee the link is safe.</li>
-                <li>Prefer typing a known address yourself over following an unexpected link.</li>
-              </ul>
-            </div>
+        <ReportOutline sections={outlines["forensics-url"]}>
+          <div>
+            <h3 className="font-semibold">Good to know</h3>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+              <li>The link is never opened, fetched or resolved, so a page that has since changed is not seen.</li>
+              <li>No signals is not a guarantee the link is safe.</li>
+              <li>The level and score are a rule-based estimate, not a probability.</li>
+              <li>Prefer typing a known address yourself over following an unexpected link.</li>
+            </ul>
           </div>
-        </HelpPanel>
+        </ReportOutline>
       )}
     </ToolLayout>
   );

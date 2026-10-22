@@ -8,18 +8,20 @@ import {
   FailedRequest,
   FindingList,
   FindingTally,
-  HelpPanel,
   LiveStatus,
   PendingPanel,
   ReasonCode,
+  ReportSection,
   ToolLayout,
   useFocusOnArrival,
   VerdictCard,
 } from "../../components/report";
-import { Badge, Button, cx, Disclosure, Field, Panel, RawJson } from "../../components/ui";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
+import { Badge, Button, cx, Disclosure, Field, RawJson } from "../../components/ui";
 import { tones, type Tone } from "../../components/tone";
 import { api } from "../../lib/api";
-import { ToolHeader } from "../tools/ToolHeader";
+import { outlines } from "../tools/frame";
+import { ToolFrame } from "../tools/ToolHeader";
 import { isHosted } from "../../lib/mode";
 import { slug } from "../../lib/download";
 import { plural } from "../../lib/format";
@@ -193,14 +195,14 @@ function ProfilePanel({
     [`API calls in scripts${where}`, ev.api_markers],
   ];
   return (
-    <Panel as="section" className="@2xl:col-span-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id="profile-title" className="font-semibold">
-          Site profile
-        </h3>
-        <Badge tone={profile.kind === "dynamic" ? "med" : "ok"}>{text.label}</Badge>
-      </div>
-      <p className="mt-2 max-w-[68ch] text-ink-2">
+    <ReportSection
+      id="web-profile"
+      icon="fileSearch"
+      title="Site profile"
+      className="@2xl:col-span-2"
+      aside={<Badge tone={profile.kind === "dynamic" ? "med" : "ok"}>{text.label}</Badge>}
+    >
+      <p className="max-w-[68ch] text-ink-2">
         {text.explain} Findings whose risk depends on what a site does are weighed for this profile; each one says when it
         was. HSTS, TLS and cookie flags are never lowered.
       </p>
@@ -231,7 +233,7 @@ function ProfilePanel({
           ))}
         </ul>
       </div>
-    </Panel>
+    </ReportSection>
   );
 }
 
@@ -279,23 +281,20 @@ function PagesChecked({ report }: { report: WebReport }) {
     (v) => [v, pages.filter((p) => p.found_via === v).length] as const,
   );
   return (
-    <section aria-labelledby="pages-title">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3
-          id="pages-title"
-          className="text-xl font-semibold tracking-[-0.015em]"
-        >
-          Pages checked
-        </h3>
-        <p className="text-[0.875rem] text-ink-2">
-          {plural(checked.length, "page")} checked of{" "}
-          {plural(pages.length, "page")} requested
-          {report.requests_sent
-            ? ` · ${plural(report.requests_sent, "request")} sent`
-            : ""}
-        </p>
-      </div>
-      <p className="mt-1 max-w-[80ch] text-[0.8125rem] text-ink-3">
+    <ReportSection
+      id="web-pages"
+      icon="globe"
+      title="Pages checked"
+      level={2}
+      flat
+      aside={
+        <>
+          {plural(checked.length, "page")} checked of {plural(pages.length, "page")} requested
+          {report.requests_sent ? ` · ${plural(report.requests_sent, "request")} sent` : ""}
+        </>
+      }
+    >
+      <p className="max-w-[80ch] text-[0.8125rem] text-ink-3">
         {via
           .map(
             ([v, n]) =>
@@ -381,7 +380,7 @@ function PagesChecked({ report }: { report: WebReport }) {
           </tbody>
         </table>
       </div>
-    </section>
+    </ReportSection>
   );
 }
 
@@ -505,12 +504,9 @@ export function WebReportView({ report }: { report: WebReport }) {
       ) : null}
 
       {report.findings.length === 0 ? (
-        <section aria-labelledby="findings-title">
-          <h3 id="findings-title" className="text-xl font-semibold tracking-[-0.015em]">
-            Findings
-          </h3>
-          <p className="mt-2 text-ink-2">Nothing to report: every header check passed.</p>
-        </section>
+        <ReportSection id="web-findings" icon="listChecks" title="Findings" count={0} level={2} flat>
+          <p className="text-ink-2">Nothing to report: every header check passed.</p>
+        </ReportSection>
       ) : (
         <FindingList
           id="web-findings"
@@ -550,14 +546,8 @@ export function WebReportView({ report }: { report: WebReport }) {
       ) : null}
 
       <div className="grid items-start gap-4 @2xl:grid-cols-2">
-        <Panel as="section">
-          <div className="flex items-center justify-between gap-2">
-            <h3 id="tls-title" className="font-semibold">
-              Certificate and TLS
-            </h3>
-            <Badge tone={tls.tone}>{tls.label}</Badge>
-          </div>
-          <p className="mt-2 text-ink-2">{report.tls.detail ?? tls.explain}</p>
+        <ReportSection id="web-tls" icon="lock" title="Certificate and TLS" aside={<Badge tone={tls.tone}>{tls.label}</Badge>}>
+          <p className="text-ink-2">{report.tls.detail ?? tls.explain}</p>
           <dl className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-[0.875rem]">
             <dt className="text-ink-3">Host</dt>
             <dd className="font-mono break-all">{report.tls.host}</dd>
@@ -587,14 +577,11 @@ export function WebReportView({ report }: { report: WebReport }) {
               </>
             ) : null}
           </dl>
-        </Panel>
+        </ReportSection>
 
-        <Panel as="section">
-          <h3 id="redirect-title" className="font-semibold">
-            Redirect chain
-          </h3>
+        <ReportSection id="web-redirects" icon="route" title="Redirect chain" count={report.redirect_chain.length}>
           {report.redirect_chain.length === 0 ? (
-            <p className="mt-2 text-ink-2">No response was received.</p>
+            <p className="text-ink-2">No response was received.</p>
           ) : (
             <ol className="mt-3 space-y-3">
               {report.redirect_chain.map((hop, i) => (
@@ -612,7 +599,7 @@ export function WebReportView({ report }: { report: WebReport }) {
               ))}
             </ol>
           )}
-        </Panel>
+        </ReportSection>
 
         {report.profile ? (
           <ProfilePanel profile={report.profile} scope={scope} />
@@ -686,50 +673,25 @@ function ScopeChoice({
 
 function HelpColumns({ hosted }: { hosted: boolean }) {
   return (
-    <div className="grid gap-6 @2xl:grid-cols-2">
-      <div>
-        <h3 className="font-semibold">What the report contains</h3>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-          <li>A grade from A to F with the score and how it was worked out.</li>
-          <li>
-            Findings with the failed checks first, each with the evidence seen
-            and how to fix it.
-          </li>
-          <li>
-            The certificate and TLS result, the redirect chain and a profile of
-            the site.
-          </li>
-          <li>
-            For a whole-site check, a table of the pages checked and which pages
-            each finding was seen on.
-          </li>
-        </ul>
-      </div>
-      <div>
-        <h3 className="font-semibold">What the check does</h3>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-          <li>
-            Whole site (the default): up to 50 read-only GET requests, one at a
-            time, to the page you name, the pages it links to, the pages in its
-            sitemap and six common login addresses (/login, /signin, /admin,
-            /admin/login, /account, /wp-login.php), plus one TLS handshake.
-          </li>
-          <li>
-            Just this page: one GET request (plus any redirects) and one TLS
-            handshake.
-          </li>
-          <li>
-            It reads HTTPS, the certificate, security headers and cookies. It
-            never submits a form, logs in, follows a link to another site or
-            attacks anything.
-          </li>
-          {hosted ? (
-            <li>Public addresses only. Private and local addresses are refused on the hosted service.</li>
-          ) : (
-            <li>Private and local addresses are refused unless you allow them under Optional settings.</li>
-          )}
-        </ul>
-      </div>
+    <div>
+      <h3 className="font-semibold">What the check does</h3>
+      <ul className="mt-2 grid list-disc gap-x-8 gap-y-1.5 pl-5 text-ink-2 @2xl:grid-cols-2">
+        <li>
+          Whole site (the default): up to 50 read-only GET requests, one at a time, to the page you name, the pages it
+          links to, the pages in its sitemap and six common login addresses (/login, /signin, /admin, /admin/login,
+          /account, /wp-login.php), plus one TLS handshake.
+        </li>
+        <li>Just this page: one GET request (plus any redirects) and one TLS handshake.</li>
+        <li>
+          It reads HTTPS, the certificate, security headers and cookies. It never submits a form, logs in, follows a link
+          to another site or attacks anything.
+        </li>
+        {hosted ? (
+          <li>Public addresses only. Private and local addresses are refused on the hosted service.</li>
+        ) : (
+          <li>Private and local addresses are refused unless you allow them under Optional settings.</li>
+        )}
+      </ul>
     </div>
   );
 }
@@ -783,128 +745,146 @@ export default function WebcheckPage() {
   }
 
   const input = (
-    <Panel as="section">
-      <form
-        onSubmit={submit}
-        className="space-y-4"
-        aria-describedby="webcheck-notice"
-      >
-        <Field
-          htmlFor="webcheck-url"
-          label="Website address"
-          hint="For example example.com or https://example.com/login"
-        >
-          <input
-            id="webcheck-url"
-            className="field"
-            type="text"
-            inputMode="url"
-            autoComplete="url"
-            spellCheck={false}
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-            }}
-            placeholder="https://"
-          />
-        </Field>
-
-        <ScopeChoice scope={scope} onChange={setScope} />
-
-        <label className="flex cursor-pointer gap-3">
-          <input
-            type="checkbox"
-            className="check"
-            checked={authorized}
-            onChange={(e) => {
-              setAuthorized(e.target.checked);
-            }}
-          />
-          <span>
-            <span className="font-medium">
-              {hosted ? "I own this website or am authorized to test it" : "I own this site or am authorized to test it"}
-            </span>
-            <span className="hint block">Required. Scanning sites without permission may break their terms or the law.</span>
-          </span>
-        </label>
-
-        <Disclosure summary="Optional settings">
-          <div className="space-y-4">
-            <Field
-              htmlFor="webcheck-site-type"
-              label="What is this site?"
-              optional
-              hint="Detected from the pages if left blank. Choosing a type can only make the check stricter, never more lenient."
-            >
-              <select
-                id="webcheck-site-type"
-                className="field"
-                value={siteType}
-                onChange={(e) => {
-                  setSiteType(e.target.value as SiteKind | "");
-                }}
-              >
-                <option value="">Detect from the pages</option>
-                <option value="static">Pages only: no logins or forms</option>
-                <option value="static_api">
-                  A site with a form: a contact form or API calls, no accounts
-                </option>
-                <option value="dynamic">
-                  A site with logins: accounts, sessions or checkout
-                </option>
-              </select>
-            </Field>
-            {hosted ? null : (
-              <label className="flex cursor-pointer gap-3">
-                <input
-                  type="checkbox"
-                  className="check"
-                  checked={allowPrivate}
-                  onChange={(e) => {
-                    setAllowPrivate(e.target.checked);
-                  }}
-                />
-                <span>
-                  <span className="font-medium">Allow private and local addresses</span>
-                  <span className="hint block">For a lab or home server you own, such as 192.168.x.x or localhost.</span>
-                </span>
-              </label>
-            )}
-          </div>
-        </Disclosure>
-
-        <div className="space-y-3">
-          <p
-            id="webcheck-notice"
-            className="flex gap-2 rounded-lg bg-inset px-3 py-2.5 text-[0.875rem] text-ink-2"
-          >
-            <Icon
-              name="info"
-              size={18}
-              className="mt-0.5 flex-none text-ink-3"
-            />
-            {noticeFor(scope, hosted)}
-          </p>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={!canScan && !scan.isPending}
-            pending={scan.isPending}
-            pendingLabel="Scanning…"
-          >
-            <Icon name="search" size={16} />
-            Scan
-          </Button>
-          {!authorized ? <p className="hint">Confirm authorization to enable scanning.</p> : null}
-        </div>
-      </form>
-    </Panel>
+    <form onSubmit={submit} aria-describedby="webcheck-notice">
+      <Workspace
+        steps={[
+          {
+            key: "address",
+            title: "Address and scope",
+            children: (
+              <>
+                <Field
+                  htmlFor="webcheck-url"
+                  label="Website address"
+                  hint="For example example.com or https://example.com/login"
+                >
+                  <input
+                    id="webcheck-url"
+                    className="field"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    spellCheck={false}
+                    value={url}
+                    onChange={(e) => {
+                      setUrl(e.target.value);
+                    }}
+                    placeholder="https://"
+                  />
+                </Field>
+                <ScopeChoice scope={scope} onChange={setScope} />
+              </>
+            ),
+          },
+          {
+            key: "options",
+            title: "Options",
+            optional: true,
+            children: (
+              <Disclosure summary="Optional settings">
+                <div className="space-y-4">
+                  <Field
+                    htmlFor="webcheck-site-type"
+                    label="What is this site?"
+                    optional
+                    hint="Detected from the pages if left blank. Choosing a type can only make the check stricter, never more lenient."
+                  >
+                    <select
+                      id="webcheck-site-type"
+                      className="field"
+                      value={siteType}
+                      onChange={(e) => {
+                        setSiteType(e.target.value as SiteKind | "");
+                      }}
+                    >
+                      <option value="">Detect from the pages</option>
+                      <option value="static">Pages only: no logins or forms</option>
+                      <option value="static_api">
+                        A site with a form: a contact form or API calls, no accounts
+                      </option>
+                      <option value="dynamic">
+                        A site with logins: accounts, sessions or checkout
+                      </option>
+                    </select>
+                  </Field>
+                  {hosted ? null : (
+                    <label className="flex cursor-pointer gap-3">
+                      <input
+                        type="checkbox"
+                        className="check"
+                        checked={allowPrivate}
+                        onChange={(e) => {
+                          setAllowPrivate(e.target.checked);
+                        }}
+                      />
+                      <span>
+                        <span className="font-medium">Allow private and local addresses</span>
+                        <span className="hint block">For a lab or home server you own, such as 192.168.x.x or localhost.</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </Disclosure>
+            ),
+          },
+          {
+            key: "consent",
+            title: "Authorization",
+            children: (
+              <>
+                <label className="flex cursor-pointer gap-3">
+                  <input
+                    type="checkbox"
+                    className="check"
+                    checked={authorized}
+                    onChange={(e) => {
+                      setAuthorized(e.target.checked);
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">
+                      {hosted ? "I own this website or am authorized to test it" : "I own this site or am authorized to test it"}
+                    </span>
+                    <span className="hint block">Required. Scanning sites without permission may break their terms or the law.</span>
+                  </span>
+                </label>
+                <p id="webcheck-notice" className="flex gap-2 rounded-lg bg-inset px-3 py-2.5 text-[0.875rem] text-ink-2">
+                  <Icon name="info" size={18} className="mt-0.5 flex-none text-ink-3" />
+                  {noticeFor(scope, hosted)}
+                </p>
+              </>
+            ),
+          },
+          {
+            key: "run",
+            title: "Scan",
+            run: true,
+            children: (
+              <>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!canScan && !scan.isPending}
+                  pending={scan.isPending}
+                  pendingLabel="Scanning…"
+                >
+                  <Icon name="search" size={16} />
+                  Scan
+                </Button>
+                {!authorized ? <p className="hint">Confirm authorization to enable scanning.</p> : null}
+              </>
+            ),
+          },
+        ]}
+      />
+    </form>
   );
 
+  const stage = stageOf({ ready: canScan, pending: scan.isPending, failed: scan.isError, done: Boolean(scan.data) });
+
   return (
-    <>
-      <ToolHeader page="webcheck" />
-      <ToolLayout input={input}>
+    <ToolFrame page="webcheck">
+      <ToolLayout input={input} stage={stage}>
         <LiveStatus
           pending={scan.isPending}
           done={scan.isSuccess}
@@ -922,11 +902,11 @@ export default function WebcheckPage() {
         ) : scan.data ? (
           <WebReportView report={scan.data} />
         ) : (
-          <HelpPanel title="Check a website">
+          <ReportOutline sections={outlines.webcheck}>
             <HelpColumns hosted={hosted} />
-          </HelpPanel>
+          </ReportOutline>
         )}
       </ToolLayout>
-    </>
+    </ToolFrame>
   );
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useSearchParams } from "react-router";
 import { Tabs } from "../../components/Tabs";
-import { ToolHeader } from "../tools/ToolHeader";
+import { ToolFrame } from "../tools/ToolHeader";
 import { FileAnalyzer } from "./FileAnalyzer";
 import { UrlAnalyzer } from "./UrlAnalyzer";
 
@@ -12,8 +12,7 @@ export default function ForensicsPage() {
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get("tab") === "url" ? "url" : "file";
   return (
-    <>
-      <ToolHeader page="forensics" />
+    <ToolFrame page="forensics" variant={tab === "url" ? "forensics-url" : "forensics"}>
       <Tabs<Tab>
         label="What to analyze"
         value={tab}
@@ -27,6 +26,6 @@ export default function ForensicsPage() {
       >
         {tab === "file" ? <FileAnalyzer /> : <UrlAnalyzer />}
       </Tabs>
-    </>
+    </ToolFrame>
   );
 }

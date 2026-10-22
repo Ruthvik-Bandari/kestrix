@@ -125,3 +125,12 @@ Mode-specific copy should say where processing occurs. Reports retained for 30 d
 Do not port the prototype toolbar, sample table data, mode selector, temporary mark or preview dialogs into production by accident.
 
 The source-message illustration is available only because the bundled synthetic fixture includes the original message. `MailReport` does not contain the full body, Reply-To or source date. For actual report/history views, replace that illustration with available subject/from/hash metadata and findings. Do not extend retention or input parsing to reproduce an illustrative panel. The curated next step is proposed UI copy, not a backend-provided recommendation field.
+
+## Tool page template
+
+Every tool and guide page shares one frame (`components/toolframe.tsx`, `features/tools/ToolHeader.tsx`, wording in `features/tools/frame.ts`):
+
+- **Header band:** icon tile, name, one-line purpose with the in-app docs link, capability chips (where it runs, limits, what it never does), the user's own saved-report count and latest verdict when history is on and has results for that tool, and a three-step rail (Add the input, Read the evidence, Decide) whose current step follows the page's real state.
+- **Body:** a 24rem numbered workspace column beside a flexible report column from 1100px; stacked, input first, below. Before a result the report column shows an outline of the report's sections (headings only); after one it shows the report and the workspace column adds a sticky jump list.
+- **Report sections** use `ReportSection` (icon, heading, count); findings carry a left severity rule next to the severity icon and label; evidence sits in a labelled monospace inset.
+- Guide pages use the same band with a link rail (Set it up, Use it, Fix problems) and a two-column checklist.

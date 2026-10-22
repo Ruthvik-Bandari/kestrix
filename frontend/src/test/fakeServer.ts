@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
+import { QueryClient } from "@tanstack/react-query";
 import { vi } from "vitest";
+import { keys } from "../lib/queries";
+import type { HistoryPage } from "../lib/types";
 
 export interface Call {
   method: string;
@@ -49,3 +52,14 @@ export const SIGNED_IN = {
   csrf_token: "csrf-token-1",
   access_expires_at: Math.floor(Date.now() / 1000) + 900,
 };
+
+/**
+ * A query client for the tool-page tests with the saved-results query already answered ("history is
+ * off"), so the header's history strip makes no request and a test sees only the calls it cares about.
+ * Pass `history` to show saved reports in that strip.
+ */
+export function toolPageClient(history: HistoryPage = { enabled: false, retention_days: 30, page: 1, per_page: 20, total: 0, items: [] }): QueryClient {
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false }, mutations: { retry: false } } });
+  client.setQueryData(keys.historyPage(1), history);
+  return client;
+}

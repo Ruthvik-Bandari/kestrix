@@ -87,7 +87,7 @@ export function SiteFooter() {
             </li>
             <li>
               <a className="link" href={site.repoUrl}>
-                GitHub repository
+                Source code
               </a>
             </li>
             <li>
