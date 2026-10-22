@@ -70,7 +70,7 @@ export const docTree: TreeSection[] = [
   },
   {
     title: "Reference",
-    nodes: ["reference/cli", "reference/http-api", "reference/configuration", "reference/licenses", "reference/whats-new"].map((path) => ({ path })),
+    nodes: ["reference/architecture", "reference/cli", "reference/http-api", "reference/configuration", "reference/licenses", "reference/whats-new"].map((path) => ({ path })),
   },
 ];
 
@@ -123,6 +123,7 @@ const SOURCES: Record<string, string[]> = {
   "security/data-handling": ["docs/security-model.md", "docs/hosted.md", "docs/modules/*.md"],
   "security/authorized-use": ["docs/modules/webcheck.md", "docs/hosted.md"],
   "security/supply-chain": ["docs/release.md", "NOTICE", ".github/workflows/release.yml"],
+  "reference/architecture": ["README.md", "docs/security-model.md", "docs/hosted.md"],
   "reference/cli": ["kestrix --help"],
   "reference/http-api": ["docs/api.md"],
   "reference/configuration": ["docs/security-model.md", "docs/modules/code.md"],
@@ -137,6 +138,7 @@ const TYPES: Record<string, PageMeta["type"]> = {
   "getting-started/troubleshooting": "how-to",
   "security/reporting": "how-to",
   "code-security/rules": "reference",
+  "reference/architecture": "reference",
   "reference/cli": "reference",
   "reference/http-api": "reference",
   "reference/configuration": "reference",

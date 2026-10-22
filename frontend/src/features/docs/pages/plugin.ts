@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { toolFor } from "../../../app/tools";
-import { guide, list, note, p, pages, section, see, table } from "../blocks";
+import { diagram, guide, list, note, p, pages, section, see, table } from "../blocks";
+import { pluginFlowDiagram } from "../diagrams";
 import type { DocPage } from "../model";
 import { ref } from "./helpers";
 
@@ -47,6 +48,7 @@ export const pluginPages: DocPage[] = [
     nav: "Hooks",
     summary: "What runs before and after each edit, the opt-in Stop gate, the install guard and the session-start message.",
     sections: [
+      section("How the plugin works", diagram(pluginFlowDiagram)),
       section(
         "The hooks at a glance",
         table(

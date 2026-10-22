@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { PRIVACY_PATH, TERMS_PATH } from "../../../app/paths";
 import { INSTALL_AI, INSTALL_DASHBOARD, INSTALL_EXIF, INSTALL_KESTRIX, INSTALL_SCAN, PYPI_PENDING } from "../../tools/content";
-import { code, list, note, p, section, see, steps, table, type Block } from "../blocks";
+import { code, diagram, list, note, p, section, see, steps, table, type Block } from "../blocks";
+import { architectureDiagram } from "../diagrams";
 import type { DocPage } from "../model";
 import { HOSTED_DOC_PATH } from "../model";
 
@@ -54,6 +55,8 @@ export const gettingStartedPages: DocPage[] = [
           "Detection repair replays rules on a pinned Elasticsearch 8.19.3 that you start with Docker; it is the only matching oracle.",
           "`kestrix-scan` stands alone, and the workbench and the Claude Code plugin both call it.",
         ),
+        diagram(architectureDiagram),
+        see("Architecture: what crosses each boundary", "reference/architecture"),
       ),
       section(
         "On your computer, or on the hosted service",

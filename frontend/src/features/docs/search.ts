@@ -39,6 +39,10 @@ export function blockText(block: Block): string {
       return block.code;
     case "table":
       return [block.caption ?? "", ...block.rows.flat()].join(" ");
+    case "diagram": {
+      const d = block.diagram;
+      return [d.title, d.summary, ...d.nodes.flatMap((n) => [n.label, n.sublabel ?? ""]), ...d.edges.map((e) => e.label ?? "")].join(" ");
+    }
     case "tools":
       return tools.map((tool) => `${tool.name} ${tool.summary}`).join(" ");
     case "pages":

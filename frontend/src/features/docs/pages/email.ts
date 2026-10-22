@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { guide, list, note, p, section, see, steps, table } from "../blocks";
+import { diagram, guide, list, note, p, section, see, steps, table } from "../blocks";
+import { emailFlowDiagram } from "../diagrams";
 import type { DocPage } from "../model";
 import { LIMITS_NAV, ref, toolOverview } from "./helpers";
 
@@ -17,6 +18,7 @@ export const emailPages: DocPage[] = [
     summary: "The parser, the six analyzers, which authentication header is trusted, and how the verdict and score are decided.",
     sections: [
       ref("mail", "How it works"),
+      section("How a check flows", diagram(emailFlowDiagram)),
       section(
         "Which authentication results are trusted",
         p(

@@ -9,6 +9,7 @@ import { Command, Inline } from "../tools/parts";
 import { ToolGuide } from "../tools/ToolGuide";
 import type { Block } from "./blocks";
 import { pageAt } from "./content";
+import { DiagramView } from "./DiagramView";
 import { TOOL_DOC_PATH } from "./model";
 import { useDocPath } from "./scope";
 
@@ -149,6 +150,8 @@ export function BlockView({ block }: { block: Block }) {
           </p>
         </aside>
       );
+    case "diagram":
+      return <DiagramView diagram={block.diagram} />;
     case "tools":
       return (
         <ul className={cx(PROSE, "space-y-2.5")}>

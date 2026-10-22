@@ -1,12 +1,39 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { code, list, note, p, section, see, table } from "../blocks";
+import { code, diagram, list, note, p, section, see, table } from "../blocks";
+import { architectureDiagram } from "../diagrams";
 import type { DocPage } from "../model";
 import { HOSTED_DOC_PATH } from "../model";
 
 /* Follows `kestrix --help`, docs/api.md, docs/security-model.md, docs/hosted.md, NOTICE and docs/research/dataset-licenses.md. */
 
 export const referencePages: DocPage[] = [
+  {
+    path: "reference/architecture",
+    title: "Architecture",
+    nav: "Architecture",
+    summary: "How the ways in, the server, the shared core and kestrix-scan fit together, and what crosses each trust boundary.",
+    sections: [
+      section(
+        "Overview",
+        p("Every way of using Kestrix reaches the same core functions, so a result is the same from the command line, the dashboard, the hosted service or Claude Code. Dashed arrows leave your machine, and only when you ask for it."),
+        diagram(architectureDiagram),
+      ),
+      section(
+        "What crosses each boundary",
+        table(
+          ["Boundary", "What crosses it"],
+          [
+            ["Your machine to the internet", "Nothing by default. Website checks, the Bitcoin chain lookup, the AI guardian and `db update` connect only when you start them."],
+            ["Browser to the hosted server", "Your upload or URL, over HTTPS with sign-in, CSRF and rate limits. Uploads are processed in a worker and never stored; the report is kept 30 days, encrypted."],
+            ["Claude Code to kestrix-scan", "The files Claude edits, scanned locally; only new findings go back to Claude as context."],
+          ],
+        ),
+        see("The threat model", "security/threat-model"),
+        see("The hosted service", HOSTED_DOC_PATH),
+      ),
+    ],
+  },
   {
     path: "reference/cli",
     title: "CLI commands",
