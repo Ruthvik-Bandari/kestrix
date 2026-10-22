@@ -399,7 +399,8 @@ def test_scanner_problems_fail_open_and_are_visible(
 ) -> None:
     monkeypatch.setenv("PATH", str(_fake_kestrix(tmp_path, body)))
     monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "data"))
-    monkeypatch.setattr(module, "SCAN_TIMEOUT_S", 0.5)
+    # Only the sleeping scanner should time out; the others get room to start on a loaded machine.
+    monkeypatch.setattr(module, "SCAN_TIMEOUT_S", 0.5 if "sleep" in body else 10.0)
     target = tmp_path / "app.py"
     target.write_text(VULNERABLE)
     payload = {"session_id": "s", "cwd": str(tmp_path), "tool_input": {"file_path": str(target)}}
