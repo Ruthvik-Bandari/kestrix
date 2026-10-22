@@ -21,12 +21,12 @@ export const securityPages: DocPage[] = [
       section(
         "Report it privately",
         steps(
-          "Open a new private security advisory for the Kestrix repository (private vulnerability reporting).",
+          "Email ruthvik299@gmail.com with a subject that starts with \"Kestrix security\". If you can see the Kestrix repository, you can use its private vulnerability reporting (a private security advisory) instead.",
           "Describe the issue, the affected version or commit, and the steps to reproduce it. A minimal proof of concept helps.",
           "Say whether you want to be credited, and under what name.",
         ),
-        note("Reports go through the repository's private vulnerability reporting (a private advisory). A contact address for people without repository access will be published before the public release.", "info"),
-        note("Do not open a public issue, pull request or discussion for a vulnerability. Kestrix has a single maintainer, so response times vary. You get a reply in the advisory thread, and the fix, the advisory and the credit are coordinated with you there.", "caution"),
+        note("Security contact: ruthvik299@gmail.com. Use it for vulnerability reports only; it is read by the single maintainer.", "info"),
+        note("Do not open a public issue, pull request or discussion for a vulnerability. Kestrix has a single maintainer, so response times vary. You get a reply by email (or in the advisory thread), and the fix, the advisory and the credit are coordinated with you there.", "caution"),
       ),
       section(
         "Supported versions",

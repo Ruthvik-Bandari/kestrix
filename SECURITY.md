@@ -4,13 +4,13 @@ If you find a vulnerability in Kestrix, report it privately so it can be fixed b
 
 ## Report a vulnerability
 
-Use GitHub private vulnerability reporting:
+Email **ruthvik299@gmail.com** with a subject that starts with "Kestrix security", or, if you have access to this repository, use GitHub private vulnerability reporting:
 
-1. Open the [new security advisory form](https://github.com/Ruthvik-Bandari/kestrix/security/advisories/new) for this repository.
+1. Email the address above, or open the [new security advisory form](https://github.com/Ruthvik-Bandari/kestrix/security/advisories/new) for this repository.
 2. Describe the issue, the affected version or commit, and the steps to reproduce it. A minimal proof of concept helps.
 3. Say whether you want to be credited, and under what name.
 
-Do not open a public issue, pull request or discussion for a vulnerability. Kestrix has a single maintainer, so response times vary. You will get a reply in the advisory thread, and the fix, the advisory and the credit are coordinated with you there.
+Do not open a public issue, pull request or discussion for a vulnerability. Kestrix has a single maintainer, so response times vary. You will get a reply by email or in the advisory thread, and the fix, the advisory and the credit are coordinated with you there.
 
 ## Supported versions
 
