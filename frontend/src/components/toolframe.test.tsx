@@ -150,13 +150,13 @@ describe("documentation links stay inside the app", () => {
     expect(screen.getByRole("link", { name: "Source code" }).getAttribute("href")).toContain("github.com");
   });
 
-  it("no link anywhere in the docs pages points to GitHub except the documented pre-commit repo text", () => {
+  it("the hosted-service page links nowhere outside the app (only the reporting and reference pages link to the repository)", () => {
     render(
-      <MemoryRouter initialEntries={["/docs/hosted"]}>
+      <MemoryRouter initialEntries={["/docs/getting-started/hosted-service"]}>
         <DocsRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("heading", { level: 1, name: "Hosted service" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "The hosted service" })).toBeTruthy();
     for (const a of screen.getAllByRole("link")) expect(a.getAttribute("href") ?? "").not.toContain("github.com");
   });
 });

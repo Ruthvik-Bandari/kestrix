@@ -43,10 +43,10 @@ export function dashboardPath(page = ""): string {
 /**
  * The documentation. Locally it is a dashboard page ("/docs"). Hosted, the in-app copy sits behind
  * sign-in at "/app/docs", so the public copy at "/docs" is what the landing page, footers and
- * sign-in link to.
+ * sign-in link to. `slug` is a docs page path of any depth ("tools/email/how-it-works"), or "" for the home page.
  */
 export function docsPath(slug = ""): string {
-  const tail = slug.replace(/^\/+/, "");
+  const tail = slug.replace(/^\/+|\/+$/g, "");
   if (!isHosted()) return dashboardPath(tail ? `docs/${tail}` : "docs");
   return tail ? `${DOCS_PATH}/${tail}` : DOCS_PATH;
 }

@@ -10,6 +10,7 @@ import { Badge } from "../../components/ui";
 import { ago } from "../../lib/format";
 import { useHistory } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
+import { TOOL_DOC_PATH } from "../docs/model";
 import { savedAt, verdictChip } from "../history/meta";
 import { chipsFor, historyToolsFor, railCopy, type FrameKey } from "./frame";
 
@@ -93,7 +94,7 @@ export function ToolHeader({
             <h1 className="display text-[clamp(1.625rem,3.2vw,2.125rem)] leading-[1.2] text-ink">{tool.name}</h1>
             <p className="mt-2 max-w-[68ch] text-base text-ink-2">
               {tool.summary}{" "}
-              <Link to={dashboardPath(`docs/${page}`)} className="link inline-flex items-center gap-1 font-medium whitespace-nowrap">
+              <Link to={dashboardPath(`docs/${TOOL_DOC_PATH[page]}`)} className="link inline-flex items-center gap-1 font-medium whitespace-nowrap">
                 Read the docs
                 <Icon name="arrowRight" size={14} />
               </Link>

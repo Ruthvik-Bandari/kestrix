@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { TOOL_PAGES, toolFor, tools } from "../../app/tools";
 import type { DocSection } from "../docs/blocks";
 import { docPages } from "../docs/content";
+import { TOOL_DOC_PATH } from "../docs/model";
 import { INSTALL_AI, INSTALL_KESTRIX, INSTALL_SCAN, PYPI_PENDING, toolContent, type LocalGuide } from "./content";
 import { examples } from "./examples";
 import { GuidePage } from "./GuidePage";
@@ -61,13 +62,13 @@ describe("tool content, defined once", () => {
     expect([...reference, ...guide]).not.toContain(toolFor(page).summary);
   });
 
-  it("builds every tool's docs page from the same name, summary and guide", () => {
+  it("builds every tool's docs overview from the same name, summary and reference sections", () => {
     for (const tool of tools) {
-      const doc = docPages.find((page) => page.slug === tool.page);
+      const doc = docPages.find((page) => page.path === TOOL_DOC_PATH[tool.page]);
       expect(doc?.title).toBe(tool.name);
-      expect(doc?.lede).toBe(tool.summary);
-      expect(doc?.sections).toBe(toolContent[tool.page].reference);
-      expect(doc?.tool).toBe(tool.page);
+      expect(doc?.summary).toBe(tool.summary);
+      // At least one section is the very object written once in tools/content.ts.
+      expect(doc?.sections.some((section) => toolContent[tool.page].reference.includes(section))).toBe(true);
     }
   });
 
@@ -111,6 +112,6 @@ describe("GuidePage", () => {
     }
     expect(screen.getByText(PYPI_PENDING)).toBeTruthy();
     expect(screen.getByRole("button", { name: `Copy command: ${toolContent[page].local.verify.command}` })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe(`/docs/${page}`);
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe(`/docs/${TOOL_DOC_PATH[page]}`);
   });
 });

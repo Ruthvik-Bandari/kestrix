@@ -1,186 +1,144 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
-import { createContext, useContext } from "react";
-import { Link, NavLink, useParams } from "react-router";
-import { dashboardPath, docsPath, landingPath } from "../../app/paths";
-import { tools } from "../../app/tools";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { Link, Navigate, useLocation, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
-import { headingId, OnThisPage, type TocItem } from "../../components/OnThisPage";
-import { cx, PageHeader } from "../../components/ui";
+import { OnThisPage, OnThisPageMenu, type TocItem } from "../../components/OnThisPage";
+import { cx } from "../../components/ui";
 import { useTitle } from "../../lib/useTitle";
-import { Command, Inline } from "../tools/parts";
-import { ToolGuide } from "../tools/ToolGuide";
-import type { Block } from "./blocks";
-import { DOC_GROUPS, docPages, findDoc, type DocPage } from "./content";
+import { BlockView } from "./BlockView";
+import { breadcrumbs, metaOf, readingOrder, resolveDoc } from "./content";
+import { DocsDrawer } from "./DocsDrawer";
+import { DocsSearch } from "./DocsSearch";
+import { DocsTree } from "./DocsTree";
+import type { DocPage } from "./model";
+import { DocsScope, LAYOUTS, useDocPath, useScope } from "./scope";
+import { sectionIds } from "./search";
 
-/** Where these docs are mounted: the app shell (links stay in the app) or the public shell (links stay public). */
-const DocsScope = createContext<"app" | "public">("app");
-
-function useDocPath(): (slug: string) => string {
-  const scope = useContext(DocsScope);
-  return (slug) => (scope === "public" ? docsPath(slug) : dashboardPath(slug ? `docs/${slug}` : "docs"));
+/** The article's h2 headings, in order: the "On this page" links and the heading ids share this one list. */
+export function sectionLinks(page: DocPage): TocItem[] {
+  const ids = sectionIds(page);
+  return page.sections.map((section, index) => ({ id: ids[index] ?? "", label: section.heading }));
 }
 
-function DocsNav() {
+function Breadcrumbs({ path }: { path: string }) {
   const docPath = useDocPath();
-  const scope = useContext(DocsScope);
+  const crumbs = breadcrumbs(path);
+  if (crumbs.length === 0) return null;
   return (
-    <nav aria-label="Documentation" className={cx("lg:sticky", scope === "public" ? "lg:top-24" : "lg:top-8")}>
-      {DOC_GROUPS.map((group) => (
-        <div key={group} className="mb-4 last:mb-0">
-          <p className="mb-1.5 px-2 text-[0.75rem] font-semibold tracking-[0.08em] text-ink-3 uppercase">{group}</p>
-          <ul className="flex flex-wrap gap-1.5 lg:block lg:space-y-0.5">
-            {docPages
-              .filter((page) => page.group === group)
-              .map((page) => (
-                <li key={page.slug}>
-                  <NavLink
-                    to={docPath(page.slug)}
-                    end
-                    className={({ isActive }) =>
-                      cx(
-                        "flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[0.875rem] font-medium transition-colors duration-150",
-                        "max-lg:border max-lg:border-line",
-                        isActive ? "bg-accent-soft text-accent-text" : "text-ink-2 hover:bg-inset hover:text-ink",
-                      )
-                    }
-                  >
-                    <Icon name={page.icon} size={16} className="flex-none" />
-                    {page.nav}
-                  </NavLink>
-                </li>
-              ))}
-          </ul>
-        </div>
-      ))}
+    <nav aria-label="Breadcrumb" className="mb-4">
+      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.8125rem] text-ink-3">
+        {crumbs.map((crumb, index) => {
+          const last = index === crumbs.length - 1;
+          return (
+            <li key={`${crumb.label}-${index}`} className="flex items-center gap-1.5">
+              {index > 0 ? <Icon name="chevronRight" size={12} /> : null}
+              {crumb.path !== undefined && !last ? (
+                <Link to={docPath(crumb.path)} className="hover:text-ink hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span aria-current={last ? "page" : undefined} className={last ? "text-ink-2" : undefined}>
+                  {crumb.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }
 
-function BlockView({ block }: { block: Block }) {
+function PrevNext({ path }: { path: string }) {
   const docPath = useDocPath();
-  switch (block.kind) {
-    case "p":
-      return (
-        <p>
-          <Inline text={block.text} />
-        </p>
-      );
-    case "list":
-      return (
-        <ul className="list-disc space-y-1.5 pl-5 marker:text-ink-3">
-          {block.items.map((item) => (
-            <li key={item}>
-              <Inline text={item} />
-            </li>
-          ))}
-        </ul>
-      );
-    case "steps":
-      return (
-        <ol className="space-y-2.5">
-          {block.items.map((item, index) => (
-            <li key={item} className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3">
-              <span
-                className="flex size-7 items-center justify-center rounded-full border border-line bg-surface text-[0.8125rem] font-semibold text-accent-text"
-                aria-hidden="true"
-              >
-                {index + 1}
-              </span>
-              <span className="pt-0.5">
-                <Inline text={item} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      );
-    case "code":
-      return <Command command={block.code} label={block.label} />;
-    case "tools":
-      return (
-        <ul className="space-y-2.5">
-          {tools.map((tool) => (
-            <li key={tool.page} className="flex gap-3">
-              <Icon name={tool.icon} size={18} className="mt-0.5 flex-none text-accent-text" />
-              <span>
-                <Link to={docPath(tool.page)} className="link font-semibold">
-                  {tool.name}
-                </Link>
-                : {tool.summary}
-              </span>
-            </li>
-          ))}
-        </ul>
-      );
-    case "route":
-      return (
-        <p>
-          <Link to={block.to} className="link inline-flex items-center gap-1.5 font-semibold">
-            {block.text}
-            <Icon name="arrowRight" size={14} />
-          </Link>
-        </p>
-      );
-    case "landing":
-      return (
-        <p>
-          <Link to={landingPath()} className="link inline-flex items-center gap-1.5 font-semibold">
-            {block.text}
-            <Icon name="arrowRight" size={14} />
-          </Link>
-        </p>
-      );
-  }
-}
-
-const INSTALL_ID = "docs-install";
-
-/** The article's h2 headings, in order: the "On this page" links and the heading ids share this one list. */
-export function sectionLinks(page: DocPage): TocItem[] {
-  const items = page.sections.map((section) => ({ id: headingId("docs", section.heading), label: section.heading }));
-  return page.tool ? [...items, { id: INSTALL_ID, label: "Install and use" }] : items;
-}
-
-function DocArticle({ page }: { page: DocPage }) {
-  const scroll = useContext(DocsScope) === "public" ? "scroll-mt-24" : "scroll-mt-6";
-  const links = sectionLinks(page);
+  const at = readingOrder.findIndex((page) => page.path === path);
+  const previous = at > 0 ? readingOrder[at - 1] : undefined;
+  const next = at >= 0 ? readingOrder[at + 1] : undefined;
+  if (!previous && !next) return null;
   return (
-    <div className="grid gap-x-10 xl:grid-cols-[minmax(0,68ch)_11rem]">
-    <article className="min-w-0 max-w-[68ch]">
-      <PageHeader title={page.title} lede={page.lede} />
+    <nav aria-label="Previous and next pages" className="mt-12 grid gap-3 border-t border-line pt-6 sm:grid-cols-2">
+      {previous ? (
+        <Link to={docPath(previous.path)} rel="prev" className="group flex flex-col gap-1 rounded-xl border border-line px-4 py-3 hover:bg-inset">
+          <span className="flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
+            <Icon name="arrowLeft" size={14} />
+            Previous
+          </span>
+          <span className="font-semibold text-accent-text group-hover:underline">{previous.title}</span>
+        </Link>
+      ) : (
+        <span className="hidden sm:block" />
+      )}
+      {next ? (
+        <Link to={docPath(next.path)} rel="next" className="group flex flex-col gap-1 rounded-xl border border-line px-4 py-3 text-right hover:bg-inset sm:col-start-2">
+          <span className="flex items-center justify-end gap-1.5 text-[0.8125rem] text-ink-3">
+            Next
+            <Icon name="arrowRight" size={14} />
+          </span>
+          <span className="font-semibold text-accent-text group-hover:underline">{next.title}</span>
+        </Link>
+      ) : null}
+    </nav>
+  );
+}
+
+const TYPE_LABEL = { tutorial: "Tutorial", "how-to": "How-to guide", reference: "Reference", explanation: "Explanation" } as const;
+
+function formatDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+function DocArticle({ page, heading }: { page: DocPage; heading: RefObject<HTMLHeadingElement | null> }) {
+  const layout = LAYOUTS[useScope()];
+  const links = sectionLinks(page);
+  const meta = metaOf(page.path);
+  return (
+    <article id="docs-content" tabIndex={-1} className="min-w-0 outline-none">
+      <header className="mb-8 border-b border-line pb-6">
+        {page.path ? <p className="eyebrow mb-2">{TYPE_LABEL[meta.type]}</p> : null}
+        <h1 ref={heading} tabIndex={-1} className="display max-w-[30ch] text-[clamp(1.625rem,3.2vw,2.125rem)] leading-[1.2] text-ink outline-none sm:max-w-none">
+          {page.title}
+        </h1>
+        <p className="mt-3 max-w-[70ch] text-base text-ink-2">{page.summary}</p>
+      </header>
+      <OnThisPageMenu items={links} className={cx("mb-8", layout.tocMenu)} />
       <div className="text-[0.9375rem] leading-relaxed text-ink-2">
         {page.sections.map((section, index) => (
-          <section key={section.heading} className="mt-9 first:mt-0">
-            <h2 id={links[index]?.id} className={`mb-3 ${scroll} text-xl font-bold tracking-[-0.015em] text-ink`}>
+          <section key={links[index]?.id} aria-labelledby={links[index]?.id} className="mt-10 first:mt-0">
+            <h2 id={links[index]?.id} tabIndex={-1} className={cx("mb-3 text-xl font-bold tracking-[-0.015em] text-ink outline-none", layout.scrollMargin)}>
               {section.heading}
             </h2>
-            <div className="space-y-3">
-              {section.blocks.map((block, index) => (
-                <BlockView key={index} block={block} />
+            <div className="space-y-4">
+              {section.blocks.map((block, blockIndex) => (
+                <BlockView key={blockIndex} block={block} />
               ))}
             </div>
           </section>
         ))}
-        {page.tool ? (
-          <section aria-labelledby={INSTALL_ID} className="mt-9">
-            <h2 id={INSTALL_ID} className={`mb-3 ${scroll} text-xl font-bold tracking-[-0.015em] text-ink`}>
-              Install and use
-            </h2>
-            <ToolGuide tool={page.tool} compact />
-          </section>
-        ) : null}
       </div>
+      {page.path ? (
+        <p className="mt-10 max-w-[70ch] text-[0.8125rem] text-ink-3">
+          Summarizes {meta.source.map((file, i) => (
+            <span key={file}>
+              {i > 0 ? ", " : ""}
+              <code className="font-mono">{file}</code>
+            </span>
+          ))}
+          . Content last checked against it on <time dateTime={meta.reviewed}>{formatDate(meta.reviewed)}</time>.
+        </p>
+      ) : null}
+      <PrevNext path={page.path} />
     </article>
-    <OnThisPage items={links} stickyTop={scroll === "scroll-mt-24" ? "xl:top-24" : "xl:top-8"} />
-    </div>
   );
 }
 
-function DocNotFound() {
+function DocNotFound({ heading }: { heading: RefObject<HTMLHeadingElement | null> }) {
   const docPath = useDocPath();
   return (
     <div className="min-w-0">
-      <h1 className="text-2xl font-bold tracking-[-0.02em]">Page not found</h1>
+      <h1 ref={heading} tabIndex={-1} className="text-2xl font-bold tracking-[-0.02em] outline-none">
+        Page not found
+      </h1>
       <p className="mt-2 text-ink-2">There is no documentation page at this address.</p>
       <p className="mt-4">
         <Link to={docPath("")} className="link inline-flex items-center gap-1.5 font-semibold">
@@ -192,26 +150,147 @@ function DocNotFound() {
   );
 }
 
+function isTyping(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+}
+
 function DocsBody() {
-  const { slug } = useParams();
-  const page = findDoc(slug);
-  useTitle(page ? (page.slug ? `${page.title} · Docs` : "Docs") : "Docs");
+  const scope = useScope();
+  const layout = LAYOUTS[scope];
+  const docPath = useDocPath();
+  const { "*": rest } = useParams();
+  const location = useLocation();
+  const resolved = resolveDoc(rest);
+  const page = resolved.kind === "page" ? resolved.page : undefined;
+  const path = page?.path ?? "";
+  const heading = useRef<HTMLHeadingElement>(null);
+  const treeSearch = useRef<HTMLInputElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const [drawer, setDrawer] = useState<"nav" | "search" | null>(null);
+  useTitle(page ? (page.path ? `${page.title} · Docs` : "Docs") : "Docs");
+
+  // A page change moves focus to the new page's heading (or to the section a link named) so screen readers
+  // announce it; the first render leaves focus alone.
+  const firstRender = useRef(true);
+  const { hash } = location;
+  useEffect(() => {
+    const first = firstRender.current;
+    firstRender.current = false;
+    const timer = window.setTimeout(() => {
+      const target = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+      if (target) {
+        target.scrollIntoView();
+        if (!first) target.focus({ preventScroll: true });
+      } else if (!first) {
+        window.scrollTo({ top: 0 });
+        heading.current?.focus({ preventScroll: true });
+      }
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [path, hash, resolved.kind]);
+
+  // "/" jumps to search: the sidebar's box where the sidebar shows, otherwise the drawer.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || isTyping(event.target)) return;
+      event.preventDefault();
+      const wide = typeof window.matchMedia !== "function" || window.matchMedia(layout.treeQuery).matches;
+      if (wide) treeSearch.current?.focus();
+      else setDrawer("search");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [layout.treeQuery]);
+
+  if (resolved.kind === "redirect") return <Navigate to={docPath(resolved.to)} replace />;
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
-      <div className="lg:border-r lg:border-line lg:pr-6">
-        <DocsNav />
+    <div className="grid min-w-0 gap-y-6">
+      <a
+        href="#docs-content"
+        className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60]"
+      >
+        Skip to the page content
+      </a>
+      <div className={cx("grid min-w-0 gap-y-6", layout.grid)}>
+        <aside aria-label="Documentation navigation" className={cx("self-start border-r border-line pr-5", layout.tree)}>
+          <div className={cx("flex flex-col gap-3", layout.treeSticky)}>
+            <DocsSearch inputRef={treeSearch} variant="popover" />
+            <DocsTree current={path} />
+          </div>
+        </aside>
+        <div className="min-w-0">
+          <div className={cx("mb-5 flex items-center gap-2 border-b border-line pb-4", layout.bar)}>
+            <button
+              ref={opener}
+              type="button"
+              className="btn btn-secondary btn-sm min-h-10"
+              aria-haspopup="dialog"
+              aria-expanded={drawer !== null}
+              aria-controls="docs-drawer"
+              onClick={() => {
+                setDrawer("nav");
+              }}
+            >
+              <Icon name="menu" size={18} />
+              Docs menu
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm min-h-10"
+              aria-haspopup="dialog"
+              aria-expanded={drawer !== null}
+              aria-controls="docs-drawer"
+              onClick={() => {
+                setDrawer("search");
+              }}
+            >
+              <Icon name="search" size={18} />
+              Search
+            </button>
+          </div>
+          {page ? (
+            <>
+              <Breadcrumbs path={path} />
+              <DocArticle page={page} heading={heading} />
+            </>
+          ) : (
+            <DocNotFound heading={heading} />
+          )}
+        </div>
+        {page ? (
+          <OnThisPage items={sectionLinks(page)} responsive={cx("hidden", layout.toc)} stickyTop={cx("sticky", layout.tocSticky)} />
+        ) : null}
       </div>
-      {page ? <DocArticle page={page} /> : <DocNotFound />}
+      {drawer ? (
+        <DocsDrawer
+          current={path}
+          focusSearch={drawer === "search"}
+          onClose={() => {
+            setDrawer(null);
+            opener.current?.focus();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-/** The in-app docs (local "/docs", hosted "/app/docs"), inside the app shell. */
+/** The in-app docs (local "/docs/*", hosted "/app/docs/*"), inside the app shell. */
 export default function DocsPage() {
-  return <DocsBody />;
+  return (
+    <DocsScope.Provider value="app">
+      <DocsBody />
+    </DocsScope.Provider>
+  );
 }
 
-/** The public docs ("/docs" on the hosted service): the same content, linking within the public copy. */
+/** The public docs ("/docs/*" on the hosted service): the same pages, linking within the public copy. */
 export function PublicDocsBody() {
   return (
     <DocsScope.Provider value="public">

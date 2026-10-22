@@ -111,7 +111,7 @@ describe("local mode runs the tools", () => {
     renderApp("/bitcoin");
     expect(await screen.findByRole("heading", { level: 1, name: "Bitcoin quantum risk" })).toBeTruthy();
     expect(screen.getAllByRole("textbox").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/bitcoin");
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/tools/bitcoin");
     expect(screen.queryByRole("heading", { name: "Troubleshooting" })).toBeNull();
   });
 
@@ -119,7 +119,7 @@ describe("local mode runs the tools", () => {
     local({ "GET /api/detect/engine": { body: { reachable: false, version: null, pinned_version: "8.19.3", pinned: false, image: "x" } } });
     renderApp("/detect");
     expect(await screen.findByRole("heading", { level: 1, name: "Detection repair" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/detect");
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/tools/detection-repair");
   });
 });
 

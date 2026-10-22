@@ -58,7 +58,7 @@ const shared: RouteObject[] = [
   { path: "code", element: <Guide tool="code" /> },
   { path: "claude-plugin", element: <Guide tool="claude-plugin" /> },
   { path: "docs", Component: Docs },
-  { path: "docs/:slug", Component: Docs },
+  { path: "docs/*", Component: Docs },
   { path: "history", Component: History },
   { path: "history/:id", Component: HistoryDetail },
   { path: "settings", Component: Settings },
@@ -71,9 +71,10 @@ export function createRoutes(): RouteObject[] {
     return [
       ...publicRoutes(),
       { path: "/welcome", element: <WelcomeRedirect /> },
-      // Public docs (no account): same pages as /app/docs, in the public shell. An unknown slug shows the docs not-found page.
+      // Public docs (no account): same pages as /app/docs, in the public shell. Any depth under /docs is the docs
+      // page, which redirects the old flat addresses and shows its own not-found page for an unknown one.
       { path: DOCS_PATH, ErrorBoundary: RouteError, element: page(PublicDocs) },
-      { path: `${DOCS_PATH}/:slug`, ErrorBoundary: RouteError, element: page(PublicDocs) },
+      { path: `${DOCS_PATH}/*`, ErrorBoundary: RouteError, element: page(PublicDocs) },
       { path: SIGNIN_PATH, ErrorBoundary: RouteError, element: page(SignIn) },
       {
         path: dashboardPath(),

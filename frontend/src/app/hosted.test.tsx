@@ -168,26 +168,32 @@ describe("hosted public docs", () => {
     hostedServer({ signed_in: false });
     renderApp("/docs");
     expect(await screen.findByRole("heading", { level: 1, name: "Kestrix documentation" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /on the home page/ })).toBeNull();
     const header = screen.getAllByRole("banner")[0] as HTMLElement;
     expect((await within(header).findByRole("link", { name: "Log in" })).getAttribute("href")).toBe("/signin");
     expect(within(header).getByRole("link", { name: "Sign up" })).toBeTruthy();
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
     const nav = screen.getByRole("navigation", { name: "Documentation" });
-    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/mail");
-    expect(screen.getByRole("link", { name: /on the home page/ }).getAttribute("href")).toBe("/");
+    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/tools/email");
     expect(within(screen.getByRole("contentinfo")).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe("/docs");
   });
 
-  it("serves /docs/mail with the On this page list", async () => {
+  it("links the landing page from the first page in the public copy", async () => {
     hostedServer({ signed_in: false });
-    renderApp("/docs/mail");
+    renderApp("/docs/getting-started/what-is-kestrix");
+    expect((await screen.findByRole("link", { name: /on the home page/ })).getAttribute("href")).toBe("/");
+  });
+
+  it("serves /docs/tools/email with the On this page list", async () => {
+    hostedServer({ signed_in: false });
+    renderApp("/docs/tools/email");
     expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
   });
 
   it("shows a signed-in visitor the same pages with Open workbench", async () => {
     hostedServer();
-    renderApp("/docs/mail");
+    renderApp("/docs/tools/email");
     expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
     expect((await within(screen.getAllByRole("banner")[0] as HTMLElement).findByRole("link", { name: /open workbench/i })).getAttribute("href")).toBe("/app");
   });
@@ -203,11 +209,11 @@ describe("hosted public docs", () => {
 
   it("keeps /app/docs in the app shell for a signed-in user, linking within the app", async () => {
     hostedServer();
-    renderApp("/app/docs/mail");
+    renderApp("/app/docs/tools/email");
     expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
     expect((await screen.findAllByRole("navigation", { name: "Main" })).length).toBeGreaterThan(0);
     const nav = screen.getByRole("navigation", { name: "Documentation" });
-    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/docs/mail");
+    expect(within(nav).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/app/docs/tools/email");
   });
 
   it("still sends a signed-out visitor from /app/docs to /signin", async () => {
@@ -300,10 +306,10 @@ describe("local routing is unchanged", () => {
 
   it("keeps /docs in the dashboard shell, with no public header", async () => {
     fakeServer({ "GET /api/health": { body: { status: "ok", version: "0.1.0", modules: [] } } });
-    renderApp("/docs/mail");
+    renderApp("/docs/tools/email");
     expect(await screen.findByRole("heading", { level: 1, name: "Email check" })).toBeTruthy();
     expect(screen.getAllByRole("navigation", { name: "Main" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
-    expect(within(screen.getByRole("navigation", { name: "Documentation" })).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/mail");
+    expect(within(screen.getByRole("navigation", { name: "Documentation" })).getByRole("link", { name: "Email check" }).getAttribute("href")).toBe("/docs/tools/email");
   });
 });

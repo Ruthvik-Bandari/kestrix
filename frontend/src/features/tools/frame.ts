@@ -7,6 +7,7 @@ import { formatBytes } from "../../lib/format";
 import { maxMessageBytes, maxUploadBytes } from "../../lib/limits";
 import { isHosted } from "../../lib/mode";
 import type { HistoryTool } from "../../lib/types";
+import { HOSTED_DOC_PATH } from "../docs/model";
 
 /*
  * What every tool page says about itself around the live controls, written once: the capability
@@ -34,7 +35,7 @@ export interface OutlineSection {
 /** Where the work happens, as a chip. Hosted checks run on Kestrix's server; local ones stay on this computer. */
 function where(): Chip {
   return isHosted()
-    ? { icon: "globe", text: "Runs on Kestrix's server", to: docsPath("hosted") }
+    ? { icon: "globe", text: "Runs on Kestrix's server", to: docsPath(HOSTED_DOC_PATH) }
     : { icon: "monitor", text: "Runs on this computer" };
 }
 

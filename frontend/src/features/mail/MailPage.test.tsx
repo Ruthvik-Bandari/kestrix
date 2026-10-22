@@ -82,7 +82,7 @@ describe("email check page", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: "Email check" })).toBeTruthy();
     expect(screen.getByText(/checked on this computer and never leaves it/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/mail");
+    expect(screen.getByRole("link", { name: "Read the docs" }).getAttribute("href")).toBe("/docs/tools/email");
     expect(screen.getByText("Download message")).toBeTruthy();
     expect(screen.getByText(/An \.eml file, up to 25 MB/)).toBeTruthy();
     expect(screen.getByRole<HTMLButtonElement>("button", { name: /check message/i }).disabled).toBe(true);

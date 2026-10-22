@@ -101,7 +101,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       ],
       limits: [
         "A `clean` verdict means none of the checks fired, not that the message is safe.",
-        "On a one-time locked test of public spam, phishing and normal mail (1999–2025), it flagged 61% of phishing and 50% of spam and wrongly flagged 1.2% of normal mail. That normal mail is old, so false alarms on modern mail are not measured.",
+        "On a one-time locked test of 10,897 public-corpus messages never used for tuning (1999–2025), it flagged 61.2% of phishing (95% CI 54.0–69.3) and 50.0% of spam (27.9–54.9) and wrongly flagged 1.2% of normal mail (0.7–2.0). That normal mail is old, so false alarms on modern mail are not measured.",
         "The scam phrase lists are small and curated: English, plus Russian for gambling and prize offers. Paraphrases and other languages are missed.",
         "The look-alike table is a curated subset of the Unicode confusables list, and organizations are grouped without the full Public Suffix List.",
         "The heuristic score orders messages for attention. It is not a probability.",
@@ -341,7 +341,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       how: [
         "Walk the paths you give, skipping `.gitignore`d, vendored and build paths.",
         "Parse Python with the standard-library `ast`, split JavaScript and TypeScript with a bounded tokenizer, and read text files for secrets. Nothing is imported or executed.",
-        "Apply 59 rules, with taint analysis within one function from Flask, Django, FastAPI, Express and LLM-client sources.",
+        "Apply 60 rules, with taint analysis within one function from Flask, Django, FastAPI, Express and LLM-client sources.",
         "After `kestrix-scan db update`, match lockfile versions against the local OSV index.",
         "Report each finding with its rule id, CWE and fix, and exit 1 when one meets `--fail-on` (default `high`).",
       ],
