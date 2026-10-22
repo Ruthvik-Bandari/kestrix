@@ -12,6 +12,7 @@ import httpx
 
 from .checks import apply_profile, check_https, check_tls, evaluate_page, merge_findings
 from .crawl import crawl, path_of
+from .exposure import staleness_note
 from .fetch import USER_AGENT, FetchResult, RequestBudget, TlsProbe, fetch, origin_of, tls_probe
 from .grade import grade
 from .models import (
@@ -85,7 +86,11 @@ def scan(
             pages = [PageResult(path=path_of(result.final_url), found_via="start", outcome="failed")]
     elif scope == "page":
         profile = profile_site(result.headers, result.body, result.final_url, site_type)
-        findings = check_https(scheme) + check_tls(tls) + apply_profile(evaluate_page(result.headers, scheme), profile)
+        findings = (
+            check_https(scheme)
+            + check_tls(tls)
+            + apply_profile(evaluate_page(result.headers, scheme, result.body), profile)
+        )
     else:
         t2 = time.monotonic()
         site = origin_of(result.final_url)
@@ -113,7 +118,7 @@ def scan(
         per_page: list[tuple[str, list[Finding]]] = []
         for (path, _, r), (_, page_profile) in zip(checked, assessed, strict=True):
             weighed = profile.model_copy(update={"evidence": page_profile.evidence})  # third-party scripts are per page
-            per_page.append((path, apply_profile(evaluate_page(r.headers, scheme), weighed)))
+            per_page.append((path, apply_profile(evaluate_page(r.headers, scheme, r.body), weighed)))
         findings = check_https(scheme) + check_tls(tls) + merge_findings(per_page)
         by_path = {path: (prof, [f.id for f in fs]) for (path, prof), (_, fs) in zip(assessed, per_page, strict=True)}
         pages = [
@@ -140,6 +145,7 @@ def scan(
                 )
             )
         limits, links_skipped, sitemap_entries = found.limits, found.links_skipped, found.sitemap_entries
+    note = staleness_note() if result.status_code is not None else None
     letter, score = grade(findings, scheme, tls)
     return Report(
         notice=notice_for(scope),
@@ -160,4 +166,5 @@ def scan(
         limits_reached=limits,
         links_skipped=links_skipped,
         sitemap_entries=sitemap_entries,
+        notes=[note] if note else [],
     )

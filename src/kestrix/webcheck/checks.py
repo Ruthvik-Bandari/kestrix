@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 
+from .exposure import check_exposure
 from .models import Finding, Severity, TlsInfo
 from .profile import SiteProfile
 
@@ -461,8 +462,9 @@ def evaluate(headers: Headers, final_scheme: str, tls: TlsInfo) -> list[Finding]
     return check_https(final_scheme) + check_tls(tls) + evaluate_page(headers, final_scheme)
 
 
-def evaluate_page(headers: Headers, final_scheme: str) -> list[Finding]:
-    """The findings that come from one response's headers (HTTPS and TLS are about the whole site)."""
+def evaluate_page(headers: Headers, final_scheme: str, body: bytes = b"") -> list[Finding]:
+    """The findings that come from one response's headers and, for generator tags, its HTML (HTTPS and TLS are
+    about the whole site)."""
     https = final_scheme == "https"
     return (
         check_hsts(headers, https)
@@ -471,6 +473,7 @@ def evaluate_page(headers: Headers, final_scheme: str) -> list[Finding]:
         + check_framing(headers)
         + check_simple_headers(headers)
         + check_disclosure(headers)
+        + check_exposure(headers, body)
     )
 
 

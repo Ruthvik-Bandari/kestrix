@@ -55,6 +55,7 @@ class Finding(BaseModel):
     explanation: str
     recommendation: str
     evidence: str | None = None
+    cwe: list[str] | None = None  # weakness classes, set for the software-version findings
     # Set when the site profile changed the severity: the checklist severity and why it changed.
     baseline_severity: Severity | None = None
     context: str | None = None
@@ -118,3 +119,4 @@ class Report(BaseModel):
     limits_reached: list[Limit] = []
     links_skipped: int = 0  # links not fetched: files, other sites, other ports, mailto and similar
     sitemap_entries: int = 0  # addresses read from /sitemap.xml
+    notes: list[str] = []  # caveats about the check itself, e.g. that the bundled version data is out of date

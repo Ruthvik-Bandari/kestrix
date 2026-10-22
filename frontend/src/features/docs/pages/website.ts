@@ -194,8 +194,13 @@ export const websitePages: DocPage[] = [
           [
             ["`disclosure.server_version`", "low", "The `Server` header contains a version number such as `nginx/1.25.3`."],
             ["`disclosure.powered_by`", "low", "An `X-Powered-By` header is present."],
+            ["`disclosure.generator_version`", "low", "A `<meta name=\"generator\">` tag or an `X-Generator`, `X-AspNet-Version` or `X-AspNetMvc-Version` header names a WordPress, Drupal, Joomla or ASP.NET version."],
+            ["`exposure.eol_version`", "medium or high", "A header or generator tag announces a branch its vendor no longer supports, such as PHP 7.4 (end of life 2022-11-28). High when the end of life is a year or more old, the vendor says not to use it, or a critical advisory leaves the branch unfixed."],
+            ["`exposure.known_vulnerable_version`", "high", "A header announces a version below the first fixed release that an official advisory states, such as PHP below 8.2.35, 8.3.36, 8.4.27 or 8.5.12 (CVE-2026-109618 and CVE-2026-109619)."],
+            ["`exposure.outdated_branch`", "low", "A header announces an nginx branch that nginx.org lists as a legacy version."],
           ],
         ),
+        p("Versions are read from the `Server`, `X-Powered-By`, `Via`, `X-AspNet-Version`, `X-AspNetMvc-Version` and `X-Generator` headers and the generator meta tag of pages already fetched, and compared with a bundled offline data file, built from the vendors' own pages (php.net, nginx.org, httpd.apache.org, Microsoft Lifecycle, OpenSSL, Node.js, drupal.org) and refreshed by hand. The report says so when that data is more than 30 days old. A banner can be wrong, hidden or set by a proxy, and distribution packages backport fixes under an old number, so a finding is a strong hint and a missing banner is not proof of safety."),
       ),
       section(
         "Cookies",

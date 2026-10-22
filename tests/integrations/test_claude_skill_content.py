@@ -127,6 +127,8 @@ def test_forensics_catalog_matches_the_source():
 def test_webcheck_catalog_matches_the_source():
     ids = set(re.findall(r'"([a-z_]+\.[a-z_]+)"', (SRC / "webcheck" / "checks.py").read_text()))
     ids |= {f"tls.{status}" for status in checks._TLS_TEXT}
+    ids |= set(re.findall(r'\bid="([a-z_]+\.[a-z_]+)"', (SRC / "webcheck" / "exposure.py").read_text()))
+    ids |= set(re.findall(r'^\s+"(exposure\.[a-z_]+)",$', (SRC / "webcheck" / "exposure.py").read_text(), re.M))
     assert len(ids) >= 30
     assert _catalog("findings-webcheck.md") == ids
 

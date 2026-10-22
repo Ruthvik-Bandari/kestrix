@@ -63,6 +63,10 @@ load from a third-party host) and `framing.unprotected` and `referrer.weak` drop
 | --- | --- | --- | --- |
 | `disclosure.server_version` | low | The `Server` header contains a version number such as `nginx/1.25.3`. | Remove the version from the `Server` header (for example nginx `server_tokens off;`). |
 | `disclosure.powered_by` | low | An `X-Powered-By` header is present. | Remove the `X-Powered-By` header. |
+| `disclosure.generator_version` | low | A `<meta name="generator">` tag or an `X-Generator`, `X-AspNet-Version` or `X-AspNetMvc-Version` header names a WordPress, Drupal, Joomla or ASP.NET version. | Remove the generator tag and version headers (WordPress `remove_action('wp_head', 'wp_generator')`; ASP.NET `enableVersionHeader="false"`). |
+| `exposure.eol_version` | medium or high | A header or generator tag announces a branch its vendor no longer supports (for example PHP 7.4, end of life 2022-11-28; evidence has the branch, date and source URL). High when the end of life is a year or more old, the vendor says not to use it, or a critical advisory such as CVE-2026-109618/109619 leaves the branch unfixed. | Upgrade to a supported branch, then stop announcing the version (`expose_php = Off`, nginx `server_tokens off;`, Apache `ServerTokens Prod`). A banner can be wrong or hidden: say "announces", and never read a missing banner as safe. |
+| `exposure.known_vulnerable_version` | high | A header announces a version below the first fixed release an official advisory states for that branch (PHP below 8.2.35, 8.3.36, 8.4.27 or 8.5.12). | Update to the fixed release now, then stop announcing the version. A distribution build may carry the fix under an older number. |
+| `exposure.outdated_branch` | low | A header announces an nginx branch that nginx.org lists as a legacy version. | Move to the current stable or mainline release and set `server_tokens off;`. |
 
 ## Cookies
 
