@@ -143,14 +143,14 @@
               "id": "py.deserialize.pickle",
               "name": "PyDeserializePickle",
               "shortDescription": {
-                "text": "Unsafe deserialization (pickle, dill, shelve, marshal)"
+                "text": "Unsafe deserialization (pickle, dill, shelve, marshal, pandas.read_pickle, ZeroMQ recv_pyobj)"
               },
               "fullDescription": {
-                "text": "Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data."
+                "text": "Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data. pandas.read_pickle, numpy.load with allow_pickle=True and a ZeroMQ socket's recv_pyobj() all unpickle what they read."
               },
               "help": {
                 "text": "Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model.",
-                "markdown": "**Why:** Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data.\n\n**Fix:** Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model."
+                "markdown": "**Why:** Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data. pandas.read_pickle, numpy.load with allow_pickle=True and a ZeroMQ socket's recv_pyobj() all unpickle what they read.\n\n**Fix:** Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model."
               },
               "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
               "defaultConfiguration": {
@@ -708,6 +708,32 @@
                 "tags": [
                   "security",
                   "CWE-501"
+                ]
+              }
+            },
+            {
+              "id": "py.archive.extract",
+              "name": "PyArchiveExtract",
+              "shortDescription": {
+                "text": "Tar archive extracted without a member filter"
+              },
+              "fullDescription": {
+                "text": "A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559)."
+              },
+              "help": {
+                "text": "Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall.",
+                "markdown": "**Why:** A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559).\n\n**Fix:** Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-22"
                 ]
               }
             },
@@ -1554,7 +1580,7 @@
       "results": [
         {
           "ruleId": "secret.github_token",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "message": {
             "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."

@@ -104,6 +104,7 @@ KESTRIX_RULES: dict[str, str] = {
     "py.jwt.no_verify": "jwt",
     "py.xml.unsafe_parser": "xxe",
     "py.path.traversal": "pathtraver",
+    "py.archive.extract": "pathtraver",
     "py.ssrf.request": "ssrf",
     "py.redirect.open": "redirect",
     "py.xss.markup": "xss",

@@ -153,11 +153,11 @@ def remove(name):
     subprocess.run(["rm", "--", name], check=True)
 ```
 
-### `py.deserialize.pickle`: Unsafe deserialization (pickle, dill, shelve, marshal)
+### `py.deserialize.pickle`: Unsafe deserialization (pickle, dill, shelve, marshal, pandas.read_pickle, ZeroMQ recv_pyobj)
 
 CWE-502 · default severity high · confidence medium
 
-**Why:** Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data.
+**Why:** Loading a pickle-style stream can run arbitrary code chosen by whoever wrote the bytes. It is never safe on untrusted data. pandas.read_pickle, numpy.load with allow_pickle=True and a ZeroMQ socket's recv_pyobj() all unpickle what they read.
 
 **Fix:** Store and exchange data as JSON (or another data-only format) and validate it, for example with a Pydantic model.
 
@@ -798,6 +798,36 @@ def choose_role():
     if role not in ROLES:
         abort(400)
     session["role"] = role
+```
+
+### `py.archive.extract`: Tar archive extracted without a member filter
+
+CWE-22 · default severity medium · confidence low
+
+**Why:** A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559).
+
+**Fix:** Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall.
+
+Before:
+
+```python
+import tarfile
+
+
+def unpack(path, dest):
+    with tarfile.open(path) as tar:
+        tar.extractall(dest)
+```
+
+After:
+
+```python
+import tarfile
+
+
+def unpack(path, dest):
+    with tarfile.open(path) as tar:
+        tar.extractall(dest, filter="data")
 ```
 
 ## Claude Code and MCP configuration rules

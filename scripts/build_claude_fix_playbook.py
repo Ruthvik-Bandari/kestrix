@@ -95,6 +95,10 @@ EXAMPLES: dict[str, tuple[str, str]] = {
         'import os\nfrom flask import request\n\n\ndef download():\n    name = request.args.get("name")\n    return open(os.path.join("/srv/files", name), "rb").read()\n',
         'from flask import request, send_from_directory\n\n\ndef download():\n    return send_from_directory("/srv/files", request.args["name"])\n',
     ),
+    "py.archive.extract": (
+        "import tarfile\n\n\ndef unpack(path, dest):\n    with tarfile.open(path) as tar:\n        tar.extractall(dest)\n",
+        'import tarfile\n\n\ndef unpack(path, dest):\n    with tarfile.open(path) as tar:\n        tar.extractall(dest, filter="data")\n',
+    ),
     "py.ssrf.request": (
         'import requests\nfrom flask import request\n\n\ndef preview():\n    url = request.args["url"]\n    return requests.get(url, timeout=10).text\n',
         'import requests\nfrom flask import request\n\n\ndef preview():\n    page = request.args["page"]\n    return requests.get(f"https://docs.example.com/{page}", timeout=10).text\n',

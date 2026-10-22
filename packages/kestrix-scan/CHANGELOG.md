@@ -5,6 +5,16 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **CVE-fix benchmark, round 1 (measured on the development half of `docs/benchmarks/cvefixes.md`).** Two changes
+  kept, three reverted.
+  - New rule `py.archive.extract` (CWE-22, medium severity, low confidence): `tarfile` `extract` and `extractall` on
+    an archive opened in the same file, with no `filter=` and no member list.
+  - `py.deserialize.pickle` also reports `pandas.read_pickle`, `jsonpickle.decode`, `numpy.load(allow_pickle=True)`
+    and a ZeroMQ socket's `recv_pyobj()`. Its title and text name them, so the SARIF rule description changed.
+  - Tried and reverted for adding too many alerts on fixed and unchanged files: `mark_safe` or `Markup` of a value
+    built at run time, jQuery insertion methods and the `$()` constructor given built markup, and a ReDoS check
+    for Python and JavaScript regular expressions.
+  - The registry has 60 rules (28 Python, 14 JS/TS, 11 secret, 2 dependency, 5 agent-config).
 - **Claude Code plugin: visible scan states, Bash coverage, `/kestrix:status`.**
   - A scan that could not run (`kestrix-scan` missing, timed out or crashed) is no longer silent: the user gets one
     `systemMessage` per session for each cause and Claude gets a line saying the file was not security-checked.

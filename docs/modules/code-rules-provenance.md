@@ -223,6 +223,14 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cwe.mitre.org/data/definitions/501.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `py.archive.extract`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractall>
+- Documentation: <https://docs.python.org/3/library/tarfile.html#extraction-filters>
+- Documentation: <https://cwe.mitre.org/data/definitions/22.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `config.claude.hook_remote_exec`
 
 - CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)

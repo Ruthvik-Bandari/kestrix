@@ -1,0 +1,16 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
+# Sync the code to ~/kestrix-codebench on the cluster (never ~/kestrix) and record what was synced in CODEBENCH_SHA:
+# the git HEAD plus a hash of the synced files, so uncommitted rule changes get their own id. Run from the repo root:
+#   bash hpc/codebench_sync.sh [HOST] [DIR]      (default explorer-01, kestrix-codebench)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+HOST="${1:-explorer-01}"
+DIR="${2:-kestrix-codebench}"
+FILES=(src packages/kestrix-scan/src bench/__init__.py bench/mapping.py hpc)
+COPYFILE_DISABLE=1 tar --no-xattrs -czf - --exclude '__pycache__' --exclude '.DS_Store' "${FILES[@]}" |
+  ssh "$HOST" "mkdir -p $DIR && cd $DIR && rm -rf src packages bench hpc && tar -xzf -"
+SHA="$(git rev-parse --short HEAD)+$(find "${FILES[@]}" -type f -not -path '*/__pycache__/*' -not -name .DS_Store | LC_ALL=C sort | xargs shasum | shasum | cut -c1-8)"
+ssh "$HOST" "echo '$SHA' > $DIR/CODEBENCH_SHA"
+echo "synced $SHA to $HOST:$DIR"

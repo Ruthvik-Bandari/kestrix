@@ -63,3 +63,17 @@ The email accuracy benchmark ([`mail-benchmark.md`](mail-benchmark.md)) uses the
 - Reports, logs and the committed manifest hold counts, rates, intervals, finding-id frequencies, learned weights, and archive SHA-256 values. No body, address or subject is printed.
 - The `acquire` step records URL, size, SHA-256 and download time per file (trust on first use); every later stage re-verifies against that manifest.
 - `/scratch` is purged on the first Tuesday of each month (next: 2026-11-03). Downloads are reproducible from the manifest.
+
+## Code accuracy benchmark (`kestrixcodebench`)
+
+The code benchmark ([`docs/benchmarks/cvefixes.md`](../benchmarks/cvefixes.md)) measures `kestrix-scan` on the vulnerable and fixed versions of files from CVE fix commits. It reuses the data that `kestrixvul` already acquired (nothing new was downloaded) and adds baseline scanners. This is not legal advice.
+
+| Item | License | Role | Notes |
+| --- | --- | --- | --- |
+| CVEfixes v1.0.8 | Data CC BY 4.0; collection code MIT | eval (dev now, locked test later) | **Attribution required**: Bhandari, Naseer and Moonen (2021), *CVEfixes*, PROMISE '21. Only the aggregate counts, rates and rule ids are published; the mined files stay on the cluster and keep each project's own license. |
+| GitHub Advisory Database fix commits | Data CC BY 4.0 | eval (dev now, locked test later) | **Attribution required**: GitHub Advisory Database, <https://github.com/github/advisory-database>. Fix commits mined by `kestrixvul` from the public repositories. |
+| Bandit 1.9.4 | Apache-2.0 | baseline (Python) | Installed from PyPI into a private virtual environment on the cluster. |
+| ESLint 9 with `eslint-plugin-security` 4.2.0 | MIT; Apache-2.0 | baseline (JavaScript, TypeScript) | Installed with npm on the transfer node into a private prefix; run offline on the cluster's Node 22 module. Parser: `typescript-eslint` (MIT) with `typescript` (Apache-2.0). |
+| Semgrep CE with the registry rules | Semgrep Rules License (not OSS) | **not used** | The registry rules' license restricts this use, and no OSS-licensed local ruleset was available, so Semgrep was skipped. |
+
+Raw files stay under `/scratch/$USER/kestrix/codebench/` (directories 0700, files 0600). Reports hold counts, rates, intervals and rule ids only.
