@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
+import { PRIVACY_PATH, TERMS_PATH } from "../../app/paths";
 import { toolFor, type ToolPage } from "../../app/tools";
 import type { IconName } from "../../components/Icon";
 import { INSTALL_AI, INSTALL_DASHBOARD, INSTALL_EXIF, INSTALL_KESTRIX, INSTALL_SCAN, toolContent } from "../tools/content";
@@ -94,6 +95,69 @@ const overview: DocPage = {
           "Detection repair, the Bitcoin check, the code scanner and the Claude Code plugin run on your computer only. Their pages on the hosted service are guides to installing and using them.",
         ),
         p("Use Kestrix only on systems, files and websites you own or are authorized to assess."),
+      ],
+    },
+  ],
+};
+
+/* Follows docs/hosted.md (what changes in hosted mode, uploads, result history, rate limits). */
+const hosted: DocPage = {
+  slug: "hosted",
+  title: "Hosted service",
+  nav: "Hosted service",
+  group: "Start",
+  icon: "globe",
+  lede: "What is different when you use Kestrix on its website instead of on your own computer.",
+  sections: [
+    {
+      heading: "What runs where",
+      blocks: [
+        list(
+          "You sign in with Google or GitHub. There are no passwords.",
+          "Only the email check, the website check and file and link forensics run on the hosted service.",
+          "Detection repair and Bitcoin are not available there. Run them on your own computer; their guide pages show how.",
+          "The code scanner and the Claude Code plugin always run on your own computer.",
+        ),
+      ],
+    },
+    {
+      heading: "What happens to your input",
+      blocks: [
+        list(
+          "Files and emails are analyzed on Kestrix's server and are never stored. An upload over 1 MiB waits in a temporary file while it is processed, and that file is deleted when the request ends.",
+          "Each analysis runs in a separate worker process with CPU, memory and time limits.",
+          "Files and messages are limited to 10 MiB each. On your own computer the limits are 50 MiB for files and 25 MiB for messages.",
+          "A website check is sent from Kestrix's server, not from your computer. It reaches public addresses only, on ports 80 and 443, and every scan needs your confirmation that you own the site or are authorized to test it.",
+          "A link is analyzed as text and never opened.",
+        ),
+      ],
+    },
+    {
+      heading: "Saved reports",
+      blocks: [
+        list(
+          "After a check, its report is saved for you for 30 days, encrypted. The file or message you uploaded is not saved.",
+          "A saved email report holds the subject, the sender and short evidence, not the message body.",
+          "You can delete one report or all of them, or turn history off in Settings. Turning it off deletes your saved reports and stops saving new ones. Deleting your account deletes them too.",
+        ),
+      ],
+    },
+    {
+      heading: "Limits",
+      blocks: [
+        list(
+          "Website checks: 20 per hour per account, and at most 5 of those can be whole-site scans.",
+          "Email, file and link checks share one allowance of 120 per hour per account.",
+          "One check runs at a time per account. A second one is refused until the first finishes.",
+        ),
+      ],
+    },
+    {
+      heading: "Privacy and terms",
+      blocks: [
+        p("The full notices are separate pages."),
+        { kind: "route", text: "Read the privacy notice", to: PRIVACY_PATH },
+        { kind: "route", text: "Read the terms", to: TERMS_PATH },
       ],
     },
   ],
@@ -226,6 +290,7 @@ const TOOL_DOCS: ToolPage[] = ["mail", "webcheck", "forensics", "detect", "code"
 
 export const docPages: DocPage[] = [
   overview,
+  hosted,
   ...TOOL_DOCS.map((page) => toolPage(page)),
   packages,
   toolPage("claude-plugin", "Packages and integrations"),

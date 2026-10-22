@@ -603,6 +603,14 @@
     animation: reveal 180ms var(--ease-out-quart) both;
   }
 
+  /* The jump list under the workspace stays in view beside a long report, on screens tall enough to hold it. */
+  @media (min-width: 1100px) and (min-height: 600px) {
+    .tool-sticky {
+      position: sticky;
+      top: 1.5rem;
+    }
+  }
+
   /* Numbered step bubble: solid, 1px ring. */
   .step-dot {
     display: inline-flex;

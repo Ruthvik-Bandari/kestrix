@@ -7,7 +7,8 @@ import type { Severity } from "../lib/types";
 import { FileButton } from "./FileButton";
 import { Icon, type IconName } from "./Icon";
 import { severityLabel, severityOrder, severityTone, tones, type Tone } from "./tone";
-import { Badge, Button, cx, ErrorState, SectionTitle, Spinner, Verdict } from "./ui";
+import { JumpList, REPORT_ID, useReportStage, type ToolStage } from "./toolframe";
+import { Badge, Button, cx, ErrorState, Spinner, Verdict } from "./ui";
 
 /*
  * Shared pieces of the tool pages (email, website, file and link): the input/report split, the
@@ -16,15 +17,37 @@ import { Badge, Button, cx, ErrorState, SectionTitle, Spinner, Verdict } from ".
  */
 
 /**
- * Input column (~360px) beside a flexible report column from 1100px up; stacked below, input first.
- * The input column sticks while a long report scrolls, so the left side never becomes an empty band;
- * pass `sticky={false}` when the input is itself taller than a screen (a list of cases).
+ * The tool page body: a 24rem workspace column beside a flexible report column from 1100px up, stacked
+ * below with the input first. Once a result is on screen the workspace column adds a jump list to the
+ * report's sections under the input; it sticks while the long report scrolls, so the left side is never
+ * an empty band. Pass `jump={false}` when the input is itself taller than a screen (a list of cases).
+ * `stage` is the page's real state: it drives the step rail in the header band.
  */
-export function ToolLayout({ input, children, sticky = true }: { input: ReactNode; children: ReactNode; sticky?: boolean }) {
+export function ToolLayout({
+  input,
+  children,
+  stage,
+  jump = true,
+}: {
+  input: ReactNode;
+  children: ReactNode;
+  stage: ToolStage;
+  jump?: boolean;
+}) {
+  useReportStage(stage);
   return (
-    <div className="grid items-start gap-6 min-[1100px]:grid-cols-[22.5rem_minmax(0,1fr)] min-[1100px]:gap-8">
-      <div className={cx("min-w-0", sticky && "min-[1100px]:sticky min-[1100px]:top-6")}>{input}</div>
-      <div className="min-w-0 space-y-6">{children}</div>
+    <div className="grid gap-6 min-[1100px]:grid-cols-[24rem_minmax(0,1fr)] min-[1100px]:gap-8">
+      <div className="min-w-0 space-y-4">
+        {input}
+        {jump && stage === "result" ? (
+          <div className="tool-sticky hidden min-[1100px]:block">
+            <JumpList />
+          </div>
+        ) : null}
+      </div>
+      <div id={REPORT_ID} className="@container min-w-0 space-y-6">
+        {children}
+      </div>
     </div>
   );
 }
@@ -91,7 +114,8 @@ export function LocalProblem({ title, detail }: { title: string; detail: ReactNo
 /** Indeterminate progress that says what is happening; no percentage is invented. */
 export function PendingPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="panel p-5 sm:p-6" role="status">
+    <div className="panel relative overflow-hidden p-5 pl-6 sm:p-6 sm:pl-7" role="status">
+      <span className="absolute inset-y-0 left-0 w-1.5 bg-accent" aria-hidden="true" />
       <p className="flex items-center gap-2 font-semibold text-ink">
         <Spinner />
         {title}
@@ -104,13 +128,73 @@ export function PendingPanel({ title, children }: { title: string; children: Rea
   );
 }
 
-/** Before a result: what the report will contain, and anything the person needs before they start. */
+/** Help shown beside the input before a result: flat, with the heading and a body at the full column width. */
 export function HelpPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="panel p-5 sm:p-6" aria-label={title}>
+    <section aria-label={title}>
       <h2 className="text-lg font-semibold tracking-[-0.01em]">{title}</h2>
       <div className="@container mt-4">{children}</div>
     </section>
+  );
+}
+
+/**
+ * One section of a report: an icon, the heading, an optional count and aside. By default a panel with a
+ * tinted header strip; `flat` leaves the body unframed for sections that bring their own list or table.
+ * Sections with an id are listed in the jump list beside the report.
+ */
+export function ReportSection({
+  id,
+  icon,
+  title,
+  count,
+  aside,
+  level = 3,
+  as: Tag = "section",
+  flat = false,
+  className,
+  children,
+}: {
+  id: string;
+  icon: IconName;
+  title: ReactNode;
+  count?: number | string;
+  aside?: ReactNode;
+  level?: 2 | 3;
+  as?: "section" | "aside";
+  flat?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const Heading = level === 2 ? "h2" : "h3";
+  const titleId = `${id}-title`;
+  return (
+    <Tag
+      id={id}
+      data-report-section={typeof title === "string" ? title : id}
+      aria-labelledby={titleId}
+      className={cx("scroll-mt-6", flat ? undefined : "panel overflow-hidden", className)}
+    >
+      <div className={cx("flex items-center gap-x-3", flat ? "mb-3" : "border-b border-line bg-inset/60 px-4 py-2.5 sm:px-5")}>
+        <span
+          className={cx(
+            "flex size-7 flex-none items-center justify-center rounded-md border border-line text-accent-text",
+            flat ? "bg-inset" : "bg-surface-solid",
+          )}
+          aria-hidden="true"
+        >
+          <Icon name={icon} size={15} />
+        </span>
+        <Heading id={titleId} className="min-w-0 text-base font-semibold tracking-[-0.01em] text-ink">
+          {title}
+        </Heading>
+        {count !== undefined ? (
+          <span className="num rounded-md border border-line bg-surface-solid px-1.5 text-[0.8125rem] font-medium text-ink-2">{count}</span>
+        ) : null}
+        {aside ? <div className="ml-auto flex-none text-right text-[0.875rem] text-ink-2">{aside}</div> : null}
+      </div>
+      <div className={flat ? undefined : "p-4 sm:p-5"}>{children}</div>
+    </Tag>
   );
 }
 
@@ -222,11 +306,17 @@ export function VerdictCard({
 }) {
   const style = tones[tone];
   return (
-    <div className={cx("@container rounded-xl border border-line p-5 sm:p-6", style.soft)}>
-      <div className="grid gap-5 @2xl:grid-cols-[minmax(0,1fr)_16rem] @2xl:items-center">
+    <div
+      id={`${headingId}-band`}
+      data-report-section="Verdict"
+      className={cx("@container relative scroll-mt-6 overflow-hidden rounded-xl border border-line p-5 pl-6 sm:p-6 sm:pl-7", style.soft)}
+    >
+      <span className={cx("absolute inset-y-0 left-0 w-1.5", style.mark)} aria-hidden="true" />
+      <div className="grid gap-5 @[40rem]:grid-cols-[minmax(0,1fr)_16rem] @[40rem]:items-center">
         <div className="flex min-w-0 gap-4">
           {lead ?? <Icon name={icon ?? style.icon} size={28} className="mt-1 flex-none" />}
           <div className="min-w-0 text-ink">
+            <p className="mb-0.5 text-[0.75rem] font-semibold tracking-[0.1em] text-ink-2 uppercase">Verdict</p>
             <h2
               id={headingId}
               ref={headingRef}
@@ -239,7 +329,7 @@ export function VerdictCard({
             {children ? <div className="mt-2 max-w-[62ch] text-[0.9375rem] text-ink-2">{children}</div> : null}
           </div>
         </div>
-        {aside ? <div className="min-w-0 border-t border-line pt-4 @2xl:border-t-0 @2xl:border-l @2xl:pt-0 @2xl:pl-6">{aside}</div> : null}
+        {aside ? <div className="min-w-0 border-t border-line pt-4 @[40rem]:border-t-0 @[40rem]:border-l @[40rem]:pt-0 @[40rem]:pl-6">{aside}</div> : null}
       </div>
     </div>
   );
@@ -283,7 +373,13 @@ export function FindingTally({ findings }: { findings: { severity: Severity }[] 
 /** Reviewed advice for the verdict. Written presentation copy, not something the server returns. */
 export function NextStep({ children }: { children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-line bg-accent-soft px-5 py-4" aria-label="Suggested next step">
+    <section
+      id="next-step"
+      data-report-section="Next step"
+      className="relative scroll-mt-6 overflow-hidden rounded-xl border border-line bg-accent-soft px-5 py-4 pl-6"
+      aria-label="Suggested next step"
+    >
+      <span className="absolute inset-y-0 left-0 w-1 bg-accent" aria-hidden="true" />
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 className="flex items-center gap-2 font-semibold text-ink">
           <Icon name="arrowRight" size={16} className="text-accent-text" />
@@ -319,19 +415,20 @@ export function FindingList<T extends { severity: Severity; title: string }>({
   const filter = picked !== "all" && counts[picked] === 0 ? "all" : picked;
   const sorted = [...findings].sort((a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity));
   const shown = filter === "all" ? sorted : sorted.filter((f) => f.severity === filter);
-  const headingId = `${id}-heading`;
   return (
-    <section aria-labelledby={headingId}>
-      <SectionTitle
-        id={headingId}
-        aside={
-          <span className="text-[0.875rem] text-ink-2" aria-live="polite">
-            {filter === "all" ? plural(findings.length, "finding") : `Showing ${shown.length.toLocaleString()} of ${plural(findings.length, "finding")}`}
-          </span>
-        }
-      >
-        {heading}
-      </SectionTitle>
+    <ReportSection
+      id={id}
+      icon="listChecks"
+      title={heading}
+      count={findings.length}
+      level={2}
+      flat
+      aside={
+        <span aria-live="polite">
+          {filter === "all" ? plural(findings.length, "finding") : `Showing ${shown.length.toLocaleString()} of ${plural(findings.length, "finding")}`}
+        </span>
+      }
+    >
       {present.length > 1 ? (
         <div role="group" aria-label="Filter findings by severity" className="mb-3 flex flex-wrap gap-2">
           {(["all", ...present] as const).map((key) => {
@@ -359,9 +456,10 @@ export function FindingList<T extends { severity: Severity; title: string }>({
       ) : null}
       <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface-solid">
         {shown.map((finding, index) => (
-          <li key={`${filter}-${keyOf(finding, index)}`}>
+          <li key={`${filter}-${keyOf(finding, index)}`} className="relative">
+            <span className={cx("absolute inset-y-0 left-0 w-1", tones[severityTone[finding.severity]].mark)} aria-hidden="true" />
             <details className="group" open={index === 0 && filter === "all" && finding.severity !== "info" ? true : undefined}>
-              <summary className="flex min-h-11 cursor-pointer list-none items-start gap-3 px-4 py-3 select-none hover:bg-inset focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--focus) [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-11 cursor-pointer list-none items-start gap-3 py-3 pr-4 pl-5 select-none hover:bg-inset focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--focus) [&::-webkit-details-marker]:hidden">
                 <span className="mt-0.5 flex-none">
                   <Badge tone={severityTone[finding.severity]}>{severityLabel[finding.severity]}</Badge>
                 </span>
@@ -372,21 +470,21 @@ export function FindingList<T extends { severity: Severity; title: string }>({
                   className="mt-1.5 flex-none -rotate-90 text-ink-3 transition-transform duration-150 group-open:rotate-0 motion-reduce:transition-none"
                 />
               </summary>
-              <div className="space-y-2 px-4 pt-1 pb-4 sm:pl-[5.75rem]">{renderDetail(finding)}</div>
+              <div className="space-y-2.5 pr-4 pb-4 pl-5 pt-1 sm:pl-[6.5rem]">{renderDetail(finding)}</div>
             </details>
           </li>
         ))}
       </ul>
-    </section>
+    </ReportSection>
   );
 }
 
-/** Labelled evidence text: wraps anywhere, plain text only. */
+/** Labelled evidence text in a monospace inset: wraps anywhere, plain text only. */
 export function Evidence({ label = "Evidence", children }: { label?: string; children: string }) {
   return (
-    <div>
-      <p className="text-[0.75rem] font-medium tracking-[0.04em] text-ink-3 uppercase">{label}</p>
-      <code className="mt-1 block rounded-md bg-inset px-3 py-2 text-[0.8125rem] break-all whitespace-pre-wrap text-ink">{children}</code>
+    <div className="overflow-hidden rounded-md border border-line border-l-2 border-l-line-strong bg-inset">
+      <p className="border-b border-line px-3 py-1 font-mono text-[0.6875rem] tracking-[0.06em] text-ink-2 uppercase">{label}</p>
+      <code className="block px-3 py-2 text-[0.8125rem] break-all whitespace-pre-wrap text-ink">{children}</code>
     </div>
   );
 }

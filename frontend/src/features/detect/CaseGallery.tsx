@@ -44,7 +44,7 @@ function CaseItem({
           </Badge>
           <code className="text-xs text-ink-3">{item.case_id.split("-")[0]}</code>
         </div>
-        <h3 className="mt-1.5 text-[0.9375rem] leading-snug font-semibold">{shortTitle(item.title)}</h3>
+        <p className="mt-1.5 text-[0.9375rem] leading-snug font-semibold">{shortTitle(item.title)}</p>
         <p className="mt-0.5 text-[0.8125rem] text-ink-3">Expected: {expected ? outcomeMeta[expected].label.toLowerCase() : "not stated"}</p>
       </div>
       <Button
@@ -85,12 +85,11 @@ export function CaseGallery({
   if (cases.isError) return <ErrorState error={cases.error} />;
   return (
     <>
-      <h2 className="text-lg font-semibold tracking-[-0.01em]">Sample cases</h2>
-      <p className="mt-1 text-[0.875rem] text-ink-2">
+      <p className="text-[0.875rem] text-ink-2">
         {cases.data.length} synthetic cases, each with a known fault and labeled attack and benign events. Run one to see the
         diagnose, repair and validate loop. Nothing leaves this computer.
       </p>
-      <ul className="mt-3 divide-y divide-line border-t border-line">
+      <ul className="mt-3 -mb-3 divide-y divide-line border-t border-line">
         {cases.data.map((item) => (
           <CaseItem
             key={item.case_id}

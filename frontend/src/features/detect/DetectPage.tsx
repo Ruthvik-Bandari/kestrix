@@ -3,13 +3,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { FailedRequest, HelpPanel, LiveStatus, PendingPanel, ToolLayout } from "../../components/report";
+import { FailedRequest, LiveStatus, PendingPanel, ToolLayout } from "../../components/report";
+import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
 import { Tabs } from "../../components/Tabs";
-import { Panel, StatusPill, Verdict } from "../../components/ui";
+import { StatusPill, Verdict } from "../../components/ui";
 import { api } from "../../lib/api";
 import { keys, useEngine } from "../../lib/queries";
 import type { DetectReport, RunBody } from "../../lib/types";
-import { ToolHeader } from "../tools/ToolHeader";
+import { outlines } from "../tools/frame";
+import { ToolFrame } from "../tools/ToolHeader";
 import { CaseGallery } from "./CaseGallery";
 import { CustomRuleForm } from "./CustomRuleForm";
 import { EngineHint } from "./EngineHint";
@@ -44,26 +46,16 @@ function EngineDown() {
 
 function Before() {
   return (
-    <HelpPanel title="What a repair gives you">
-      <div className="grid gap-6 @2xl:grid-cols-2">
-        <div>
-          <h3 className="font-semibold">One explicit outcome</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-            <li>Repaired, unchanged, abstained, unsupported, insufficient evidence or engine unavailable. Each has its own label.</li>
-            <li>A diagnosis of why the rule misses attacks or raises false alarms.</li>
-            <li>The patch as a diff, never applied for you.</li>
-          </ul>
-        </div>
-        <div>
-          <h3 className="font-semibold">Proof on labeled events</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
-            <li>Replay counts before and after, on development events and on a held-out validation set.</li>
-            <li>A failed replay shows &ldquo;not available&rdquo;, never zero.</li>
-            <li>A repair proves only what your labeled events show. It does not prove the rule catches every attack.</li>
-          </ul>
-        </div>
+    <ReportOutline sections={outlines.detect}>
+      <div>
+        <h3 className="font-semibold">Proof on labeled events</h3>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-ink-2">
+          <li>Replay counts before and after, on development events and on a held-out validation set.</li>
+          <li>A failed replay shows &ldquo;not available&rdquo;, never zero.</li>
+          <li>A repair proves only what your labeled events show. It does not prove the rule catches every attack.</li>
+        </ul>
       </div>
-    </HelpPanel>
+    </ReportOutline>
   );
 }
 
@@ -99,9 +91,10 @@ export default function DetectPage() {
     <ReportView report={run.data} />
   ) : null;
 
+  const stage = stageOf({ ready: false, pending: run.isPending, failed: run.isError, done: Boolean(run.data) });
+
   return (
-    <>
-      <ToolHeader page="detect" aside={<EnginePill />} />
+    <ToolFrame page="detect" aside={<EnginePill />}>
 
       <LiveStatus
         pending={run.isPending}
@@ -123,17 +116,26 @@ export default function DetectPage() {
       >
         {tab === "cases" ? (
           <ToolLayout
-            sticky={false}
+            jump={false}
+            stage={stage}
             input={
-              <Panel as="section">
-                <CaseGallery
-                  runningId={runningCase}
-                  onRun={(caseId) => {
-                    setRunningCase(caseId);
-                    run.mutate({ caseId });
-                  }}
-                />
-              </Panel>
+              <Workspace
+                steps={[
+                  {
+                    key: "case",
+                    title: "Pick a sample case",
+                    children: (
+                      <CaseGallery
+                        runningId={runningCase}
+                        onRun={(caseId) => {
+                          setRunningCase(caseId);
+                          run.mutate({ caseId });
+                        }}
+                      />
+                    ),
+                  },
+                ]}
+              />
             }
           >
             {engineDown && !run.data ? <EngineDown /> : null}
@@ -153,10 +155,10 @@ export default function DetectPage() {
                 run.mutate({ body });
               }}
             />
-            {result}
+            {result ?? <Before />}
           </div>
         )}
       </Tabs>
-    </>
+    </ToolFrame>
   );
 }

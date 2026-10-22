@@ -138,7 +138,7 @@ describe("LandingPage in local mode", () => {
     const footer = screen.getByRole("contentinfo");
     expect(within(footer).getByText("Kestrix by Ruthvik Bandari")).toBeTruthy();
     expect(screen.getAllByText(/Ruthvik Bandari/)).toHaveLength(1);
-    expect(within(footer).getByRole("link", { name: "GitHub repository" }).getAttribute("href")).toBe(REPO_URL);
+    expect(within(footer).getByRole("link", { name: "Source code" }).getAttribute("href")).toBe(REPO_URL);
     expect(within(footer).getByRole("link", { name: "Documentation" }).getAttribute("href")).toBe("/docs");
     expect(within(footer).getByRole("link", { name: "License (Apache-2.0)" })).toBeTruthy();
     expect(within(footer).getByRole("link", { name: "Privacy" }).getAttribute("href")).toBe(PRIVACY_PATH);

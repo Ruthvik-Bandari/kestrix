@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import type { ToolPage } from "../../app/tools";
-import { Badge } from "../../components/ui";
 import { ToolGuide } from "./ToolGuide";
 import { ToolHeader } from "./ToolHeader";
 
@@ -9,14 +8,7 @@ import { ToolHeader } from "./ToolHeader";
 export function GuidePage({ tool }: { tool: ToolPage }) {
   return (
     <>
-      <ToolHeader
-        page={tool}
-        aside={
-          <Badge tone="accent" icon="terminal">
-            Run locally
-          </Badge>
-        }
-      />
+      <ToolHeader page={tool} guide />
       <ToolGuide tool={tool} />
     </>
   );
