@@ -397,6 +397,8 @@ export interface MailReport {
   subject: string | null;
   from_address: string | null;
   verdict: MailVerdict;
+  /** Set when several low findings together decided the verdict; absent on older reports. */
+  verdict_reason?: string | null;
   /** A capped sum of per-severity weights; a heuristic, not a probability. */
   heuristic_score: number;
   findings: MailFinding[];

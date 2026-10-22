@@ -198,7 +198,7 @@ The route is in [`mail/api.py`](../src/kestrix/mail/api.py); checks, verdict rul
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /api/mail/analyze` | `multipart/form-data` with one file field named `file` (the raw `.eml` bytes); no other fields. Optional query parameters: `protected_domain` (repeatable, at most 20, each a host name; used for display-name and look-alike checks) and `trusted_authserv_id` (repeatable, at most 5). | `MailReport`: `schema_version`, `notice`, `sha256`, `subject`, `from_address`, `verdict`, `heuristic_score`, `findings` (each with `id`, `analyzer` (`auth`, `sender`, `lookalike`, `links`, `attachments` or `intent`), `severity`, `title`, `explanation`, `evidence`), `counts` |
+| `POST /api/mail/analyze` | `multipart/form-data` with one file field named `file` (the raw `.eml` bytes); no other fields. Optional query parameters: `protected_domain` (repeatable, at most 20, each a host name; used for display-name and look-alike checks) and `trusted_authserv_id` (repeatable, at most 5). | `MailReport`: `schema_version`, `notice`, `sha256`, `subject`, `from_address`, `verdict`, `verdict_reason` (null unless several low findings together decided the verdict), `heuristic_score`, `findings` (each with `id`, `analyzer` (`auth`, `sender`, `lookalike`, `links`, `attachments` or `intent`), `severity`, `title`, `explanation`, `evidence`), `counts` |
 
 ```bash
 curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_domain=example-bank.com'

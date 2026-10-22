@@ -192,6 +192,15 @@ describe("email check page", () => {
     expect(screen.queryByText(/^Clean$/)).toBeNull();
   });
 
+  it("explains a verdict that several low findings decided together", async () => {
+    const reason = "Three low findings from two analyzers together: plain HTTP links, a generated host, an outdated mailer.";
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report({ verdict: "suspicious", verdict_reason: reason })))));
+    renderPage();
+    chooseFile();
+    fireEvent.click(screen.getByRole("button", { name: /check message/i }));
+    expect(await screen.findByText(reason)).toBeTruthy();
+  });
+
   it("renders insufficient evidence as undecided, not as success", async () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json(report({ verdict: "insufficient_evidence", findings: [] })))));
     renderPage();

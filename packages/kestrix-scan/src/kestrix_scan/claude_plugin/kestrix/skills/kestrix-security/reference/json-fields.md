@@ -14,6 +14,7 @@ are sorted most severe first. Errors go to stderr, not into the JSON.
 | `subject` | Subject, cut to 200 characters. |
 | `from_address` | Address in `From`, or `null`. |
 | `verdict` | `malicious`, `suspicious`, `clean` or `insufficient_evidence`. |
+| `verdict_reason` | Null, or a sentence naming the low findings when three or more of them from two analyzers made the message `suspicious` on their own. |
 | `heuristic_score` | 0 to 100; high 35, medium 15, low 5 per finding, capped. Not a probability. |
 | `findings[]` | `id`, `analyzer` (`auth`, `sender`, `lookalike`, `links`, `attachments`, `intent`), `severity`, `title`, `explanation`, `evidence`. |
 | `counts` | `parts`, `links`, `attachments`, `text_truncated`, `links_truncated`. |

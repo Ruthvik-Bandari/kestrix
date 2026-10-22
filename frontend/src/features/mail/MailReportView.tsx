@@ -128,6 +128,12 @@ export function MailReportView({ report }: { report: MailReport }) {
         }
       >
         <p>{meta.body}</p>
+        {report.verdict_reason ? (
+          <p className="mt-2 text-[0.875rem] text-ink-2">
+            <span className="font-medium text-ink">Why: </span>
+            {report.verdict_reason}
+          </p>
+        ) : null}
       </VerdictCard>
 
       <NextStep>{meta.next}</NextStep>
