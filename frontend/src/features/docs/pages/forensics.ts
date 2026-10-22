@@ -153,27 +153,27 @@ export const forensicsPages: DocPage[] = [
     path: `${BASE}/limits`,
     title: "File & link forensics: limits and measured accuracy",
     nav: LIMITS_NAV,
-    summary: "What the file and link checks cannot tell you, and the development-split measurements, with the locked test not yet run.",
+    summary: "What the file and link checks cannot tell you, and their accuracy measured once on a locked test of public data.",
     sections: [
       ref("forensics", "Limits"),
       section(
         "Measured accuracy",
-        note("Every number below is a development-split number from public data. The locked test has not been run, so none of these is a final measurement.", "caution"),
-        p("Files. On Govdocs1 (12,816 presumed-benign real files), 0.2% of files raise a security finding at `medium` or higher after the benchmark's first round of rule changes, against 5.0% before. On 360 synthetic malicious-style cases the file checker catches 336 at `medium` or higher, against 180 before, with no alarm on the 240 benign synthetic controls. The synthetic cases show that the rules fire as intended, not how real malware fares. Govdocs1 states that malware was not removed from it, so its false-alarm rates are upper bounds."),
+        note("These numbers come from a one-time locked test on public data that was not used for tuning. The synthetic file cases were written alongside the rules, and the benign URLs are all host roots, so read the caveats below.", "caution"),
+        p("Files. On 6,877 Govdocs1 files (presumed-benign real files), 0.28% raise a security finding at `medium` or higher, against 4.26% with the old rules. Of 180 synthetic malicious-style files the checker catches 168 at `medium` or higher, against 90 before, with no alarm on 120 benign synthetic controls. The synthetic cases show that the rules fire as intended, not how real malware fares. Govdocs1 states that malware was not removed from it, so its false-alarm rates are upper bounds."),
         table(
           ["File measure", "Before round 1", "After round 1"],
           [
-            ["Govdocs1 files with a security finding at `medium` or higher", "5.0%", "0.2%"],
-            ["Synthetic malicious-style cases caught at `medium` or higher", "180 of 360", "336 of 360"],
+            ["Govdocs1 files with a security finding at `medium` or higher", "4.26%", "0.28%"],
+            ["Synthetic malicious-style files caught at `medium` or higher", "90 of 180", "168 of 180"],
           ],
         ),
-        p("Links. On PhiUSIIL, 86.4% of phishing URLs reach `low` or higher but only 3.0% reach `medium` or higher, against 63.7% and 2.0% before round 1. False alarms are 0.19% (PhiUSIIL host roots) and 1.65% (Majestic host roots) at `low` or higher, and 0.0% at `medium`."),
+        p("Links. Of 28,531 phishing URLs, 83.3% reach `low` or higher but only 3.6% reach `medium` or higher, against 58.4% and 1.8% with the old rules. False alarms are 0.12% (PhiUSIIL host roots) and 1.39% (Majestic host roots) at `low` or higher, and 0.0% at `medium`."),
         table(
           ["Link measure", "Before round 1", "After round 1"],
           [
-            ["Phishing URLs at `low` or higher", "63.7%", "86.4%"],
-            ["Phishing URLs at `medium` or higher", "2.0%", "3.0%"],
-            ["Benign false alarms at `low` or higher (PhiUSIIL / Majestic)", "0.13% / 1.62%", "0.19% / 1.65%"],
+            ["Phishing URLs at `low` or higher", "58.4%", "83.3%"],
+            ["Phishing URLs at `medium` or higher", "1.8%", "3.6%"],
+            ["Benign false alarms at `low` or higher (PhiUSIIL / Majestic)", "0.10% / 1.36%", "0.12% / 1.39%"],
           ],
         ),
       ),

@@ -132,3 +132,42 @@ ssh explorer 'cd ~/kestrix-linkfile && bash hpc/linkfile_chain.sh full'   # buil
 ```
 
 The locked test, once the owner approves, is `ssh explorer 'cd ~/kestrix-linkfile-rounds/final && bash hpc/linkfile_locked.sh --name linkfile-v1'` (add `--dry-run` to print the submissions first).
+
+## Locked test (2026-10-22)
+
+Run once each (link: features 11301724/11301726, evaluation 11301728; file: features 11301731/11301733, evaluation
+11301745) on the held-out test split, baseline and round-1 rules side by side. Reports:
+[`link-locked-linkfile-v1.json`](../data/linkfile/link-locked-linkfile-v1.json) and
+[`file-locked-linkfile-v1.json`](../data/linkfile/file-locked-linkfile-v1.json). 95% grouped-bootstrap intervals
+(file intervals are message-level: the test has only 7 Govdocs threads).
+
+**Files** (6,877 Govdocs1 files; 180 synthetic malicious-style and 120 synthetic benign-control files):
+
+| Measure | Old rules | Round 1 |
+| --- | --- | --- |
+| Govdocs1 files with a security finding at `medium` or higher | 4.26% (3.81–4.77) | **0.28% (0.16–0.41)** |
+| Govdocs1 files with any security finding (`low` or higher) | 7.68% (7.08–8.33) | **0.29% (0.17–0.42)** |
+| Synthetic malicious-style files caught at `medium` or higher | 90 of 180 | **168 of 180** |
+| Synthetic families fully caught | 9 of 18 | **16 of 18** |
+| Synthetic benign controls flagged | 0 of 120 | 0 of 120 |
+
+**Links** (28,531 phishing; 40,463 PhiUSIIL and 8,468 Majestic benign host roots):
+
+| Measure | Old rules | Round 1 |
+| --- | --- | --- |
+| Phishing at `low` or higher | 58.4% (42.8–77.5) | **83.3% (74.7–90.3)** |
+| Phishing at `medium` or higher | 1.8% (1.2–2.5) | 3.6% (2.3–5.5) |
+| Benign false alarms at `low` or higher (PhiUSIIL / Majestic) | 0.10% / 1.36% | 0.12% / 1.39% |
+| Benign false alarms at `medium` or higher | 0.0% | 0.0% |
+| Matched subset (https host roots on both sides), phishing at `low` or higher | 7.5% (5.3–20.8) | 87.3% (32.7–95.5) |
+
+What the locked test shows:
+
+- **Files: the round-1 rules held up.** False alarms on real benign files fell about fifteenfold, and the
+  synthetic catch nearly doubled. The synthetic cases show that the rules fire as intended, not how real malware
+  fares; Govdocs1 was not screened for malware, so its false-alarm rates are upper bounds.
+- **Links: more phishing reaches `low`, almost none reaches `medium`.** The gain comes from the two new subdomain
+  signals, which the benign data cannot test (it has no user pages on free hosts), so their false-alarm cost on real
+  browsing is still unmeasured; the matched-subset interval is very wide. A link verdict at `low` is a hint to look,
+  not a phishing call.
+- The locked splits are now spent.
