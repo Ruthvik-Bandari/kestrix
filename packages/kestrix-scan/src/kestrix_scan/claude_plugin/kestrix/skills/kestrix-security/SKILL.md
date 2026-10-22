@@ -1,6 +1,6 @@
 ---
 name: kestrix-security
-description: Run Kestrix, a local-first security workbench, to answer everyday security questions on the user's own machine. Use when the user asks whether an email is phishing or a scam, wants a suspicious email or .eml file checked, asks whether a link or URL is safe to click, wants a suspicious file, download or attachment analysed, wants their own website's security headers, HTTPS/TLS certificate or cookie flags checked, wants to repair or debug a Sigma detection rule (why didn't my rule fire, why is it noisy), or asks whether Bitcoin addresses are exposed to quantum attacks. Not for scanning systems the user does not own or is not authorized to test.
+description: Runs the local Kestrix command line tool to check things on the user's own machine and explain the result. Use when the user asks whether an email or .eml file is phishing, a scam or spoofed, whether a link or URL is safe to click, what a suspicious file, download or attachment really is, whether a photo reveals where it was taken, to check the security headers, HTTPS certificate or cookie flags of a website they own or are authorized to test, why a Sigma detection rule did not fire or is noisy, whether Bitcoin addresses are exposed to quantum attacks, or when the user names Kestrix. Not for reviewing source code, which belongs to secure-code-review. Never for scanning a website or system the user does not own or is not authorized to test.
 ---
 
 # Kestrix security workbench
@@ -30,7 +30,7 @@ which command to run, how to read its `--json` output, and how to explain the re
 Run `kestrix version` first. It prints `0.1.0 (Kestrix by Ruthvik Bandari)` or similar. Inside a Kestrix
 source checkout, use `uv run kestrix ...` instead.
 
-If the command is not found, tell the user and offer to install it from PyPI. Install only after they agree:
+If the command is not found, tell the user and offer to install it. Install only after they agree:
 
 ```bash
 uv tool install kestrix
@@ -39,6 +39,8 @@ pipx install kestrix
 # photo metadata (EXIF) support:
 uv tool install "kestrix[exif]"
 ```
+
+If the package is not on PyPI yet, `uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"` installs it from the repository.
 
 Detection repair also needs the pinned Elasticsearch in Docker. Start it once, wait about 30 seconds,
 then confirm it is ready (exit 0 means ready, 3 means not reachable):

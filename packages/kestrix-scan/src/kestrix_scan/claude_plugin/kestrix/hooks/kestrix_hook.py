@@ -114,7 +114,7 @@ STOP_SCAN_TIMEOUT_S = 25.0  # inside the 30 s Stop hook timeout
 SESSION_TTL_S = 14 * 24 * 3600
 CONFIG_FILE = ".kestrix.json"
 # Words only, no command line: the hooks never install anything, and the plugin README has the commands.
-INSTALL_HINT = "install the kestrix-scan package from PyPI with pip, uv tool or pipx (see the Kestrix plugin README)"
+INSTALL_HINT = "install the kestrix-scan package (not on PyPI yet: install it from the Kestrix repository with uv tool; see the Kestrix plugin README)"
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
 
 
@@ -854,7 +854,7 @@ def status_text(state: Path | None) -> str:
     lines = [
         "Kestrix status for this session",
         f"- Scans completed: {scans}, covering {files} file(s).",
-        f"- Findings reported to Claude: {new} new at medium or above; {existing} older ones were only counted.",
+        f"- Findings reported to Claude: {new} new at medium or above; older findings in the same files are counted only when an edit also introduced new ones ({existing} so far).",
     ]
     skipped = sum(causes.values())
     if skipped:

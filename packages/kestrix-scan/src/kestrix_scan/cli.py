@@ -61,7 +61,8 @@ def _err(text: str) -> None:
 def _scan_parser(prog: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=prog,
-        description="Scan Python code for insecure patterns and any text file for hard-coded secrets. "
+        description="Scan Python, JavaScript and TypeScript code for insecure patterns, any text file for hard-coded secrets, "
+        "lockfiles for vulnerable dependencies and Claude Code agent config for risky settings. "
         "Exit codes: 0 no findings at or above --fail-on, 1 findings, 2 usage or input error.",
     )
     parser.add_argument("paths", nargs="*", type=Path, help="Files or directories to scan. Default: '.'.")

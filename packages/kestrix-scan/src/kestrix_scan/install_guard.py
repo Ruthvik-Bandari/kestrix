@@ -10,7 +10,7 @@ and VCS references are skipped, as is any segment ``shlex`` cannot split.
 
 Decisions, from the local OSV index only (see ``osvdb``):
 
-- a package version that a ``MAL-`` advisory covers, or an unpinned package that a ``MAL-``
+- a package version that a ``MAL-`` advisory (or a GitHub-reviewed malware advisory, CWE-506) covers, or an unpinned package that a ``MAL-``
   advisory covers in every version, gets ``permissionDecision: "deny"`` with the reason;
 - an exactly pinned version with known vulnerabilities, or an unpinned package with some
   malicious versions, gets a non-blocking ``additionalContext`` warning that names the fixed version;
@@ -38,6 +38,9 @@ ENV_SWITCH = "KESTRIX_INSTALL_GUARD"
 MAX_COMMAND_CHARS = 20_000
 MAX_PACKAGES = 50
 MAX_MESSAGE_CHARS = 2_000
+EMBEDDED_MALWARE_CWE = (
+    "CWE-506"  # GitHub-reviewed malware and compromised-release advisories (GHSA-) carry this, not a MAL- id
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,7 +194,7 @@ def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> 
                 if not ({adv.id, *adv.aliases} & ignored)
             ]
             what = f"{item.name}@{item.version}" if item.version else item.name
-            malicious = [adv for adv in advisories if adv.malicious]
+            malicious = [adv for adv in advisories if adv.malicious or EMBEDDED_MALWARE_CWE in adv.cwes]
             if item.version is not None:
                 bad = [adv for adv in malicious if is_affected(item.ecosystem, item.version, adv.ranges, adv.versions)]
             else:

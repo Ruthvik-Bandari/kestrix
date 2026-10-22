@@ -362,7 +362,7 @@ there before the session, a fix that clears the gate, and an internal error.
 When `kestrix` is on PATH, the hook adds one line of context. That line says the hooks are active and
 whether the Stop gate is on. It also shows the user one `systemMessage` line the first time in a session
 (`Kestrix: scanning files Claude writes (Stop gate off). /kestrix:status shows this session's results.`); resume,
-clear and compact fire the hook again and only re-add the context, because the context does not survive them. The
+clear, compact and fork fire the hook again and only re-add the context, because the context does not survive them. The
 hook also removes session records older than 14 days.
 
 ### /kestrix:status
@@ -371,7 +371,7 @@ A skill with `disable-model-invocation: true` that runs
 `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" status "${CLAUDE_SESSION_ID}" "${CLAUDE_PLUGIN_DATA}"` through
 dynamic context injection and has Claude show the result: scans completed and files covered, findings reported to
 Claude, the files that were not security-checked with their causes, and the number of files changed this session. The
-command is pre-approved with `allowed-tools: Bash(python3 *kestrix_hook.py status *)`. `${CLAUDE_SESSION_ID}`,
+command is pre-approved with `allowed-tools: Bash(python3 *kestrix_hook.py* status *)`. `${CLAUDE_SESSION_ID}`,
 `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are listed as string substitutions for skills in the [skills
 reference](https://code.claude.com/docs/en/skills), as is the `!` injection syntax. That reference does not carve out
 plugin skills, but it was not run in a live session here: if the block comes back empty, the skill tells Claude to run

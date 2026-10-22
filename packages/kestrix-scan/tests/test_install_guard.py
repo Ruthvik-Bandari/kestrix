@@ -202,3 +202,35 @@ def test_plugin_hook_warns_and_fails_open(tmp_path: Path, index: Path, isolated_
         _hook(tmp_path, {"tool_input": None}, isolated_osv_index),
     ):
         assert (result.returncode, result.stdout) == (0, ""), result.stderr
+
+
+def test_github_reviewed_malware_advisory_is_treated_like_a_mal_report(isolated_osv_index: Path) -> None:
+    """GHSA malware and compromised-release advisories (CWE-506) have no MAL- id but must deny the same way."""
+    npm = [
+        osv.advisory(
+            "GHSA-mal1-mal1-mal1",
+            "npm",
+            "crossenv-like",
+            events=[{"introduced": "0"}],
+            summary="crossenv-like is malware",
+            cwes=["CWE-506"],
+        ),
+        osv.advisory(
+            "GHSA-mal2-mal2-mal2",
+            "npm",
+            "hijacked",
+            versions=["2.3.0"],
+            summary="Compromised release of hijacked",
+            cwes=["CWE-506"],
+        ),
+    ]
+    osv.build(isolated_osv_index, ecosystems={"npm": npm})
+    whole = _decide("npm install crossenv-like")
+    assert whole is not None and whole["permissionDecision"] == "deny"
+    assert "GHSA-mal1-mal1-mal1" in whole["permissionDecisionReason"]
+    pinned = _decide("npm install hijacked@2.3.0")
+    assert pinned is not None and pinned["permissionDecision"] == "deny"
+    assert _decide("npm install hijacked@2.3.1") is None
+    unpinned = _decide("npm install hijacked")
+    assert unpinned is not None and "permissionDecision" not in unpinned
+    assert "Some versions of hijacked (npm) are reported as malicious" in unpinned["additionalContext"]

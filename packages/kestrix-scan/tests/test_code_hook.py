@@ -4,10 +4,12 @@
 
 import json
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from kestrix_scan import hook
+from kestrix_scan.models import Finding, TraceStep
 
 SHELL = "import subprocess\n\ndef run(cmd):\n    subprocess.run(cmd, shell=True)\n"
 MD5 = "import hashlib\n\ndef digest(data):\n    return hashlib.md5(data).hexdigest()\n"
@@ -75,12 +77,39 @@ def test_context_is_capped_and_structured(tmp_path: Path) -> None:
     lines = context.splitlines()
     assert lines[0] == "Kestrix: this edit introduced 13 security issue(s) at medium severity or above:"
     findings = [line for line in lines if line.startswith("- ")]
-    assert len(findings) == hook.MAX_SHOWN
-    assert all("[HIGH] py.os.system (CWE-78)" in line and "— Fix: " in line for line in findings)
-    assert lines[-2] == "+8 more (run /kestrix:scan to list them)."
+    assert len(findings) == 2  # twelve os.system calls are one entry, the md5 call another
+    assert "[HIGH] py.os.system (CWE-78)" in findings[0] and "— Fix: " in findings[0]
+    assert findings[0].endswith("(also at lines 3, 4, 5, 6, 7, 8, 9, 10, ...)")
+    assert "py.crypto.weak_hash" in findings[1]
     assert lines[-1] == hook.INSTRUCTION
     assert len(context) <= hook.MAX_CONTEXT_CHARS
     assert all(len(line) <= hook.MAX_LINE_CHARS for line in findings)
+
+
+def test_many_rules_are_capped_with_a_more_line(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text(
+        "import os, subprocess, hashlib, pickle, yaml\nos.system(a)\nsubprocess.run(b, shell=True)\n"
+        "hashlib.md5(c)\npickle.loads(d)\nyaml.load(e)\neval(f)\nexec(g)\n"
+    )
+    context = _context({"tool_name": "Write", "tool_input": {"file_path": str(target)}, "cwd": str(tmp_path)})
+    assert context is not None
+    lines = context.splitlines()
+    assert len([line for line in lines if line.startswith("- ")]) == hook.MAX_SHOWN
+    assert lines[-2].startswith("+") and lines[-2].endswith("more (run /kestrix:scan to list them).")
+
+
+def test_describe_keeps_the_fix_and_merges_trace_repeats() -> None:
+    finding = Finding(
+        rule_id="py.x", cwe="CWE-1", severity="high", confidence="high", path="a.py", line=3, column=1, end_line=3,
+        message="Long message. " + "word " * 80, why="", fix="Use the safe API instead.", snippet="", fingerprint="f",
+        trace=(TraceStep(2, "src"), TraceStep(2, "assign"), TraceStep(3, "sink")),
+    )  # fmt: skip
+    line = hook.describe(finding)
+    assert line.startswith("- a.py:3 [HIGH] py.x (CWE-1): Long message")
+    assert line.endswith("— Fix: Use the safe API instead.") and len(line) <= hook.MAX_LINE_CHARS
+    short = hook.describe(replace(finding, message="Short"))
+    assert "[trace: L2→L3]" in short and "L2→L2" not in short
 
 
 def test_stop_summary_lists_new_high_findings(tmp_path: Path) -> None:

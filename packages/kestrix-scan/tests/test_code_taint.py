@@ -465,7 +465,7 @@ def test_trace_in_text_and_hook_output(tainted_project: Path) -> None:
     text = render_text(report)
     assert "trace: 4 flask request.args (source) → 4 assigned to `q` → 5 reaches execute()" in text
     finding = next(f for f in report.findings if f.rule_id == "py.sql.string_built")
-    assert "[trace: L4→L4→L5]" in describe(finding)
+    assert "[trace: L4→L5]" in describe(finding)
     plain = next(f for f in report.findings if f.rule_id == "py.os.system")
     assert "trace" not in describe(plain)
 

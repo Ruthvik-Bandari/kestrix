@@ -24,16 +24,18 @@ Read on 2026-10-20. Re-read them before submitting; the portal's rules change.
 
 ## The plugin repository
 
-`uv run python scripts/build_plugin_repo.py` writes 42 files (166 KB) to `dist/claude-plugin-repo/`:
+`uv run python scripts/build_plugin_repo.py` writes 112 files (about 260 KB) to `dist/claude-plugin-repo/`:
 
 ```text
 .claude-plugin/plugin.json        1,013 B   manifest (name kestrix, displayName Kestrix, 0.1.0, Apache-2.0)
 .claude-plugin/marketplace.json     970 B   self-hosted marketplace "kestrix", source "./"
 .gitignore                           83 B   evals/results/
 CHANGELOG.md  LICENSE  NOTICE  PRIVACY.md  README.md  SECURITY.md
-evals/                                      claude plugin eval suite: 4 cases, README with results
-hooks/hooks.json                  1,415 B
-hooks/kestrix_hook.py            20.7 KB   the only script the hooks run (standard library)
+benchmarks/                                 scorecard and A/B report (text)
+evals/                                      claude plugin eval suite: 4 cases and the A/B cases, README with results
+scripts/ab_eval.py                          runs the A/B comparison (needs your usage; not run by the build)
+hooks/hooks.json                  1.6 KB
+hooks/kestrix_hook.py            37.9 KB   the only script the hooks run (standard library)
 skills/                                     6 skills (3 are the /kestrix:* commands); largest file 43.6 KB
 tests/test_no_network.py          4.6 KB   stdlib unittest: every hook with sockets refused
 ```
@@ -116,7 +118,7 @@ rule is broken, and `test_the_checklist_audit_passes_and_catches_each_problem` p
 | No `.DS_Store`, `Thumbs.db`, `desktop.ini`, `__MACOSX` | Pass | build audit; `.gitignore` lists `.DS_Store` |
 | Windows/macOS-safe names, no case-only clashes, plain folder names | Pass | build audit (`_name_problems`) |
 | No `export-ignore`/`export-subst`/`filter` in `.gitattributes` | Pass | the repository has no `.gitattributes` |
-| Repository < 50 MiB, < 10,000 files, each file < 5 MiB | Pass | 42 files, 166 KB total |
+| Repository < 50 MiB, < 10,000 files, each file < 5 MiB | Pass | 112 files, about 260 KB total |
 | `name` lowercase, digits, hyphens, ≤ 64 chars | Pass | `kestrix`; `claude plugin validate --strict` |
 | Distinctive name, not reserved, not presenting as official | Pass, pending portal | `kestrix`, the project's own name. The portal's **Validate** confirms no other organization uses it |
 | `displayName`, `author.name` in one writing system | Pass | `Kestrix`, `Ruthvik Bandari` (ASCII) |
@@ -125,7 +127,7 @@ rule is broken, and `test_the_checklist_audit_passes_and_catches_each_problem` p
 | README ≥ 40 words outside code blocks | Pass | build audit; `test_readme_covers_what_the_directory_asks_for` |
 | `LICENSE` file or `license` field | Pass | both; `LICENSE` is the Apache-2.0 text |
 | Non-image files < 256 KiB | Pass | largest is `skills/fixing-security-findings/SKILL.md`, 43.6 KB; build audit |
-| ≤ 512 files | Pass | 42; build audit |
+| ≤ 512 files | Pass | 112; build audit |
 | Text files only (no binaries) | Pass | build audit decodes every file as UTF-8 |
 | Bundled images only through Markdown image syntax | n/a | no images yet; `scripts/record_demo.md` says how to add them |
 | MCP servers declared with `command`/`url`, no bundles | n/a | no MCP servers |
@@ -143,11 +145,12 @@ rule is broken, and `test_the_checklist_audit_passes_and_catches_each_problem` p
 | Valid front matter, `description` a single text value | Pass | `claude plugin validate --strict dist/claude-plugin-repo/skills`; `test_skill_frontmatter_is_valid` |
 | Component folder and file names exact (`hooks/`, `skills/`, `SKILL.md`) | Pass | the same validation |
 | Security scan: everything the plugin runs, sends or fetches is in the README | Pass | README "What the plugin runs" and "The one network action"; the list above |
-| Security scan: readable source, nothing compiled or minified | Pass | one 515-line standard-library Python script and Markdown |
+| Security scan: readable source, nothing compiled or minified | Pass | one 917-line standard-library Python script and Markdown |
 | Compare output with and without the plugin (`claude plugin eval`) | Done, 1 run per arm | `evals/README.md` "Results so far"; run the full suite before quoting numbers |
+| Directory listing icon (`icon` in `plugin.json`, or `.claude-plugin/icon.png`) | Open, owner | Claude Code 2.1.307 `claude plugin validate --strict` passes but warns `ICON_MISSING`. It needs a square PNG or JPEG of 512 to 2048 px, under 2 MB. The build audit accepts only UTF-8 text files, so adding a logo means changing the audit and the packaged files; not done |
 | Load the plugin on each surface | Owner | Claude Code only: the hooks are the core of the plugin. Check how claude.ai and Cowork list a hooks plugin after submission |
 
-Local validation, 2026-10-20, Claude Code 2.1.304:
+Local validation, 2026-10-21, Claude Code 2.1.307 (the same three commands also print the `ICON_MISSING` warning described above; the result line is `Validation passed`):
 
 ```text
 $ claude plugin validate --strict dist/claude-plugin-repo
@@ -241,7 +244,7 @@ the PyPI project's source links return 404 to others.
    > the edit introduced, so Claude fixes them in the same turn. An opt-in Stop gate and an install guard (denies
    > packages the local OSV index lists as malicious) are included.
    >
-   > **Hooks.** Five entries, all `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" <event>`: one 515-line
+   > **Hooks.** Seven matcher entries (SessionStart, PreToolUse on file tools and on Bash, PostToolUse on file tools and on Bash, PostToolUseFailure on Bash, Stop), all `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" <event>`: one 917-line
    > standard-library script. It runs only the `kestrix-scan` on PATH (never one in the project), never a shell or
    > an installer, and fails open (exit 0, no output) on any error.
    >

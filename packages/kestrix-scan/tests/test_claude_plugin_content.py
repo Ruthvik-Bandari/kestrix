@@ -167,7 +167,7 @@ def test_skill_frontmatter_is_valid(name: str) -> None:
     assert "<" not in fields["description"] and ">" not in fields["description"]
     if name == STATUS:
         assert fields["disable-model-invocation"] == "true" and "argument-hint" not in fields
-        assert fields["allowed-tools"] == "Bash(python3 *kestrix_hook.py status *)"
+        assert fields["allowed-tools"] == "Bash(python3 *kestrix_hook.py* status *)"
         assert (
             '!`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/kestrix_hook.py" status "${CLAUDE_SESSION_ID}" "${CLAUDE_PLUGIN_DATA}"`'
             in text

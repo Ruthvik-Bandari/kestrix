@@ -27,7 +27,7 @@ Exit 0 analysed, 2 rejected (over 25 MiB, not an email message, too deeply neste
 | `filename`, `size` | Base name and size in bytes (over 50 MiB is refused). |
 | `hashes` | `md5`, `sha1`, `sha256`, `sha512`. |
 | `file_type` | `id`, `label`, `executable`, `extension`, `expected_extensions`, `extension_mismatch`. |
-| `entropy` | `overall` (0 to 8 bits per byte), `block_size`, `block_count`, `points[]`, `high_entropy_threshold` (7.2), `high_entropy_regions[]`, `high_entropy_region_count`, `high_entropy_bytes`. |
+| `entropy` | `overall` (0 to 8 bits per byte), `block_size`, `block_count`, `points[]`, `points_span_blocks`, `high_entropy_threshold` (7.2), `high_entropy_regions[]`, `high_entropy_region_count`, `high_entropy_bytes`. |
 | `byte_histogram` | 256 counts. Usually not worth showing. |
 | `printable_ratio` | Share of printable bytes, 0 to 1. |
 | `exif`, `exif_status` | Photo metadata (`tags`, `gps_present`, `gps`) and why it is or is not present. |

@@ -2,7 +2,7 @@
 name: status
 description: Show what the Kestrix hooks did in this session: files scanned, findings reported, and files that were not security-checked, with the reason.
 disable-model-invocation: true
-allowed-tools: Bash(python3 *kestrix_hook.py status *)
+allowed-tools: Bash(python3 *kestrix_hook.py* status *)
 ---
 
 # /kestrix:status

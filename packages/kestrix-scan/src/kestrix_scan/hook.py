@@ -15,7 +15,7 @@ before the change comes from, in order:
 A finding is new when its fingerprint (rule id, path and whitespace-free snippet, no line number)
 is not among the findings of the text before. When the text before is unknown, every finding
 counts as new. The output is a ``hookSpecificOutput`` whose ``additionalContext`` lists at most 5
-new findings at medium severity or above, most severe first, in about 1,500 characters, or nothing
+new findings at medium severity or above, most severe first, in about 2,400 characters, or nothing
 when the edit introduced none.
 
 ``PostToolUse`` (or ``PostToolUseFailure``) for the ``Bash`` tool: the plugin lists the source-like files
@@ -52,8 +52,8 @@ from .walk import Candidate, Unreadable, is_within, read_text, rel_path
 
 MAX_STDIN_BYTES = 10 * 1024 * 1024
 MAX_SHOWN = 5
-MAX_CONTEXT_CHARS = 1500
-MAX_LINE_CHARS = 200
+MAX_CONTEXT_CHARS = 2400  # Claude Code caps hook context at 10,000 characters
+MAX_LINE_CHARS = 320
 MAX_STOP_FILES = 200
 MAX_BASH_FILES = 20
 BEFORE_KEY = "kestrix_before"
@@ -226,29 +226,51 @@ def undo_edits(text: str, edits: list[Any]) -> str | None:
 
 
 def render_context(new: list[Finding], existing: int, origin: str = "edit") -> str:
-    """At most ``MAX_SHOWN`` findings, a '+N more' line, the existing count and one instruction line.
+    """At most ``MAX_SHOWN`` rule groups, a '+N more' line, the existing count and one instruction line.
 
-    ``origin`` is what introduced them: ``"edit"`` or ``"command"`` (files a Bash command changed).
+    Findings of one rule in one file are one entry (the first, then "also at lines ..."), so a file with forty
+    ``os.system`` calls does not use the whole budget on one fix. ``origin`` is what introduced them: ``"edit"``
+    or ``"command"`` (files a Bash command changed).
     """
-    shown = new[:MAX_SHOWN]
+    groups: dict[tuple[str, str], list[Finding]] = {}
+    for finding in new:
+        groups.setdefault((finding.path, finding.rule_id), []).append(finding)
+    entries = list(groups.values())
+    shown = entries[:MAX_SHOWN]
     lines = [f"Kestrix: this {origin} introduced {len(new)} security issue(s) at medium severity or above:"]
-    lines.extend(describe(f) for f in shown)
-    if len(new) > len(shown):
-        lines.append(f"+{len(new) - len(shown)} more (run /kestrix:scan to list them).")
+    lines.extend(describe(group[0], [f.line for f in group[1:]]) for group in shown)
+    hidden = sum(len(group) for group in entries[MAX_SHOWN:])
+    if hidden:
+        lines.append(f"+{hidden} more (run /kestrix:scan to list them).")
     if existing:
         lines.append(f"{existing} existing issue(s) in this file were already there (run /kestrix:scan).")
     lines.append(INSTRUCTION)
     return "\n".join(lines)[:MAX_CONTEXT_CHARS]
 
 
-def describe(finding: Finding) -> str:
-    """``path:line [SEVERITY] rule_id (CWE): message [trace: L3→L5] — Fix: …``, cut to ``MAX_LINE_CHARS``.
+def describe(finding: Finding, also: list[int] | None = None) -> str:
+    """``path:line [SEVERITY] rule_id (CWE): message [trace: L3→L5] — Fix: … (also at lines 9, 14)``, at most ``MAX_LINE_CHARS``.
 
-    The trace part appears only for taint findings: the lines from the source to the sink.
+    The fix is the part Claude acts on, so it is cut last: when the line is too long the trace goes first,
+    then the message is cut to its first sentence, and only then is the fix cut (at a word boundary).
+    The trace part appears only for taint findings: the lines from the source to the sink, repeats merged.
+    ``also`` lists the lines of further findings of the same rule in the same file (at most 8 are named).
     """
-    flow = f" [trace: {'→'.join(f'L{step.line}' for step in finding.trace)}]" if finding.trace else ""
-    line = (
-        f"- {finding.path}:{finding.line} [{finding.severity.upper()}] {finding.rule_id} ({finding.cwe}): "
-        f"{finding.message}{flow} — Fix: {finding.fix}"
-    )
-    return line if len(line) <= MAX_LINE_CHARS else line[: MAX_LINE_CHARS - 1] + "…"
+    tail = ""
+    if also:
+        named = ", ".join(str(n) for n in also[:8]) + (", ..." if len(also) > 8 else "")
+        tail = f" (also at lines {named})"
+    limit = MAX_LINE_CHARS - len(tail)
+    head = f"- {finding.path}:{finding.line} [{finding.severity.upper()}] {finding.rule_id} ({finding.cwe}): "
+    steps = [step.line for step in finding.trace]
+    lines = [n for i, n in enumerate(steps) if i == 0 or n != steps[i - 1]]
+    flow = f" [trace: {'→'.join(f'L{n}' for n in lines)}]" if len(lines) > 1 else ""
+    fix = f" — Fix: {finding.fix}"
+    message = finding.message.rstrip(".")
+    for candidate, with_flow in ((message, flow), (message, ""), (message.split(". ")[0], "")):
+        line = f"{head}{candidate}{with_flow}{fix}"
+        if len(line) <= limit:
+            return line + tail
+    room = limit - len(head) - len(candidate) - len(" — Fix: ") - 1
+    cut = finding.fix[: max(room, 40)].rsplit(" ", 1)[0].rstrip(",;:")
+    return f"{head}{candidate} — Fix: {cut}…{tail}"

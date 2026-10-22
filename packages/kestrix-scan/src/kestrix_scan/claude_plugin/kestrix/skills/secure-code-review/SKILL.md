@@ -1,6 +1,6 @@
 ---
 name: secure-code-review
-description: Reviews code for security vulnerabilities with the local Kestrix scanner, then fixes each finding and re-scans. Use when the user asks to review this for security, asks "is this code safe" or "is this secure", wants to check for vulnerabilities, audit, harden or security-test code, or asks about injection, XSS, SQL injection, command injection, path traversal, hard-coded secrets, unsafe deserialization or disabled TLS verification. Also use before finishing code that handles user input, shells, SQL, files, tokens or credentials, and whenever a Kestrix hook reports findings.
+description: Reviews code for security flaws with the local Kestrix scanner, fixes each finding and re-scans. Use when the user asks to review this for security, asks "is this code safe" or "is this secure", or wants to check for vulnerabilities, audit or harden code. Also use when writing or changing code that handles untrusted input or sensitive operations, such as authentication, sessions, JWTs, password hashing or crypto, SQL queries, subprocess or shell calls, eval or deserialization, file uploads and file paths, redirects and outbound requests, HTML output or DOM updates, CORS or TLS settings, and web request handlers (Flask, Django, FastAPI, Express). Also for hard-coded secrets, API keys and .env files, vulnerable dependencies in requirements or lockfiles, Claude Code settings, hooks and MCP config, and whenever a Kestrix hook reports findings. Not for phishing emails, links, files or live websites, which belong to kestrix-security.
 ---
 
 # Secure code review with Kestrix
@@ -23,6 +23,15 @@ the code is secure.
   in your replies, commits and suppression reasons.
 - **Keep behavior the same.** A fix changes how the code does something, not what it does. Run the
   project's tests after fixing when they exist.
+
+## Setup check
+
+Run `kestrix-scan version`. If it is not on PATH but `kestrix` is, use `kestrix code scan` with the same
+options. If neither exists, tell the user the scanner is not installed and how (`uv tool install kestrix-scan`
+once it is on PyPI, otherwise from the repository); install only after they agree. Dependency findings
+(`dep.*`) read a local vulnerability index: `kestrix-scan db status` shows whether one exists, and
+`kestrix-scan db update` downloads it (network, about 250 MB), so ask before running that. Without an index the
+scan still covers code, configuration and secrets, and a `dep.db_stale` note says dependencies were not checked, so do not call them clean.
 
 ## Workflow
 
@@ -59,6 +68,7 @@ the code is secure.
    | AI and ML | `py.llm.output_to_sink`, `py.ml.unsafe_model_load` | Validate model output into a fixed structure before it reaches code, a shell, SQL or a path; `torch.load(..., weights_only=True)`, safetensors, `safe_mode` on, no `trust_remote_code`. |
    | JavaScript and TypeScript | `js.exec.eval`, `js.child_process.shell`, `js.sql.string_built`, `js.dom.xss_sink`, `js.llm.output_to_sink` | `JSON.parse` or a lookup instead of `eval`; `execFile`/`spawn` with an argument array and no `shell: true`; `$1`/`?` parameters or a binding tagged template; `textContent` or `DOMPurify.sanitize` instead of HTML sinks; validate model output before it reaches code, a command or HTML. |
    | JavaScript data flow and config | `js.path.traversal`, `js.ssrf.request`, `js.redirect.open`, `js.proto.pollution`, `js.cors.wildcard_credentials`, `js.tls.reject_unauthorized`, `js.crypto.weak_hash`, `js.crypto.insecure_random`, `js.jwt.no_verify` | `path.basename` or `res.sendFile(name, { root })`; fixed scheme and host; allowlisted redirects; reject `__proto__`/`constructor` keys; list CORS origins; keep TLS checks on; `sha256`; `crypto.randomBytes`; explicit JWT `algorithms`. |
+   | Dependencies | `dep.vulnerable`, `dep.malicious` | Upgrade to the fixed version the finding names and update the lockfile. For `dep.malicious` remove the package, do not reinstall it, and tell the user to rotate any credentials on a machine that installed it. |
    | Agent configuration | `config.*` | No downloaded scripts in hooks, no `bypassPermissions` or `Bash(*)` in project settings, pinned MCP package versions, and `${VAR}` references instead of literal credentials. |
    | Secrets | `secret.*` | Remove the value, read it from the environment or a secrets manager, and tell the user to rotate it. |
 
@@ -76,7 +86,8 @@ the code is secure.
    )  # kestrix: ignore[py.subprocess.shell_true] command from the reviewed deploy config
    ```
 
-   A suppression without a reason suppresses nothing and shows up as a note.
+   A suppression without a reason suppresses nothing and shows up as a note. Never add a baseline file, disable
+   a rule in `[tool.kestrix]`, or widen `exclude` to make a scan pass unless the user asks for it.
 
 6. **Report.** Say what you fixed (rule id, file and line), what you suppressed and why, and the remaining
    risk: low findings left as is, anything the rules do not cover (authorization logic, business rules,
@@ -86,6 +97,6 @@ the code is secure.
 
 When the Kestrix plugin's hooks are on, every file you write or edit is scanned and findings at medium or
 above that the edit introduced come back as context right after the edit; findings that were already there
-are only counted (see them with `/kestrix:scan`). Fix them in the same turn before moving on. If the Stop
-gate is enabled, you cannot finish while high or critical findings that this session introduced remain in
+are only counted, and only when the edit also introduced something (see them with `/kestrix:scan`). One rule
+repeated in a file is one entry with "also at lines ..."; fix every listed line. Fix them in the same turn before moving on. If the Stop gate is enabled, you cannot finish while high or critical findings that this session introduced remain in
 files changed this session.
