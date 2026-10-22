@@ -304,6 +304,26 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
         note("The locked test is spent. Later rule changes need new held-out data, and the development numbers after the first round of rule changes are tuned numbers, not blind ones.", "caution"),
       ),
       section(
+        "Round 2 on a fresh held-out set",
+        p("A second round of rule changes was measured once on test2: 1,024 in-scope files from 522 projects, with no advisory, CVE, fix commit or file content shared with any tuning data."),
+        table(
+          ["Tool", "Language", "Detection", "False alarms per KLOC (fixed files)"],
+          [
+            ["kestrix-scan round 2", "Python", "7.7% [4.2, 12.0]", "0.23 [0.16, 0.29]"],
+            ["kestrix-scan round 1", "Python", "7.5% [4.0, 11.6]", "0.22 [0.15, 0.29]"],
+            ["Bandit 1.9.4", "Python", "10.2% [6.3, 14.2]", "0.99 [0.77, 1.21]"],
+            ["kestrix-scan round 2", "JS/TS", "10.3% [7.2, 13.9]", "0.43 [0.24, 0.70]"],
+            ["kestrix-scan round 1", "JS/TS", "9.0% [5.8, 12.9]", "0.40 [0.22, 0.66]"],
+            ["eslint-plugin-security", "JS/TS", "12.4% [8.8, 16.1]", "16.93 [14.09, 19.90]"],
+          ],
+        ),
+        list(
+          "Round 2 helped a little on unseen code: detection 8.3% to 9.1% overall (+0.8 points, paired interval +0.1 to +1.6), mostly in JavaScript and TypeScript, for 3% more alerts.",
+          "Bandit still detects more Python (−2.5 points, interval −4.7 to −0.2) at about four times the false alarms. On JS/TS, full ESLint security's lead (−2.0 points, interval −6.3 to +2.8) is not established, at about forty times the false alarms.",
+          "Kestrix with Bandit detects 11.8% of Python pairs. test2 is now spent too.",
+        ),
+      ),
+      section(
         "What is not claimed",
         list(
           "Not a detection rate for real-world code: a pair is a changed file of a fix commit, many of which hold no instance of the CVE's weakness, and a vulnerability can sit in a file the fix did not change. A \"miss\" is often not a miss.",
