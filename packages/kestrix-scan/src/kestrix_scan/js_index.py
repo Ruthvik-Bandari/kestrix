@@ -129,9 +129,26 @@ _LLM_TAILS = (
     ("responses", "create"),
     ("completions", "create"),
 )
-_REQUEST_FIELDS = frozenset({"params", "query", "body", "headers", "cookies", "signedCookies", "files"})
+_REQUEST_FIELDS = frozenset(
+    {
+        "params",
+        "query",
+        "body",
+        "headers",
+        "cookies",
+        "signedCookies",
+        "files",
+        "url",  # http.createServer, Express, Fastify: the request target the client wrote
+        "originalUrl",
+        "path",
+        "baseUrl",
+        "payload",  # hapi
+        "rawBody",
+        "nextUrl",  # Next.js middleware and route handlers
+    }
+)
 _REQUEST_CALLS = frozenset({"param", "get", "header"})
-_KOA_FIELDS = frozenset({"query", "params", "querystring"})
+_KOA_FIELDS = frozenset({"query", "params", "querystring", "url", "originalUrl", "path"})
 _ROUTER_HOOKS = frozenset({"useSearchParams", "useParams", "useLocation"})
 _DOM_DOCUMENT = frozenset({"location", "URL", "documentURI"})
 _PROPAGATE_CALLS = frozenset(
@@ -1335,7 +1352,7 @@ class Index:
         if first == "ctx" and len(segs) >= 2 and first in self.params and segs[1].kind == "name":
             if names[1] in _KOA_FIELDS:
                 return self._origin("request", f"Koa ctx.{names[1]}", line), 2
-            if names[1] == "request" and len(segs) >= 3 and names[2] in ("query", "body"):
+            if names[1] == "request" and len(segs) >= 3 and names[2] in ("query", "body", "url", "path", "files"):
                 return self._origin("request", f"Koa ctx.request.{names[2]}", line), 3
         dom = self._dom_source(chain, names)
         if dom is not None:

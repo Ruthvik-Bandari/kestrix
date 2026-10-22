@@ -1,6 +1,6 @@
 # Kestrix code scanner on CVE-fix commits (CVEfixes and GitHub Advisory Database)
 
-This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The locked test half has not been run.** Every number below is a development number. Code: `src/kestrixcodebench/`, `hpc/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
+This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `hpc/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
 
 The ground truth is approximate. Read [What is not claimed](#what-is-not-claimed) before quoting any rate.
 
@@ -216,3 +216,104 @@ What the locked test shows, without spin:
   commit, often without the weakness) and partly because many CVEs are design flaws (authorization, CSRF, logic) that
   pattern rules do not see. These numbers are not a claim that a scan finds most vulnerabilities.
 - The locked test is now spent; later rule rounds need new held-out data.
+
+
+## Round 2: a second held-out set (`test2`) and new rule changes
+
+The round-1 locked test is spent, so round 2 uses it as **tuning data** together with round-1 dev (17,474 file pairs, 8,806 in scope; reports label it `tuning`) and builds a new held-out set that no rule was tuned on. **The test2 evaluation has not been run.** Everything below is a tuning number.
+
+### test2 build
+
+`kestrixcodebench.heldout`, Slurm jobs and the transfer node: a fresh clone of the GitHub Advisory Database (CC BY 4.0, commit `e8186846e9dc`, 2026-10-22), reviewed PyPI and npm advisories with a GitHub fix commit (`/commit/<sha>` or `/pull/<n>/commits/<sha>`), minus everything round 1 touched: GHSA ids, CVE aliases and fix commits of the benchmark's pairs and unchanged files, of `kestrixvul`'s mined targets (every role) and of CVEfixes; at most 3 changed source files per commit (a seeded sample), the round-1 path, content and size filters, 3 unchanged files per commit from the parent. Overlap by id and by fix commit is zero (checked in code, and again against file contents: 132 file pairs that copied a round-1 file were dropped).
+
+| Setting | Advisories | Fix commits | Repositories |
+| --- | --- | --- | --- |
+| strict (no MoreFixes-only commit, only repositories round 1 never scanned) | 5 | 5 | 5 |
+| plus repositories round 1 scanned | 111 | 111 | 23 |
+| plus MoreFixes-only commits | 270 | 272 | 237 |
+| **both (what test2 uses)** | **1,330** | **1,412** | **576** |
+
+Only 5 advisories are new by the strictest reading because the pinned checkout of 2026-10-19 already gave round 1 nearly every advisory with a fix commit. MoreFixes is not used by this benchmark, so a commit that only MoreFixes holds is new to it (1,243 of the final commits are such); repositories that round 1 scanned are allowed because that is the only way to reach 1,000 in-scope pairs. Each pair carries a `repo_seen` flag and the locked evaluation scores the 401 pairs (239 in scope, 223 repositories) of never-scanned repositories separately.
+
+| Item | Value |
+| --- | --- |
+| Advisories / fix commits fetched | 1,330 / 1,410 (2 commits unavailable) |
+| Projects / CVEs | 522 / 1,173 |
+| File pairs | 1,969 (Python 989, JavaScript 540, TypeScript 440) |
+| Pairs in scope | 1,024 (Python 482, JavaScript 312, TypeScript 230) |
+| Unchanged files | 3,292 (Python 1,417, JavaScript 1,058, TypeScript 817) |
+| KLOC before / after / unchanged | 1,455 / 1,478 / 675 |
+| Overlap with the round-1 data: GHSA ids, CVE ids, fix commits, file contents | 0, 0, 0, 0 |
+| Repositories also in the tuning data | 332 of 522 (1,568 of 1,969 pairs) |
+
+Aggregate manifest: [`test2-manifest.json`](../data/codebench/test2-manifest.json) (SHA-256 of `pairs.jsonl` `028af3a2...`). The private manifest with advisory ids, repositories, commits and the SHA-256 of every file stays on the cluster (`reports/test2-files.json`), with the files, under `/scratch/$USER/kestrix/codebench2/` (0700/0600; `/scratch` is purged 2026-11-03). Advisory data: CC BY 4.0, attribution to the GitHub Advisory Database; the fetched source files keep their project licenses and are not redistributed. Jobs: select 11303297 (strict), 11303732 (tiers), 11303906 (final); fetch on `explorer-xfer` (1,410 commits); build 11305898 and 11305973.
+
+### Tuning measurements
+
+Keep rule as in round 1, applied to the tuning data: keep a change when paired detection goes up and the paired change in alerts per KLOC on fixed and unchanged files is within noise or under 2% of the baseline alert rate; keep a *narrowing* of a rule only if detection does not fall. Each change was measured alone (a copy of the round-1 scanner with only that change) over every tuning file, with the same repository resamples, against `r2-t0` (round 1 on the tuning data). Baseline alert rate: 0.284 per KLOC Python, 0.69 JavaScript and TypeScript (about 2,100 and 6,700 alerts). A change was written from the dev error analysis and a read of missed pairs, so the final numbers are tuned.
+
+| Change | Subset | Detection, points | Fix-aware, points | Alerts per KLOC | Decision |
+| --- | --- | --- | --- | --- | --- |
+| p1c. Python: Flask route parameters, `view_args`, `get_data()`, `stream` | python | +0.08 [+0.00, +0.22] (+3 pairs) | +0.05 | +0.0020 [+0.0007, +0.0041] (+15 alerts, +0.7%) | keep |
+| p2c. Python: request objects of Django REST, Starlette, aiohttp, Pyramid, Sanic, Tornado, Bottle, Falcon | python | +0.05 [+0.00, +0.20] (+2 pairs) | +0.03 | +0.0022 [+0.0007, +0.0041] (+16 alerts, +0.8%) | keep |
+| p3. `py.path.traversal`: 22 more file sinks (`os.*`, `shutil.*`, `zipfile`, pathlib) | python | +0.03 [+0.00, +0.11] (+1 pairs) | +0.00 | +0.0161 [+0.0074, +0.0287] (+120 alerts, +5.7%) | revert |
+| p3b. `py.path.traversal`: only the sinks that change or delete files | python | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0039 [+0.0014, +0.0071] (+29 alerts, +1.4%) | revert |
+| p4. `py.ssrf.request`: session and client methods, `urlretrieve`, `HTTPConnection` | python | +0.05 [+0.00, +0.15] (+2 pairs) | +0.00 | +0.0026 [+0.0001, +0.0068] (+19 alerts, +0.9%) | keep |
+| p5. `py.xss.markup`: `from_string`, Mako, Django, Tornado template source | python | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0000 [+0.0000, +0.0000] (+0 alerts, +0.0%) | revert |
+| p6. new rule `py.subprocess.tainted_args` (request data in an argument list) | python | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0000 [+0.0000, +0.0000] (+0 alerts, +0.0%) | revert |
+| p8. new rule `py.xss.autoescape_off` (Jinja2 `Environment` without autoescape) | python | +0.24 [+0.09, +0.50] (+9 pairs) | +0.16 | +0.0095 [+0.0040, +0.0171] (+71 alerts, +3.4%) | revert |
+| p8b. same, only in files that name an HTML template | python | +0.19 [+0.06, +0.40] (+7 pairs) | +0.13 | +0.0060 [+0.0015, +0.0122] (+45 alerts, +2.1%) | revert |
+| p9. `py.xss.markup`: `Markup`/`mark_safe` of Markdown renderer output without a sanitizer | python | +0.05 [+0.00, +0.20] (+2 pairs) | +0.03 | +0.0009 [+0.0001, +0.0020] (+7 alerts, +0.3%) | keep |
+| p10. Django URL parameters (`def view(request, slug)`) as sources | python | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0050 [+0.0008, +0.0110] (+37 alerts, +1.8%) | revert |
+| p11. `py.archive.extract`: `shutil.unpack_archive` without `filter=` | python | +0.03 [+0.00, +0.10] (+1 pairs) | +0.03 | +0.0003 [+0.0000, +0.0007] (+2 alerts, +0.1%) | keep |
+| j1. JS sources: `req.url`, `originalUrl`, `path`, `payload`, Koa `ctx.url` | js_ts | +0.08 [+0.02, +0.18] (+4 pairs) | +0.06 | +0.0038 [+0.0020, +0.0062] (+25 alerts, +0.6%) | keep |
+| j2. `js.path.traversal`: `readdir`, `stat`, `exists`, `rename`, `copyFile`, `mkdir`, `rmdir`, fs-extra | js_ts | +0.04 [+0.00, +0.10] (+2 pairs) | +0.04 | +0.0055 [+0.0017, +0.0112] (+36 alerts, +0.8%) | keep |
+| j3. `js.ssrf.request`: `request`, `needle`, `ky`, `phin`, `bent`, `undici` verbs | js_ts | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0006 [+0.0000, +0.0015] (+4 alerts, +0.1%) | revert |
+| j4. `js.redirect.open`: `res.location`, `Location` header, `writeHead`, `h.redirect` | js_ts | +0.02 [+0.00, +0.07] (+1 pairs) | +0.00 | +0.0003 [+0.0000, +0.0009] (+2 alerts, +0.0%) | keep |
+| j5. `js.exec.eval`: `vm.*`, template engines, `require()` of request data | js_ts | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0000 [+0.0000, +0.0000] (+0 alerts, +0.0%) | revert |
+| j6a. `js.child_process.shell`: `spawn('sh', ['-c', script])`, `shelljs.exec`, `execa.command` | js_ts | +0.04 [+0.00, +0.13] (+2 pairs) | +0.04 | +0.0012 [+0.0004, +0.0025] (+8 alerts, +0.2%) | keep |
+| j6b. `js.child_process.shell`: request data as program or argument of `spawn`/`execFile` | js_ts | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0005 [+0.0000, +0.0014] (+3 alerts, +0.1%) | revert |
+| j9. `js.dom.xss_sink`: `res.send` of markup built from request data | js_ts | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0006 [+0.0000, +0.0018] (+4 alerts, +0.1%) | revert |
+| j10. `js.dom.xss_sink`: `el.href`/`src` assigned from the URL or a request | js_ts | +0.00 [+0.00, +0.00] (+0 pairs) | +0.00 | +0.0009 [+0.0002, +0.0020] (+6 alerts, +0.1%) | revert |
+| j7. `js.dom.xss_sink` narrowed: built strings and tainted values only | js_ts | -2.45 [-3.77, -1.48] (-123 pairs) | -1.81 | -0.3614 [-0.5635, -0.2106] (-2354 alerts, -53.5%) | revert (narrowing loses detection) |
+| j7b. `js.dom.xss_sink` narrowed: jQuery `.html()` only for built strings and tainted values | js_ts | -0.52 [-0.82, -0.29] (-26 pairs) | -0.22 | -0.2344 [-0.4109, -0.1000] (-1527 alerts, -34.7%) | revert (narrowing loses detection) |
+
+`p1c` and `p2c` are `p1` and `p2` plus making the taint analysis run on files that mention `flask`, `tornado` or `falcon` (it skipped files with no `request` word); the same numbers as without. Near misses: `p8b` adds 9 pairs less 2 for +2.1% alerts, just over the line. Nine changes are kept, all of them wider sources or sinks of existing rules, so the registry still has 60 rules. Hand analysis of missed pairs (aggregates only, no code quoted) again found no precise shapes: path traversal misses are library functions with no recognizable source (`Path(root) / key`), XSS misses are sanitizer swaps and version bumps.
+
+Most of `js.dom.xss_sink`'s noise is jQuery `.html(x)` of names, members and calls (about 3,800 of the alerts against about 90 true hits); every narrower form measured loses detection in proportion, so none was kept.
+
+Final scanner against round 1 on the tuning data (paired, repository bootstrap):
+
+| Subset | Detection, points | Fix-aware, points | Alerts per KLOC |
+| --- | --- | --- | --- |
+| python | +0.26 [+0.09, +0.56] (+10 pairs) | +0.13 | +0.0087 [+0.0044, +0.0146] (+65, +3.1%) |
+| js_ts | +0.26 [+0.11, +0.44] (+13 pairs) | +0.16 | +0.0144 [+0.0089, +0.0224] (+94, +2.1%) |
+| all | +0.26 [+0.13, +0.42] (+23 pairs) | +0.15 | +0.0114 [+0.0081, +0.0157] (+159, +2.4%) |
+
+| Run | Subset | Detection % | Fix-aware % | Alerts/KLOC (after) | Alerts/KLOC (unchanged) | Precision % |
+| --- | --- | --- | --- | --- | --- | --- |
+| round 1 | all (8,806 in scope) | 5.67 [4.31, 7.35] | 4.10 [2.95, 5.56] | 0.51 [0.37, 0.69] | 0.35 [0.27, 0.45] | 12.4 [9.4, 16.2] |
+| round 2 | all | 5.93 [4.56, 7.63] | 4.25 [3.11, 5.75] | 0.53 [0.39, 0.70] | 0.35 [0.28, 0.45] | 12.6 [9.6, 16.3] |
+| round 1 | python (3,778) | 4.61 [2.99, 7.04] | 3.26 [2.00, 5.22] | 0.27 [0.22, 0.34] | 0.31 [0.22, 0.44] | 11.4 [8.3, 15.2] |
+| round 2 | python | 4.87 [3.18, 7.40] | 3.39 [2.09, 5.32] | 0.28 [0.23, 0.35] | 0.32 [0.22, 0.44] | 11.7 [8.6, 15.5] |
+| round 1 | js_ts (5,028) | 6.46 [4.55, 8.72] | 4.73 [3.15, 6.70] | 0.76 [0.48, 1.13] | 0.40 [0.28, 0.56] | 12.8 [8.6, 18.8] |
+| round 2 | js_ts | 6.72 [4.81, 8.97] | 4.89 [3.29, 6.87] | 0.77 [0.50, 1.15] | 0.41 [0.29, 0.57] | 13.0 [8.8, 19.0] |
+
+Round 2 is a small gain: 23 more detected pairs of 8,806 in scope, for 159 more alerts; the nine changes added 129 alerts alone and 159 together (the wider analysis scope adds a few). Alerts rise 2.4% in total, just over the 2% line the single changes each stayed under. Aggregates: [`codebench-tuning-r2-t0.json`](../data/codebench/codebench-tuning-r2-t0.json), [`codebench-tuning-r2-final.json`](../data/codebench/codebench-tuning-r2-final.json), `codebench-compare-r2-*.json`.
+
+**Speed** (job 11306099, one core, every dev file, 39,420 files, two repetitions each, same node): round 1 36.8 and 38.8 files per second, round 2 38.9 and 38.7. No measurable slowdown (the limit was 10%); the scanner still has no runtime dependencies.
+
+### The one-time test2 evaluation
+
+Not run. It claims `reports/LOCKED_EVAL_TEST2.json` in `/scratch/$USER/kestrix/codebench2/` (exclusive create; a second run is refused), scans test2 with kestrix round 2 (the code tree the job runs from), kestrix round 1 (`kestrix@r1`), Bandit and ESLint security, and writes `reports/codebench-locked-test2-v1.json` with the paired round-2-against-round-1 change and the never-scanned-repository subset:
+
+```bash
+ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codebench2-locked KESTRIX_CODEBENCH=/scratch/$USER/kestrix/codebench2 sbatch --export=ALL hpc/codebench2_locked.sbatch --name test2-v1 --kestrix-tree r1=$HOME/kestrix-codebench2-r1'
+```
+
+### What round 2 does not claim
+
+- Tuning numbers are not a measurement; the test2 run is. With 23 more detected pairs the gain is within the intervals of most subsets.
+- test2 shares 332 of its 522 repositories (1,568 pairs) with the tuning data, though no file, CVE, advisory or commit; the separate never-scanned-repository subset (401 pairs) answers whether that matters. 1,243 commits are ones MoreFixes also holds.
+- Fixes touching more than 3 changed source files contribute a seeded sample of 3, so a few "changed files" are not the file with the weakness.
+- The path, SSRF and XSS gains are small because the scanner has no whole-program data flow; see the error analysis above.

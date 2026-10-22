@@ -442,6 +442,7 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 
 - CWE: [CWE-601](https://cwe.mitre.org/data/definitions/601.html)
 - Documentation: <https://expressjs.com/en/api.html#res.redirect>
+- Documentation: <https://expressjs.com/en/api.html#res.location>
 - Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 

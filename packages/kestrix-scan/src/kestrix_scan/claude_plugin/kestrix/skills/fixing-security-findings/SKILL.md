@@ -550,13 +550,13 @@ def after_login():
     return redirect(PAGES.get(request.args.get("next"), "/dashboard"))
 ```
 
-### `py.xss.markup`: Request data marked as safe HTML or used as a template
+### `py.xss.markup`: Request data or rendered Markdown marked as safe HTML, or request data used as a template
 
 CWE-79 · default severity high · confidence medium
 
-**Why:** Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336).
+**Why:** Markup and mark_safe switch off autoescaping, so request data in them is rendered as HTML and script (XSS). The output of a Markdown renderer is the same: Markdown passes raw HTML through, so marking it safe without a sanitizer lets a script tag in the source text run. As the source of render_template_string it is a template, and template syntax in it runs on the server (SSTI, CWE-1336).
 
-**Fix:** Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. Never build a template's source from input; use render_template with a fixed template file.
+**Fix:** Pass the value to the template as data and let autoescaping handle it, or escape it first with markupsafe.escape or html.escape. For Markdown, clean the rendered HTML with bleach.clean or nh3.clean before marking it safe. Never build a template's source from input; use render_template with a fixed template file.
 
 Before:
 
@@ -804,9 +804,9 @@ def choose_role():
 
 CWE-22 · default severity medium · confidence low
 
-**Why:** A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559).
+**Why:** A tar archive can hold members named ../../etc/cron.d/x, absolute paths or links that point outside the target directory. extract and extractall write them wherever the name says unless the members are filtered, so an archive from outside the program can overwrite files (CVE-2007-4559). shutil.unpack_archive extracts tar archives the same way.
 
-**Fix:** Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall.
+**Fix:** Pass filter='data' (Python 3.12 and the security releases of 3.8 to 3.11; shutil.unpack_archive takes it too) so extraction refuses paths that leave the directory, or check each member's resolved path with os.path.commonpath before passing the safe members to extractall.
 
 Before:
 
@@ -1147,7 +1147,7 @@ function parse(text) {
 
 CWE-78 · default severity high · confidence high
 
-**Why:** exec and execSync, and spawn or execFile with shell: true, hand the command line to /bin/sh (cmd.exe on Windows). An interpolated value can add ';', '&&' or '$(...)' and run other commands.
+**Why:** exec and execSync, spawn or execFile with shell: true or a shell as the program (spawn('sh', ['-c', script])), and the shell helpers shelljs.exec and execa.command hand the command line to /bin/sh (cmd.exe on Windows). An interpolated value can add ';', '&&' or '$(...)' and run other commands.
 
 **Fix:** Run the program without a shell and pass values as separate arguments: execFile('git', ['log', ref]) or spawn('git', ['log', ref]). Do not set shell: true.
 
@@ -1330,7 +1330,7 @@ function claims(token, publicKey) {
 
 CWE-22 · default severity medium · confidence medium
 
-**Why:** A value such as '../../etc/passwd' in a request parameter can escape the intended directory and read or overwrite other files.
+**Why:** A value such as '../../etc/passwd' in a request parameter, or in the request URL a plain http server joins to its web root, can escape the intended directory and read, list, rename or delete other files.
 
 **Fix:** Reduce the name with path.basename, or resolve the path and check it stays under the base directory (path.resolve(base, name).startsWith(base + path.sep)). res.sendFile(name, { root: base }) does that check for you.
 
@@ -1383,7 +1383,7 @@ app.get('/preview', async (req, res) => {
 
 CWE-601 · default severity medium · confidence medium
 
-**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted.
+**Why:** A redirect target taken from the request lets a link on your domain send users to a phishing site that looks trusted. res.location, a Location header set with setHeader or writeHead, and res.redirect all do it.
 
 **Fix:** Redirect to a path you build, or accept only known targets: look the value up in an allowlist, or allow only paths that start with a single '/'.
 

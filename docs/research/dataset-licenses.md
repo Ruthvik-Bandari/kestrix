@@ -72,11 +72,13 @@ The code benchmark ([`docs/benchmarks/cvefixes.md`](../benchmarks/cvefixes.md)) 
 | --- | --- | --- | --- |
 | CVEfixes v1.0.8 | Data CC BY 4.0; collection code MIT | eval (dev now, locked test later) | **Attribution required**: Bhandari, Naseer and Moonen (2021), *CVEfixes*, PROMISE '21. Only the aggregate counts, rates and rule ids are published; the mined files stay on the cluster and keep each project's own license. |
 | GitHub Advisory Database fix commits | Data CC BY 4.0 | eval (dev now, locked test later) | **Attribution required**: GitHub Advisory Database, <https://github.com/github/advisory-database>. Fix commits mined by `kestrixvul` from the public repositories. |
+| GitHub Advisory Database, refreshed checkout of 2026-10-22 (`github/advisory-database` commit `e8186846e9dc`) | Data CC BY 4.0 | eval (`test2`, a second held-out set, locked) | **Attribution required**: GitHub Advisory Database, <https://github.com/github/advisory-database>. Reviewed PyPI and npm advisories with a GitHub fix commit that neither the benchmark nor CVEfixes holds. Only the advisory ids, CWE ids and commit hashes select the commits; the fetched files (changed files before and after, three unchanged files per commit) keep each project's license and stay on the cluster. |
+| MoreFixes (fix-commit table only) | Data CC BY 4.0 | not used for file content | Its fix-commit hashes and CVE ids are read only to flag which `test2` commits MoreFixes also holds (the code benchmark does not use MoreFixes). |
 | Bandit 1.9.4 | Apache-2.0 | baseline (Python) | Installed from PyPI into a private virtual environment on the cluster. |
 | ESLint 9 with `eslint-plugin-security` 4.2.0 | MIT; Apache-2.0 | baseline (JavaScript, TypeScript) | Installed with npm on the transfer node into a private prefix; run offline on the cluster's Node 22 module. Parser: `typescript-eslint` (MIT) with `typescript` (Apache-2.0). |
 | Semgrep CE with the registry rules | Semgrep Rules License (not OSS) | **not used** | The registry rules' license restricts this use, and no OSS-licensed local ruleset was available, so Semgrep was skipped. |
 
-Raw files stay under `/scratch/$USER/kestrix/codebench/` (directories 0700, files 0600). Reports hold counts, rates, intervals and rule ids only.
+Raw files stay under `/scratch/$USER/kestrix/codebench/` and, for `test2`, `/scratch/$USER/kestrix/codebench2/` (directories 0700, files 0600). Reports hold counts, rates, intervals and rule ids only. `/scratch` is purged on the first Tuesday of each month (next: 2026-11-03): copy nothing raw off it; the benchmark is rebuilt from the pinned sources and the committed aggregates.
 
 ## Link and file benchmark datasets (`kestrixlinkfilebench`)
 

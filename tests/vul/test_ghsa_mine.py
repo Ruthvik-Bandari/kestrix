@@ -203,3 +203,24 @@ def test_advisory_prose_drops_code_blocks_but_keeps_inline_names():
     text = prose(details)
     assert "`render` function" in text
     assert "helper" not in text and "indented" not in text and "a_b" not in text
+
+
+def test_fetch_caps_the_changed_files_per_commit(tmp_path: Path):
+    repo = tmp_path / "many"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    for i in range(5):
+        (repo / f"m{i}.py").write_text(APP_V1 + f"\n# {i}\n")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "v1")
+    for i in range(5):
+        (repo / f"m{i}.py").write_text(APP_V2 + f"\n# {i}\n")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "fix")
+    _git(repo, "config", "uploadpack.allowFilter", "true")
+    _git(repo, "config", "uploadpack.allowAnySHA1InWant", "true")
+    record = _fetch(tmp_path, (repo, _git(repo, "rev-parse", "HEAD")), max_changed_files=3)
+    assert len(record["files"]) == 3 and record["cap_dropped"] == 2
+    again = _fetch(tmp_path / "again", (repo, record["sha"]), max_changed_files=3)
+    assert [f["path"] for f in again["files"]] == [f["path"] for f in record["files"]]  # the sample is seeded
+    assert _fetch(tmp_path / "uncapped", (repo, record["sha"]))["cap_dropped"] == 0

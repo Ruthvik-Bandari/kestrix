@@ -17,6 +17,7 @@ The reduced records hold file kind and id, rule id, line range and families; raw
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -24,10 +25,19 @@ import time
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .common import EXTENSIONS, KINDS, CodeBenchError, Layout, now, write_json, write_jsonl
+from .common import EXTENSIONS, KINDS, LOCK_NAME, CodeBenchError, Layout, now, write_json, write_jsonl
 from .families import bandit_families, eslint_families, kestrix_families
 
 TOOLS = ("kestrix", "bandit", "eslint")
+TUNING = "tuning"  # round-1 dev plus the round-1 test, which is spent (LOCKED_EVAL.json) and so usable for tuning
+TUNING_PARTS = ("dev", "test")
+
+
+def base_tool(name: str) -> str:
+    """``kestrix@r1`` is the kestrix scanner of another code tree; the tool is the part before ``@``."""
+    return name.partition("@")[0]
+
+
 TOOL_TIMEOUT_S = 3 * 3600
 ESLINT_CONFIG = """\
 import security from "eslint-plugin-security";
@@ -129,10 +139,10 @@ def reduce_eslint(report: list[dict[str, Any]], cwd: Path) -> tuple[list[Record]
     return out, failed
 
 
-def _run(args: list[str], cwd: Path) -> float:
+def _run(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> float:
     start = time.perf_counter()
     proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
-        args, cwd=cwd, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False
+        args, cwd=cwd, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False, env=env
     )
     seconds = time.perf_counter() - start
     if proc.returncode not in (0, 1):
@@ -148,21 +158,23 @@ def _version(args: list[str]) -> str:
 def count_files(directory: Path, tool: str) -> dict[str, int]:
     """Files per kind that the tool can read: every file for kestrix, ``.py`` for bandit, JavaScript and TypeScript for eslint."""
     wanted = {"kestrix": tuple(EXTENSIONS), "bandit": (".py",), "eslint": tuple(e for e in EXTENSIONS if e != ".py")}[
-        tool
+        base_tool(tool)
     ]
     return {kind: sum(1 for p in (directory / kind).glob("*") if p.suffix in wanted) for kind in KINDS}
 
 
 def run_tool(
-    layout: Layout, tool: str, shard_dir: Path, scratch: Path
+    layout: Layout, tool: str, shard_dir: Path, scratch: Path, tree: Path | None = None
 ) -> tuple[str, float, list[Record], dict[str, int]]:
-    """(version, seconds, findings, files the tool could not parse by kind)."""
+    """(version, seconds, findings, files the tool could not parse by kind). ``tree``: run kestrix from that code tree."""
     report = scratch / f"{tool}.json"
+    tool = base_tool(tool)
     if tool == "kestrix":
         from kestrix_scan import __version__
 
         args = [sys.executable, "-m", "kestrix_scan", "scan", ".", "--no-config", "--fail-on", "none"]
-        seconds = _run([*args, "--format", "json", "--output", str(report)], shard_dir)
+        env = None if tree is None else {**os.environ, "PYTHONPATH": str(tree / "packages" / "kestrix-scan" / "src")}
+        seconds = _run([*args, "--format", "json", "--output", str(report)], shard_dir, env)
         found, failed = reduce_kestrix(json.loads(report.read_text(encoding="utf-8")))
         return __version__, seconds, found, failed
     if tool == "bandit":
@@ -201,18 +213,44 @@ def run_tool(
 
 
 def scan_shard(
-    layout: Layout, tool: str, split: str, shard: int, *, run: str, code_sha: str, locked: bool = False
+    layout: Layout,
+    tool: str,
+    split: str,
+    shard: int,
+    *,
+    run: str,
+    code_sha: str,
+    locked: bool = False,
+    tree: Path | None = None,
 ) -> Path:
-    """Scan one shard with one tool and write ``findings.jsonl`` and ``report.json``; the test split needs ``locked``."""
+    """Scan one shard with one tool and write ``findings.jsonl`` and ``report.json``.
+
+    The test split needs ``locked``. Split ``tuning`` scans the dev and the test shard together and needs the claimed
+    ``LOCKED_EVAL.json`` of the round-1 test, which is spent. ``tool`` may be ``kestrix@LABEL`` with ``tree`` the code
+    tree whose scanner runs.
+    """
     if split == "test" and not locked:
         raise CodeBenchError("the test split is read only by the locked test (see `locked-test`)")
-    shard_dir = layout.shard_dir(split, shard)
-    if not shard_dir.is_dir():
-        raise CodeBenchError(f"{shard_dir} is missing; run build first")
+    if split == TUNING and not (layout.reports / LOCK_NAME).is_file():
+        raise CodeBenchError("the test split is not spent (no LOCKED_EVAL.json); it cannot be used for tuning")
+    parts = TUNING_PARTS if split == TUNING else (split,)
     scratch = layout.scan_dir(run, tool) / f".scratch-{split}-{shard:02d}"
     scratch.mkdir(parents=True, exist_ok=True, mode=0o700)
-    files = count_files(shard_dir, tool)
-    version, seconds, found, failed = run_tool(layout, tool, shard_dir, scratch)
+    files: dict[str, int] = dict.fromkeys(KINDS, 0)
+    unparsed: dict[str, int] = {}
+    found: list[Record] = []
+    seconds, version = 0.0, ""
+    for part in parts:
+        shard_dir = layout.shard_dir(part, shard)
+        if not shard_dir.is_dir():
+            raise CodeBenchError(f"{shard_dir} is missing; run build first")
+        for kind, count in count_files(shard_dir, tool).items():
+            files[kind] += count
+        version, took, records, failed = run_tool(layout, tool, shard_dir, scratch, tree)
+        seconds += took
+        found += records
+        for kind, count in failed.items():
+            unparsed[kind] = unparsed.get(kind, 0) + count
     for leftover in scratch.iterdir():
         leftover.unlink()
     scratch.rmdir()
@@ -230,7 +268,7 @@ def scan_shard(
             "finished_at": now(),
             "seconds": round(seconds, 2),
             "files": files,
-            "unparsed": failed,
+            "unparsed": unparsed,
             "findings": len(found),
         },
     )

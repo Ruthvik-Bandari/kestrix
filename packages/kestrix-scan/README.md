@@ -230,11 +230,11 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 There are 60 rules. They cover Python (28 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
-analysis from Flask, Django, FastAPI and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
+analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
 LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), JavaScript and TypeScript (14 `js.*`
 rules for `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts`: `eval` and `new Function`,
 `child_process` shells, DOM and React HTML sinks, SQL built from strings, `rejectUnauthorized: false`, MD5/SHA-1,
-`Math.random()` for secrets, JWT `none` and `ignoreExpiration`, Express request data reaching files, URLs and
+`Math.random()` for secrets, JWT `none` and `ignoreExpiration`, Express, Koa and hapi request data (including the request URL) reaching files, URLs and
 redirects, prototype pollution, wildcard CORS with credentials, and LLM output reaching `eval`, a shell or HTML),
 Claude Code and MCP configuration
 (5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and

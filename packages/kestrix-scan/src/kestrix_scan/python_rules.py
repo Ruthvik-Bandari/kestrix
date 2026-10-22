@@ -71,6 +71,7 @@ _HTTP_VERBS = ("get", "post", "put", "patch", "delete", "head", "options")
 _HTTP_METHODS = frozenset(
     {"get", "post", "put", "patch", "delete", "head", "options", "request", "send", "stream", "Client", "AsyncClient"}
 )
+_CLIENT_VERBS = frozenset({*_HTTP_VERBS, "request"})
 _WEAK_HASHES = frozenset({"hashlib.md5", "hashlib.sha1"})
 _WEAK_HASH_NAMES = frozenset({"md5", "sha1", "sha-1"})
 _LXML_PARSERS = frozenset(
@@ -103,7 +104,15 @@ _URL_SINKS: dict[str, tuple[int, str]] = {
     "httpx.stream": (1, "url"),
     "urllib.request.urlopen": (0, "url"),
     "urllib.request.Request": (0, "url"),
+    "urllib.request.urlretrieve": (0, "url"),
+    "http.client.HTTPConnection": (0, "host"),
+    "http.client.HTTPSConnection": (0, "host"),
 }
+_HTTP_CLIENT_LIBRARIES = frozenset({"requests", "httpx", "aiohttp", "urllib3"})
+_HTTP_CLIENT_WORDS = ("session", "client", "http", "api", "conn", "pool", "sess", "browser")
+_HTTP_CLIENT_CONSTRUCTORS = frozenset(
+    {"requests.Session", "httpx.Client", "httpx.AsyncClient", "aiohttp.ClientSession", "urllib3.PoolManager"}
+)
 _REDIRECT_SINKS: dict[str, tuple[int, str]] = {
     "flask.redirect": (0, "location"),
     "django.shortcuts.redirect": (0, "to"),
@@ -135,6 +144,26 @@ _CONTENT_TYPE_KW = ("mimetype", "content_type", "media_type")
 _TAR_OPENERS = frozenset({"tarfile.open", "tarfile.TarFile", "tarfile.TarFile.open", "tarfile.TarFile.taropen"})
 _TAR_EXTRACT = frozenset({"extract", "extractall"})
 _MARKUP = re.compile(r"<[A-Za-z!/]")
+_MARKDOWN_RENDERERS = frozenset(
+    {
+        "markdown.markdown",
+        "markdown2.markdown",
+        "mistune.markdown",
+        "mistune.html",
+        "commonmark.commonmark",
+        "markdown_it.MarkdownIt.render",
+    }
+)
+_SANITIZERS = frozenset(
+    {
+        "bleach.clean",
+        "bleach.linkify",
+        "nh3.clean",
+        "html_sanitizer.Sanitizer",
+        "lxml.html.clean.clean_html",
+        "bleach.sanitizer.Cleaner",
+    }
+)
 _LDAP_PYTHON_LDAP = frozenset({"search", "search_s", "search_st", "search_ext", "search_ext_s"})
 _LDAP3 = frozenset({"search", "paged_search"})
 _XPATH_PATH_METHODS = frozenset({"find", "findall", "findtext", "iterfind"})
@@ -802,6 +831,14 @@ class _Checker:
             self.hit("py.tempfile.mktemp", node, "tempfile.mktemp leaves a race between naming and creating the file.")
         if attr == "run" and "flask" in self.imported and _truthy_const(_keyword(node, "debug")):
             self.hit("py.flask.debug", node, "Flask app started with debug=True.")
+        if name in _MARKUP_SINKS and node.args and self._rendered_markdown(node.args[0]):
+            self.hit(
+                "py.xss.markup",
+                node,
+                f"{name} marks the output of a Markdown renderer as safe HTML; Markdown passes raw HTML through, so a "
+                "script tag in the source text runs in the browser.",
+                confidence="medium",
+            )
         if name in _JWT_DECODE:
             self._jwt(node)
         self._xml(node, name, attr)
@@ -818,6 +855,14 @@ class _Checker:
             )
         if attr in _TAR_EXTRACT and "tarfile" in self.imported:
             self._archive_extract(node, attr)
+        if name == "shutil.unpack_archive" and _keyword(node, "filter") is None and len(node.args) < 4:
+            first_arg = _argument(node, 0, "filename")
+            if first_arg is not None and not self.literal(first_arg):
+                self.hit(
+                    "py.archive.extract",
+                    node,
+                    "shutil.unpack_archive() runs without a filter; a tar archive can write outside the target directory.",
+                )
 
     def _archive_extract(self, node: ast.Call, attr: str) -> None:
         """``tar.extract(...)`` and ``tar.extractall(...)`` with no ``filter=`` and no member list."""
@@ -1012,6 +1057,16 @@ class _Checker:
                     cwe="CWE-1336" if sink_class == taint.TEMPLATE else None,
                     trace=self._trace(origin, node, f"{name}()"),
                 )
+        if isinstance(func, ast.Attribute) and func.attr in _CLIENT_VERBS and self._http_client(func.value):
+            position = 1 if func.attr == "request" else 0
+            self._taint_hit(
+                "py.ssrf.request",
+                node,
+                _argument(node, position, "url"),
+                taint.URL,
+                sink=f".{func.attr}",
+                verb="fetches a URL taken from",
+            )
         if name in _HTML_RESPONSES:
             self._html_response(node, name)
         if isinstance(func, ast.Attribute) and name is None:
@@ -1093,6 +1148,35 @@ class _Checker:
             self._taint_hit(
                 "py.xpath.injection", node, path, taint.XPATH, sink=f".{method}", verb="evaluates a path built from"
             )
+
+    def _http_client(self, receiver: ast.expr) -> bool:
+        """The receiver of ``.get(url)`` looks like an HTTP session or client of an imported HTTP library."""
+        if not self.imported & _HTTP_CLIENT_LIBRARIES:
+            return False
+        if isinstance(receiver, ast.Call):
+            return self.qualname(receiver.func) in _HTTP_CLIENT_CONSTRUCTORS
+        name = (
+            receiver.id
+            if isinstance(receiver, ast.Name)
+            else receiver.attr
+            if isinstance(receiver, ast.Attribute)
+            else ""
+        )
+        return any(word in name.lower() for word in _HTTP_CLIENT_WORDS)
+
+    def _rendered_markdown(self, value: ast.expr) -> bool:
+        """``value`` holds a Markdown renderer's output (also through a name) and no sanitizer wraps it."""
+        calls = [item for item in ast.walk(value) if isinstance(item, ast.Call)]
+        if any(self.qualname(c.func) in _SANITIZERS for c in calls):
+            return False
+        if any(self.qualname(c.func) in _MARKDOWN_RENDERERS for c in calls):
+            return True
+        if isinstance(value, ast.Name):
+            values = self.lookup(value) or []
+            return bool(values) and all(
+                v is not None and not isinstance(v, ast.Name) and self._rendered_markdown(v) for v in values
+            )
+        return False
 
     def _path_sink(self, node: ast.Call, arg: ast.AST | None, sink: str) -> None:
         origin = self._flow(arg, taint.PATH, remote=True)
