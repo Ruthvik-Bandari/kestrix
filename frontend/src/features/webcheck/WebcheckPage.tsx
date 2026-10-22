@@ -863,12 +863,12 @@ export default function WebcheckPage() {
               <>
                 <Button
                   type="submit"
+                  icon="search"
                   className="w-full"
                   disabled={!canScan && !scan.isPending}
                   pending={scan.isPending}
                   pendingLabel="Scanning…"
                 >
-                  <Icon name="search" size={16} />
                   Scan
                 </Button>
                 {!authorized ? <p className="hint">Confirm authorization to enable scanning.</p> : null}

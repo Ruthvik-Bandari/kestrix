@@ -276,8 +276,7 @@ export default function BitcoinPage() {
             run: true,
             children: (
               <>
-                <Button type="submit" className="w-full" pending={scan.isPending} pendingLabel="Scanning…">
-                  <Icon name="search" size={16} />
+                <Button type="submit" icon="search" className="w-full" pending={scan.isPending} pendingLabel="Scanning…">
                   {lookup ? "Scan and look up on mempool.space" : "Scan addresses"}
                 </Button>
                 <p className="hint">

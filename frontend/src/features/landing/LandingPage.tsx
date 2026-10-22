@@ -5,10 +5,10 @@ import { Link, useSearchParams } from "react-router";
 import { dashboardPath, docsPath, landingPath, PRIVACY_PATH, SIGNIN_PATH, SIGNUP_PATH } from "../../app/paths";
 import { toolFor } from "../../app/tools";
 import { BrandMark } from "../../components/BrandMark";
-import { CodeRain } from "../../components/CodeRain";
+import { Beams, CircuitDial } from "../../components/Circuit";
 import { Icon } from "../../components/Icon";
 import { SiteFooter } from "../../components/PublicShell";
-import { CopyButton, cx } from "../../components/ui";
+import { ButtonIcon, CopyButton, cx, Pill } from "../../components/ui";
 import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { useMe } from "../../lib/queries";
@@ -37,12 +37,12 @@ function useSignedIn(): { pending: boolean; signedIn: boolean } {
 }
 
 /** The one primary action: into the workbench, or into sign-up on the hosted service while signed out. */
-function PrimaryAction({ className, onGraphite = false }: { className?: string; onGraphite?: boolean }) {
+function PrimaryAction({ className }: { className?: string }) {
   const { signedIn } = useSignedIn();
   return (
-    <Link to={signedIn ? dashboardPath() : SIGNUP_PATH} className={cx("btn btn-lg", onGraphite ? "btn-lime" : "btn-primary", className)}>
+    <Link to={signedIn ? dashboardPath() : SIGNUP_PATH} className={cx("btn btn-lg btn-primary", className)}>
       {signedIn ? "Open workbench" : "Get started"}
-      <Icon name="arrowRight" size={18} />
+      <ButtonIcon />
     </Link>
   );
 }
@@ -59,7 +59,7 @@ function navItems(): NavItem[] {
 }
 
 const navLink =
-  "inline-flex min-h-11 items-center rounded-md px-3 text-[0.9375rem] font-medium text-hero-muted transition-colors hover:text-hero-ink";
+  "inline-flex min-h-11 items-center rounded-md px-3 text-[0.9375rem] font-medium text-ink-2 transition-colors hover:text-ink";
 
 function NavLink({ item, onNavigate, className }: { item: NavItem; onNavigate?: () => void; className?: string }) {
   if ("anchor" in item) {
@@ -96,18 +96,17 @@ function HeaderActions() {
   if (pending) return null;
   if (signedIn) {
     return (
-      <Link to={dashboardPath()} className="btn btn-sm btn-lime min-h-11">
+      <Link to={dashboardPath()} className="btn btn-sm btn-primary min-h-11">
         Open workbench
-        <Icon name="arrowRight" size={15} className="hidden sm:block" />
       </Link>
     );
   }
   return (
     <>
-      <Link to={SIGNIN_PATH} className="btn btn-sm btn-outline-light min-h-11 px-3">
+      <Link to={SIGNIN_PATH} className="btn btn-sm btn-secondary min-h-11 px-3">
         Log in
       </Link>
-      <Link to={SIGNUP_PATH} className="btn btn-sm btn-lime min-h-11 px-3">
+      <Link to={SIGNUP_PATH} className="btn btn-sm btn-primary min-h-11 px-3">
         Sign up
       </Link>
     </>
@@ -133,11 +132,11 @@ function Header() {
     };
   }, [open]);
   return (
-    <header className="graphite sticky top-0 z-40 border-b border-line">
-      <div className="mx-auto flex h-16 max-w-[75rem] items-center gap-2 px-5 sm:gap-4 sm:px-8 lg:px-12">
-        <Link to={landingPath()} className="mr-auto flex min-h-11 items-center gap-2.5 rounded-md" aria-label="Kestrix home">
-          <BrandMark size={28} />
-          <span className="text-lg font-bold tracking-[-0.02em] text-hero-ink">Kestrix</span>
+    <header className="scope-dark relative">
+      <div className="flex h-[4.5rem] items-center gap-2 px-5 sm:gap-4 sm:px-8 md:grid md:grid-cols-[1fr_auto_1fr] lg:px-14">
+        <Link to={landingPath()} className="mr-auto flex min-h-11 items-center gap-2.5 rounded-md md:mr-0 md:justify-self-start" aria-label="Kestrix home">
+          <BrandMark size={30} />
+          <span className="text-lg font-semibold tracking-[-0.02em] text-ink">Kestrix</span>
         </Link>
         <nav aria-label="Primary" className="hidden md:block">
           <ul className="flex items-center gap-1">
@@ -148,7 +147,7 @@ function Header() {
             ))}
           </ul>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:justify-self-end">
           <HeaderActions />
         </div>
         <button
@@ -160,13 +159,18 @@ function Header() {
           onClick={() => {
             setOpen((value) => !value);
           }}
-          className="btn btn-sm btn-outline-light size-11 min-h-11 px-0 md:hidden"
+          className="btn btn-sm btn-secondary size-11 min-h-11 px-0 md:hidden"
         >
           <Icon name={open ? "x" : "menu"} size={20} />
         </button>
       </div>
-      <nav id={menuId} aria-label="Primary, menu" hidden={!open} className="border-t border-line md:hidden">
-        <ul className="mx-auto grid max-w-[75rem] px-5 py-2 sm:px-8">
+      <nav
+        id={menuId}
+        aria-label="Primary, menu"
+        hidden={!open}
+        className="absolute inset-x-3 top-[4.25rem] rounded-xl border border-line bg-surface-solid shadow-[0_24px_60px_-20px_rgb(0_0_0/0.8)] md:hidden"
+      >
+        <ul className="grid px-5 py-2 sm:px-8">
           {items.map((item) => (
             <li key={item.label}>
               <NavLink
@@ -187,40 +191,57 @@ function Header() {
 function Hero() {
   const hosted = isHosted();
   return (
-    <section aria-labelledby="hero-title" className="graphite relative isolate border-b border-line">
-      <CodeRain />
-      <div className="relative mx-auto grid max-w-[75rem] items-center gap-12 px-5 pt-12 pb-16 sm:px-8 lg:min-h-[calc(100dvh-4rem-1px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-16 lg:px-12 lg:py-16">
-        <div>
-          <p className="eyebrow">
-            <span className="h-px w-6 bg-lime" aria-hidden="true" />
-            {hosted ? "Security workbench · in your browser" : "Local-first security workbench"}
-          </p>
-          <h1 id="hero-title" className="display mt-6 text-[clamp(2.5rem,7.2vw,4.75rem)] leading-[1.04] tracking-[-0.045em] text-hero-ink">
-            See the risk. <span className="block text-lime">Understand the evidence.</span>
-          </h1>
-          <p className="mt-6 max-w-[34rem] text-[1.0625rem] text-hero-muted sm:text-lg">
-            Check an email, website, file or link, and see what needs your attention and why.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <PrimaryAction onGraphite />
-            <a
-              href="#example"
-              className="btn btn-lg btn-outline-light"
-              onClick={(event) => {
-                jumpTo(event, "example");
-              }}
-            >
-              Explore an example
-            </a>
-          </div>
-          <p className="mt-5 flex items-center gap-2 font-mono text-[0.75rem] tracking-[0.04em] text-hero-muted">
-            <Icon name={hosted ? "globe" : "monitor"} size={14} />
-            {hosted ? "Hosted workspace · sign in with an account you already have" : "Runs on this computer · no account needed"}
-          </p>
+    <section aria-labelledby="hero-title" className="relative">
+      <div className="mx-auto flex max-w-[60rem] flex-col items-center px-5 pt-[6rem] text-center sm:px-8 sm:pt-[6.5rem]">
+        <Pill>Evidence, clearly</Pill>
+        <h1 id="hero-title" className="display mt-5 text-[clamp(2.25rem,5.4vw,3.75rem)] leading-[1.06] tracking-[-0.04em] text-ink">
+          See the risk. <span className="block text-accent-text">Understand the evidence.</span>
+        </h1>
+        <p className="mt-4 max-w-[34rem] text-base text-ink-2 sm:text-lg">
+          Check an email, website, file or link, and see what needs your attention and why.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <PrimaryAction />
+          <a
+            href="#example"
+            className="btn btn-lg btn-secondary"
+            onClick={(event) => {
+              jumpTo(event, "example");
+            }}
+          >
+            Explore an example
+            <ButtonIcon name="chevronDown" />
+          </a>
         </div>
-        <ReportCard />
+        <p className="mt-4 flex items-center gap-2 font-mono text-[0.75rem] tracking-[0.04em] text-ink-2">
+          <Icon name={hosted ? "globe" : "monitor"} size={14} />
+          {hosted ? "Hosted workspace · sign in with an account you already have" : "Runs on this computer · no account needed"}
+        </p>
+      </div>
+      <div className="pointer-events-none relative mt-1 h-[14.5rem] overflow-hidden sm:h-[22rem]">
+        <CircuitDial
+          animated
+          className="absolute bottom-0 left-1/2 h-[16.875rem] w-[56.25rem] max-w-none -translate-x-1/2 translate-y-3 overflow-visible sm:h-[22.5rem] sm:w-[75rem] sm:translate-y-[1rem]"
+        />
       </div>
     </section>
+  );
+}
+
+/** The dark opening of the page: a rounded frame on a darker field with beams, then the real example. */
+function Opening() {
+  return (
+    <div className="hero-field scope-dark">
+      <div className="mx-auto max-w-[96rem] p-2 sm:p-4 lg:p-6">
+        <div className="hero-frame">
+          <Beams />
+          <Hero />
+        </div>
+      </div>
+      <div className="relative mx-auto max-w-[44rem] px-5 pt-8 pb-14 sm:px-8 sm:pt-12 sm:pb-20">
+        <ReportCard />
+      </div>
+    </div>
   );
 }
 
@@ -432,8 +453,8 @@ function Notice() {
         : undefined;
   if (!notice) return null;
   return (
-    <div className={cx(SECTION, "pt-4")}>
-      <div role={notice.tone === "crit" ? "alert" : "status"} className={cx("flex items-center gap-3 rounded-xl border border-line px-4 py-3", notice.tone === "crit" ? "bg-crit-bg" : "bg-ok-bg")}>
+    <div className="fixed inset-x-4 top-24 z-40 mx-auto max-w-[40rem]">
+      <div role={notice.tone === "crit" ? "alert" : "status"} className={cx("flex items-center gap-3 rounded-xl border border-line px-4 py-3 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.6)]", notice.tone === "crit" ? "bg-crit-bg" : "bg-ok-bg")}>
         <Icon name={notice.tone === "crit" ? "xCircle" : "checkCircle"} size={20} className={notice.tone === "crit" ? "text-crit" : "text-ok"} />
         <p className="flex-1 font-medium text-ink">{notice.text}</p>
         <button
@@ -463,10 +484,15 @@ export default function LandingPage() {
       >
         Skip to content
       </a>
-      <Header />
+      {/* The header is drawn over the top of the hero frame; it comes first in the document. */}
+      <div className="absolute inset-x-0 top-0 z-30">
+        <div className="mx-auto max-w-[96rem] p-2 sm:p-4 lg:p-6">
+          <Header />
+        </div>
+      </div>
       <main id="landing-main" tabIndex={-1} className="outline-none">
         <Notice />
-        <Hero />
+        <Opening />
         <Tools />
         <Process />
         <Trust />

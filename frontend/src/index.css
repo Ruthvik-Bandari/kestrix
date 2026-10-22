@@ -25,42 +25,52 @@
 
 
 /*
- * Tokens: graphite / ivory / green (docs/design/2026-10-21-redesign/DESIGN.md).
- * Light neutrals are warm ivory, dark neutrals are graphite green. The accent is for actions,
- * the current location and focus. Status hues (crit, high, med, low, ok) always ship with an
- * icon and a label; they never carry meaning by color alone. Critical and High share the red
- * family on purpose and are told apart by their labels and icons.
- * Every text/background pair below was checked for 4.5:1 (marks and control borders 3:1).
- * Surfaces are solid: no glass, glow, sheen or iridescent gradients in routine UI. The legacy
- * names --h1..--h4 stay so existing components keep compiling; they resolve to solid green.
- * Dark is true OLED black: the page is #000, the rail #050807, panels #0b1310 and insets #121c18
- * so the layers stay distinguishable.
+ * Tokens: emerald direction (docs/design/2026-10-21-redesign/DESIGN.md, "Emerald direction (2026-10-22)").
+ * Dark is the reference look: near-black green field, raised surfaces with 1px green-tinted hairlines,
+ * emerald actions, a restrained glow (--glow) used only on primary buttons, focus, the dial and the
+ * active navigation item. Light keeps the same family: ivory-green surfaces and a deep emerald action.
+ * Status hues (crit, high, med, low, ok) are semantic, always ship with an icon and a label, and never
+ * borrow the brand green for warnings. Critical and High share the red family on purpose and are told
+ * apart by their labels and icons. Every text/background pair was checked for 4.5:1 (marks, control
+ * borders and focus 3:1); the numbers are in the design document.
+ * `.scope-dark` re-applies the dark tokens inside a light page (the landing hero). The legacy names
+ * --h1..--h4 stay so the BrandMark keeps compiling; they resolve to the emerald family.
  */
 :root {
   color-scheme: light;
-  --bg: #f5f6f2;
-  --bg-deep: #f5f6f2;
-  --rail: #eef1eb;
-  --surface: #ffffff;
-  --surface-solid: #ffffff;
-  --inset: #edf1eb;
-  --line: #d8e0d6;
-  --line-strong: #7d8d82;
-  --ink: #162320;
-  --ink-2: #586860;
-  --ink-3: #5f6f66;
-  --accent: #0c6b4b;
-  --accent-hover: #075338;
+  --bg: #f1f7f3;
+  --bg-deep: #e7f0ea;
+  --rail: #e7f0ea;
+  --surface: #fbfdfc;
+  --surface-solid: #fbfdfc;
+  --inset: #e4efe8;
+  --line: #cddcd2;
+  --line-strong: #68887a;
+  --ink: #0c1f17;
+  --ink-2: #46604f;
+  --ink-3: #4e695a;
+  --accent: #0b6b45;
+  --accent-hover: #085536;
   --on-accent: #ffffff;
-  --accent-text: #0c6b4b;
-  --accent-soft: #e1efe6;
-  --focus: #0c6b4b;
+  --accent-text: #0b6b45;
+  --accent-soft: #d9eee1;
+  --focus: #0b6b45;
+  --glow: 0 0 0 1px rgb(11 107 69 / 0.25), 0 6px 20px -6px rgb(11 107 69 / 0.4);
+  --btn-ico-bg: #ffffff;
+  --btn-ico-ink: #0b6b45;
+  --btn-2-bg: #e4efe8;
+  --btn-2-ico-bg: #cfe3d6;
+  --panel-edge: inset 0 1px 0 rgb(255 255 255 / 0.7);
 
-  /* Legacy decorative stops, now one solid green family. */
-  --h1: #0c6b4b;
-  --h2: #075338;
-  --h3: #0c6b4b;
-  --h4: #075338;
+  /* Decorative art (beams, traces, dial): "r g b" triples. */
+  --beam: 11 107 69;
+  --trace: 11 107 69;
+  --trace-hot: 11 150 90;
+
+  --h1: #0b6b45;
+  --h2: #14855a;
+  --h3: #0b6b45;
+  --h4: #085536;
 
   --crit: #a12c35;
   --crit-mark: #c23a43;
@@ -78,14 +88,9 @@
   --ok-mark: #1f8a58;
   --ok-bg: #e9f5ec;
 
-  /* Code rain (components/CodeRain.tsx): "r g b" triples and the brightest composited alpha. */
-  --rain-head: 12 107 75;
-  --rain-trail: 12 107 75;
-  --rain-max: 0.12;
-
-  --diff-add-bg: #e1f2e6;
+  --diff-add-bg: #dcf0e2;
   --diff-del-bg: #fbe6e3;
-  --shadow: 0 1px 2px rgb(22 35 32 / 0.06), 0 12px 32px -12px rgb(22 35 32 / 0.2);
+  --shadow: 0 1px 2px rgb(12 31 23 / 0.06), 0 12px 32px -12px rgb(12 31 23 / 0.2);
   --danger-solid: #a12c35;
   --danger-solid-hover: #84232b;
 }
@@ -93,28 +98,38 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #000000;
-    --bg-deep: #000000;
-    --rail: #050807;
-    --surface: #0b1310;
-    --surface-solid: #0b1310;
-    --inset: #121c18;
-    --line: #354a40;
-    --line-strong: #789285;
-    --ink: #edf4ed;
-    --ink-2: #afc0b6;
-    --ink-3: #9fb2a7;
-    --accent: #8ce4bd;
-    --accent-hover: #b0efcf;
-    --on-accent: #10271c;
-    --accent-text: #8ce4bd;
-    --accent-soft: #1f3a30;
-    --focus: #c6ef9b;
+    --bg: #040a07;
+    --bg-deep: #020503;
+    --rail: #060e0a;
+    --surface: #0a1712;
+    --surface-solid: #0a1712;
+    --inset: #0f2019;
+    --line: rgb(61 220 142 / 0.17);
+    --line-strong: #5a8571;
+    --ink: #e9f5ee;
+    --ink-2: #a9c2b4;
+    --ink-3: #8aa597;
+    --accent: #1fd17a;
+    --accent-hover: #4be59a;
+    --on-accent: #03140b;
+    --accent-text: #3ddc8e;
+    --accent-soft: #0f2e21;
+    --focus: #5cf0a8;
+    --glow: 0 0 0 1px rgb(31 209 122 / 0.4), 0 0 22px -2px rgb(31 209 122 / 0.45);
+    --btn-ico-bg: #f1fff7;
+    --btn-ico-ink: #03140b;
+    --btn-2-bg: rgb(255 255 255 / 0.06);
+    --btn-2-ico-bg: rgb(0 0 0 / 0.45);
+    --panel-edge: inset 0 1px 0 rgb(255 255 255 / 0.035);
 
-    --h1: #8ce4bd;
-    --h2: #b0efcf;
-    --h3: #8ce4bd;
-    --h4: #b0efcf;
+    --beam: 34 197 94;
+    --trace: 52 211 130;
+    --trace-hot: 120 255 190;
+
+    --h1: #4be59a;
+    --h2: #1fd17a;
+    --h3: #8ff5c3;
+    --h4: #1fd17a;
 
     --crit: #ffb4b8;
     --crit-mark: #ff7a82;
@@ -130,13 +145,9 @@
     --low-bg: #1b2c40;
     --ok: #9ce5bb;
     --ok-mark: #4fc787;
-    --ok-bg: #193c2b;
+    --ok-bg: #143a28;
 
-    --rain-head: 198 239 155;
-    --rain-trail: 140 228 189;
-    --rain-max: 0.2;
-
-    --diff-add-bg: #1c3c2c;
+    --diff-add-bg: #123a29;
     --diff-del-bg: #422226;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
     --danger-solid: #a12c35;
@@ -144,30 +155,41 @@
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+.scope-dark {
   color-scheme: dark;
-  --bg: #000000;
-  --bg-deep: #000000;
-  --rail: #050807;
-  --surface: #0b1310;
-  --surface-solid: #0b1310;
-  --inset: #121c18;
-  --line: #354a40;
-  --line-strong: #789285;
-  --ink: #edf4ed;
-  --ink-2: #afc0b6;
-  --ink-3: #9fb2a7;
-  --accent: #8ce4bd;
-  --accent-hover: #b0efcf;
-  --on-accent: #10271c;
-  --accent-text: #8ce4bd;
-  --accent-soft: #1f3a30;
-  --focus: #c6ef9b;
+  --bg: #040a07;
+  --bg-deep: #020503;
+  --rail: #060e0a;
+  --surface: #0a1712;
+  --surface-solid: #0a1712;
+  --inset: #0f2019;
+  --line: rgb(61 220 142 / 0.17);
+  --line-strong: #5a8571;
+  --ink: #e9f5ee;
+  --ink-2: #a9c2b4;
+  --ink-3: #8aa597;
+  --accent: #1fd17a;
+  --accent-hover: #4be59a;
+  --on-accent: #03140b;
+  --accent-text: #3ddc8e;
+  --accent-soft: #0f2e21;
+  --focus: #5cf0a8;
+  --glow: 0 0 0 1px rgb(31 209 122 / 0.4), 0 0 22px -2px rgb(31 209 122 / 0.45);
+  --btn-ico-bg: #f1fff7;
+  --btn-ico-ink: #03140b;
+  --btn-2-bg: rgb(255 255 255 / 0.06);
+  --btn-2-ico-bg: rgb(0 0 0 / 0.45);
+  --panel-edge: inset 0 1px 0 rgb(255 255 255 / 0.035);
 
-  --h1: #8ce4bd;
-  --h2: #b0efcf;
-  --h3: #8ce4bd;
-  --h4: #b0efcf;
+  --beam: 34 197 94;
+  --trace: 52 211 130;
+  --trace-hot: 120 255 190;
+
+  --h1: #4be59a;
+  --h2: #1fd17a;
+  --h3: #8ff5c3;
+  --h4: #1fd17a;
 
   --crit: #ffb4b8;
   --crit-mark: #ff7a82;
@@ -183,17 +205,16 @@
   --low-bg: #1b2c40;
   --ok: #9ce5bb;
   --ok-mark: #4fc787;
-  --ok-bg: #193c2b;
+  --ok-bg: #143a28;
 
-  --rain-head: 198 239 155;
-  --rain-trail: 140 228 189;
-  --rain-max: 0.2;
-
-  --diff-add-bg: #1c3c2c;
+  --diff-add-bg: #123a29;
   --diff-del-bg: #422226;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.55);
   --danger-solid: #a12c35;
   --danger-solid-hover: #84232b;
+}
+.scope-dark {
+  color: var(--ink);
 }
 
 @theme inline {
@@ -246,12 +267,8 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* The public hero is graphite in both themes (docs/design/2026-10-21-redesign/DESIGN.md). */
-@theme {
-  --color-hero: #101918;
-  --color-hero-ink: #edf4ed;
-  --color-hero-muted: #afc0b6;
-  --color-lime: #c6ef9b;
+@theme inline {
+  --shadow-glow: var(--glow);
 }
 
 @layer base {
@@ -305,8 +322,8 @@
 @layer components {
   /* Display type: solid colour, tight, never a gradient. */
   .display {
-    font-weight: 600;
-    letter-spacing: -0.03em;
+    font-weight: 500;
+    letter-spacing: -0.035em;
     line-height: 1.1;
   }
   .eyebrow {
@@ -328,7 +345,7 @@
     gap: 0.5rem;
     min-height: 2.75rem;
     padding: 0 1.125rem;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid transparent;
     font-weight: 600;
     font-size: 0.9375rem;
@@ -357,20 +374,84 @@
   .btn[aria-busy="true"] {
     cursor: progress;
   }
+  /* Primary: solid emerald with a soft halo; the optional icon square (.btn-ico) is light. */
   .btn-primary {
     background: var(--accent);
     color: var(--on-accent);
+    box-shadow: var(--glow);
   }
   .btn-primary:not(:disabled):not([aria-disabled="true"]):hover {
     background: var(--accent-hover);
   }
+  .btn-primary:disabled,
+  .btn-primary[aria-disabled="true"] {
+    box-shadow: none;
+  }
+  /* Secondary: a translucent dark fill with a hairline; its icon square is darker still. */
   .btn-secondary {
-    background: var(--surface-solid);
+    background: var(--btn-2-bg);
     color: var(--ink);
     border-color: var(--line-strong);
   }
   .btn-secondary:not(:disabled):not([aria-disabled="true"]):hover {
     background: var(--inset);
+    border-color: var(--accent-text);
+  }
+  /* Icon square on the right of a button: 32px inside a 44px target (36px inside 52px for .btn-lg). */
+  .btn-ico {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin-right: -0.75rem;
+    margin-left: 0.25rem;
+    border-radius: 5px;
+    background: var(--btn-ico-bg);
+    color: var(--btn-ico-ink);
+  }
+  .btn-secondary .btn-ico {
+    background: var(--btn-2-ico-bg);
+    color: var(--ink-2);
+  }
+  .btn-lg .btn-ico {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: -1rem;
+  }
+  .btn-sm .btn-ico {
+    width: 1.625rem;
+    height: 1.625rem;
+    margin-right: -0.5rem;
+  }
+  .btn:disabled .btn-ico,
+  .btn[aria-disabled="true"] .btn-ico {
+    background: var(--line);
+    color: var(--ink-3);
+  }
+  /* Pill badge: a dot and a short label, e.g. "Evidence, clearly". */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.75rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--btn-2-bg);
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .pill-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 8px 1px rgb(var(--beam) / 0.7);
   }
   .btn-ghost {
     background: transparent;
@@ -395,67 +476,6 @@
     padding: 0 1.5rem;
     font-size: 1rem;
   }
-  /* Graphite scope (landing header and hero): the same text, line and focus colors in light and dark.
-     Lime is the accent here only; inside the app the accent stays green. */
-  .graphite {
-    background: #101918;
-    color: #edf4ed;
-    --ink: #edf4ed;
-    --ink-2: #afc0b6;
-    --ink-3: #9fb2a7;
-    --line: #354a40;
-    --line-strong: #789285;
-    --accent-text: #c6ef9b;
-    --focus: #c6ef9b;
-    --rain-head: 198 239 155;
-    --rain-trail: 140 228 189;
-    --rain-max: 0.2;
-  }
-  /* Dark mode: the hero and landing header are true black, like the rest of the dark theme. */
-  :root[data-theme="dark"] .graphite {
-    background: #000000;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .graphite {
-      background: #000000;
-    }
-  }
-  .btn-lime {
-    background: #c6ef9b;
-    color: #10271c;
-  }
-  .btn-lime:hover {
-    background: #d9f5b8;
-  }
-  .btn-outline-light {
-    background: transparent;
-    color: #edf4ed;
-    border-color: #789285;
-  }
-  .btn-outline-light:hover {
-    background: rgb(237 244 237 / 0.1);
-  }
-  /* The featured report always reads in the light palette, over graphite, in both themes. */
-  .report-card {
-    --surface-solid: #ffffff;
-    --inset: #edf1eb;
-    --ink: #162320;
-    --ink-2: #586860;
-    --line: #d8e0d6;
-    --line-strong: #7d8d82;
-    --crit: #a12c35;
-    --crit-bg: #fff1ef;
-    --high: #8f3a0b;
-    --high-bg: #fff0e3;
-    --med: #805000;
-    --med-bg: #fff4db;
-    --low: #1d5a9a;
-    --low-bg: #eaf2fb;
-    background: #f9faf6;
-    color: #162320;
-    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.6);
-  }
-
   /* Destructive and irreversible (account deletion): solid critical red, white text. */
   .btn-danger {
     background: var(--danger-solid);
@@ -514,6 +534,14 @@
     background: var(--surface-solid);
     border: 1px solid var(--line);
     border-radius: 12px;
+    box-shadow: var(--panel-edge);
+  }
+  /* The one place a panel glows: the featured example and the sign-in card. */
+  .panel-glow {
+    box-shadow:
+      var(--panel-edge),
+      0 0 0 1px rgb(var(--beam) / 0.18),
+      0 24px 70px -28px rgb(var(--beam) / 0.5);
   }
   /* Home launcher tile: solid, the border darkens on hover and focus, nothing moves. */
   .launcher-tile {
@@ -521,7 +549,7 @@
     transition: border-color 150ms var(--ease-out-quart);
   }
   .launcher-tile:hover {
-    border-color: var(--line-strong);
+    border-color: rgb(var(--beam) / 0.55);
   }
   .launcher-tile:focus-visible {
     outline: 2px solid var(--focus);
@@ -530,6 +558,15 @@
   .launcher-icon {
     background: var(--inset);
     border: 1px solid var(--line);
+    color: var(--accent-text);
+  }
+
+  /* Active workbench navigation: a soft emerald fill with a glowing edge on the left. */
+  .nav-active {
+    background: linear-gradient(90deg, rgb(var(--beam) / 0.16), rgb(var(--beam) / 0.04));
+  }
+  .nav-active::before {
+    box-shadow: 0 0 10px 1px rgb(var(--beam) / 0.7);
   }
 
   .label {
@@ -627,6 +664,211 @@
     background: var(--surface-solid);
     border: 1px solid var(--line-strong);
   }
+}
+
+
+/* Emerald hero art (components/Circuit.tsx, features/landing): classes only, no inline styles. */
+.hero-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 40% at 50% 100%, rgb(var(--beam) / 0.22), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 50% 0%, rgb(var(--beam) / 0.1), transparent 70%),
+    #020503;
+}
+.hero-frame {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #05160e 0%, #030c08 45%, #020604 100%);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 40px 120px -40px rgb(var(--beam) / 0.45);
+}
+@media (min-width: 768px) {
+  .hero-frame {
+    border-radius: 1.75rem;
+  }
+}
+/* Beams: soft vertical columns of light that fade out downward, plus a glow at the top edge. */
+.beams {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.beams::before {
+  content: "";
+  position: absolute;
+  inset: -6% -4% 20% -4%;
+  background:
+    linear-gradient(180deg, rgb(var(--beam) / 0.36), transparent 78%) 6% 0 / 8% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.3), transparent 70%) 19% 0 / 5% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.42), transparent 86%) 33% 0 / 9% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.5), transparent 92%) 47% 0 / 8% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.36), transparent 80%) 61% 0 / 6% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.4), transparent 84%) 74% 0 / 9% 100% no-repeat,
+    linear-gradient(180deg, rgb(var(--beam) / 0.3), transparent 72%) 90% 0 / 6% 100% no-repeat;
+  filter: blur(22px);
+  opacity: 0.85;
+}
+.beams::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 34% at 50% -4%, rgb(var(--beam) / 0.4), transparent 72%);
+}
+
+.circuit {
+  display: block;
+}
+/* Sign-in and public pages: a quieter frame that follows the theme, with the same beams. */
+.frame-soft {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, rgb(var(--beam))), var(--bg-deep));
+}
+.trace {
+  fill: none;
+  stroke: rgb(var(--trace) / 0.34);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+.trace-seg {
+  fill: none;
+  stroke: rgb(var(--trace-hot) / 0.85);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgb(var(--trace-hot) / 0.8));
+}
+.trace-node {
+  fill: rgb(var(--trace-hot));
+  filter: drop-shadow(0 0 4px rgb(var(--trace-hot) / 0.9));
+}
+.trace-pulse {
+  fill: none;
+  stroke: rgb(var(--trace-hot));
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 50 950;
+  stroke-dashoffset: 50;
+  filter: drop-shadow(0 0 5px rgb(var(--trace-hot)));
+  animation: trace-travel 9s linear infinite;
+}
+.pulse-b {
+  animation-duration: 11s;
+  animation-delay: -4s;
+}
+.pulse-c {
+  animation-duration: 13s;
+  animation-delay: -8s;
+}
+.tool-node {
+  fill: var(--surface-solid);
+  stroke: rgb(var(--trace) / 0.55);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 8px rgb(var(--beam) / 0.35));
+}
+.tool-node-icon {
+  color: var(--accent-text);
+}
+.dial-ring {
+  fill: none;
+  stroke: rgb(var(--trace) / 0.5);
+  stroke-width: 1.2;
+}
+.dial-ring-dim {
+  fill: none;
+  stroke: rgb(var(--trace) / 0.26);
+  stroke-width: 1;
+}
+.dial-tick {
+  stroke: rgb(var(--trace) / 0.45);
+  stroke-width: 1.2;
+}
+.dial-tick-major {
+  stroke: rgb(var(--trace-hot) / 0.8);
+  stroke-width: 1.8;
+}
+.dial-disc {
+  stroke: rgb(var(--trace) / 0.6);
+  stroke-width: 1.4;
+  filter: drop-shadow(0 0 18px rgb(var(--beam) / 0.45));
+}
+.stop-disc-a {
+  stop-color: color-mix(in srgb, rgb(var(--beam)) 38%, var(--surface-solid));
+}
+.stop-disc-b {
+  stop-color: var(--bg-deep);
+}
+.stop-halo-a {
+  stop-color: rgb(var(--beam) / 0.3);
+}
+.stop-halo-b {
+  stop-color: rgb(var(--beam) / 0);
+}
+.dial-halo.breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: breathe 7s ease-in-out infinite;
+}
+.dial-emblem {
+  filter: drop-shadow(0 0 12px rgb(var(--beam) / 0.55));
+}
+.dial-emblem path:first-of-type {
+  fill: color-mix(in srgb, rgb(var(--beam)) 24%, var(--surface-solid));
+}
+@keyframes trace-travel {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trace-pulse {
+    display: none;
+  }
+  .dial-halo.breathe {
+    animation: none;
+  }
+}
+
+/* Tool header band: a faint beam and circuit motif in the top-right corner. Static, decorative. */
+.band-motif {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.band-motif::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: -1;
+  width: min(32rem, 90%);
+  height: 100%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 120% at 100% 0%, rgb(var(--beam) / 0.16), transparent 70%),
+    repeating-linear-gradient(135deg, transparent 0 18px, rgb(var(--trace) / 0.07) 18px 19px);
+  mask-image: linear-gradient(270deg, #000, transparent 90%);
 }
 
 @keyframes reveal {

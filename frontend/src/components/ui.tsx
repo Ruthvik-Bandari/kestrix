@@ -63,9 +63,18 @@ export function Panel({
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
+/** The square on the right of a button that holds its icon (light on primary, dark on secondary). Decorative. */
+export function ButtonIcon({ name = "arrowRight" }: { name?: IconName }) {
+  return (
+    <span className="btn-ico" aria-hidden="true">
+      <Icon name={name} size={16} />
+    </span>
+  );
+}
+
 /**
- * Button primitive. Primary is the solid accent action (44px target); secondary is a quiet
- * border; ghost is text only. `pending` keeps the button focusable (aria-disabled, aria-busy),
+ * Button primitive. Primary is the solid emerald action (44px target); secondary is a translucent
+ * dark fill with a hairline; ghost is text only. `icon` adds the square icon holder on the right. `pending` keeps the button focusable (aria-disabled, aria-busy),
  * swaps the label for `pendingLabel` and ignores clicks, so it never drops keyboard focus.
  */
 export function Button({
@@ -73,6 +82,7 @@ export function Button({
   size = "md",
   pending = false,
   pendingLabel,
+  icon,
   className,
   children,
   onClick,
@@ -84,6 +94,7 @@ export function Button({
   size?: "sm" | "md" | "lg";
   pending?: boolean;
   pendingLabel?: ReactNode;
+  icon?: IconName;
 }) {
   return (
     <button
@@ -97,11 +108,22 @@ export function Button({
     >
       {pending ? <Spinner /> : null}
       {pending && pendingLabel ? pendingLabel : children}
+      {icon && !pending ? <ButtonIcon name={icon} /> : null}
     </button>
   );
 }
 
 // Status ---------------------------------------------------------------------
+
+/** Pill badge: a glowing dot and a short label. */
+export function Pill({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <span className={cx("pill", className)}>
+      <span className="pill-dot" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
 
 /** Compact status label: icon + text, tinted. Never color alone. */
 export function Badge({ tone, children, icon }: { tone: Tone; children: ReactNode; icon?: IconName | null }) {

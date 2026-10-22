@@ -3,7 +3,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState, type SubmitEvent } from "react";
 import { DataNote } from "../../components/DataNote";
-import { Icon } from "../../components/Icon";
 import {
   FailedRequest,
   FindingList,
@@ -168,8 +167,7 @@ export function UrlAnalyzer() {
             run: true,
             children: (
               <>
-                <Button type="submit" className="w-full" disabled={!url.trim()} pending={check.isPending} pendingLabel="Checking…">
-                  <Icon name="search" size={16} />
+                <Button type="submit" icon="search" className="w-full" disabled={!url.trim()} pending={check.isPending} pendingLabel="Checking…">
                   Check link
                 </Button>
                 <DataNote subject="The link" />

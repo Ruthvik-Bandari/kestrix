@@ -133,12 +133,20 @@ export function PublicShell({
         Skip to content
       </a>
       <header className="bg-rail sticky top-0 z-40 border-b border-line">
-        <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6">
-          <Link to={landingPath()} className="flex items-center gap-2.5 rounded-md" aria-label="Kestrix home">
+        <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6 md:grid md:grid-cols-[1fr_auto_1fr]">
+          <Link to={landingPath()} className="flex items-center gap-2.5 rounded-md md:justify-self-start" aria-label="Kestrix home">
             <BrandMark size={28} />
-            <span className="text-lg font-bold tracking-[-0.02em] text-ink">Kestrix</span>
+            <span className="text-lg font-semibold tracking-[-0.02em] text-ink">Kestrix</span>
           </Link>
-          {action ? <HeaderAction /> : null}
+          <nav aria-label="Primary" className="hidden md:block">
+            <Link
+              to={docsPath()}
+              className="inline-flex min-h-11 items-center rounded-md px-3 text-[0.9375rem] font-medium text-ink-2 transition-colors hover:text-ink"
+            >
+              Docs
+            </Link>
+          </nav>
+          <div className="md:justify-self-end">{action ? <HeaderAction /> : null}</div>
         </div>
       </header>
       <div className="relative flex flex-1 flex-col">

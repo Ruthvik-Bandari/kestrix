@@ -134,3 +134,25 @@ Every tool and guide page shares one frame (`components/toolframe.tsx`, `feature
 - **Body:** a 24rem numbered workspace column beside a flexible report column from 1100px; stacked, input first, below. Before a result the report column shows an outline of the report's sections (headings only); after one it shows the report and the workspace column adds a sticky jump list.
 - **Report sections** use `ReportSection` (icon, heading, count); findings carry a left severity rule next to the severity icon and label; evidence sits in a labelled monospace inset.
 - Guide pages use the same band with a link rail (Set it up, Use it, Fix problems) and a two-column checklist.
+
+## Emerald direction (2026-10-22)
+
+Owner-chosen visual reference: `docs/design/2026-10-22-emerald/reference.png` (style only). Replaces the graphite/lime hero and the code rain. Tokens live in `frontend/src/index.css`; `.scope-dark` re-applies the dark set inside a light page (the landing opening).
+
+| Token | Light | Dark |
+|---|---|---|
+| `--bg` / `--rail` | `#f1f7f3` / `#e7f0ea` | `#040a07` / `#060e0a` |
+| `--surface-solid` / `--inset` | `#fbfdfc` / `#e4efe8` | `#0a1712` / `#0f2019` |
+| `--line` (hairline) | `#cddcd2` | `rgb(61 220 142 / .17)` |
+| `--line-strong` (controls) | `#68887a` | `#5a8571` |
+| `--ink` / `--ink-2` / `--ink-3` | `#0c1f17` / `#46604f` / `#4e695a` | `#e9f5ee` / `#a9c2b4` / `#8aa597` |
+| `--accent` / hover | `#0b6b45` / `#085536` | `#1fd17a` / `#4be59a` |
+| `--on-accent` | `#ffffff` | `#03140b` |
+| `--accent-text` / `--accent-soft` | `#0b6b45` / `#d9eee1` | `#3ddc8e` / `#0f2e21` |
+| `--focus` | `#0b6b45` | `#5cf0a8` |
+| `--glow` | soft emerald halo | `0 0 22px -2px rgb(31 209 122 / .45)` + 1px ring |
+| severity | unchanged (red/amber/blue, icon + label) | `ok-bg` darkened to `#143a28` |
+
+Contrast (WCAG, computed): dark ink 16.4 on surface, ink-2 9.7, ink-3 6.4 on inset (lowest), accent-text 8.3 on accent-soft (lowest), on-accent 9.4 on accent; light ink-2 5.9 on rail (lowest), ink-3 4.6 on inset after retune, accent-text 5.4 on accent-soft, on-accent 6.6 on accent. Every severity text on its tint is 6.2 to 8.8. Control borders 3.3 to 4.8, focus 6.0 to 13.8, marks 3.5 to 9.2. Button labels on emerald are dark (not white) because white on bright emerald is about 2:1.
+
+Components: primary button = solid emerald with halo and a light icon square on the right (`ButtonIcon`, `Button icon=`); secondary = translucent dark fill, hairline, darker icon square; `Pill` badge (dot + label); `panel-glow` only on the featured example and sign-in card; active nav gets an emerald gradient and glowing left edge; tool header band has a static corner beam/circuit motif. Landing: rounded frame on a darker field, beams (CSS gradients), `CircuitDial` (inline SVG: traces, nodes, tool icon nodes, tick dial, BrandMark emblem). Motion: a slow pulse along three traces and a breathing dial halo on the landing only, both off under `prefers-reduced-motion`; sign-in and the app are static. No inline style strings (CSP `style-src 'self'`).

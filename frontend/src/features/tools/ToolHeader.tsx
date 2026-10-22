@@ -81,11 +81,11 @@ export function ToolHeader({
   const stage = useStage();
   useTitle(tool.name);
   return (
-    <header className="mb-6 rounded-xl border border-line bg-inset/50 px-4 py-4 sm:px-6 sm:py-5">
+    <header className="band-motif mb-6 rounded-xl border border-line bg-inset/50 px-4 py-4 sm:px-6 sm:py-5">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-8">
         <div className="flex min-w-0 gap-4 sm:gap-5">
           <span
-            className="flex size-12 flex-none items-center justify-center rounded-xl bg-accent text-on-accent sm:size-14"
+            className="flex size-12 flex-none items-center justify-center rounded-xl bg-accent text-on-accent shadow-glow sm:size-14"
             aria-hidden="true"
           >
             <Icon name={tool.icon} size={28} className="max-sm:size-6" />

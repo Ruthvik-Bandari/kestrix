@@ -283,8 +283,7 @@ export function CustomRuleForm({
         </div>
       </Disclosure>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" pending={running} pendingLabel="Running repair…">
-          <Icon name="play" size={15} />
+        <Button type="submit" icon="play" pending={running} pendingLabel="Running repair…">
           Diagnose and repair
         </Button>
         <Button

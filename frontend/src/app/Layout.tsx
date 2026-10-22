@@ -67,7 +67,7 @@ const linkClass = (isActive: boolean) =>
   cx(
     "relative flex min-h-9 items-center gap-2.5 rounded-md px-2.5 py-1 text-[0.9375rem] font-medium transition-colors duration-150",
     isActive
-      ? "bg-accent-soft font-semibold text-ink before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-accent"
+      ? "nav-active font-semibold text-ink before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-accent"
       : "text-ink-2 hover:bg-inset hover:text-ink",
   );
 
@@ -230,7 +230,7 @@ function RailFooter({ onNavigate }: { onNavigate?: () => void }) {
           cx(
             "flex min-h-9 items-center gap-3 rounded-md px-3 text-[0.8125rem] font-medium transition-colors duration-150",
             isActive
-              ? "bg-accent-soft text-ink"
+              ? "nav-active text-ink"
               : "text-ink-3 hover:bg-inset hover:text-ink",
           )
         }

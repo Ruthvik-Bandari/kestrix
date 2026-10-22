@@ -3,8 +3,7 @@
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router";
 import { PRIVACY_PATH, TERMS_PATH } from "../../app/paths";
-import { Icon } from "../../components/Icon";
-import { cx, ErrorState, Skeleton } from "../../components/ui";
+import { ButtonIcon, cx, ErrorState, Skeleton } from "../../components/ui";
 import { useMe, useProviders } from "../../lib/queries";
 import type { AuthProvider } from "../../lib/types";
 import { ProviderMark, providerName } from "./providers";
@@ -96,7 +95,7 @@ export function AuthCard({ next, className, initialIntent = "login" }: { next: s
   const user = me.data?.signed_in ? me.data.user : null;
 
   return (
-    <section aria-labelledby={`${id}-title`} className={cx("panel p-5 shadow-[0_12px_40px_rgb(0_0_0/0.22)] sm:p-6", className)}>
+    <section aria-labelledby={`${id}-title`} className={cx("panel panel-glow p-5 sm:p-6", className)}>
       <div>
         {me.isPending ? (
           <div className="grid gap-3" aria-hidden="true">
@@ -114,7 +113,7 @@ export function AuthCard({ next, className, initialIntent = "login" }: { next: s
             </p>
             <Link to={next} className="btn btn-primary btn-lg w-full justify-center">
               Open the dashboard
-              <Icon name="arrowRight" size={18} />
+              <ButtonIcon />
             </Link>
           </div>
         ) : (
@@ -148,7 +147,7 @@ export function AuthCard({ next, className, initialIntent = "login" }: { next: s
                     onKeyDown={onKeyDown}
                     className={cx(
                       "min-h-11 rounded-lg px-3 text-[0.9375rem] font-semibold transition-colors sm:min-h-10",
-                      selected ? "bg-surface-solid text-ink shadow-[0_1px_2px_rgb(0_0_0/0.12)]" : "text-ink-2 hover:text-ink",
+                      selected ? "bg-accent-soft text-ink ring-1 ring-accent/40" : "text-ink-2 hover:text-ink",
                     )}
                   >
                     {tab.label}

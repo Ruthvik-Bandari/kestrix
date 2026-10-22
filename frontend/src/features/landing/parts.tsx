@@ -38,7 +38,7 @@ export function ReportCard() {
   const verdict = report.verdict.charAt(0).toUpperCase() + report.verdict.slice(1);
   return (
     <figure id="example" tabIndex={-1} className="m-0 outline-none">
-      <article aria-label="Example email report" className="report-card overflow-hidden rounded-xl">
+      <article aria-label="Example email report" className="panel panel-glow overflow-hidden rounded-xl">
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5 font-mono text-[0.6875rem] tracking-[0.08em] text-ink-2 uppercase sm:px-6">
           <span className="inline-flex items-center gap-2">
             <Icon name="mail" size={15} />
@@ -85,7 +85,7 @@ export function ReportCard() {
           </span>
         </div>
       </article>
-      <figcaption className="mt-3 text-right font-mono text-[0.75rem] tracking-[0.04em] text-hero-muted">
+      <figcaption className="mt-3 text-right font-mono text-[0.75rem] tracking-[0.04em] text-ink-2">
         Synthetic example · actual analyzer output
       </figcaption>
     </figure>
