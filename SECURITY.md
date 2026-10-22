@@ -31,7 +31,8 @@ In scope:
 - parsing of untrusted rules, mappings, fixtures, files, URLs and addresses;
 - outbound request guards (`core/netguard.py`, the website check, mempool.space lookups);
 - storage and handling of the Anthropic API key;
-- the CI workflow and the release artifacts built from this repository.
+- the CI workflow and the release artifacts built from this repository;
+- the hosted service, once its owner has launched it: sign-in, sessions and CSRF, the rate limits, upload handling, the website check's target restrictions, the encrypted result history and the response headers. Report it the same way. Test only with accounts you created, keep the request rate within the published limits (no load or denial-of-service testing), and never use a website check against a site you do not own or have permission to test.
 
 Out of scope:
 

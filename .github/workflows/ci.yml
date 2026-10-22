@@ -17,8 +17,11 @@ jobs:
   python-checks:
     name: Python lint and types
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
@@ -32,12 +35,15 @@ jobs:
     name: Python tests (${{ matrix.python }})
     needs: python-checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
@@ -50,12 +56,15 @@ jobs:
     name: kestrix-scan tests alone (${{ matrix.python }})
     needs: python-checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
@@ -68,6 +77,7 @@ jobs:
     name: Replay tests on pinned Elasticsearch
     needs: python-checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.19.3@sha256:bbac63ecd50e9263565fbb616172a5287d5f99e486d76453e81e32cafcba3838
@@ -81,6 +91,8 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
@@ -89,14 +101,65 @@ jobs:
         env:
           KESTRIX_ES_URL: http://127.0.0.1:9200
 
+  security:
+    name: Self-scan and dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --locked --all-extras
+      # Blocking: the committed code has no findings, so any new one is a regression to fix or to suppress
+      # with a written reason (an unreviewed suppression comment suppresses nothing).
+      - name: kestrix-scan on Kestrix's own code
+        run: uv run kestrix-scan src frontend/src scripts packages --fail-on low
+      # Blocking: these are the packages the container image ships. A new advisory can fail an unrelated
+      # pull request; the fix is a lockfile bump (`uv lock --upgrade-package <name>`) or, with no fix
+      # upstream, an --ignore-vuln entry here with the reason beside it.
+      #   PYSEC-2026-2447: diskcache (pysigma's cache; no fixed release; the detect module is not served
+      #   by the hosted service and Kestrix never points it at an untrusted cache directory).
+      - name: Python runtime dependencies (audit)
+        run: |
+          uv export --frozen --no-dev --extra hosted --no-emit-workspace --format requirements-txt --output-file "$RUNNER_TEMP/runtime-requirements.txt" > /dev/null
+          uvx --from pip-audit==2.10.1 pip-audit -r "$RUNNER_TEMP/runtime-requirements.txt" --no-deps --disable-pip --ignore-vuln PYSEC-2026-2447
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      # Blocking: runtime packages are bundled into the dashboard that visitors run.
+      - name: Dashboard runtime dependencies (audit)
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+      # Non-blocking: build and test tools never reach a visitor or the container; advisories for them
+      # are tracked here and fixed on the next dependency bump rather than blocking unrelated work.
+      - name: Dashboard build tools (audit, report only)
+        run: npm audit --audit-level=high
+        working-directory: frontend
+        continue-on-error: true
+      - name: Python development dependencies (audit, report only)
+        run: |
+          uv export --frozen --all-extras --all-groups --no-emit-workspace --format requirements-txt --output-file "$RUNNER_TEMP/all-requirements.txt" > /dev/null
+          uvx --from pip-audit==2.10.1 pip-audit -r "$RUNNER_TEMP/all-requirements.txt" --no-deps --disable-pip
+        continue-on-error: true
+
   frontend:
     name: Dashboard lint, test and build
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: frontend/.nvmrc
@@ -110,10 +173,13 @@ jobs:
 
   package:
     name: Build both wheels and smoke-test them
-    needs: [python-tests, scan-tests, frontend]
+    needs: [python-tests, scan-tests, frontend, security]
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: frontend/.nvmrc
@@ -121,6 +187,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - run: npm --prefix frontend ci && npm --prefix frontend run build
+      - name: The built dashboard runs under the strict CSP (no inline script, style or handler)
+        run: |
+          uv sync --locked --all-extras
+          uv run pytest -q tests/server/test_site_hardening.py
       - run: uv build --all-packages
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -157,8 +227,11 @@ jobs:
   container:
     name: Build and smoke-test the hosted container
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build the image (not pushed)
         run: docker build --pull -t kestrix:ci .
       - name: Refuse to start without hosted configuration
@@ -198,6 +271,10 @@ jobs:
             exit 1
           fi
           docker exec kestrix-ci python -c "import os; assert os.path.isfile('/data/kestrix.db')"
+      - name: Deploy preflight, dry run, inside the production image
+        # The script reads no secret and writes nothing outside a temporary directory. For a real go-live it
+        # runs the same way with the real environment (docs/deploy.md, "Go-live checklist").
+        run: docker exec -i kestrix-ci python - --dry-run < scripts/deploy_preflight.py
       - name: Container logs
         if: always()
         run: docker logs kestrix-ci || true

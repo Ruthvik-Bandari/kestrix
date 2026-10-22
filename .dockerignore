@@ -29,5 +29,11 @@ frontend/dist/
 **/.DS_Store
 **/.env
 **/.env.*
+**/secrets.json
+**/secrets/
+**/*.sqlite3
+**/*.db
+**/data/raw/
+**/data/locked/
 **/*.pem
 **/*.key

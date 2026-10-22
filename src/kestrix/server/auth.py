@@ -374,6 +374,7 @@ class AuthService:
         sid, refresh_token = secrets.token_urlsafe(24), secrets.token_urlsafe(32)
         expires_at = now + SESSION_ABSOLUTE_S
         self.store.create_family(sid, user.id, self.refresh_hash(refresh_token), now, expires_at)
+        log.info("sign-in provider=%s user=%s new=%s", provider, self.user_tag(user.id), user.created)
         next_path = attempt.next or DEFAULT_NEXT
         if user.created and not signup:
             next_path = with_welcome(next_path)  # created through Log in: show where the terms are, once
@@ -579,19 +580,22 @@ class AuthService:
         """Revoke the caller's family, found by the access token or else the refresh cookie. False when a
         family was found but the CSRF token does not match it."""
         sid = session.sid if session is not None else None
+        user_id = session.user_id if session is not None else None
         if sid is None:
             family = self.refreshable(refresh_token)
-            sid = family.sid if family is not None else None
-        if sid is None:
+            sid, user_id = (family.sid, family.user_id) if family is not None else (None, None)
+        if sid is None or user_id is None:
             return True
         if not self.csrf_ok(self.csrf_token(sid), csrf_header):
             return False
         self.revoke(sid)
+        log.info("sign-out user=%s", self.user_tag(user_id))
         return True
 
     def delete_account(self, session: Session) -> None:
         """Remove the user row; its families go with it (``ON DELETE CASCADE``)."""
         self._forget(*self.store.delete_user(session.user_id))
+        log.info("account deleted user=%s", self.user_tag(session.user_id))
 
     def user_tag(self, user_id: int) -> str:
         """A short salted hash of the user id for logs."""

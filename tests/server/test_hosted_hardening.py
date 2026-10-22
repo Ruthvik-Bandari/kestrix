@@ -15,8 +15,9 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from kestrix.cli import app as cli_app
-from kestrix.server.app import HSTS, body_limit, create_app, hosted_body_limits
+from kestrix.server.app import body_limit, create_app, hosted_body_limits
 from kestrix.server.auth import host_tag
+from kestrix.server.headers import HSTS
 from kestrix.server.ratelimit import RateLimiter
 from kestrix.server.settings import Settings, SettingsError, load_settings
 from kestrix.webcheck import api as webcheck_api

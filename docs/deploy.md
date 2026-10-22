@@ -1,6 +1,6 @@
 # Deploying hosted mode
 
-This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004-hosted-mode.md)) on [Fly.io](https://fly.io) with the repository's `Dockerfile` and `fly.toml`. It is slice H3. Do not open the site to the public until the privacy notice and terms (H4) are published and the [launch checklist](#before-launch) is done.
+This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004-hosted-mode.md)) on [Fly.io](https://fly.io) with the repository's `Dockerfile` and `fly.toml`. It is slice H3. Do not open the site to the public until the privacy notice and terms (H4) are reviewed and published and the [go-live checklist](#go-live-checklist) is done. Nothing in this repository deploys, publishes or pushes anything: every step below is run by the owner.
 
 ## Contents
 
@@ -11,7 +11,8 @@ This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004
 - [Backups](#backups)
 - [Rotating secrets](#rotating-secrets)
 - [Cost](#cost)
-- [Before launch](#before-launch)
+- [Preflight](#preflight)
+- [Go-live checklist](#go-live-checklist)
 - [Why not Render](#why-not-render)
 
 ## What you get
@@ -21,11 +22,13 @@ This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004
 | `Dockerfile` | Three stages: Node builds the dashboard, uv builds the wheel and a venv with only the locked runtime dependencies (no dev or gpu groups, no `ai` or `exif` extras), then a `python:3.12-slim` final stage. Every base image is pinned by digest. The wheel is built with `uv build --offline` by the pinned uv binary's own `uv_build` backend, so no build backend is downloaded. |
 | `.dockerignore` | An allowlist: only `pyproject.toml`, `uv.lock`, `README.md`, `LICENSE`, `NOTICE`, `src/kestrix/` and `frontend/` reach the build. `src/kestrixbench`, `data/`, `docs/`, `hpc/`, `tests/`, `.git` and any `.env` files never do. |
 | `fly.toml` | One machine, a 1 GB volume at `/data` for the SQLite file, HTTPS forced at Fly's edge, and a health check on `/api/health`. |
-| CI job `container` | Builds the image (never pushes it) and checks that it runs as uid 10001 on a read-only root filesystem and answers `/api/health` in hosted mode. |
+| CI job `container` | Builds the image (never pushes it), checks that it runs as uid 10001 on a read-only root filesystem and answers `/api/health` in hosted mode, and runs `scripts/deploy_preflight.py --dry-run` inside it. |
+| CI job `security` | `kestrix-scan` on Kestrix's own code (blocking), `pip-audit` of the packages the image ships and `npm audit --omit=dev` (both blocking), and audits of the development tools (report only). |
+| `scripts/deploy_preflight.py` | The go-live check: secrets, origin, providers, database permissions, the built bundle, headers, health, private-target refusal and rate limits, with PASS or FAIL per item and no secret in the output. See [Preflight](#preflight). |
 
 The image:
 
-- runs `kestrix serve-hosted` as user `kestrix` (uid and gid 10001), with no login shell and no `pip`. No tools are added to the base image; its own `/bin/sh` and `apt` are still there, owned by root;
+- runs `kestrix serve-hosted` as user `kestrix` (uid and gid 10001), with no login shell and no `pip`. No tools are added to the base image (no compiler, `uv`, `npm` or `git`; checked in a built image); its own `/bin/sh` and `apt` are still there, owned by root. Every setuid and setgid bit is removed at build time (none remain);
 - sets `KESTRIX_MODE=hosted`, `KESTRIX_DB=/data/kestrix.db`, `KESTRIX_HOME=/data` and `PORT=8000`;
 - writes only to `/data` (the database) and `/tmp` (uploads over 1 MiB spill to an anonymous temporary file there while they are analyzed, and the analysis workers' fork server keeps its socket there; nothing is kept);
 - runs on a read-only root filesystem when `/tmp` is a tmpfs (as in `docker run` below and the CI job). Fly.io Machines have no read-only-root or tmpfs option: there the root filesystem is the image's, writable but reset on every restart, and `/tmp` is on that disk. The app user can still write only to `/tmp` and `/data`, because everything else belongs to root;
@@ -239,22 +242,107 @@ Fly.io's free allowances and prices change. Check [fly.io/pricing](https://fly.i
 
 In a local test (Docker, `/tmp` on tmpfs), the idle container used about 120 MiB: the server, the analysis fork server and multiprocessing's resource tracker. Four users each sending a worst-case 9.9 MiB email at once, three times over, peaked at 377 MiB for the whole container: two analyses ran (each worker peaked near 170 MiB RSS, about 70 MiB of it shared with the fork server) and the rest got 503 `busy`. That fits 512 MB; 256 MB does not.
 
-## Before launch
+## Preflight
 
-- [ ] Privacy notice and terms (ADR 0004 slice H4) are published and linked from the site.
-- [ ] The `Fly-Client-IP` spoofing check passes (the 21st forged request gets 429; see [Client IPs and rate limits](#client-ips-and-rate-limits)).
-- [ ] `auto_stop_machines = "off"` and `min_machines_running = 1`, so rate limits are not reset by idle stops.
-- [ ] Exactly one machine (`fly machines list`).
-- [ ] Both OAuth apps use the production redirect URIs; the Google consent screen is published; test users removed.
-- [ ] `KESTRIX_SESSION_PEPPER`, `KESTRIX_JWT_SECRET` and `KESTRIX_HISTORY_KEY` were generated for production, differ, and have never been used elsewhere; `KESTRIX_JWT_SECRET_PREVIOUS` and `KESTRIX_HISTORY_KEY_PREVIOUS` are unset.
-- [ ] `KESTRIX_ABUSE_CONTACT` is a monitored mailbox.
-- [ ] `fly checks list` passes and `/api/health` reports `"mode":"hosted"` over HTTPS.
-- [ ] `http://` redirects to `https://`, and `https://<app>.fly.dev` answers 421 once a custom domain is set.
-- [ ] Logs show no emails, file names, URLs, cookies or tokens after a full sign-in and analysis.
-- [ ] A volume snapshot exists and you have tested restoring one.
-- [ ] CI is green, including the `container` job and the dependency audits.
-- [ ] The base image digests in the `Dockerfile` are recent (`docker buildx imagetools inspect python:3.12-slim`), and `docker scout quickview` or another scanner shows no fixable critical or high issues.
-- [ ] HSTS preload: the server already sends `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`. Submit the domain to [hstspreload.org](https://hstspreload.org) only after confirming that the registrable domain and every subdomain serve HTTPS, because preloading applies to all of them and is slow to undo. Preloading needs the apex domain itself to send the header, so a subdomain-only deployment cannot be preloaded on its own.
+`scripts/deploy_preflight.py` checks a target before it takes traffic. It runs the real application in process with a temporary database and a fake session, so it never writes to your database, never contacts a provider and never sends a request to a website. It prints `PASS`, `FAIL`, `WARN` or `SKIP` per item and exits 1 if anything failed. It never prints a secret value: it reports lengths and reasons, and it scrubs every secret it knows from its own output.
+
+```bash
+uv run python scripts/deploy_preflight.py --dry-run            # throwaway config; what CI runs
+uv run python scripts/deploy_preflight.py --env-file staging.env   # a 0600 KEY=VALUE file, or the exported environment
+uv run python scripts/deploy_preflight.py --url https://staging.kestrix.example.org   # also two GETs to a live site
+# Against a container, with its real environment (nothing leaves the container; tested with the CI image):
+docker exec -i <container> python - < scripts/deploy_preflight.py
+# On a Fly machine (the image has no scripts/ folder, so copy the script in first; flyctl commands not run here):
+fly ssh sftp shell      # then: put scripts/deploy_preflight.py /tmp/deploy_preflight.py
+fly ssh console -C "python /tmp/deploy_preflight.py"
+```
+
+What it checks:
+
+| Item | Passes when |
+| --- | --- |
+| `KESTRIX_JWT_SECRET`, `KESTRIX_SESSION_PEPPER` | at least 32 bytes, at least 12 distinct characters, at least 3 bits of entropy per character, and not a placeholder (a word such as `example`, `secret`, `test`, `changeme`) |
+| `KESTRIX_HISTORY_KEY` | base64 of exactly 32 bytes with at least 16 distinct byte values |
+| `secrets-distinct` | the three secrets differ |
+| `KESTRIX_PUBLIC_ORIGIN` | `https://host`, no path, and the host is not `localhost`, an IP address, or a reserved name such as `.example`, `.test`, `.invalid` |
+| `oauth-google`, `oauth-github`, `oauth-any` | each configured provider has both id and a secret of at least 16 characters; at least one is complete (one missing provider is a warning) |
+| `KESTRIX_ABUSE_CONTACT` | an email address or https URL that is not a reserved name |
+| `client-ip` | `KESTRIX_CLIENT_IP_HEADER` or `KESTRIX_TRUST_PROXY_HEADERS` is set, so per-address limits do not all count the proxy |
+| `db-dir`, `db-mode:*` | the database folder is writable; any existing database file is mode 0600 |
+| `bundle` | `index.html` references only content-hashed files that exist, with no inline script, style or event handler |
+| `settings`, `health`, `host-allowlist`, `auth-gate` | the server would start with this configuration, `/api/health` reports hosted mode, a foreign `Host` gets 421, and a signed-out `/api/webcheck` gets 401 |
+| `headers:*`, `cache:*` | CSP (script-src `'self'`, no unsafe-inline/eval, object-src, base-uri and frame-ancestors `'none'`), HSTS of a year or more with `includeSubDomains`, nosniff, COOP and CORP `same-origin`, Referrer-Policy, Permissions-Policy; `/api/` is `no-store`, `index.html` is `no-cache` |
+| `private-targets` | webcheck refuses loopback, link-local, private and `localhost` targets (403 `target_not_allowed`) |
+| `rate-limits:*` | per-user and per-address limits are defined, and the 21st sign-in start from one address gets 429 |
+| `hsts-preload` | a warning when `KESTRIX_HSTS_PRELOAD=1`, so the owner confirms it on purpose |
+
+Sample (the production image started with CI's placeholder values, so it correctly says NOT READY; secrets never appear):
+
+```text
+PASS KESTRIX_JWT_SECRET          set, 64 bytes, not a placeholder
+PASS KESTRIX_HISTORY_KEY         set, 32 bytes of base64
+FAIL KESTRIX_PUBLIC_ORIGIN       kestrix.ci.invalid is a local, reserved or IP-literal name, not a public host
+FAIL oauth-github                client secret is too short or a placeholder
+FAIL client-ip                   neither KESTRIX_CLIENT_IP_HEADER nor KESTRIX_TRUST_PROXY_HEADERS is set; ...
+PASS headers:page                CSP, HSTS, COOP, CORP, nosniff, Referrer-Policy and Permissions-Policy are correct
+PASS private-targets             5 loopback, link-local and private targets -> [(403, 'target_not_allowed')]
+PASS rate-limits:enforced        sign-in start: request 21 -> 429 (want 429 after 20)
+
+22 passed, 4 failed, 1 warnings, 0 skipped: NOT READY
+```
+
+It does not replace the manual items below: it cannot see DNS, the certificate on the live host, the OAuth consoles, your backups or your mailbox.
+
+## Go-live checklist
+
+Items marked **[OWNER]** can only be done by the person who owns the domain, the cloud account, the OAuth consoles or the legal responsibility; the code and CI cannot do them for you. Do them in order.
+
+### 1. Before the first public request
+
+- [ ] **[OWNER] Legal pages.** `docs/legal/privacy-draft.md` and `terms-draft.md` are drafts, not legal advice. The owner (and, if possible, a lawyer) must review them, check them against what the service really does (email and display name kept; uploads never stored; reports kept 30 days, encrypted; logs; backups that keep a deleted account until snapshots expire), set the real contact, and only then publish them as the site's `/privacy` and `/terms`. Do not launch with the word "draft" on them.
+- [ ] **[OWNER] DNS and TLS.** Point the domain at Fly (`fly certs add`, then the `CNAME` or `A`/`AAAA` records), wait for `fly certs check` to report the certificate issued, and confirm `https://<domain>/` loads with a valid chain. Set `KESTRIX_PUBLIC_ORIGIN` and the health check's `Host` to the domain, then redeploy. `https://<app>.fly.dev` must now answer 421.
+- [ ] **[OWNER] OAuth redirect URIs.** Google: `https://<domain>/api/auth/callback/google`, with the consent screen published (not in testing) and test users removed. GitHub: `https://<domain>/api/auth/callback/github`. Remove any localhost or staging redirect URI from the production apps. Use separate OAuth apps for staging.
+- [ ] **[OWNER] Secrets.** Generate three different production secrets and never reuse them from staging or this repository (commands in [Set the secrets](#5-set-the-secrets)): the session pepper and the JWT secret (`secrets.token_urlsafe(48)`) and the history key (32 random bytes in base64). Store them in Fly's secret store and in a password manager; leave `KESTRIX_JWT_SECRET_PREVIOUS` and `KESTRIX_HISTORY_KEY_PREVIOUS` unset.
+- [ ] **[OWNER] Abuse contact.** `KESTRIX_ABUSE_CONTACT` is a mailbox you read. Website checks send it in their `User-Agent`, and operators of checked sites will write to it. Decide how you answer a report (`kestrix hosted hash-host`, `disable-user`; see [hosted.md](hosted.md#abuse-handling)). Consider publishing the same address in `SECURITY.md` and a `/.well-known/security.txt`.
+- [ ] **Rate limits.** `KESTRIX_CLIENT_IP_HEADER=Fly-Client-IP` is set and the spoofing check in [Client IPs and rate limits](#client-ips-and-rate-limits) passes (the 21st forged request gets 429). `auto_stop_machines = "off"` and `min_machines_running = 1` so the limits are not reset by idle stops. Exactly one machine.
+- [ ] **HSTS preload is an owner decision.** The server sends `max-age=63072000; includeSubDomains` and not `preload`. **[OWNER]** Add `KESTRIX_HSTS_PRELOAD=1` and submit to [hstspreload.org](https://hstspreload.org) only if the registrable domain and every present and future subdomain will always serve HTTPS; removal takes months. A subdomain-only deployment cannot be preloaded.
+- [ ] **Image and dependencies.** CI is green, including `container` and `security`. The base image digests in the `Dockerfile` are recent (`docker buildx imagetools inspect python:3.12-slim`), and `docker scout quickview` or another scanner shows no fixable critical or high issues.
+
+### 2. Staging run
+
+- [ ] **[OWNER] Deploy a staging app** (a second Fly app, its own volume, its own OAuth apps and secrets, a `*.fly.dev` or staging host). The same image as production.
+- [ ] Run the preflight against it, with its real environment, and fix every `FAIL`:
+
+  ```bash
+  # In the machine, reading its environment (copy the script first, see Preflight):
+  fly ssh console -C "python /tmp/deploy_preflight.py"
+  # From your computer, adds the live header probe:
+  uv run python scripts/deploy_preflight.py --dry-run --url https://<staging host>
+  ```
+
+- [ ] Self-scan the staging site with Kestrix's own website check, whole site, from your computer (the target is public, so no `--allow-private`):
+
+  ```bash
+  uv run kestrix webcheck scan https://<staging host>
+  ```
+
+  Expect grade A. The only finding that may remain is the informational `hsts.not_preload_ready`, which is the preload decision above. Anything else is a regression: fix it before launch. The scan sees the signed-out pages; cookie flags are checked by `tests/server/test_site_hardening.py`, and you confirm them by hand in the browser's storage panel (`__Host-` prefix, `Secure`, `HttpOnly`, `SameSite`).
+- [ ] In a browser, with each provider: sign in, run a website check on a site you own, analyze a small file and a saved email, open Recent results, sign out, sign in again, delete the account. The browser console shows no Content-Security-Policy violation.
+- [ ] `fly logs` shows route templates and short hashes, never an email, file name, URL, cookie or token.
+
+### 3. Operate
+
+- [ ] **Monitoring of `/api/health`.** Fly's check (`fly checks list`) restarts a failed machine. **[OWNER]** Add an external monitor from outside Fly (an uptime service or a scheduled job) that requests `https://<domain>/api/health` every minute and pages you on a non-200 response or a missing `"mode":"hosted"`. Also alert on the certificate's expiry date (Fly renews it; the alert catches a failed renewal) and on a Fly billing limit.
+- [ ] **Log retention.** The app writes to stdout only: `kestrix.access` (method, route template, status, duration, salted user hash), `kestrix.auth` and `kestrix.webcheck`. They hold no personal data, but they do show behavior, so keep them as short as your abuse process needs. Fly keeps only recent logs; **[OWNER]** if you want more, add a Fly log shipper to a store you control, set its retention (30 days is enough to answer an abuse report), and say so in the privacy notice. Do not log request bodies at any layer.
+- [ ] **Backups.** Volume snapshots run daily with 14 days kept (see [Backups](#backups)); take one before each upgrade and **test a restore into a staging volume once**. **[OWNER]** Store the three secrets in a password manager now: a restored `kestrix-history.db` is unreadable without `KESTRIX_HISTORY_KEY`, and losing the key loses every stored report (accounts still work). Never put the key in the same place as a database copy. An off-platform database copy holds email addresses: encrypt it and delete old copies.
+- [ ] **Rotations and incidents.** You know the rotation steps ([Rotating secrets](#rotating-secrets)) and who can run them. After a suspected leak, rotate without the `*_PREVIOUS` value.
+- [ ] **Dependencies.** CI fails on a new advisory in the shipped packages. Re-run `uv lock --upgrade-package <name>` and redeploy; subscribe to GitHub security alerts for the repository.
+
+### 4. Go live and roll back
+
+- [ ] **[OWNER]** Deploy production with the same image that passed staging: `fly deploy --ha=false`. Run the preflight in the production machine (`fly ssh console -C "python /tmp/deploy_preflight.py"`) and the live probe from your computer (`--dry-run --url https://<domain>`), then the checks in [Verify](#8-verify). Announce only after both pass.
+- [ ] **Rollback.** Before every deploy note the current release (`fly releases`, `fly image show`). To roll back, deploy the previous image: `fly deploy --image <previous image reference> --ha=false` (or `fly machine update <id> --image <previous>`). The database schema is checked at start and refuses an older schema, so a rollback across a schema change needs the matching volume snapshot: restore it first (see [Backups](#backups)). If sign-in itself is the problem, put the site in maintenance by scaling to zero (`fly scale count 0`) rather than leaving a half-working service up; `fly scale count 1` brings it back.
+- [ ] After launch, watch `fly logs` and the external monitor for the first day; check the abuse mailbox daily for the first week.
 
 ## Why not Render
 
