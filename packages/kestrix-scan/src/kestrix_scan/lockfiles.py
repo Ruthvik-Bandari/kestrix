@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""Read pinned dependencies from Python and npm lockfiles with the standard library only.
+"""Read pinned dependencies from lockfiles with the standard library only.
+
+This module reads the Python and npm files; ``lockfiles_more`` reads Packagist, Go, crates.io, Maven, RubyGems,
+NuGet, Pub and Bun files, and its parsers are registered in ``PARSERS`` below.
 
 Supported files (matched by name):
 
@@ -36,11 +39,15 @@ else:  # Python 3.10: the tomli backport
     import tomli as tomllib
 
 MAX_LOCKFILE_BYTES = 64 * 1024 * 1024
+# The OSV ecosystems kestrix-scan can check (the names OSV uses in its exports and advisories).
+ECOSYSTEMS = ("PyPI", "npm", "Packagist", "Go", "crates.io", "Maven", "RubyGems", "NuGet", "Pub")
 
 
 @dataclass(frozen=True, slots=True)
 class Dependency:
-    ecosystem: str  # OSV ecosystem name: 'PyPI' or 'npm'
+    ecosystem: (
+        str  # OSV ecosystem name: 'PyPI', 'npm', 'Packagist', 'Go', 'crates.io', 'Maven', 'RubyGems', 'NuGet' or 'Pub'
+    )
     name: str  # as written in the file
     version: str
     line: int  # 1-based line in the lockfile
@@ -54,8 +61,11 @@ class Parsed:
 
 
 def normalize(ecosystem: str, name: str) -> str:
-    """The name OSV and the index use: PEP 503 normalization for PyPI, unchanged for npm."""
-    return re.sub(r"[-_.]+", "-", name).lower() if ecosystem == "PyPI" else name
+    """The name OSV and the index use: PEP 503 normalization for PyPI, lower case for Packagist and NuGet
+    (their names are case-insensitive), unchanged elsewhere."""
+    if ecosystem == "PyPI":
+        return re.sub(r"[-_.]+", "-", name).lower()
+    return name.lower() if ecosystem in ("Packagist", "NuGet") else name
 
 
 def _line_finder(text: str) -> Callable[[str], int]:
@@ -128,6 +138,11 @@ def _registry_package(package: dict[str, Any]) -> bool:
 
 
 def parse_toml_lock(text: str) -> Parsed:
+    return _toml_packages(text, "PyPI", _registry_package)
+
+
+def _toml_packages(text: str, ecosystem: str, is_registry: Callable[[dict[str, Any]], bool]) -> Parsed:
+    """The ``[[package]]`` tables of a TOML lockfile that ``is_registry`` accepts, with their lockfile lines."""
     parsed = Parsed()
     try:
         data = tomllib.loads(text)
@@ -146,8 +161,8 @@ def parse_toml_lock(text: str) -> Parsed:
             continue
         header = find(f'[[package]]\nname = "{name}"')
         line = header + 1 if header else max(find(f'name = "{name}"'), 1)
-        if _registry_package(package):
-            parsed.dependencies.append(Dependency("PyPI", name, version, line))
+        if is_registry(package):
+            parsed.dependencies.append(Dependency(ecosystem, name, version, line))
     return parsed
 
 
@@ -290,6 +305,8 @@ def parse_pnpm_lock(text: str) -> Parsed:
 
 # ----- dispatch
 
+from .lockfiles_more import MORE_PARSERS  # noqa: E402 - the parsers import Dependency and Parsed from this module
+
 PARSERS: dict[str, Callable[[str], Parsed]] = {
     "poetry.lock": parse_toml_lock,
     "uv.lock": parse_toml_lock,
@@ -301,6 +318,39 @@ PARSERS: dict[str, Callable[[str], Parsed]] = {
     "pnpm-lock.yaml": parse_pnpm_lock,
 }
 _REQUIREMENTS = re.compile(r"requirements.*\.txt", re.IGNORECASE)
+PARSERS.update(MORE_PARSERS)
+
+# The OSV ecosystem a dependency file belongs to, by name: which exports `db update` needs for a project.
+FILE_ECOSYSTEMS: dict[str, str] = {
+    "poetry.lock": "PyPI",
+    "uv.lock": "PyPI",
+    "pdm.lock": "PyPI",
+    "Pipfile.lock": "PyPI",
+    "package-lock.json": "npm",
+    "npm-shrinkwrap.json": "npm",
+    "yarn.lock": "npm",
+    "pnpm-lock.yaml": "npm",
+    "bun.lock": "npm",
+    "composer.lock": "Packagist",
+    "go.mod": "Go",
+    "go.sum": "Go",
+    "Cargo.lock": "crates.io",
+    "pom.xml": "Maven",
+    "gradle.lockfile": "Maven",
+    "Gemfile.lock": "RubyGems",
+    "packages.lock.json": "NuGet",
+    "pubspec.lock": "Pub",
+}
+
+
+def ecosystem_for_file(rel: str) -> str | None:
+    """The OSV ecosystem of a dependency file path, or None when it is not one (or, for bun.lockb, unreadable)."""
+    path = PurePosixPath(rel)
+    if path.name in FILE_ECOSYSTEMS:
+        return FILE_ECOSYSTEMS[path.name]
+    if parser_for(rel) is parse_requirements:
+        return "PyPI"
+    return None
 
 
 def parser_for(rel: str) -> Callable[[str], Parsed] | None:

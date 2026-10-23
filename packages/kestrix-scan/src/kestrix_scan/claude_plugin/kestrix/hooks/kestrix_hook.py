@@ -6,7 +6,7 @@ Usage (from ``hooks/hooks.json``): ``python3 kestrix_hook.py session-start|pre-t
 with the hook JSON on stdin.
 
 - ``install-guard`` (PreToolUse on Bash): when the command looks like a package install (``pip``,
-  ``uv``, ``npm``, ``pnpm`` or ``yarn``), passes the payload to ``kestrix-scan scan --hook``, which checks
+  ``uv``, ``npm``, ``pnpm``, ``yarn``, ``bun``, ``composer``, ``go``, ``cargo``, ``gem`` or ``dotnet``), passes the payload to ``kestrix-scan scan --hook``, which checks
   the named packages against the local OSV index, and relays its reply: a ``deny`` for a known
   malicious package, or a non-blocking warning for a known-vulnerable pinned version. No index, a
   missing scanner, ``KESTRIX_INSTALL_GUARD=0`` or any error means no output, so the command runs.
@@ -109,7 +109,10 @@ NOT_SOURCE_NAMES = frozenset(
     {"package-lock.json", "npm-shrinkwrap.json", "composer.lock"}
 )  # the install guard covers installs
 GUARD_TIMEOUT_S = 8.0  # inside the 10 s install-guard timeout in hooks.json
-_INSTALL_HINT = re.compile(r"\b(?:pip[0-9.]*|uv|npm|pnpm|yarn)\b.*\b(?:install|add|i)\b", re.S)
+_INSTALL_HINT = re.compile(
+    r"\b(?:(?:pip[0-9.]*|uv|npm|pnpm|yarn|bun|gem|go)\b.*\b(?:install|add|i|get)|composer\b.*\b(?:require|req|r)|cargo\b.*\badd|dotnet\b.*\badd)\b",
+    re.S,
+)
 STOP_SCAN_TIMEOUT_S = 25.0  # inside the 30 s Stop hook timeout
 SESSION_TTL_S = 14 * 24 * 3600
 CONFIG_FILE = ".kestrix.json"
@@ -872,6 +875,27 @@ def status_text(state: Path | None) -> str:
     return "\n".join(lines)
 
 
+def index_status() -> str:
+    """One line on the local OSV index (age, ecosystems, stale or missing), from ``kestrix-scan db status --json``."""
+    exe = _trusted("kestrix-scan")
+    if exe is None:
+        return "- Vulnerability index: not checked (kestrix-scan is not on PATH)."
+    result, _ = _exec([exe, "db", "status", "--json"], stdin=b"", cwd=None, timeout=10.0)
+    try:
+        info = json.loads(result.stdout.decode("utf-8", "replace")) if result is not None else None
+        if not isinstance(info, dict):
+            raise ValueError
+        if not info.get("present"):
+            return "- Vulnerability index: NONE, so dependencies are not checked. Run `kestrix-scan db update` (downloads the OSV data)."
+        days, limit = info["age_days"], info["max_age_days"]
+        names = ", ".join(sorted(info.get("ecosystems", {}))) or "none"
+        if info.get("stale"):
+            return f"- Vulnerability index: STALE, {days:.0f} days old (limit {limit}); advisories published since are missing. Run `kestrix-scan db update`. Ecosystems: {names}."
+        return f"- Vulnerability index: {days:.0f} days old (limit {limit}). Ecosystems: {names}."
+    except (ValueError, KeyError, TypeError):
+        return "- Vulnerability index: status unavailable (run `kestrix-scan db status`)."
+
+
 def status(args: list[str]) -> None:
     """``status [SESSION_ID [DATA_DIR]]``: print the summary; with no id, the most recently used session."""
     session, data = [*args, "", ""][:2]
@@ -884,7 +908,7 @@ def status(args: list[str]) -> None:
         else:
             dirs = [d for d in base.iterdir() if d.is_dir() and not d.is_symlink()]
             state = max(dirs, key=lambda d: d.stat().st_mtime, default=None)
-    sys.stdout.write(status_text(state) + "\n")
+    sys.stdout.write(status_text(state) + "\n" + index_status() + "\n")
 
 
 def main(argv: list[str]) -> int:

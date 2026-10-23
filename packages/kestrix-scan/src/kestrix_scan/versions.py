@@ -28,6 +28,8 @@ import re
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
+from .ecoversions import composer_key, maven_key, nuget_key, rubygems_key
+
 VersionKey = tuple[Any, ...]
 
 _PEP440 = re.compile(
@@ -89,24 +91,34 @@ def semver_key(text: str) -> VersionKey | None:
     return (core, (0, ids))
 
 
-KEYS: dict[str, Callable[[str], VersionKey | None]] = {"PyPI": pep440_key, "npm": semver_key}
+KEYS: dict[str, Callable[[str], Any]] = {
+    "PyPI": pep440_key,
+    "npm": semver_key,
+    "Go": semver_key,
+    "crates.io": semver_key,
+    "Pub": semver_key,
+    "Packagist": composer_key,
+    "RubyGems": rubygems_key,
+    "NuGet": nuget_key,
+    "Maven": maven_key,
+}
 
 
-def version_key(ecosystem: str, text: str) -> VersionKey:
+def version_key(ecosystem: str, text: str) -> Any:
     """A sort key for ``text`` in ``ecosystem``; an unparseable version sorts first."""
     parse = KEYS.get(ecosystem)
     key = parse(text) if parse is not None else None
-    return key if key is not None else ()
+    if key is not None:
+        return key
+    return parse("0") if ecosystem == "Maven" and parse is not None else ()
 
 
 _ZERO = "0"
 
 
-def in_range(
-    key: VersionKey, events: Sequence[dict[str, Any]], parse: Callable[[str], VersionKey | None]
-) -> bool | None:
+def in_range(key: Any, events: Sequence[dict[str, Any]], parse: Callable[[str], Any]) -> bool | None:
     """True when ``key`` falls inside the OSV range ``events``; None when an event cannot be parsed."""
-    ordered: list[tuple[VersionKey, int, str]] = []
+    ordered: list[tuple[bool, Any, int, str]] = []  # (is the start of time, version, rank, kind)
     for event in events:
         if not isinstance(event, dict):
             return None
@@ -115,40 +127,52 @@ def in_range(
             if not isinstance(value, str):
                 continue
             if kind == "introduced" and value == _ZERO:
-                ordered.append(((), rank, kind))  # sorts before every version
+                ordered.append((True, None, rank, kind))  # sorts before every version
                 continue
             parsed = parse(value)
             if parsed is None:
                 return None
-            ordered.append((parsed, rank, kind))
-    ordered.sort(key=lambda item: (item[0], item[1]))
+            ordered.append((False, parsed, rank, kind))
+    ordered.sort(key=lambda item: (not item[0], item[1] if not item[0] else 0, item[2]))
     affected = False
-    for event_key, _, kind in ordered:
-        if kind == "introduced" and event_key <= key:
+    for start, event_key, _, kind in ordered:
+        if kind == "introduced" and (start or event_key <= key):
             affected = True
         elif (kind == "fixed" and event_key <= key) or (kind == "last_affected" and event_key < key):
             affected = False
     return affected
 
 
-def is_affected(ecosystem: str, version: str, ranges: Iterable[Any], versions: Iterable[Any]) -> bool:
-    """True when ``version`` is in the OSV ``versions`` list or inside one of the ``ranges``."""
+def affects(ecosystem: str, version: str, ranges: Iterable[Any], versions: Iterable[Any]) -> bool | None:
+    """True when ``version`` is in the OSV ``versions`` list or inside a range; False when it is not;
+    None when that cannot be told (the version or a range event is not parseable in this ecosystem)."""
     parse = KEYS.get(ecosystem)
     if parse is None:
         return False
     key = parse(version)
-    for listed in versions:
-        if isinstance(listed, str) and (listed == version or (key is not None and parse(listed) == key)):
-            return True
-    if key is None:
-        return False
+    listed = [item for item in versions if isinstance(item, str)]
+    if version in listed or (key is not None and any(parse(item) == key for item in listed)):
+        return True
+    unsure = False
     for item in ranges:
         if not isinstance(item, dict) or item.get("type") not in ("ECOSYSTEM", "SEMVER"):
             continue
         events = item.get("events")
-        if isinstance(events, list) and in_range(key, events, parse):
+        if not isinstance(events, list):
+            continue
+        if key is None:
+            unsure = True
+            continue
+        inside = in_range(key, events, parse)
+        if inside:
             return True
-    return False
+        unsure = unsure or inside is None
+    return None if unsure else False
+
+
+def is_affected(ecosystem: str, version: str, ranges: Iterable[Any], versions: Iterable[Any]) -> bool:
+    """True when ``version`` is certainly affected: listed in ``versions`` or inside one of the ``ranges``."""
+    return affects(ecosystem, version, ranges, versions) is True
 
 
 def fixed_versions(ranges: Iterable[Any]) -> list[str]:

@@ -159,18 +159,22 @@ class FakeOpener:
         self.etag = etag
         self.url_override = url_override
         self.length = length
+        self.etags: dict[str, str] = {}  # per-ecosystem override of ``etag``
+        self.modified = "Thu, 22 Oct 2026 04:00:00 GMT"
         self.requests: list[Any] = []
 
     def open(self, request: Any, timeout: float) -> FakeResponse:
         self.requests.append(request)
         url = request.full_url
         assert url.startswith("https://") and timeout > 0
-        if request.get_header("If-none-match") == self.etag:
-            raise urllib.error.HTTPError(url, 304, "Not Modified", Message(), None)
         ecosystem = url.split("/")[-2]
+        etag = self.etags.get(ecosystem, self.etag)
+        if request.get_header("If-none-match") == etag:
+            raise urllib.error.HTTPError(url, 304, "Not Modified", Message(), None)
         body = self.bodies[ecosystem]
         length = str(self.length if self.length is not None else len(body))
-        return FakeResponse(body, self.url_override or url, {"Content-Length": length, "ETag": self.etag})
+        headers = {"Content-Length": length, "ETag": etag, "Last-Modified": self.modified}
+        return FakeResponse(body, self.url_override or url, headers)
 
 
 def _zip_bytes(tmp_path: Path, name: str, records: list[dict[str, Any]]) -> bytes:
@@ -203,6 +207,7 @@ def test_update_downloads_verifies_and_indexes(server: FakeOpener, isolated_osv_
     server.requests.clear()
     osvdb.update(["PyPI"])
     assert [r.get_header("If-none-match") for r in server.requests] == ['"v1"']
+    assert [r.get_header("If-modified-since") for r in server.requests] == [server.modified]
     assert osvdb.status().counts == {"PyPI": (5, 2), "npm": (2, 1)}
 
 
@@ -210,7 +215,7 @@ def test_update_refuses_bad_responses(
     server: FakeOpener, isolated_osv_index: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     with pytest.raises(Rejected, match="unsupported ecosystem"):
-        osvdb.update(["Maven"])
+        osvdb.update(["Bogus"])
     server.url_override = "http://insecure.example.invalid/all.zip"
     with pytest.raises(Rejected, match="non-HTTPS"):
         osvdb.update(["PyPI"])
@@ -251,7 +256,7 @@ def test_db_cli_update_and_status(server: FakeOpener) -> None:
     assert "PyPI" not in result.stdout
     status = run("db", "status")
     assert status.exit_code == 0 and "Age: 0.0 days" in status.stdout and "stale" not in status.stdout
-    bad = run("db", "update", "--ecosystem", "Maven")
+    bad = run("db", "update", "--ecosystem", "Bogus")
     assert bad.exit_code == 2
 
 
@@ -263,4 +268,102 @@ def test_db_cli_reports_a_failed_download(server: FakeOpener) -> None:
 
 def test_db_cli_marks_a_stale_index(isolated_osv_index: Path) -> None:
     osv.build(isolated_osv_index, downloaded_at="2020-01-01T00:00:00+00:00")
-    assert "(stale: run `kestrix-scan db update`)" in run("db", "status").stdout
+    assert "(stale, over 7 days: run `kestrix-scan db update`)" in run("db", "status").stdout
+
+
+def _ts(value: str) -> float:
+    return datetime.fromisoformat(value).timestamp()
+
+
+def test_unchanged_exports_keep_the_index_and_only_record_the_check(
+    server: FakeOpener, isolated_osv_index: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    osvdb.update(["PyPI", "npm"])
+    index = isolated_osv_index / "osv.sqlite3"
+    built = index.stat().st_mtime_ns
+    first = {s.ecosystem: s for s in osvdb.status().sources}
+    assert first["npm"].last_modified == server.modified
+    monkeypatch.setattr(osvdb, "_now", lambda: "2099-01-01T00:00:00+00:00")
+    lines: list[str] = []
+    osvdb.update(["PyPI", "npm"], progress=lines.append)
+    assert index.stat().st_mtime_ns == built  # not rebuilt
+    assert any("unchanged" in line and "index kept" in line for line in lines)
+    state = osvdb.status()
+    assert set(state.checked) == {"PyPI", "npm"} and state.checked["npm"] == "2099-01-01T00:00:00+00:00"
+    # The age counts from the last confirmation, not from the download.
+    assert state.age_s(now=_ts("2099-01-02T00:00:00+00:00")) == 86400
+    assert "confirmed current 2099-01-01" in run("db", "status").stdout
+
+
+def test_a_changed_export_rebuilds_and_a_corrupt_cached_zip_is_downloaded_again(
+    server: FakeOpener, isolated_osv_index: Path, tmp_path: Path
+) -> None:
+    osvdb.update(["PyPI", "npm"])
+    index = isolated_osv_index / "osv.sqlite3"
+    built = index.stat().st_mtime_ns
+    server.etags["npm"] = '"v2"'  # npm changed on the server (a new advisory), PyPI did not
+    server.bodies["npm"] = _zip_bytes(
+        tmp_path, "npm2.zip", [*osv.NPM, osv.advisory("MAL-2026-300", "npm", "x", events=[{"introduced": "0"}])]
+    )
+    (isolated_osv_index / "downloads" / "PyPI.zip").write_bytes(b"tampered")
+    lines: list[str] = []
+    osvdb.update(["PyPI", "npm"], progress=lines.append)
+    assert index.stat().st_mtime_ns != built
+    assert any("PyPI: cached export does not match its SHA-256" in line for line in lines)
+    assert (isolated_osv_index / "downloads" / "PyPI.zip").read_bytes() == server.bodies["PyPI"]
+    by_eco = {s.ecosystem: s for s in osvdb.status().sources}
+    assert osvdb.status().counts["npm"] == (3, 2)
+    assert by_eco["npm"].etag == '"v2"' and by_eco["PyPI"].sha256 == hashlib.sha256(server.bodies["PyPI"]).hexdigest()
+
+
+def test_db_update_downloads_only_the_ecosystems_the_project_needs(
+    server: FakeOpener, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server.bodies["Packagist"] = _zip_bytes(tmp_path, "Packagist.zip", osv.PACKAGIST)
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "composer.lock").write_text('{"packages": []}')
+    (project / "vendor" / "x").mkdir(parents=True)
+    (project / "vendor" / "x" / "Cargo.lock").write_text("")  # vendored: not walked
+    monkeypatch.chdir(project)
+    result = run("db", "update")
+    assert result.exit_code == 0, result.output
+    assert [r.full_url.split("/")[-2] for r in server.requests] == ["Packagist"]
+    assert "ecosystems: Packagist" in result.stderr
+    assert "Packagist: 1 advisories" in result.stdout
+    # Nothing to detect and nothing configured: the default pair.
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    monkeypatch.chdir(empty)
+    monkeypatch.setenv("KESTRIX_SCAN_DB", str(tmp_path / "other-index"))
+    server.requests.clear()
+    assert run("db", "update").exit_code == 0
+    assert sorted(r.full_url.split("/")[-2] for r in server.requests) == ["PyPI", "npm"]
+    # [tool.kestrix] db-ecosystems adds to what is found.
+    (empty / ".kestrix.toml").write_text('db-ecosystems = ["Packagist"]\n')
+    monkeypatch.setenv("KESTRIX_SCAN_DB", str(tmp_path / "third-index"))
+    server.requests.clear()
+    assert run("db", "update").exit_code == 0
+    assert [r.full_url.split("/")[-2] for r in server.requests] == ["Packagist"]
+
+
+def test_db_status_json_and_max_age(isolated_osv_index: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    missing = json.loads(run("db", "status", "--json").stdout)
+    assert missing["present"] is False and missing["stale"] is True
+    osv.build(isolated_osv_index, downloaded_at="2020-01-01T00:00:00+00:00")
+    data = json.loads(run("db", "status", "--json").stdout)
+    assert data["present"] and data["stale"] and data["max_age_days"] == 7 and data["age_days"] > 1000
+    assert set(data["ecosystems"]) == {"PyPI", "npm"} and data["ecosystems"]["PyPI"]["advisories"] == 5
+    monkeypatch.setenv("KESTRIX_SCAN_MAX_AGE_DAYS", "100000")
+    assert json.loads(run("db", "status", "--json").stdout)["stale"] is False
+    assert "stale" not in run("db", "status").stdout
+
+
+def test_max_age_days_precedence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("KESTRIX_SCAN_MAX_AGE_DAYS", raising=False)
+    assert osvdb.max_age_days() == 7 and osvdb.max_age_days(30) == 30
+    monkeypatch.setenv("KESTRIX_SCAN_MAX_AGE_DAYS", "2")
+    assert osvdb.max_age_days(30) == 2
+    for bad in ("0", "-1", "soon", ""):
+        monkeypatch.setenv("KESTRIX_SCAN_MAX_AGE_DAYS", bad)
+        assert osvdb.max_age_days(30) == 30

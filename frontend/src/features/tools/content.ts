@@ -361,7 +361,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is claimed.",
         "Taint is followed within one function, never across functions or files.",
         "JavaScript and TypeScript are matched by shape without a full parser; Vue and Svelte files are not analyzed.",
-        "Dependency checks cover PyPI and npm lockfiles only, and reachability is not analyzed.",
+        "Dependency checks cover nine ecosystems' lockfiles (PyPI, npm, Packagist, Go, crates.io, Maven, RubyGems, NuGet, Pub), not language runtimes, and reachability is not analyzed.",
       ],
     }),
     local: {

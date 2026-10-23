@@ -6,9 +6,13 @@
 for each ecosystem (``https://storage.googleapis.com/osv-vulnerabilities/<ECOSYSTEM>/all.zip``,
 documented at https://google.github.io/osv.dev/data/) over HTTPS only, refuses redirects away from
 HTTPS and anything over ``MAX_DOWNLOAD_BYTES``, and keeps the zip in the cache directory next to
-an ``ETag`` so an unchanged export is not downloaded again. It then rebuilds ``osv.sqlite3`` from
-every cached zip into a temporary file and renames it into place, so a reader never sees a
-half-written index. The OSV exports include the OpenSSF malicious-packages feed (``MAL-`` ids).
+its ``ETag`` and ``Last-Modified``, sent back as ``If-None-Match`` and ``If-Modified-Since``, so an
+unchanged export costs one 304 response and is not downloaded again. When every export is unchanged
+and the index already covers them, the index is not rebuilt: only ``checked.json`` records the time of
+the check, which is what the index's age is measured from. Otherwise it rebuilds ``osv.sqlite3`` from
+every cached zip (each checked against its recorded SHA-256) into a temporary file and renames it into
+place, so a reader never sees a half-written index. The OSV exports include the OpenSSF
+malicious-packages feed (``MAL-`` ids).
 
 The index holds, per advisory: id, aliases, summary, severity (``low`` to ``critical``, from the
 CVSS v3 base score, else the GitHub ``database_specific.severity`` label, else ``medium``), CWE ids
@@ -32,23 +36,30 @@ import tempfile
 import time
 import zipfile
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO, Any
 
 from .errors import Reason, Rejected
+from .lockfiles import ECOSYSTEMS as ALL_ECOSYSTEMS
 from .lockfiles import normalize
 from .models import Severity
 
-ECOSYSTEMS = ("PyPI", "npm")
+ECOSYSTEMS = ALL_ECOSYSTEMS
+DEFAULT_ECOSYSTEMS = (
+    "PyPI",
+    "npm",
+)  # what `db update` downloads when it finds no dependency file and nothing is configured
 OSV_URL = "https://storage.googleapis.com/osv-vulnerabilities/{ecosystem}/all.zip"
 DB_NAME = "osv.sqlite3"
 SCHEMA_VERSION = "1"
 MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024
 MAX_ENTRY_BYTES = 16 * 1024 * 1024  # one advisory JSON file inside the zip
 MAX_UNPACKED_BYTES = 8 * 1024 * 1024 * 1024  # the whole zip, uncompressed
-STALE_AFTER_S = 7 * 24 * 3600
+DEFAULT_MAX_AGE_DAYS = 7
+MAX_AGE_ENV = "KESTRIX_SCAN_MAX_AGE_DAYS"
+CHECKED_NAME = "checked.json"
 DOWNLOAD_TIMEOUT_S = 60
 _CHUNK = 1024 * 1024
 _GHSA_SEVERITY: dict[str, Severity] = {"LOW": "low", "MODERATE": "medium", "HIGH": "high", "CRITICAL": "critical"}
@@ -71,6 +82,14 @@ def cache_dir() -> Path:
 
 def db_path() -> Path:
     return cache_dir() / DB_NAME
+
+
+def max_age_days(configured: int | None = None) -> int:
+    """Days after which the index counts as stale: ``$KESTRIX_SCAN_MAX_AGE_DAYS``, else ``configured``, else 7."""
+    raw = os.environ.get(MAX_AGE_ENV, "").strip()
+    if raw.isdigit() and int(raw) > 0:
+        return int(raw)
+    return configured if configured is not None and configured > 0 else DEFAULT_MAX_AGE_DAYS
 
 
 # ----- severity
@@ -165,8 +184,9 @@ class Source:
     url: str
     sha256: str
     size: int
-    downloaded_at: str
+    downloaded_at: str  # when the export was downloaded, or last confirmed unchanged by the server (a 304)
     etag: str | None = None
+    last_modified: str | None = None
 
 
 def _records(archive: Path) -> Iterator[dict[str, Any]]:
@@ -258,7 +278,15 @@ def build_index(sources: dict[str, tuple[Path, Source]], target: Path, progress:
                 )
             db.executemany(
                 "INSERT INTO meta VALUES (?, ?)",
-                [("schema", SCHEMA_VERSION), ("built_at", _now())],
+                [
+                    ("schema", SCHEMA_VERSION),
+                    ("built_at", _now()),
+                    *(
+                        (f"last_modified:{eco}", src.last_modified)
+                        for eco, (_, src) in sources.items()
+                        if src.last_modified
+                    ),
+                ],
             )
             db.commit()
         finally:
@@ -318,15 +346,18 @@ def download(ecosystem: str, directory: Path, previous: Source | None, progress:
         raise Rejected(Reason.INVALID_INPUT, f"refusing a non-HTTPS URL: {url}")
     archive = directory / f"{ecosystem}.zip"
     request = urllib.request.Request(url, headers={"User-Agent": "kestrix-scan (offline OSV index)"})  # noqa: S310 - fixed https URL
-    if previous is not None and previous.etag and archive.is_file():
-        request.add_header("If-None-Match", previous.etag)
+    if previous is not None and archive.is_file():
+        if previous.etag:
+            request.add_header("If-None-Match", previous.etag)
+        if previous.last_modified:
+            request.add_header("If-Modified-Since", previous.last_modified)
     try:
         response = _opener().open(request, timeout=DOWNLOAD_TIMEOUT_S)
     except urllib.error.HTTPError as exc:
         if exc.code == 304 and previous is not None:
             if progress is not None:
                 progress(f"{ecosystem}: unchanged since {previous.downloaded_at}")
-            return Source(ecosystem, url, previous.sha256, previous.size, _now(), previous.etag)
+            return Source(ecosystem, url, previous.sha256, previous.size, _now(), previous.etag, previous.last_modified)
         raise Rejected(Reason.INVALID_INPUT, f"{url}: HTTP {exc.code}") from None
     except (urllib.error.URLError, OSError) as exc:
         raise Rejected(Reason.INVALID_INPUT, f"{url}: {getattr(exc, 'reason', exc)}") from None
@@ -353,11 +384,54 @@ def download(ecosystem: str, directory: Path, previous: Source | None, progress:
             Path(tmp).unlink(missing_ok=True)
             raise
         etag = response.headers.get("ETag")
-    return Source(ecosystem, url, sha256, size, _now(), etag)
+        modified = response.headers.get("Last-Modified")
+    return Source(ecosystem, url, sha256, size, _now(), etag, modified)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(_CHUNK):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _checked_path(index: Path | None = None) -> Path:
+    return (index or db_path()).parent / CHECKED_NAME
+
+
+def _read_checked(index: Path) -> dict[str, str]:
+    """``{ecosystem: UTC time the server last confirmed the cached export current}``; empty when unreadable."""
+    try:
+        data = json.loads(_checked_path(index).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return (
+        {k: v for k, v in data.items() if isinstance(k, str) and isinstance(v, str)} if isinstance(data, dict) else {}
+    )
+
+
+def _write_checked(index: Path, ecosystems: Iterable[str]) -> None:
+    stamp = _now()
+    checked = {**_read_checked(index), **dict.fromkeys(ecosystems, stamp)}
+    target = _checked_path(index)
+    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=".checked-", suffix=".json")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            json.dump(checked, out)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, target)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
 
 
 def update(ecosystems: Iterable[str], *, progress: Progress | None = None) -> Path:
-    """Download the given ecosystems' exports and rebuild the index from every cached export. Returns the index path."""
+    """Download the given ecosystems' exports (conditionally) and rebuild the index from every cached export.
+
+    Returns the index path. When every requested export is unchanged and already indexed, the index is left as
+    it is and only the check time is recorded, so a daily refresh costs one small request per ecosystem.
+    """
     wanted = list(dict.fromkeys(ecosystems))
     unknown = [e for e in wanted if e not in ECOSYSTEMS]
     if unknown:
@@ -368,14 +442,28 @@ def update(ecosystems: Iterable[str], *, progress: Progress | None = None) -> Pa
     downloads = directory / "downloads"
     known = {s.ecosystem: s for s in sources()}
     found: dict[str, tuple[Path, Source]] = {}
+    reused: set[str] = set()  # unchanged on the server: the cached zip is still the one that was indexed
     for ecosystem in wanted:
-        found[ecosystem] = (
-            downloads / f"{ecosystem}.zip",
-            download(ecosystem, downloads, known.get(ecosystem), progress),
-        )
-    for ecosystem, source in known.items():  # keep ecosystems downloaded earlier and still cached
+        before = known.get(ecosystem)
+        source = download(ecosystem, downloads, before, progress)
+        if before is not None and source.sha256 == before.sha256:
+            reused.add(ecosystem)
+        found[ecosystem] = (downloads / f"{ecosystem}.zip", source)
+    unchanged = len(reused) == len(wanted)
+    if unchanged and wanted and connect() is not None:
+        if progress is not None:
+            progress("all exports unchanged: index kept, check time recorded")
+        _write_checked(db_path(), wanted)
+        return db_path()
+    for ecosystem in sorted(reused):  # a reused cached export must still match its recorded hash
+        archive, source = found[ecosystem]
+        if not archive.is_file() or _sha256(archive) != source.sha256:
+            if progress is not None:
+                progress(f"{ecosystem}: cached export does not match its SHA-256, downloading it again")
+            found[ecosystem] = (archive, download(ecosystem, downloads, None, progress))
+    for ecosystem, source in known.items():  # keep ecosystems downloaded earlier and still cached and intact
         archive = downloads / f"{ecosystem}.zip"
-        if ecosystem not in found and archive.is_file():
+        if ecosystem not in found and archive.is_file() and _sha256(archive) == source.sha256:
             found[ecosystem] = (archive, source)
     build_index(found, db_path(), progress)
     return db_path()
@@ -409,12 +497,16 @@ def sources(db: sqlite3.Connection | None = None) -> list[Source]:
         rows = db.execute(
             "SELECT ecosystem, url, sha256, bytes, downloaded_at, etag FROM sources ORDER BY ecosystem"
         ).fetchall()
+        modified = dict(db.execute("SELECT key, value FROM meta WHERE key LIKE 'last_modified:%'").fetchall())
     except sqlite3.Error:
-        rows = []
+        rows, modified = [], {}
     finally:
         if own:
             db.close()
-    return [Source(*row) for row in rows]
+    return [
+        Source(eco, url, sha, size, stamp, etag, modified.get(f"last_modified:{eco}"))
+        for eco, url, sha, size, stamp, etag in rows
+    ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -457,13 +549,24 @@ class Status:
     built_at: str | None
     sources: list[Source]
     counts: dict[str, tuple[int, int]]  # ecosystem -> (advisories, malicious)
+    checked: dict[str, str] = field(default_factory=dict)  # ecosystem -> last time the server confirmed it current
 
     def age_s(self, now: float | None = None) -> float | None:
-        """Seconds since the oldest export was downloaded, or None without an index."""
+        """Seconds since the oldest export was downloaded or last confirmed current, or None without an index."""
         if not self.sources:
             return None
-        oldest = min(datetime.fromisoformat(s.downloaded_at).timestamp() for s in self.sources)
-        return (now if now is not None else time.time()) - oldest
+        newest = [
+            max(
+                datetime.fromisoformat(s.downloaded_at).timestamp(),
+                datetime.fromisoformat(self.checked[s.ecosystem]).timestamp() if s.ecosystem in self.checked else 0.0,
+            )
+            for s in self.sources
+        ]
+        return (now if now is not None else time.time()) - min(newest)
+
+    @property
+    def ecosystems(self) -> frozenset[str]:
+        return frozenset(s.ecosystem for s in self.sources)
 
 
 def status(path: Path | None = None) -> Status:
@@ -476,6 +579,6 @@ def status(path: Path | None = None) -> Status:
         counts = {
             row[0]: (row[1], row[2]) for row in db.execute("SELECT ecosystem, advisories, malicious FROM sources")
         }
-        return Status(target, built[0] if built else None, sources(db), counts)
+        return Status(target, built[0] if built else None, sources(db), counts, _read_checked(target))
     finally:
         db.close()

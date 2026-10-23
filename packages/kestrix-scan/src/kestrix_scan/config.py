@@ -16,6 +16,8 @@ Keys::
     rules.disable = ["py.crypto.weak_hash"]
     ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
     claude.install-guard = false          # turn off the Claude Code install guard for this project
+    db-max-age-days = 7                   # warn when the OSV index is older (env KESTRIX_SCAN_MAX_AGE_DAYS wins)
+    db-ecosystems = ["PyPI", "npm", "Go"] # what `db update` downloads besides those it finds in the project
 
 Unknown keys produce a warning. Unknown rule ids, bad values and unreadable files raise ``Rejected``.
 """
@@ -31,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import Reason, Rejected
+from .lockfiles import ECOSYSTEMS
 from .models import FailOnLevel
 from .registry import RULES
 from .walk import _glob_regex
@@ -44,7 +47,9 @@ FAIL_ON_CHOICES: tuple[str, ...] = ("low", "medium", "high", "critical", "none")
 CONFIG_FILE = ".kestrix.toml"
 PYPROJECT = "pyproject.toml"
 MAX_CONFIG_BYTES = 1024 * 1024
-_TOP_KEYS = frozenset({"fail-on", "exclude", "baseline", "rules", "ignore-advisories", "claude"})
+_TOP_KEYS = frozenset(
+    {"fail-on", "exclude", "baseline", "rules", "ignore-advisories", "claude", "db-max-age-days", "db-ecosystems"}
+)
 _RULE_KEYS = frozenset({"enable", "disable"})
 _CLAUDE_KEYS = frozenset({"install-guard"})
 
@@ -60,6 +65,8 @@ class Config:
     baseline: Path | None = None
     ignore_advisories: tuple[tuple[str, str], ...] = ()  # (advisory id or alias, reason)
     install_guard: bool | None = None  # claude.install-guard; None means on
+    db_max_age_days: int | None = None  # None means 7
+    db_ecosystems: tuple[str, ...] = ()  # extra OSV ecosystems for `db update`
     source: Path | None = None  # the file the settings came from, if any
     warnings: tuple[str, ...] = field(default=(), compare=False)
 
@@ -146,6 +153,16 @@ def from_mapping(data: Mapping[str, Any], *, base: Path, source: Path | None = N
     guard = claude.get("install-guard")
     if guard is not None and not isinstance(guard, bool):
         raise Rejected(Reason.INVALID_INPUT, f"{where}: claude.install-guard must be true or false")
+    max_age = data.get("db-max-age-days")
+    if max_age is not None and (not isinstance(max_age, int) or isinstance(max_age, bool) or max_age < 1):
+        raise Rejected(Reason.INVALID_INPUT, f"{where}: db-max-age-days must be a whole number of days, 1 or more")
+    ecosystems = _strings(data.get("db-ecosystems", []), f"{where}: db-ecosystems")
+    unknown = [item for item in ecosystems if item not in ECOSYSTEMS]
+    if unknown:
+        raise Rejected(
+            Reason.INVALID_INPUT,
+            f"{where}: db-ecosystems: unknown ecosystem {unknown[0]!r}; choose from {', '.join(ECOSYSTEMS)}",
+        )
     return Config(
         fail_on=fail_on,
         exclude=_strings(data.get("exclude", []), f"{where}: exclude"),
@@ -154,6 +171,8 @@ def from_mapping(data: Mapping[str, Any], *, base: Path, source: Path | None = N
         baseline=(base / baseline) if baseline else None,
         ignore_advisories=_advisory_reasons(data.get("ignore-advisories", {}), where),
         install_guard=guard,
+        db_max_age_days=max_age,
+        db_ecosystems=ecosystems,
         source=source,
         warnings=tuple(warnings),
     )

@@ -105,10 +105,13 @@ def test_github_workflow(project: Path) -> None:
     path = project / ".github" / "workflows" / "kestrix.yml"
     text = path.read_text()
     assert "uploads kestrix.sarif" in result.stdout
+    assert 'cron: "17 5 * * *"' in text and "push:\n" in text and "pull_request:\n" in text
+    assert "${{ runner.os }}" in text and "timeout-minutes: 20" in text
     uses = re.findall(r"uses: (\S+)@(\S+) # (v[\d.]+)", text)
     assert [name for name, _, _ in uses] == [
         "actions/checkout",
         "actions/setup-python",
+        "actions/cache",
         "github/codeql-action/upload-sarif",
     ]
     assert all(re.fullmatch(r"[0-9a-f]{40}", sha) for _, sha, _ in uses)

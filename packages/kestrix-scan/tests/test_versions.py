@@ -158,7 +158,7 @@ def test_explicit_versions_list_matches_normalized_spellings() -> None:
 
 def test_git_ranges_unknown_ecosystems_and_bad_events_are_ignored() -> None:
     assert not is_affected("PyPI", "1.0", _ranges({"introduced": "0"}, kind="GIT"), [])
-    assert not is_affected("Maven", "1.0", _ranges({"introduced": "0"}), [])
+    assert not is_affected("Bogus", "1.0", _ranges({"introduced": "0"}), [])
     assert in_range(pep440_key("1.0") or (), [{"introduced": "not a version"}], pep440_key) is None
     assert not is_affected("PyPI", "1.0", _ranges({"introduced": "nonsense"}), [])
 

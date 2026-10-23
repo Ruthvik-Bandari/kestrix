@@ -18,6 +18,7 @@ Show the block above to the user as it is, then add at most three sentences:
   limit), `error` (the scanner crashed or printed something unreadable), `limit` (more than 20 files changed in
   one Bash command), `no-git` (a Bash command ran outside a git repository, so changed files are not detected
   there).
+- The "Vulnerability index" line says how old the local OSV data is. If it says NONE or STALE, dependency checks (lockfiles, the install guard) may miss recent advisories; tell the user to run `kestrix-scan db update` themselves (it downloads data, so do not run it unasked).
 - Offer `/kestrix:scan <path>` for those files once the cause is fixed.
 - State that no findings is not proof of security.
 

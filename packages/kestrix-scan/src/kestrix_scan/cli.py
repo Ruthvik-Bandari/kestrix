@@ -297,7 +297,8 @@ def run_db(argv: Sequence[str], prog: str) -> int:
     parser = argparse.ArgumentParser(
         prog=prog,
         description="Manage the local OSV vulnerability index used to check lockfiles. `update` is the only "
-        "kestrix-scan command that uses the network: it downloads the OSV export of each ecosystem over HTTPS.",
+        "kestrix-scan command that uses the network: it downloads the OSV export of each ecosystem over HTTPS "
+        "(a conditional request, so an unchanged export is not downloaded again).",
     )
     actions = parser.add_subparsers(dest="action", required=True)
     update = actions.add_parser("update", help="Download the OSV data and rebuild the index (uses the network).")
@@ -305,11 +306,21 @@ def run_db(argv: Sequence[str], prog: str) -> int:
         "--ecosystem",
         nargs="+",
         choices=osvdb.ECOSYSTEMS,
-        default=list(osvdb.ECOSYSTEMS),
-        help="Ecosystems to download. Default: all of them.",
+        help="Ecosystems to download. Default: those of the dependency files found under PATH, those already in "
+        "the index and `db-ecosystems` from [tool.kestrix]; PyPI and npm when there are none.",
     )
-    actions.add_parser("status", help="Show where the index is, how old it is and what it holds.")
+    update.add_argument("--all", action="store_true", help="Download every supported ecosystem (large).")
+    update.add_argument(
+        "--path", default=".", help="Where to look for dependency files (default: the current directory)."
+    )
+    status = actions.add_parser("status", help="Show where the index is, how old it is and what it holds.")
+    status.add_argument("--json", action="store_true", help="Print the status as JSON.")
     ns = parser.parse_args(list(argv))
+    try:
+        settings = discover(Path(ns.path if ns.action == "update" else "."))
+    except Rejected as exc:
+        _err(f"Rejected ({exc.reason.value}): {exc.detail}")
+        return 2
     if ns.action == "update":
         started = time.monotonic()
         tty = sys.stderr.isatty()
@@ -319,7 +330,15 @@ def run_db(argv: Sequence[str], prog: str) -> int:
             sys.stderr.flush()
 
         try:
-            path = osvdb.update(ns.ecosystem, progress=progress)
+            from .deps import needed_ecosystems
+
+            wanted = (
+                list(osvdb.ECOSYSTEMS)
+                if ns.all
+                else ns.ecosystem or needed_ecosystems([Path(ns.path)], settings.db_ecosystems)
+            )
+            progress(f"ecosystems: {', '.join(wanted)}")
+            path = osvdb.update(wanted, progress=progress)
         except Rejected as exc:
             if tty:
                 _err("")
@@ -328,24 +347,54 @@ def run_db(argv: Sequence[str], prog: str) -> int:
         if tty:
             _err("")
         _out(f"Updated {path} in {time.monotonic() - started:.1f} s.")
-    return _db_status(osvdb.status())
+        return _db_status(osvdb.status(), settings.db_max_age_days)
+    return _db_status(osvdb.status(), settings.db_max_age_days, as_json=ns.json)
 
 
-def _db_status(state: Status) -> int:
-    from .osvdb import STALE_AFTER_S
+def _db_status(state: Status, configured_days: int | None, *, as_json: bool = False) -> int:
+    from .osvdb import max_age_days
 
-    if not state.sources:
+    limit = max_age_days(configured_days)
+    age = state.age_s()
+    stale = age is not None and age > limit * 86400
+    if as_json:
+        _out(
+            json.dumps(
+                {
+                    "present": age is not None,
+                    "path": str(state.path),
+                    "built_at": state.built_at,
+                    "age_days": round(age / 86400, 2) if age is not None else None,
+                    "max_age_days": limit,
+                    "stale": stale or age is None,
+                    "ecosystems": {
+                        source.ecosystem: {
+                            "advisories": state.counts.get(source.ecosystem, (0, 0))[0],
+                            "malicious": state.counts.get(source.ecosystem, (0, 0))[1],
+                            "downloaded_at": source.downloaded_at,
+                            "checked_at": state.checked.get(source.ecosystem),
+                            "sha256": source.sha256,
+                        }
+                        for source in state.sources
+                    },
+                },
+                indent=2,
+            )
+        )
+        return 0 if age is not None else 1
+    if age is None:
         _out(f"No vulnerability index at {state.path}. Run `kestrix-scan db update` (downloads the OSV data).")
         return 1
-    age = state.age_s() or 0.0
-    stale = " (stale: run `kestrix-scan db update`)" if age > STALE_AFTER_S else ""
+    note = f" (stale, over {limit} days: run `kestrix-scan db update`)" if stale else ""
     _out(f"Index: {state.path} (built {state.built_at})")
-    _out(f"Age: {age / 86400:.1f} days{stale}")
+    _out(f"Age: {age / 86400:.1f} days{note}")
     for source in state.sources:
         advisories, malicious = state.counts.get(source.ecosystem, (0, 0))
+        confirmed = state.checked.get(source.ecosystem)
         _out(
             f"  {source.ecosystem}: {advisories:,} advisories ({malicious:,} malicious-package reports); "
-            f"downloaded {source.downloaded_at}, {source.size / 1e6:.1f} MB, sha256 {source.sha256}"
+            f"downloaded {source.downloaded_at}{f', confirmed current {confirmed}' if confirmed else ''}, "
+            f"{source.size / 1e6:.1f} MB, sha256 {source.sha256}"
         )
     return 0
 

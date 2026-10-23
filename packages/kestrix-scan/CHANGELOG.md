@@ -5,6 +5,28 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Dependency checks the day an advisory drops: fresher data, more ecosystems.**
+  - Ecosystems: Packagist (`composer.lock`), Go (`go.mod`, `go.sum`), crates.io (`Cargo.lock`), Maven (`pom.xml`,
+    `gradle.lockfile`), RubyGems (`Gemfile.lock`), NuGet (`packages.lock.json`), Pub (`pubspec.lock`) and Bun
+    (`bun.lock`; `bun.lockb` is reported as unsupported), next to PyPI and npm. Version ordering per ecosystem:
+    SemVer (Go incl. pseudo-versions, crates.io, Pub), Composer, `Gem::Version`, NuGet and a port of Maven's
+    `ComparableVersion`. A version or range event that cannot be parsed is reported as "possibly affected"
+    (`dep.vulnerable`, low confidence) instead of being skipped.
+  - `db update` downloads only the ecosystems the project needs (its lockfiles, the index's, `db-ecosystems`);
+    `--all` takes all nine. It sends `If-None-Match` and `If-Modified-Since`; when every export is unchanged the index
+    is not rebuilt and `checked.json` records the check. Reused cached zips are verified against their SHA-256.
+    `db status --json` is new.
+  - Freshness: `db-max-age-days` in `[tool.kestrix]` and `KESTRIX_SCAN_MAX_AGE_DAYS` set the 7-day default. The stale
+    note now also appears in SARIF output (a `toolExecutionNotification`; the golden SARIF changed), one line is added
+    to the Claude hook context when a dependency file is edited, `/kestrix:status` shows the index age, and the
+    install guard says its result may be stale. New note `dep.ecosystem_missing`. The `dep.not_checked` message no
+    longer says "== pin".
+  - Install guard: `bun add`, `composer require`, `go get`/`go install`, `cargo add crate@=x`, `gem install` and
+    `dotnet add package`; an ecosystem missing from the index is named instead of passing silently.
+  - `kestrix-scan init --ci github` writes a workflow that also runs daily (cron) and caches the OSV downloads.
+  - Not covered: language runtimes (PHP itself) are not lockfile dependencies; Maven versions managed by a parent
+    POM or BOM are not resolved.
+
 - **CVE-fix benchmark, round 2 (measured on the tuning data of `docs/benchmarks/cvefixes.md`: round-1 dev plus the
   spent round-1 test).** Nine changes kept, all of them wider sources or sinks of existing rules (no new rule id),
   fourteen tried and reverted. Each change was measured alone against the round-1 scanner.
