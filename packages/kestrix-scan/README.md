@@ -59,7 +59,7 @@ subprocess.run(
 ## Dependency scanning
 
 ```bash
-kestrix-scan db update                    # downloads the OSV data for PyPI and npm (the only network step)
+kestrix-scan db update                    # downloads the OSV data for the ecosystems your lockfiles use (the only network step)
 kestrix-scan .                            # lockfiles are now checked too, offline
 kestrix-scan db status                    # where the index is, how old, how many advisories
 ```
@@ -69,11 +69,18 @@ kestrix-scan db status                    # where the index is, how old, how man
 keeps it in your cache directory (`$KESTRIX_SCAN_DB`, or `~/Library/Caches/kestrix-scan`,
 `$XDG_CACHE_HOME/kestrix-scan`, `%LOCALAPPDATA%\kestrix-scan`) and builds a SQLite index from it, recording
 each download's SHA-256 and time. The exports include the OpenSSF malicious-packages feed. On 2026-10-20
-PyPI was 36.5 MB and npm 218.6 MB, and the index 86 MB; `--ecosystem PyPI` limits it to one.
+PyPI was 36.5 MB and npm 218.6 MB, and the index 86 MB; on 2026-10-23 Packagist was 11.0 MB, Go 12.6 MB, Maven 10.4 MB,
+RubyGems 5.2 MB, crates.io 3.6 MB, NuGet 2.7 MB and Pub 0.03 MB. Without `--ecosystem`, `db update` downloads only the
+ecosystems of the dependency files it finds (plus those already indexed and `db-ecosystems` from `[tool.kestrix]`;
+PyPI and npm when there are none); `--ecosystem Go Packagist` names them and `--all` takes all nine. A repeat
+update sends `If-None-Match` and `If-Modified-Since`: an unchanged export is a 304 and the index is not rebuilt.
 
 Scans then read `requirements*.txt` (exact `==` pins; other lines are noted as not checked), `uv.lock`,
-`poetry.lock`, `pdm.lock`, `Pipfile.lock`, `package-lock.json` (v2 and v3), `yarn.lock` (v1 and Berry) and
-`pnpm-lock.yaml`, and match each version against the advisories with PEP 440 or SemVer ordering:
+`poetry.lock`, `pdm.lock`, `Pipfile.lock`, `package-lock.json` (v2 and v3), `yarn.lock` (v1 and Berry),
+`pnpm-lock.yaml`, `bun.lock`, `composer.lock` (PHP), `go.mod`/`go.sum`, `Cargo.lock`, `pom.xml`/`gradle.lockfile`,
+`Gemfile.lock`, `packages.lock.json` (NuGet) and `pubspec.lock`, and match each version against the advisories with
+the ecosystem's own ordering (PEP 440, SemVer, Composer, RubyGems, NuGet, Maven). A version that cannot be compared is
+reported as "possibly affected" at low confidence, never skipped:
 
 ```text
 package-lock.json
@@ -88,10 +95,13 @@ package-lock.json
 - `dep.vulnerable`: the advisories' highest CVSS severity, their CWE, ids and summary, and "Upgrade X to V or
   later" with the lowest version that fixes all of them. `dep.malicious`: critical; remove it and rotate
   credentials.
-- A `dep.db_stale` note (never a failure) when the index is missing or more than 7 days old.
+- A `dep.db_stale` note (never a failure) in text, JSON and SARIF output when the index is missing or older than
+  `db-max-age-days` (default 7; `KESTRIX_SCAN_MAX_AGE_DAYS` overrides). The Claude hook, `/kestrix:status` and the install
+  guard say so too. `dep.ecosystem_missing` notes an ecosystem the index has no data for.
 - Suppress with `# kestrix: ignore[GHSA-...] reason` on a requirements line, or for any file with
   `ignore-advisories = {"GHSA-..." = "reason"}` in `[tool.kestrix]`. Baselines, `--diff` and `fail-on` apply.
-- Reachability is not analyzed, and only PyPI and npm lockfiles are read. Details:
+- Reachability is not analyzed. A language runtime (for example the PHP interpreter) is not a lockfile dependency and is
+  not checked; the website check's exposure finding covers server and runtime versions. Details:
   [docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#dependencies).
 
 ## Configuration
@@ -107,6 +117,8 @@ rules.enable = ["py.", "secret."]               # rule ids or prefixes; default:
 rules.disable = ["py.crypto.weak_hash"]
 ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
 claude.install-guard = false                    # turn off the Claude Code install guard here
+db-max-age-days = 7                             # warn when the OSV index is older than this
+db-ecosystems = ["PyPI", "npm", "Go"]           # extra ecosystems for `db update`
 ```
 
 - The nearest file wins, searching upwards from the scan root and stopping at the git root. In each directory
@@ -140,16 +152,20 @@ repos:
       - id: kestrix-scan
 ```
 
-The hook scans the staged Python and text files and honours `[tool.kestrix]`.
+The hook scans the staged Python and text files, lockfiles included, and honours `[tool.kestrix]`. Dependency results
+use the local index and pre-commit never refreshes it, so run `kestrix-scan db update` daily (cron, a scheduled job or
+the CI workflow below); a stale index is reported as a note.
 
 ## GitHub code scanning
 
-`kestrix-scan init --ci github` writes this workflow. Its actions are pinned to commit SHAs and its job has
-only `contents: read` and `security-events: write`:
+`kestrix-scan init --ci github` writes a workflow that runs on every push and pull request and daily at 05:17 UTC, so a
+vulnerability published tomorrow in a locked dependency appears without a commit. It caches the OSV download directory
+(`actions/cache`), so the daily refresh is a conditional request per ecosystem. Its actions are pinned to commit SHAs and
+its job has only `contents: read` and `security-events: write`. The steps that matter:
 
 ```yaml
 - run: pip install kestrix-scan==0.1.0
-- run: kestrix-scan db update        # downloads the OSV data, so this job needs network access
+- run: kestrix-scan db update        # downloads the OSV data of your lockfiles' ecosystems; needs network access
 - run: kestrix-scan --format sarif --output kestrix.sarif || true
 - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
   with:
@@ -184,9 +200,9 @@ Or from the repository's marketplace: `/plugin marketplace add Ruthvik-Bandari/k
   findings the edit introduced, with the rule, CWE and fix, so Claude fixes them in the same turn.
 - **Skills and commands:** `secure-code-review`, a per-rule `fixing-security-findings` playbook,
   `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` (a review of the current git diff).
-- **Install guard:** before a `pip`, `uv`, `npm`, `pnpm` or `yarn` install runs, the plugin checks the packages
+- **Install guard:** before a `pip`, `uv`, `npm`, `pnpm`, `yarn`, `bun`, `composer require`, `go get`, `cargo add`, `gem install` or `dotnet add package` install runs, the plugin checks the packages
   against the local OSV index. A known malicious package is denied; a known-vulnerable pinned version gets a
-  warning naming the fixed version. No index means no check. Turn it off with `KESTRIX_INSTALL_GUARD=0` or
+  warning naming the fixed version. No index means no check; an old index adds a line saying the result may be stale. Turn it off with `KESTRIX_INSTALL_GUARD=0` or
   `claude.install-guard = false`.
 - **Opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, Claude cannot finish while new high or critical
   findings remain in files it changed (at most three times per session).

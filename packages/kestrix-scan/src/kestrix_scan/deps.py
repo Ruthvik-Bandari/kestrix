@@ -21,10 +21,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .lockfiles import Dependency, Parsed, parser_for
+from .lockfiles import Dependency, Parsed, ecosystem_for_file, parser_for
 from .models import SEVERITY_RANK, Finding, Note, fingerprint
 from .registry import RULES
-from .versions import fixed_versions, highest, is_affected, next_fixed, version_key
+from .versions import affects, fixed_versions, highest, next_fixed, version_key
 
 if TYPE_CHECKING:  # osvdb (sqlite3, zipfile) is imported only when a dependency file is checked
     from . import osvdb
@@ -34,6 +34,7 @@ MALICIOUS = "dep.malicious"
 STALE = "dep.db_stale"
 NOT_CHECKED = "dep.not_checked"
 UNSUPPORTED = "dep.unsupported"
+ECOSYSTEM_MISSING = "dep.ecosystem_missing"
 DEFAULT_CWE = "CWE-1395"
 MAX_IDS_SHOWN = 4
 MAX_NOT_CHECKED_SHOWN = 5
@@ -49,8 +50,9 @@ class _Index:
     path: Path | None = None
     db: sqlite3.Connection | None = None
     cache: dict[tuple[str, str], list[osvdb.Advisory]] = field(default_factory=dict)
+    covered: frozenset[str] = frozenset()
 
-    def advisories(self, ecosystem: str, name: str) -> list[osvdb.Advisory]:
+    def _open(self) -> sqlite3.Connection | None:
         from . import osvdb
 
         current = osvdb.db_path()
@@ -58,7 +60,17 @@ class _Index:
             if self.db is not None:
                 self.db.close()
             self.path, self.db, self.cache = current, osvdb.connect(current), {}
-        if self.db is None:
+            self.covered = frozenset(source.ecosystem for source in osvdb.sources(self.db)) if self.db else frozenset()
+        return self.db
+
+    def ecosystems(self) -> frozenset[str] | None:
+        """The ecosystems the index holds data for, or None when there is no index."""
+        return self.covered if self._open() is not None else None
+
+    def advisories(self, ecosystem: str, name: str) -> list[osvdb.Advisory]:
+        from . import osvdb
+
+        if self._open() is None or self.db is None:
             return []
         key = (ecosystem, name)
         if key not in self.cache:
@@ -89,21 +101,37 @@ def check_file(
         return [], [], 0
     parsed: Parsed = parse(text.replace("\r\n", "\n"))
     notes = _file_notes(parsed, rel)
+    covered = _INDEX.ecosystems()
+    missing = sorted({dep.ecosystem for dep in parsed.dependencies} - covered) if covered is not None else []
+    for ecosystem in missing:
+        notes.append(
+            Note(
+                id=ECOSYSTEM_MISSING,
+                path=rel,
+                line=1,
+                message=f"{ecosystem} dependencies were not checked: the local index has no {ecosystem} data. Run `kestrix-scan db update --ecosystem {ecosystem}` (downloads the OSV data).",
+            )
+        )
     findings: list[Finding] = []
     suppressed = 0
     for dep in parsed.dependencies:
+        if dep.ecosystem in missing:
+            continue
         ids_here = suppressions.get(dep.line, frozenset()) | suppressions.get(dep.line - 1, frozenset())
-        matched = [
-            adv
+        verdicts = [
+            (adv, affects(dep.ecosystem, dep.version, adv.ranges, adv.versions))
             for adv in _INDEX.advisories(dep.ecosystem, dep.name)
-            if is_affected(dep.ecosystem, dep.version, adv.ranges, adv.versions)
         ]
-        kept = [adv for adv in matched if not ({adv.id, *adv.aliases} & (ids_here | set(ignore_advisories)))]
+        certain = [adv for adv, verdict in verdicts if verdict is True]
+        unsure = [adv for adv, verdict in verdicts if verdict is None]
+        ignored = ids_here | set(ignore_advisories)
+        matched = certain or unsure
+        kept = [adv for adv in matched if not ({adv.id, *adv.aliases} & ignored)]
         if not kept:
             if matched:
                 suppressed += 1
             continue
-        finding = _finding(dep, kept, rel)
+        finding = _finding(dep, kept, rel, possible=not certain)
         if active is not None and finding.rule_id not in active:
             continue
         if finding.rule_id in ids_here:
@@ -129,7 +157,7 @@ def _file_notes(parsed: Parsed, rel: str) -> list[Note]:
                 id=NOT_CHECKED,
                 path=rel,
                 line=1,
-                message=f"{len(parsed.not_checked)} requirement(s) without an exact == pin were not checked: {shown}{more}. Pin them, or check the lockfile instead.",
+                message=f"{len(parsed.not_checked)} requirement(s) without an exact version pin were not checked: {shown}{more}. Pin them, or check the lockfile instead.",
             )
         )
     return notes
@@ -163,11 +191,13 @@ def describe_ids(groups: list[list[str]]) -> str:
     return ", ".join(shown) + more
 
 
-def _finding(dep: Dependency, advisories: list[osvdb.Advisory], rel: str) -> Finding:
+def _finding(dep: Dependency, advisories: list[osvdb.Advisory], rel: str, *, possible: bool = False) -> Finding:
     groups = vulnerabilities(advisories)
     shown = describe_ids(groups)
     package = f"{dep.name}@{dep.version}"
     snippet = f"{package} {' '.join(sorted(adv.id for adv in advisories))}"
+    if possible:
+        return _possible(dep, advisories, rel, groups)
     malicious = [adv for adv in advisories if adv.malicious]
     if malicious:
         rule = RULES[MALICIOUS]
@@ -220,16 +250,84 @@ def _finding(dep: Dependency, advisories: list[osvdb.Advisory], rel: str) -> Fin
     )
 
 
-def stale_note(rel: str, now: float | None = None) -> Note | None:
-    """The scan's one ``dep.db_stale`` note: no index, or an index more than 7 days old."""
+def _possible(dep: Dependency, advisories: list[osvdb.Advisory], rel: str, groups: list[list[str]]) -> Finding:
+    rule = RULES[VULNERABLE]
+    severity = max((adv.severity for adv in advisories), key=lambda s: SEVERITY_RANK[s])
+    cwe = next((cwe for adv in advisories for cwe in adv.cwes), DEFAULT_CWE)
+    package = f"{dep.name}@{dep.version}"
+    shown = describe_ids(groups)
+    snippet = f"{package} {' '.join(sorted(adv.id for adv in advisories))}"
+    fixes = sorted(
+        {fix for group in groups for fix in group_fixes(group, advisories)}, key=lambda v: version_key(dep.ecosystem, v)
+    )
+    fixed = f"; fixed in {', '.join(fixes)}" if fixes else ""
+    return Finding(
+        rule_id=rule.id,
+        cwe=cwe,
+        severity=severity,
+        confidence="low",
+        path=rel,
+        line=dep.line,
+        column=1,
+        end_line=dep.line,
+        message=f"{package} ({dep.ecosystem}) is possibly affected by {len(groups)} known vulnerability(ies): {shown}. "
+        f"{advisories[0].summary.rstrip('.')}{fixed}. The version or the advisory's ranges could not be compared exactly.",
+        why=rule.why,
+        fix=f"Check {dep.name} {dep.version} against {groups[0][0]}; if it is affected, upgrade to a fixed version and update the lockfile, "
+        "otherwise record why in [tool.kestrix] ignore-advisories.",
+        snippet=snippet,
+        fingerprint=fingerprint(rule.id, rel, snippet),
+    )
+
+
+def _freshness(max_age: int | None, now: float | None) -> tuple[float | None, int]:
+    """(index age in seconds or None without an index, the allowed age in days)."""
     from . import osvdb
 
-    state = osvdb.status()
-    age = state.age_s(now)
+    return osvdb.status().age_s(now), osvdb.max_age_days(max_age)
+
+
+def freshness_message(max_age: int | None = None, now: float | None = None) -> str | None:
+    """Why dependency results may be out of date, or None when the index is present and younger than the limit.
+
+    ``max_age`` is ``[tool.kestrix] db-max-age-days``; ``KESTRIX_SCAN_MAX_AGE_DAYS`` overrides it; the default is 7.
+    """
+    age, limit = _freshness(max_age, now)
     if age is None:
-        message = "No vulnerability index, so dependencies were not checked. Run `kestrix-scan db update` (downloads the OSV data)."
-    elif age > osvdb.STALE_AFTER_S:
-        message = f"The vulnerability index is {int(age // 86400)} days old. Run `kestrix-scan db update` (downloads the OSV data) to refresh it."
-    else:
-        return None
-    return Note(id=STALE, path=rel, line=1, message=message)
+        return "No vulnerability index, so dependencies were not checked. Run `kestrix-scan db update` (downloads the OSV data)."
+    if age > limit * 86400:
+        return (
+            f"The vulnerability index is {int(age // 86400)} days old (limit {limit}), so advisories published since "
+            "then are missing. Run `kestrix-scan db update` (downloads the OSV data) to refresh it."
+        )
+    return None
+
+
+def freshness_line(max_age: int | None = None, now: float | None = None) -> str | None:
+    """One short sentence for Claude Code hooks, or None when the index is present and fresh enough."""
+    age, limit = _freshness(max_age, now)
+    if age is None:
+        return "Kestrix has no vulnerability index, so dependencies are not checked; the user can run `kestrix-scan db update`."
+    if age > limit * 86400:
+        return f"Kestrix's vulnerability index is {int(age // 86400)} days old, so new advisories may be missing; the user can run `kestrix-scan db update`."
+    return None
+
+
+def stale_note(rel: str, max_age: int | None = None, now: float | None = None) -> Note | None:
+    """The scan's one ``dep.db_stale`` note: no index, or an index older than the allowed age."""
+    message = freshness_message(max_age, now)
+    return Note(id=STALE, path=rel, line=1, message=message) if message is not None else None
+
+
+def needed_ecosystems(paths: list[Path], configured: tuple[str, ...] = ()) -> list[str]:
+    """The ecosystems `db update` should download: those of the dependency files under ``paths``, those the
+    index already holds and those in ``[tool.kestrix] db-ecosystems``; the default pair when there is none."""
+    from . import osvdb
+    from .analyze import resolve_targets
+    from .walk import collect
+
+    root, targets = resolve_targets(paths, None)
+    found = {eco for c in collect(targets, root).candidates if (eco := ecosystem_for_file(c.rel)) is not None}
+    chosen = found | set(configured) | osvdb.status().ecosystems
+    ordered = [eco for eco in osvdb.ECOSYSTEMS if eco in chosen]
+    return ordered or list(osvdb.DEFAULT_ECOSYSTEMS)

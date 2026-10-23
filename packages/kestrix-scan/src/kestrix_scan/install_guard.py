@@ -5,7 +5,8 @@
 Recognized commands (after ``&&``, ``;``, ``|`` and newlines split the command line, and leading
 ``VAR=value``, ``sudo`` and ``env`` are dropped): ``pip install``, ``pip3 install``,
 ``python -m pip install``, ``uv pip install``, ``uv add``, ``npm install``/``npm i``/``npm add``,
-``pnpm add`` and ``yarn add``. Requirement files (``-r``), editable installs (``-e``), URLs, paths
+``pnpm add``, ``yarn add``, ``bun add``, ``composer require``, ``go get``/``go install``, ``cargo add``,
+``gem install`` and ``dotnet add package``. Requirement files (``-r``), editable installs (``-e``), URLs, paths
 and VCS references are skipped, as is any segment ``shlex`` cannot split.
 
 Decisions, from the local OSV index only (see ``osvdb``):
@@ -14,6 +15,9 @@ Decisions, from the local OSV index only (see ``osvdb``):
   advisory covers in every version, gets ``permissionDecision: "deny"`` with the reason;
 - an exactly pinned version with known vulnerabilities, or an unpinned package with some
   malicious versions, gets a non-blocking ``additionalContext`` warning that names the fixed version;
+- when the index is older than the allowed age (``db-max-age-days``, default 7), the context also says the
+  result may be stale; when it holds no data for a requested ecosystem, the context says that package was not
+  checked and names the ``db update --ecosystem`` command;
 - anything else, no index, ``KESTRIX_INSTALL_GUARD=0`` or ``[tool.kestrix] claude.install-guard = false``
   gets no output. Errors are the caller's to swallow: the hook fails open.
 """
@@ -30,7 +34,7 @@ from typing import Any
 
 from . import osvdb
 from .config import Config, discover
-from .deps import describe_ids, group_fixes, vulnerabilities
+from .deps import describe_ids, freshness_line, group_fixes, vulnerabilities
 from .errors import Rejected
 from .versions import all_versions, highest, is_affected, next_fixed
 
@@ -45,7 +49,7 @@ EMBEDDED_MALWARE_CWE = (
 
 @dataclass(frozen=True, slots=True)
 class Requested:
-    ecosystem: str  # 'PyPI' or 'npm'
+    ecosystem: str  # an OSV ecosystem: 'PyPI', 'npm', 'Packagist', 'Go', 'crates.io', 'RubyGems' or 'NuGet'
     name: str
     version: str | None  # an exact pin, or None
 
@@ -115,8 +119,18 @@ def _install_args(args: list[str]) -> tuple[str, list[str]] | None:
         return "PyPI", args[2:]
     if len(args) >= 2 and args[0] == "npm" and args[1] in ("install", "i", "add"):
         return "npm", args[2:]
-    if len(args) >= 2 and args[0] in ("pnpm", "yarn") and args[1] == "add":
+    if len(args) >= 2 and args[0] in ("pnpm", "yarn", "bun") and args[1] == "add":
         return "npm", args[2:]
+    if len(args) >= 2 and args[0] == "composer" and args[1] in ("require", "req", "r"):
+        return "Packagist", args[2:]
+    if len(args) >= 2 and args[0] == "go" and args[1] in ("get", "install"):
+        return "Go", args[2:]
+    if len(args) >= 2 and args[0] == "cargo" and args[1] == "add":
+        return "crates.io", args[2:]
+    if len(args) >= 2 and args[0] == "gem" and args[1] == "install":
+        return "RubyGems", args[2:]
+    if len(args) >= 3 and args[0] == "dotnet" and args[1] == "add" and "package" in args[2:]:
+        return "NuGet", args[args.index("package", 2) + 1 :]
     return None
 
 
@@ -159,6 +173,101 @@ def _npm_spec(spec: str) -> Requested | None:
     return Requested("npm", name, exact)
 
 
+_EXACT = re.compile(r"v?\d+\.\d+\.\d+(?:\.\d+)*(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?")
+_COMPOSER_VALUE_OPTIONS = frozenset({"-d", "--working-dir"})
+_GO_VALUE_OPTIONS = frozenset({"-C", "-modfile", "-mod", "-tags", "-ldflags", "-o", "-gcflags"})
+_CARGO_VALUE_OPTIONS = frozenset(
+    {"-F", "--features", "--git", "--path", "--registry", "--rename", "--manifest-path", "-p", "--package",
+     "--branch", "--tag", "--rev", "--target", "--config", "-Z"}
+)  # fmt: skip
+_GEM_VALUE_OPTIONS = frozenset(
+    {"-i", "--install-dir", "-n", "--bindir", "-s", "--source", "--platform", "-P", "--trust-policy", "--config-file",
+     "--build-root", "--file", "-g", "--without", "--http-proxy", "--user-install"}
+)  # fmt: skip
+_DOTNET_VALUE_OPTIONS = frozenset({"-f", "--framework", "-s", "--source", "--package-directory", "-pd"})
+_COMPOSER_NAME = re.compile(r"[A-Za-z0-9](?:[_.-]?[A-Za-z0-9]+)*/[A-Za-z0-9](?:[_.-]?[A-Za-z0-9]+)*")
+_GO_MODULE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._~-]*\.[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~+-]+)*")
+_CRATE = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
+_GEM_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
+_NUGET_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*")
+
+
+def _option_value(args: list[str], names: tuple[str, ...]) -> str | None:
+    """The value of ``-v 1.2.3``, ``--version 1.2.3`` or ``--version=1.2.3``, or None."""
+    for index, arg in enumerate(args):
+        if arg in names and index + 1 < len(args):
+            return args[index + 1]
+        for name in names:
+            if name.startswith("--") and arg.startswith(name + "="):
+                return arg.split("=", 1)[1]
+    return None
+
+
+def _exact(version: str | None) -> str | None:
+    return version if version is not None and _EXACT.fullmatch(version) else None
+
+
+def _composer_specs(args: list[str]) -> list[Requested | None]:
+    specs: list[Requested | None] = []
+    for operand in _operands(args, _COMPOSER_VALUE_OPTIONS):
+        name, version = (
+            operand.split(":", 1) if ":" in operand else operand.split("=", 1) if "=" in operand else (operand, "")
+        )
+        if _COMPOSER_NAME.fullmatch(name):
+            specs.append(Requested("Packagist", name, _exact(version)))
+        elif specs and specs[-1] is not None and specs[-1].version is None and _exact(operand):
+            last = specs[-1]  # `composer require vendor/pkg 1.2.3`
+            specs[-1] = Requested(last.ecosystem, last.name, _exact(operand))
+    return specs
+
+
+def _go_specs(args: list[str]) -> list[Requested | None]:
+    specs: list[Requested | None] = []
+    for operand in _operands(args, _GO_VALUE_OPTIONS):
+        name, _, version = operand.partition("@")
+        if "://" in name or not _GO_MODULE.fullmatch(name) or ".." in name:
+            continue
+        specs.append(Requested("Go", name, _exact(version)))
+    return specs
+
+
+def _cargo_specs(args: list[str]) -> list[Requested | None]:
+    if any(arg in ("--git", "--path") or arg.startswith(("--git=", "--path=")) for arg in args):
+        return []
+    specs: list[Requested | None] = []
+    for operand in _operands(args, _CARGO_VALUE_OPTIONS):
+        name, _, version = operand.partition("@")
+        if _CRATE.fullmatch(name):  # `crate@1.2.3` means ^1.2.3 in cargo; only `crate@=1.2.3` pins one version
+            specs.append(Requested("crates.io", name, _exact(version[1:]) if version.startswith("=") else None))
+    return specs
+
+
+def _gem_specs(args: list[str]) -> list[Requested | None]:
+    wanted = _option_value(args, ("-v", "--version"))
+    specs: list[Requested | None] = []
+    for operand in _operands(args, _GEM_VALUE_OPTIONS | {"-v", "--version"}):
+        name, _, version = operand.partition(":")
+        if _GEM_NAME.fullmatch(name) and not name.endswith(".gem"):
+            specs.append(Requested("RubyGems", name, _exact(version or wanted)))
+    return specs
+
+
+def _nuget_specs(args: list[str]) -> list[Requested | None]:
+    operands = _operands(args, _DOTNET_VALUE_OPTIONS | {"-v", "--version"})
+    if not operands or not _NUGET_NAME.fullmatch(operands[0]):
+        return []
+    return [Requested("NuGet", operands[0], _exact(_option_value(args, ("-v", "--version"))))]
+
+
+_SPECS = {
+    "Packagist": _composer_specs,
+    "Go": _go_specs,
+    "crates.io": _cargo_specs,
+    "RubyGems": _gem_specs,
+    "NuGet": _nuget_specs,
+}
+
+
 def parse_command(command: str) -> list[Requested]:
     """The packages a Bash command installs, in order and without duplicates."""
     found: list[Requested] = []
@@ -169,8 +278,10 @@ def parse_command(command: str) -> list[Requested]:
         ecosystem, args = recognized
         if ecosystem == "PyPI":
             specs = [_pip_spec(arg) for arg in _operands(args, _PIP_VALUE_OPTIONS)]
-        else:
+        elif ecosystem == "npm":
             specs = [_npm_spec(arg) for arg in _operands(args, _NPM_VALUE_OPTIONS)]
+        else:
+            specs = _SPECS[ecosystem](args)
         found.extend(spec for spec in specs if spec is not None and spec not in found)
     return found[:MAX_PACKAGES]
 
@@ -179,15 +290,27 @@ def _label(advisory: osvdb.Advisory) -> str:
     return f"{advisory.id} ({advisory.summary})" if advisory.summary else advisory.id
 
 
-def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> tuple[list[str], list[str]] | None:
-    """(deny reasons, warnings) for the requested packages, or None when there is no index."""
+@dataclass(frozen=True, slots=True)
+class Verdict:
+    denies: list[str]
+    warnings: list[str]
+    unchecked: list[str]  # packages whose ecosystem the index holds no data for
+
+
+def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> Verdict | None:
+    """The deny reasons and warnings for the requested packages, or None when there is no index."""
     db = osvdb.connect()
     if db is None:
         return None
     denies: list[str] = []
     warnings: list[str] = []
+    unchecked: list[str] = []
+    covered = {source.ecosystem for source in osvdb.sources(db)}
     try:
         for item in requested:
+            if item.ecosystem not in covered:
+                unchecked.append(f"{item.name} ({item.ecosystem})")
+                continue
             advisories = [
                 adv
                 for adv in osvdb.advisories_for(db, item.ecosystem, item.name)
@@ -232,7 +355,7 @@ def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> 
                 )
     finally:
         db.close()
-    return denies, warnings
+    return Verdict(denies, warnings, unchecked)
 
 
 def _settings(cwd: str | None) -> Config:
@@ -259,13 +382,21 @@ def guard_response(payload: dict[str, Any]) -> str | None:
     result = check(requested, frozenset(key for key, _ in settings.ignore_advisories))
     if result is None:
         return None
-    denies, warnings = result
-    footer = "Source: the local OSV index (kestrix-scan db update)."
-    if denies:
+    notes = [line for line in (freshness_line(settings.db_max_age_days),) if line]
+    if result.unchecked:
+        ecosystems = sorted(
+            {item.ecosystem for item in requested if f"{item.name} ({item.ecosystem})" in result.unchecked}
+        )
+        notes.append(
+            f"The local index has no data for {', '.join(result.unchecked)}, so it was not checked; "
+            f"the user can run `kestrix-scan db update --ecosystem {' '.join(ecosystems)}`."
+        )
+    footer = " ".join(["Source: the local OSV index (kestrix-scan db update).", *notes])
+    if result.denies:
         reason = "\n".join(
             [
                 "Kestrix install guard blocked this install:",
-                *denies,
+                *result.denies,
                 "Do not install it or a look-alike name, and tell the user. If they confirm it is a false positive, "
                 f"they can add the advisory id to [tool.kestrix] ignore-advisories or set {ENV_SWITCH}=0.",
                 footer,
@@ -277,8 +408,8 @@ def guard_response(payload: dict[str, Any]) -> str | None:
             "permissionDecisionReason": reason[:MAX_MESSAGE_CHARS],
         }
         return json.dumps({"hookSpecificOutput": output})
-    if warnings:
-        context = "\n".join(["Kestrix install guard (not blocking):", *warnings, footer])
+    if result.warnings or notes:
+        context = "\n".join(["Kestrix install guard (not blocking):", *result.warnings, footer])
         return json.dumps(
             {"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": context[:MAX_MESSAGE_CHARS]}}
         )

@@ -254,7 +254,8 @@ Kestrix reads your code as data (Python through the standard-library `ast`, neve
   JWTs, and high-entropy values assigned to names like `password` or `api_key`. Reports show only the
   kind and the first four characters, never the secret.
 - **Lockfiles:** pinned versions in `requirements*.txt`, `uv.lock`, `poetry.lock`, `pdm.lock`,
-  `Pipfile.lock`, `package-lock.json`, `yarn.lock` and `pnpm-lock.yaml` with known vulnerabilities
+  `Pipfile.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `composer.lock`, `go.mod`, `Cargo.lock`,
+  `pom.xml`, `Gemfile.lock`, `packages.lock.json` and `pubspec.lock` with known vulnerabilities
   (`dep.vulnerable`) or reported as malware (`dep.malicious`), checked against a local OSV index that
   `kestrix-scan db update` downloads. Scans themselves stay offline.
 

@@ -7,10 +7,13 @@
   ``[tool.kestrix]`` section. Without a ``pyproject.toml``, ``.kestrix.toml`` is written instead.
 - ``.pre-commit-config.yaml``: written when missing or empty. A file with other content is never
   edited; the entry to add is printed instead.
-- ``.github/workflows/kestrix.yml`` (``ci="github"``): a workflow that downloads the OSV vulnerability
-  data (``kestrix-scan db update``, the one step that needs network access), runs the scanner and uploads
-  SARIF to GitHub code scanning, with SHA-pinned actions and minimal permissions. An existing,
-  different file is replaced only with ``force``.
+- ``.github/workflows/kestrix.yml`` (``ci="github"``): a workflow that runs on every push and pull request
+  and once a day, so a newly published advisory (a critical CVE in a framework you depend on) shows up the
+  next morning without a commit. It restores the OSV download cache, runs ``kestrix-scan db update`` (the one
+  step that needs network access; conditional requests make an unchanged export cost almost nothing, and only
+  the ecosystems of the repository's lockfiles are downloaded), runs the scanner and uploads SARIF to GitHub
+  code scanning, with SHA-pinned actions and minimal permissions. An existing, different file is replaced only
+  with ``force``.
 - The Claude Code plugin (``claude_plugin``): installed to ``~/.claude/kestrix-plugin``.
 
 Every step is idempotent: running ``init`` again reports what is already in place.
@@ -55,15 +58,20 @@ PRE_COMMIT_ENTRY = f"""  - repo: {REPO_URL}
 # the tag each SHA was resolved from is in the comment beside it.
 CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
 SETUP_PYTHON = "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0"
+CACHE = "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0"
 UPLOAD_SARIF = "github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0"
 
 WORKFLOW_TEXT = f"""# Written by kestrix-scan init: scans the repository and uploads the findings to GitHub code scanning.
+# It runs on every push and pull request, and every day at 05:17 UTC (GitHub runs scheduled workflows on the
+# default branch), so a vulnerability published tomorrow in a locked dependency is reported without a commit.
 # The scan step never fails the job; findings appear under Security > Code scanning.
 name: Kestrix
 
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "17 5 * * *"
   workflow_dispatch:
 
 permissions:
@@ -73,6 +81,7 @@ jobs:
   kestrix-scan:
     name: kestrix-scan
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write
@@ -84,8 +93,16 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install kestrix-scan=={__version__}
-      # The only network step of the scanner: download the OSV vulnerability data for the lockfile check.
+      # The OSV exports are cached so the daily refresh is a conditional request per ecosystem, not a download.
+      - uses: {CACHE}
+        with:
+          path: ~/.cache/kestrix-scan
+          key: kestrix-osv-${{{{ runner.os }}}}-${{{{ github.run_id }}}}
+          restore-keys: kestrix-osv-${{{{ runner.os }}}}-
+      # The only network step of the scanner. It downloads the OSV data of the ecosystems whose lockfiles
+      # are in this checkout (PyPI, npm, Packagist, Go, crates.io, Maven, RubyGems, NuGet, Pub).
       - run: kestrix-scan db update
+      - run: kestrix-scan db status
       - run: kestrix-scan --format sarif --output kestrix.sarif || true
       - uses: {UPLOAD_SARIF}
         with:
@@ -193,7 +210,7 @@ def github_workflow(root: Path, *, force: bool) -> str:
         if not force:
             return f"{path}: exists with other content; left unchanged (pass --force to replace it)"
     _write(path, WORKFLOW_TEXT)
-    return f"{path}: wrote a workflow that uploads kestrix.sarif to GitHub code scanning"
+    return f"{path}: wrote a workflow that uploads kestrix.sarif to GitHub code scanning on every push and daily"
 
 
 def install_plugin(*, force: bool) -> str:

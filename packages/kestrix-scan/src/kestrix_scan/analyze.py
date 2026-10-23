@@ -106,7 +106,10 @@ def scan(
         if skip is not None:
             skipped.append(skip)
 
-    if first_dependency_file is not None and (stale := deps.stale_note(first_dependency_file)) is not None:
+    if (
+        first_dependency_file is not None
+        and (stale := deps.stale_note(first_dependency_file, settings.db_max_age_days)) is not None
+    ):
         notes.append(stale)
     if changes is not None:
         findings = [finding for finding in findings if _changed(finding, changes)]

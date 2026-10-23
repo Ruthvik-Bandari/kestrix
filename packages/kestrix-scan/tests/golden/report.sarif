@@ -1577,6 +1577,35 @@
           "uri": "<root>"
         }
       },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": [
+            {
+              "level": "note",
+              "descriptor": {
+                "id": "kestrix.suppression.missing_reason"
+              },
+              "message": {
+                "text": "This kestrix: ignore[...] comment has no reason, so it suppresses nothing. Add why the finding is safe."
+              },
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "app.py",
+                      "uriBaseId": "SRCROOT"
+                    },
+                    "region": {
+                      "startLine": 11
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "results": [
         {
           "ruleId": "secret.github_token",

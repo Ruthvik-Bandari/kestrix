@@ -97,6 +97,94 @@ NPM = [
 ]
 
 
+# One synthetic advisory per added ecosystem; the package names and versions are made up.
+PACKAGIST = [
+    advisory(
+        "GHSA-php1-demo-0001",
+        "Packagist",
+        "acme/php-lib",
+        events=[{"introduced": "2.0.0"}, {"fixed": "2.3.5"}],
+        aliases=["CVE-2026-0003"],
+        summary="Remote code execution in acme/php-lib",
+        cvss=CVSS_CRITICAL,
+        cwes=["CWE-94"],
+    )
+]
+GO = [
+    advisory(
+        "GO-2026-0001",
+        "Go",
+        "github.com/acme/gomod",
+        events=[{"introduced": "0"}, {"fixed": "1.4.0"}],
+        aliases=["CVE-2026-0004"],
+        summary="Path traversal in gomod",
+        severity_label="HIGH",
+    )
+]
+CRATES = [
+    advisory(
+        "RUSTSEC-2026-0001",
+        "crates.io",
+        "acme-crate",
+        events=[{"introduced": "0.1.0"}, {"fixed": "0.3.2"}],
+        summary="Use after free in acme-crate",
+        severity_label="HIGH",
+    )
+]
+MAVEN = [
+    advisory(
+        "GHSA-mvn1-demo-0001",
+        "Maven",
+        "org.acme:acme-core",
+        events=[{"introduced": "1.0"}, {"fixed": "1.2.5.RELEASE"}],
+        aliases=["CVE-2026-0005"],
+        summary="Deserialization in acme-core",
+        cvss=CVSS_CRITICAL,
+    )
+]
+RUBYGEMS = [
+    advisory(
+        "GHSA-gem1-demo-0001",
+        "RubyGems",
+        "acme_gem",
+        events=[{"introduced": "0"}, {"fixed": "2.1.0"}],
+        summary="SQL injection in acme_gem",
+        severity_label="HIGH",
+    )
+]
+NUGET = [
+    advisory(
+        "GHSA-ngt1-demo-0001",
+        "NuGet",
+        "Acme.Core",
+        events=[{"introduced": "0"}, {"fixed": "3.0.1"}],
+        summary="Denial of service in Acme.Core",
+        severity_label="MODERATE",
+    )
+]
+PUB = [
+    advisory(
+        "GHSA-pub1-demo-0001",
+        "Pub",
+        "acme_dart",
+        events=[{"introduced": "0"}, {"fixed": "1.5.0"}],
+        summary="Certificate check bypass in acme_dart",
+        severity_label="HIGH",
+    )
+]
+ALL = {
+    "PyPI": PYPI,
+    "npm": NPM,
+    "Packagist": PACKAGIST,
+    "Go": GO,
+    "crates.io": CRATES,
+    "Maven": MAVEN,
+    "RubyGems": RUBYGEMS,
+    "NuGet": NUGET,
+    "Pub": PUB,
+}
+
+
 def write_zip(path: Path, records: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as bundle:

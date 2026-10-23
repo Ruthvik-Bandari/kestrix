@@ -94,10 +94,33 @@ def _result(finding: Finding, index: dict[str, int]) -> dict[str, Any]:
     return result
 
 
+def _notifications(report: ScanReport) -> list[dict[str, Any]]:
+    """Scanner notes (an out-of-date vulnerability index, unchecked requirements) as SARIF notifications, not results."""
+    return [
+        {
+            "level": "note",
+            "descriptor": {"id": note.id},
+            "message": {"text": note.message},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": quote(note.path), "uriBaseId": "SRCROOT"},
+                        "region": {"startLine": max(note.line, 1)},
+                    }
+                }
+            ],
+        }
+        for note in report.notes
+    ]
+
+
 def to_sarif(report: ScanReport) -> dict[str, Any]:
     index = {rule_id: position for position, rule_id in enumerate(RULES)}
     results = [_result(finding, index) for finding in report.findings]
     root_uri = Path(report.root).as_uri().rstrip("/") + "/"
+    invocations = (
+        [{"executionSuccessful": True, "toolExecutionNotifications": _notifications(report)}] if report.notes else []
+    )
     return {
         "$schema": SARIF_SCHEMA,
         "version": "2.1.0",
@@ -112,6 +135,7 @@ def to_sarif(report: ScanReport) -> dict[str, Any]:
                     }
                 },
                 "originalUriBaseIds": {"SRCROOT": {"uri": root_uri}},
+                **({"invocations": invocations} if invocations else {}),
                 "results": results,
                 "properties": {"generated_by": ATTRIBUTION, "suppressed": report.suppressed},
             }

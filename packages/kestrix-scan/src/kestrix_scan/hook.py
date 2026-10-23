@@ -16,7 +16,8 @@ A finding is new when its fingerprint (rule id, path and whitespace-free snippet
 is not among the findings of the text before. When the text before is unknown, every finding
 counts as new. The output is a ``hookSpecificOutput`` whose ``additionalContext`` lists at most 5
 new findings at medium severity or above, most severe first, in about 2,400 characters, or nothing
-when the edit introduced none.
+when the edit introduced none. When a dependency file was edited and the local vulnerability index is missing or
+older than the allowed age (7 days, ``db-max-age-days``), one more line says dependency results may be stale.
 
 ``PostToolUse`` (or ``PostToolUseFailure``) for the ``Bash`` tool: the plugin lists the source-like files
 the command changed in ``kestrix_files`` (at most 20, absolute paths) with their text before in
@@ -45,8 +46,10 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from . import deps
 from .analyze import scan, scan_text
 from .config import discover
+from .errors import Rejected
 from .models import SEVERITY_RANK, Finding, ordered
 from .walk import Candidate, Unreadable, is_within, read_text, rel_path
 
@@ -105,15 +108,29 @@ def hook_response(raw: str) -> str | None:
         added, kept = introduced(target, root, before)
         new.extend(f for f in added if SEVERITY_RANK[f.severity] >= _POST_MIN_RANK)
         existing += sum(1 for f in kept if SEVERITY_RANK[f.severity] >= _POST_MIN_RANK)
-    if not new:
+    stale = _stale_line(_targets(payload, paths))
+    if not new and stale is None:
         return None
-    context = render_context(ordered(new), existing, "command" if bash else "edit")
+    context = render_context(ordered(new), existing, "command" if bash else "edit") if new else ""
+    if stale is not None:
+        context = f"{context}\n{stale}" if context else stale
     return json.dumps(
         {
             "hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": context},
             "kestrix": {"new": len(new), "existing": existing},
         }
     )
+
+
+def _stale_line(targets: list[tuple[Path, Path]]) -> str | None:
+    """One line for Claude when a dependency file was edited and the vulnerability index is missing or old."""
+    for target, root in targets:
+        if deps.is_dependency_file(rel_path(target.resolve(), root)):
+            try:
+                return deps.freshness_line(discover(root).db_max_age_days)
+            except Rejected:
+                return deps.freshness_line()
+    return None
 
 
 def stop_response(payload: dict[str, Any]) -> str:
