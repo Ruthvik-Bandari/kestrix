@@ -80,6 +80,20 @@ The code benchmark ([`docs/benchmarks/cvefixes.md`](../benchmarks/cvefixes.md)) 
 
 Raw files stay under `/scratch/$USER/kestrix/codebench/` and, for `test2`, `/scratch/$USER/kestrix/codebench2/` (directories 0700, files 0600). Reports hold counts, rates, intervals and rule ids only. `/scratch` is purged on the first Tuesday of each month (next: 2026-11-03): copy nothing raw off it; the benchmark is rebuilt from the pinned sources and the committed aggregates.
 
+## Popular-package names (install-guard typosquat check)
+
+`kestrix_scan/popular_names.json` bundles the top 5,000 package names per ecosystem in rank order (normalized, no download counts), 378 KB in all, with the `generated` date (2026-10-23) and each source URL and licence note. `scripts/refresh_popular_names.py` rebuilds it by hand; the scanner never touches the network. Checked 2026-10-23; not legal advice.
+
+| Source | Licence | Used for | Notes |
+| --- | --- | --- | --- |
+| PyPI: `hugovk/top-pypi-packages` (<https://hugovk.dev/top-pypi-packages/top-pypi-packages.min.json>, monthly, from the public ClickHouse PyPI dataset, last update 2026-10-01) | **No licence file** in the repository (GitHub reports none) and none on the page | top 5,000 names, rank only | Not licence-clear. Only project names in rank order are kept (facts about public PyPI projects; no counts, no text). **Owner decision:** keep, ask the maintainer to add a licence, or regenerate from ClickPy / BigQuery yourself. ClickPy's code is Apache-2.0, but that is not a data licence. |
+| npm: `wooorm/npm-high-impact` `lib/top.js` (<https://github.com/wooorm/npm-high-impact>, commit `9e29478`, 2026-06-08) | MIT, (c) Titus Wormer | top 5,000 names, rank only | Ranked by weekly downloads, then dependents. The author builds the list from ecosyste.ms data. Its terms say CC BY-SA 4.0 for data and forbid scraping without consent, which is why Kestrix does not call ecosyste.ms directly. Attribution is kept here and in the snapshot's `sources`. |
+| crates.io: API `GET /api/v1/crates?sort=downloads` (<https://crates.io/data-access>) | No data licence stated | top 5,000 names, rank only | The data-access policy allows the API at 1 request per second with an identifying User-Agent, which the refresh script follows (100 requests, once). Names only. |
+| Packagist: public API `explore/popular.json` (<https://packagist.org/explore/popular.json>) | No data licence stated | top 5,000 `vendor/name`, rank only | Public API, 0.5 s between requests, names only. Packagist's order is its own "popular" ranking. |
+| RubyGems, Go, NuGet | not bundled | none | RubyGems offers only a PostgreSQL dump (policies give no data licence); Go has no registry ranking; NuGet's search is relevance-ordered. The check stays silent for them. |
+
+Not used: ecosyste.ms (CC BY-SA 4.0 data, personal-use grant and no scraping without consent in its terms). For the measurement only (nothing bundled): PyPI's `https://pypi.org/simple/` project list (names) and the names of `MAL-` advisories in the local OSV index (the OpenSSF malicious-packages feed that OSV carries; its licence was not re-checked here; names only, nothing bundled).
+
 ## Link and file benchmark datasets (`kestrixlinkfilebench`)
 
 The link and file accuracy benchmark ([`linkfile-benchmark.md`](linkfile-benchmark.md)) measures `kestrix.forensics` on the datasets below. Tier **eval** means used to measure and to choose rule changes on a development split; no model is trained. License audit of 2026-10-21 as approved by the owner; not legal advice.

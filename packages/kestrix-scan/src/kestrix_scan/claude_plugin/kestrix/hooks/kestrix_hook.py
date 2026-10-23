@@ -8,7 +8,8 @@ with the hook JSON on stdin.
 - ``install-guard`` (PreToolUse on Bash): when the command looks like a package install (``pip``,
   ``uv``, ``npm``, ``pnpm``, ``yarn``, ``bun``, ``composer``, ``go``, ``cargo``, ``gem`` or ``dotnet``), passes the payload to ``kestrix-scan scan --hook``, which checks
   the named packages against the local OSV index, and relays its reply: a ``deny`` for a known
-  malicious package, or a non-blocking warning for a known-vulnerable pinned version. No index, a
+  malicious package, or a non-blocking warning for a known-vulnerable pinned version or for a likely
+  typosquat (a near-miss of a popular package with no advisory; the scanner needs no index for that). No index, a
   missing scanner, ``KESTRIX_INSTALL_GUARD=0`` or any error means no output, so the command runs.
   It first records the time the command starts, for ``bash-post``.
 - ``bash-post`` (PostToolUse and PostToolUseFailure on Bash) lists the files the command changed with

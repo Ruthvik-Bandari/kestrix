@@ -18,6 +18,11 @@ Decisions, from the local OSV index only (see ``osvdb``):
 - when the index is older than the allowed age (``db-max-age-days``, default 7), the context also says the
   result may be stale; when it holds no data for a requested ecosystem, the context says that package was not
   checked and names the ``db update --ecosystem`` command;
+- a package that is not popular but is a near-miss of a popular one (see ``popular``: ``reqeusts`` for ``requests``)
+  and has no advisory gets a non-blocking ``additionalContext`` warning that names the likely intended package and
+  asks Claude to confirm the name with the user. It works without an index (the advisory check is then skipped and
+  the note says so), covers PyPI, npm, crates.io and Packagist, and is never a deny. ``[tool.kestrix] install-allow``
+  lists names (``*`` globs allowed) that are never flagged;
 - anything else, no index, ``KESTRIX_INSTALL_GUARD=0`` or ``[tool.kestrix] claude.install-guard = false``
   gets no output. Errors are the caller's to swallow: the hook fails open.
 """
@@ -29,10 +34,11 @@ import os
 import re
 import shlex
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
-from . import osvdb
+from . import osvdb, popular
 from .config import Config, discover
 from .deps import describe_ids, freshness_line, group_fixes, vulnerabilities
 from .errors import Rejected
@@ -42,6 +48,7 @@ ENV_SWITCH = "KESTRIX_INSTALL_GUARD"
 MAX_COMMAND_CHARS = 20_000
 MAX_PACKAGES = 50
 MAX_MESSAGE_CHARS = 2_000
+MAX_TYPOSQUATS_SHOWN = 5
 EMBEDDED_MALWARE_CWE = (
     "CWE-506"  # GitHub-reviewed malware and compromised-release advisories (GHSA-) carry this, not a MAL- id
 )
@@ -295,6 +302,7 @@ class Verdict:
     denies: list[str]
     warnings: list[str]
     unchecked: list[str]  # packages whose ecosystem the index holds no data for
+    advised: frozenset[tuple[str, str]] = frozenset()  # (ecosystem, name) that has any advisory in the index
 
 
 def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> Verdict | None:
@@ -305,17 +313,17 @@ def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> 
     denies: list[str] = []
     warnings: list[str] = []
     unchecked: list[str] = []
+    advised: set[tuple[str, str]] = set()
     covered = {source.ecosystem for source in osvdb.sources(db)}
     try:
         for item in requested:
             if item.ecosystem not in covered:
                 unchecked.append(f"{item.name} ({item.ecosystem})")
                 continue
-            advisories = [
-                adv
-                for adv in osvdb.advisories_for(db, item.ecosystem, item.name)
-                if not ({adv.id, *adv.aliases} & ignored)
-            ]
+            found = osvdb.advisories_for(db, item.ecosystem, item.name)
+            if found:
+                advised.add((item.ecosystem, item.name))
+            advisories = [adv for adv in found if not ({adv.id, *adv.aliases} & ignored)]
             what = f"{item.name}@{item.version}" if item.version else item.name
             malicious = [adv for adv in advisories if adv.malicious or EMBEDDED_MALWARE_CWE in adv.cwes]
             if item.version is not None:
@@ -355,7 +363,46 @@ def check(requested: list[Requested], ignored: frozenset[str] = frozenset()) -> 
                 )
     finally:
         db.close()
-    return Verdict(denies, warnings, unchecked)
+    return Verdict(denies, warnings, unchecked, frozenset(advised))
+
+
+def _allowed(item: Requested, patterns: tuple[str, ...]) -> bool:
+    name = popular.normalize(item.ecosystem, item.name)
+    return any(fnmatchcase(name, popular.normalize(item.ecosystem, pattern)) for pattern in patterns)
+
+
+def typosquat_warnings(
+    requested: list[Requested],
+    allow: tuple[str, ...] = (),
+    advised: frozenset[tuple[str, str]] = frozenset(),
+    *,
+    checked: frozenset[str] = frozenset(),
+) -> list[str]:
+    """One warning per requested name that looks like a typosquat of a popular package and has no advisory.
+
+    ``advised`` holds the (ecosystem, name) pairs the index lists advisories for; ``checked`` the ecosystems the
+    index covers, so the note can say when the advisory check could not run."""
+    found: list[str] = []
+    for item in requested:
+        if (item.ecosystem, item.name) in advised or _allowed(item, allow):
+            continue
+        hit = popular.suspect(item.ecosystem, item.name)
+        if hit is None:
+            continue
+        advice = (
+            "The local index lists no advisory for it."
+            if item.ecosystem in checked
+            else "It was not checked for advisories (no local index data for this ecosystem)."
+        )
+        found.append(
+            f"`{item.name}` ({item.ecosystem}) is not a popular package but looks like a typosquat of `{hit.target}` "
+            f"(#{hit.rank} by downloads): {hit.reason}. {advice} Before running this install, double-check the name "
+            f"with the user: did you mean `{hit.target}`? If `{item.name}` is intended, they can add it to "
+            "[tool.kestrix] install-allow."
+        )
+    if len(found) > MAX_TYPOSQUATS_SHOWN:
+        found = [*found[:MAX_TYPOSQUATS_SHOWN], f"{len(found) - MAX_TYPOSQUATS_SHOWN} more possible typosquats."]
+    return found
 
 
 def _settings(cwd: str | None) -> Config:
@@ -380,19 +427,30 @@ def guard_response(payload: dict[str, Any]) -> str | None:
     if settings is None or settings.install_guard is False:
         return None
     result = check(requested, frozenset(key for key, _ in settings.ignore_advisories))
-    if result is None:
+    covered = frozenset(source.ecosystem for source in osvdb.sources()) if result is not None else frozenset()
+    typos = typosquat_warnings(
+        requested,
+        settings.install_allow,
+        result.advised if result is not None else frozenset(),
+        checked=covered,
+    )
+    if result is None and not typos:
         return None
-    notes = [line for line in (freshness_line(settings.db_max_age_days),) if line]
-    if result.unchecked:
-        ecosystems = sorted(
-            {item.ecosystem for item in requested if f"{item.name} ({item.ecosystem})" in result.unchecked}
-        )
+    notes = [line for line in (freshness_line(settings.db_max_age_days),) if line] if result is not None else []
+    unchecked = result.unchecked if result is not None else []
+    if unchecked:
+        ecosystems = sorted({item.ecosystem for item in requested if f"{item.name} ({item.ecosystem})" in unchecked})
         notes.append(
-            f"The local index has no data for {', '.join(result.unchecked)}, so it was not checked; "
+            f"The local index has no data for {', '.join(unchecked)}, so it was not checked; "
             f"the user can run `kestrix-scan db update --ecosystem {' '.join(ecosystems)}`."
         )
-    footer = " ".join(["Source: the local OSV index (kestrix-scan db update).", *notes])
-    if result.denies:
+    source = (
+        "Source: the local OSV index (kestrix-scan db update)."
+        if result is not None
+        else "No local OSV index (`kestrix-scan db update` builds it)."
+    )
+    footer = " ".join([source, *notes])
+    if result is not None and result.denies:
         reason = "\n".join(
             [
                 "Kestrix install guard blocked this install:",
@@ -408,8 +466,15 @@ def guard_response(payload: dict[str, Any]) -> str | None:
             "permissionDecisionReason": reason[:MAX_MESSAGE_CHARS],
         }
         return json.dumps({"hookSpecificOutput": output})
-    if result.warnings or notes:
-        context = "\n".join(["Kestrix install guard (not blocking):", *result.warnings, footer])
+    warnings = result.warnings if result is not None else []
+    if warnings or typos or notes:
+        lines = ["Kestrix install guard (not blocking):", *warnings, *typos]
+        if typos:
+            generated, _ = popular.snapshot_info()
+            lines.append(
+                f"Typosquat check: a heuristic on the bundled popular-package snapshot of {generated}, not an advisory."
+            )
+        context = "\n".join([*lines, footer])
         return json.dumps(
             {"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": context[:MAX_MESSAGE_CHARS]}}
         )

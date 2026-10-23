@@ -135,6 +135,7 @@ modules = [
     "kestrix_scan.models",
     "kestrix_scan.osvdb",
     "kestrix_scan.plugin",
+    "kestrix_scan.popular",
     "kestrix_scan.pytest_plugin",
     "kestrix_scan.python_rules",
     "kestrix_scan.registry",
