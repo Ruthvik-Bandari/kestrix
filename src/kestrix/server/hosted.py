@@ -42,7 +42,7 @@ from .auth import ACCESS_COOKIE, REFRESH_COOKIE, AuthService, Session, current_s
 from .ratelimit import Limiter, client_ip, ip_key
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
-LOCAL_ONLY_PREFIXES = ("/api/detect", "/api/bitcoin", "/api/settings")
+LOCAL_ONLY_PREFIXES = ("/api/detect", "/api/bitcoin", "/api/settings", "/api/mail/mailbox")
 HOSTED_SETTINGS = frozenset({"/api/settings/history"})
 HISTORY_WRITE_PREFIXES = ("/api/history", "/api/settings/history")
 PUBLIC_API = frozenset({"/api/health", "/api/auth/providers", "/api/auth/me", "/api/auth/logout", "/api/auth/refresh"})

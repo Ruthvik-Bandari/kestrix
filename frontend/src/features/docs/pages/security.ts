@@ -81,6 +81,7 @@ export const securityPages: DocPage[] = [
             ["Accounts", "None", "Sign-in with Google or GitHub; no passwords"],
             ["Logs", "Standard server log", "Method, route, status, duration and a salted user hash; never bodies, file names, emails, query strings, cookies or tokens"],
             ["API key", "Optional Anthropic key in `secrets.json` (mode 0600), plain JSON, not in the OS keychain", "Not used; the Bitcoin guardian is not available"],
+            ["Mailbox connector", "Optional. Your own OAuth app's client ID and secret and a refresh token in `secrets.json` (mode 0600); the message list and message source are never stored, only the normal report is", "Not available: the routes do not exist"],
           ],
         ),
       ),
@@ -90,6 +91,7 @@ export const securityPages: DocPage[] = [
           ["Feature", "What is sent", "To whom"],
           [
             ["Website check", "Read-only GET requests to the site you name, plus one TLS handshake", "That site (from your computer, or from Kestrix's server on the hosted service)"],
+            ["Mailbox connector (local mode only)", "Sign-in and read-only requests for the messages you list or pick, from your computer to Google or Microsoft; nothing goes to Kestrix servers", "accounts.google.com, oauth2.googleapis.com, gmail.googleapis.com, login.microsoftonline.com, graph.microsoft.com"],
             ["Bitcoin chain lookup (`--lookup-chain`)", "Each looked-up hash-based address, with your IP address", "mempool.space"],
             ["Bitcoin guardian (`kestrix bitcoin ask`)", "Your message", "The Anthropic API, with your own key"],
             ["`kestrix-scan db update`", "A plain GET for each ecosystem's public vulnerability export; nothing about your project", "OSV"],

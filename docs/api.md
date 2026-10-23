@@ -15,6 +15,7 @@ The machine-readable schema is served at `GET /api/openapi.json` (by the local s
 - [Website check](#website-check)
 - [Bitcoin](#bitcoin)
 - [Mail](#mail)
+  - [Mailbox connector (local mode only)](#mailbox-connector-local-mode-only)
 - [Result history](#result-history)
 - [Hosted mode](#hosted-mode)
 
@@ -210,9 +211,27 @@ curl -s -F file=@message.eml 'http://127.0.0.1:8765/api/mail/analyze?protected_d
 - Input that is not an email message, or an invalid query parameter, returns 400 `invalid_input`. MIME nesting deeper than 10 levels, or a header nested too deeply to parse (such as thousands of nested comments), returns 400 `nesting_too_deep`; too many parts or headers, an oversized header or header block, or a `Content-Type` or `Content-Disposition` with more than 50 parameters return 413 `input_too_large`.
 - The report never contains the message body, link text or attachment bytes. The one exception is an `intent` finding, whose evidence is the matched cue phrase (at most 60 characters).
 
+### Mailbox connector (local mode only)
+
+Routes of the read-only Gmail and Microsoft 365 connector ([ADR 0009](adr/0009-mailbox-connector.md)), in [`mail/mailbox/api.py`](../src/kestrix/mail/mailbox/api.py). They exist only on a local server: the hosted service does not register them, answers 404 `not_found` for the whole `/api/mail/mailbox` prefix, and does not list them in its schema. `{provider}` is `gmail` or `outlook`. Every route that contacts a provider is a `POST` (or `DELETE`); `GET /status` reads local settings only. Request bodies reject unknown fields.
+
+| Route | Request | Response |
+| --- | --- | --- |
+| `GET /api/mail/mailbox/status` | none | `{"notice", "providers": [{"provider", "label", "configured", "connected", "account", "scope", "hosts", "register_redirect_uri"}]}`. Never contains a client ID, secret or token. |
+| `PUT /api/mail/mailbox/{provider}/config` | `{"client_id", "client_secret"?, "tenant"?}` (Outlook takes no secret; the tenant defaults to `common`) | The provider's status. 400 `invalid_input` for a malformed value (never echoed) or while connected. |
+| `POST /api/mail/mailbox/{provider}/start` | `{"acknowledge_network": true}` | `{"authorize_url", "expires_in"}` and an `HttpOnly`, `SameSite=Strict` cookie `kx_mailbox_flow` scoped to `/api/mail/mailbox` for 600 s. The redirect URI is `http://<host>:<port>/mail/connect` with the host and port the dashboard was opened with (`127.0.0.1` or `localhost`; Outlook needs `localhost`). 409 `mailbox_not_configured` without a client ID. |
+| `POST /api/mail/mailbox/callback` | `{"state", "code"?, "error"?}` (what the provider put in the redirect address; the dashboard page `/mail/connect` sends it) | The provider's status. The sign-in is single use and needs the cookie from `start`; otherwise 400 `invalid_input` and nothing is sent to the provider. |
+| `POST /api/mail/mailbox/{provider}/search` | `{"query"?: string (at most 200), "folder"?: "inbox" \| "junk" \| "all", "page_token"?: string, "limit"?: 1 to 50 (default 20)}` | `{"messages": [{"id", "sender", "subject", "date", "snippet"}], "next_page_token"}`. Only those fields; `sender` and `subject` at most 200 characters, `snippet` at most 120. Not stored or logged. |
+| `POST /api/mail/mailbox/{provider}/check` | `{"message_id", "protected_domains"?: up to 20, "trusted_authserv_id"?}` | `MailReport`, as for `/api/mail/analyze`. |
+| `DELETE /api/mail/mailbox/{provider}[?forget_app=true]` | none | `{"provider", "revoked": true \| false \| null, "detail"}`. The saved sign-in is deleted in every case; Gmail is revoked at Google (`false` when that call failed), Outlook has no revoke call (`null`). |
+
+- 409 `mailbox_not_configured`, `mailbox_not_connected` or `mailbox_reconnect_required` (the provider refused the saved sign-in twice or rejected the refresh token); 429 `rate_limited` with `Retry-After` (the provider's, at most 3,600 s); 502 `target_unreachable` (network off or a timeout) or `upstream_error`; 404-style cases such as a deleted message are 400 `invalid_input`; a message over 25 MiB is 413 `input_too_large`.
+- The only hosts contacted are `accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `login.microsoftonline.com` and `graph.microsoft.com`; see the security model.
+- `POST /api/mail/mailbox/gmail/check` and `.../outlook/check` are recorded in the result history like `/api/mail/analyze` (tool `mail`).
+
 ## Result history
 
-Both modes keep the report of each successful analysis for 30 days ([ADR 0008](adr/0008-per-user-result-history.md)): `POST /api/mail/analyze` (tool `mail`), `POST /api/webcheck` (`webcheck`), `POST /api/forensics/file` (`forensics_file`) and `POST /api/forensics/url` (`forensics_url`). Only the JSON response is kept, never the request: uploaded files and messages are not stored. Failed requests (any status other than 200) and responses over 2 MiB are not recorded. Locally there is one user and the history is plaintext in `history.sqlite3` in the config folder (`0600`); on the hosted service each signed-in user has their own, encrypted at rest (AES-256-GCM).
+Both modes keep the report of each successful analysis for 30 days ([ADR 0008](adr/0008-per-user-result-history.md)): `POST /api/mail/analyze` and `POST /api/mail/mailbox/{provider}/check` (tool `mail`), `POST /api/webcheck` (`webcheck`), `POST /api/forensics/file` (`forensics_file`) and `POST /api/forensics/url` (`forensics_url`). Only the JSON response is kept, never the request: uploaded files and messages are not stored. Failed requests (any status other than 200) and responses over 2 MiB are not recorded. Locally there is one user and the history is plaintext in `history.sqlite3` in the config folder (`0600`); on the hosted service each signed-in user has their own, encrypted at rest (AES-256-GCM).
 
 `verdict` is a short summary for lists: the mail `verdict`, the website `grade` (`A` to `F`), the URL `level`, or for a file the highest finding severity (`high`, `medium`, `low`, `info`) or `none`. `findings` is the number of findings.
 

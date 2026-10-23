@@ -11,7 +11,7 @@ Kestrix is a single-user tool that runs on your own computer. It has two front e
 - the `kestrix` CLI;
 - a FastAPI server, started by `kestrix dashboard`, that serves a bundled React dashboard and a JSON API on `127.0.0.1:8765`.
 
-There are no accounts, no database and no background jobs in the default local mode. The opt-in hosted mode, which has accounts and a database, is covered in [Hosted mode](#hosted-mode-preview). Detection repair talks to a local Elasticsearch container. Two features reach the internet, and both only when you ask: the website check contacts the site you name, and the Bitcoin module contacts mempool.space and the Anthropic API.
+There are no accounts, no database and no background jobs in the default local mode. The opt-in hosted mode, which has accounts and a database, is covered in [Hosted mode](#hosted-mode-preview). Detection repair talks to a local Elasticsearch container. Three features reach the internet, and all only when you ask: the website check contacts the site you name, the Bitcoin module contacts mempool.space and the Anthropic API, and the optional mailbox connector contacts Google or Microsoft (local mode only, [ADR 0009](adr/0009-mailbox-connector.md)).
 
 ## Assets
 
@@ -21,6 +21,7 @@ There are no accounts, no database and no background jobs in the default local m
 | Files you analyse, rules and fixtures | They may hold private data, and they may be hostile. |
 | Your Anthropic API key | It costs money and identifies your account. |
 | Your Bitcoin addresses | Revealing them together can link them to you. |
+| Your mailbox access (optional connector) | A refresh token lets anyone holding it read your mail until you revoke it. |
 | Integrity of results | A wrong "repaired" or "safe" result leads to bad decisions. |
 
 ## Adversaries and threats
@@ -106,6 +107,9 @@ Data crosses a boundary at each of these points:
 | Website check connects to the validated IP, keeping the hostname in `Host` and SNI, so DNS changes after the check cannot redirect it | [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py) |
 | Each redirect re-validated; at most 5; 10 s for the whole fetch including DNS, enforced on every socket operation, and 10 s for the TLS handshake; 1 MiB read per response; no environment proxies; no cookie is ever sent back (the client's cookie jar accepts and returns nothing) | [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py), `check_url` in [`core/netguard.py`](../src/kestrix/core/netguard.py) |
 | Website check, whole-site scope: only GET, never a form, body, credential or cookie; only pages named by the start page's links, `/sitemap.xml` or six fixed login addresses, on exactly the start page's scheme, host and port; a redirect to another origin is reported and not followed; every request and hop passes `check_url` (and the 80/443 rule when hosted); at most 50 pages plus 15 extra requests (sitemap and redirects), 60 s for the crawl, 150 ms between sequential requests, 1 MiB per response; links and sitemap read with `html.parser` and `str.find`, so no entity or DTD is resolved | [`webcheck/crawl.py`](../src/kestrix/webcheck/crawl.py), [`webcheck/fetch.py`](../src/kestrix/webcheck/fetch.py) |
+| Mailbox connector (local mode only, ADR 0009): HTTPS to port 443 of five fixed hosts only (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `login.microsoftonline.com`, `graph.microsoft.com`), no credentials in the URL, every request through `check_url`, redirects refused, 20 s timeout, 1 MiB per JSON answer and the 25 MiB message cap for raw mail, a Graph next-page link accepted only if it is a `graph.microsoft.com/v1.0/me/` URL; httpx's own request log lines for these hosts are dropped because their URLs hold search text and message ids | [`mail/mailbox/http.py`](../src/kestrix/mail/mailbox/http.py), [`mail/mailbox/providers.py`](../src/kestrix/mail/mailbox/providers.py) |
+| Mailbox sign-in: authorization code with PKCE (`S256`) and a loopback redirect; `state` is 256 bits, held in memory for 10 minutes (at most 8 pending), single use, and bound to the browser that started it by an `HttpOnly`, `SameSite=Strict` cookie compared in constant time; the code is exchanged in a `POST`, never in a `GET`; the granted scope must include the read-only mail scope; the access token lives in memory only | [`mail/mailbox/service.py`](../src/kestrix/mail/mailbox/service.py), [`mail/mailbox/oauth.py`](../src/kestrix/mail/mailbox/oauth.py), [`mail/mailbox/api.py`](../src/kestrix/mail/mailbox/api.py) |
+| The mailbox routes do not exist on the hosted service: not registered, `HostedGate` answers 404 for `/api/mail/mailbox`, and the dashboard does not render the connector | `create_app` in [`server/app.py`](../src/kestrix/server/app.py), `LOCAL_ONLY_PREFIXES` in [`server/hosted.py`](../src/kestrix/server/hosted.py); `tests/server/test_mailbox_hosted.py` |
 | mempool.space lookups validated, no redirects, 10 s timeout, 64 KiB response cap, schema-checked | [`bitcoin/chain.py`](../src/kestrix/bitcoin/chain.py) |
 | Engine client never follows redirects | [`detect/engine.py`](../src/kestrix/detect/engine.py) |
 
@@ -131,7 +135,7 @@ Data crosses a boundary at each of these points:
 
 ## How secrets are stored
 
-The only secret is the optional Anthropic API key ([`core/config.py`](../src/kestrix/core/config.py)).
+The secrets are the optional Anthropic API key and, if you use the mailbox connector, your own OAuth app's client ID and secret and the refresh token it was issued, stored as `mail_gmail_*` and `mail_outlook_*` entries in the same file ([`core/config.py`](../src/kestrix/core/config.py), [`mail/mailbox/store.py`](../src/kestrix/mail/mailbox/store.py)). The notes below apply to all of them. `kestrix mail disconnect` deletes the refresh token (and revokes it at Google); `GET /api/mail/mailbox/status` reports only whether each is set.
 
 - **Lookup order.** `ANTHROPIC_API_KEY` from the environment first, then the `anthropic_api_key` entry in `secrets.json`.
 - **Location.** `secrets.json` lives in the config directory:
@@ -146,6 +150,7 @@ The only secret is the optional Anthropic API key ([`core/config.py`](../src/kes
 
 ## Known limitations
 
+- **A stored refresh token reads your mail.** With the mailbox connector connected, the refresh token in `secrets.json` (plain JSON, `0600`, not in the OS keychain) lets any process running as you read your mail with the read-only scope until you disconnect or revoke it. Disconnect when you are done: `kestrix mail disconnect gmail|outlook`. Microsoft has no revoke call for this sign-in, so removing its access completely also means removing the app at your Microsoft account's app permissions page. The connector is local-only, adds no account to Kestrix, and cannot change mail.
 - **Single local user, no authentication.** Any process or user on the machine that can reach `127.0.0.1:8765` can call every route. That includes replacing or clearing the stored API key and running scans that send data to the internet. The key cannot be read back through the API. Do not run the dashboard on a machine you share with people you do not trust.
 - **Binding beyond loopback.** `kestrix dashboard --host <interface>` adds that host name to the allowlist and serves the same unauthenticated API to the network. The traffic is plain HTTP. Keep the default unless you have a separate access control in front of it.
 - **Browsers and Local Network Access.** Kestrix does not rely on Chrome's Local Network Access (LNA) permission prompt. Browsers without LNA can send requests from any page to `127.0.0.1`, and a user may grant LNA to a page. In both cases the server's own `Host`, `Origin` and `Sec-Fetch-Site` checks still apply. `GET` routes are not refused cross-site, but they have no side effects, and without CORS headers the page cannot read their responses.

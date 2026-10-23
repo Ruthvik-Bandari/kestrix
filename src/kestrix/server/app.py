@@ -46,12 +46,14 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from .. import ATTRIBUTION, __version__
 from ..bitcoin.api import router as bitcoin_router
 from ..core import config
-from ..core.errors import Reason, Rejected
+from ..core.errors import RateLimited, Reason, Rejected
 from ..detect.api import router as detect_router
 from ..forensics.api import hosted_router as hosted_forensics_router
 from ..forensics.api import router as forensics_router
 from ..mail.api import hosted_router as hosted_mail_router
 from ..mail.api import router as mail_router
+from ..mail.mailbox import MailboxService
+from ..mail.mailbox.api import mailbox_router
 from ..webcheck.api import hosted_router as hosted_webcheck_router
 from ..webcheck.api import router as webcheck_router
 from ..webcheck.fetch import user_agent
@@ -93,6 +95,9 @@ _STATUS = {
     Reason.REAUTH_REQUIRED: 403,
     Reason.RATE_LIMITED: 429,
     Reason.ANALYSIS_TIMEOUT: 422,
+    Reason.MAILBOX_NOT_CONFIGURED: 409,
+    Reason.MAILBOX_NOT_CONNECTED: 409,
+    Reason.MAILBOX_RECONNECT_REQUIRED: 409,
 }
 
 _HTTP_REASONS = {404: "not_found", 405: "method_not_allowed", 408: "request_timeout", 413: "input_too_large"}
@@ -299,10 +304,12 @@ def create_app(
     *,
     server_settings: Settings | None = None,
     provider_transport: httpx.BaseTransport | None = None,
+    mailbox_transport: httpx.BaseTransport | None = None,
 ) -> FastAPI:
     """Build the app. Settings default to the environment; hosted mode raises ``SettingsError``
     when misconfigured. ``extra_hosts`` applies to local mode only; ``provider_transport``
-    replaces the network for sign-in providers in tests."""
+    replaces the network for sign-in providers in tests; ``mailbox_transport`` does the same for the local
+    mailbox connector (ADR 0009), which hosted mode never registers."""
     hosted = (load_settings() if server_settings is None else server_settings).hosted
     # The hosted service publishes no API schema: it is a website, not a scripting API.
     openapi_url = "/api/openapi.json" if hosted is None else None
@@ -351,8 +358,9 @@ def create_app(
 
     @app.exception_handler(Rejected)
     async def _rejected(_: Request, exc: Rejected) -> JSONResponse:
+        retry = {"Retry-After": str(exc.retry_after)} if isinstance(exc, RateLimited) else None
         return JSONResponse(
-            {"reason": exc.reason.value, "detail": exc.detail}, status_code=_STATUS.get(exc.reason, 400)
+            {"reason": exc.reason.value, "detail": exc.detail}, status_code=_STATUS.get(exc.reason, 400), headers=retry
         )
 
     if hosted is not None:
@@ -375,6 +383,7 @@ def create_app(
 
         for router in (detect_router, forensics_router, webcheck_router, bitcoin_router, mail_router):
             app.include_router(router)
+        app.include_router(mailbox_router(MailboxService(mailbox_transport)))
         app.include_router(history_router(history, lambda _request: LOCAL_USER))
     else:
         assert hosted is not None and limiter is not None

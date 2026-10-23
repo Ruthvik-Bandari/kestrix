@@ -71,6 +71,64 @@ export type HistoryEntry = HistoryItem &
     | { tool: "forensics_url"; report: UrlReport }
   );
 
+// Mailbox connector (local mode only, ADR 0009) ---------------------------------------
+
+export type MailboxProvider = "gmail" | "outlook";
+export type MailboxFolder = "inbox" | "junk" | "all";
+
+export interface MailboxProviderStatus {
+  provider: MailboxProvider;
+  label: string;
+  /** A client id is stored. The id and secret themselves are never returned. */
+  configured: boolean;
+  connected: boolean;
+  account: string | null;
+  scope: string;
+  /** The hosts the dashboard contacts for this provider. */
+  hosts: string[];
+  /** The redirect address to register in your own app, or null when the provider needs none. */
+  register_redirect_uri: string | null;
+}
+
+export interface MailboxStatus {
+  notice: string;
+  providers: MailboxProviderStatus[];
+}
+
+export interface MailboxAppSettings {
+  client_id: string;
+  client_secret?: string | null;
+  tenant?: string | null;
+}
+
+export interface MailboxMessage {
+  id: string;
+  sender: string;
+  subject: string;
+  /** ISO 8601 UTC, or null when the provider gave none. */
+  date: string | null;
+  /** At most 120 characters. */
+  snippet: string;
+}
+
+export interface MailboxSearch {
+  messages: MailboxMessage[];
+  next_page_token: string | null;
+}
+
+export interface MailboxSearchBody {
+  query: string;
+  folder: MailboxFolder;
+  page_token?: string | null;
+}
+
+export interface MailboxDisconnect {
+  provider: MailboxProvider;
+  /** true: the provider confirmed the revoke. false: the call failed. null: no revoke call exists. */
+  revoked: boolean | null;
+  detail: string;
+}
+
 // Detection repair -------------------------------------------------------------
 
 export type Outcome =

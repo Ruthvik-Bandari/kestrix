@@ -47,7 +47,10 @@ export const docTree: TreeSection[] = [
   },
   {
     title: "Tools",
-    nodes: ["tools/email", "tools/website", "tools/forensics", "tools/detection-repair", "tools/bitcoin"].map(toolNode),
+    nodes: [
+      { path: "tools/email", children: ["how-it-works", "using-it", "connect-mailbox", "findings", "limits"].map((leaf) => ({ path: `tools/email/${leaf}` })) },
+      ...["tools/website", "tools/forensics", "tools/detection-repair", "tools/bitcoin"].map(toolNode),
+    ],
   },
   {
     title: "Code security",
@@ -109,7 +112,7 @@ const SOURCES: Record<string, string[]> = {
   "getting-started/run-locally": ["README.md", "docs/api.md"],
   "getting-started/hosted-service": ["docs/hosted.md"],
   "getting-started/troubleshooting": ["docs/modules/*.md", "docs/claude-plugin.md"],
-  "tools/email": ["docs/modules/mail.md"],
+  "tools/email": ["docs/modules/mail.md", "docs/adr/0009-mailbox-connector.md"],
   "tools/website": ["docs/modules/webcheck.md"],
   "tools/forensics": ["docs/modules/forensics.md", "docs/research/linkfile-benchmark.md"],
   "tools/detection-repair": ["docs/modules/detect.md"],
@@ -151,13 +154,13 @@ function typeOf(path: string): PageMeta["type"] {
   const exact = TYPES[path];
   if (exact) return exact;
   const leaf = path.split("/").pop();
-  if (leaf === "using-it" || leaf === "install-and-cli" || leaf === "configuration" || leaf === "ci-and-pre-commit" || leaf === "install") return "how-to";
+  if (leaf === "using-it" || leaf === "connect-mailbox" || leaf === "install-and-cli" || leaf === "configuration" || leaf === "ci-and-pre-commit" || leaf === "install") return "how-to";
   if (leaf === "findings" || leaf === "commands-and-skills") return "reference";
   return "explanation";
 }
 
 /** The date the content was last checked against the repository docs it summarizes. Update it with the content. */
-export const DOCS_REVIEWED = "2026-10-22";
+export const DOCS_REVIEWED = "2026-10-23";
 
 export function metaOf(path: string): PageMeta {
   const root = path.split("/").slice(0, 2).join("/");

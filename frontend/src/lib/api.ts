@@ -11,6 +11,13 @@ import type {
   HistoryEntry,
   HistoryPage,
   MailOptions,
+  MailboxAppSettings,
+  MailboxDisconnect,
+  MailboxProvider,
+  MailboxProviderStatus,
+  MailboxSearch,
+  MailboxSearchBody,
+  MailboxStatus,
   Me,
   Providers,
   MailReport,
@@ -314,6 +321,26 @@ export const api = {
     const query = params.toString();
     return request<MailReport>(`/api/mail/analyze${query ? `?${query}` : ""}`, { method: "POST", body: form });
   },
+
+  // Local mode only: the hosted service has no such routes (ADR 0009).
+  mailboxStatus: () => request<MailboxStatus>("/api/mail/mailbox/status"),
+  mailboxConfigure: (provider: MailboxProvider, settings: MailboxAppSettings) =>
+    request<MailboxProviderStatus>(`/api/mail/mailbox/${provider}/config`, { method: "PUT", body: JSON.stringify(settings) }),
+  /** The user's click is the opt-in: the body says the network notice was shown. */
+  mailboxStart: (provider: MailboxProvider) =>
+    post<{ authorize_url: string; expires_in: number }>(`/api/mail/mailbox/${provider}/start`, { acknowledge_network: true }),
+  mailboxCallback: (body: { state: string; code: string | null; error: string | null }) =>
+    post<MailboxProviderStatus>("/api/mail/mailbox/callback", body),
+  mailboxSearch: (provider: MailboxProvider, body: MailboxSearchBody) =>
+    post<MailboxSearch>(`/api/mail/mailbox/${provider}/search`, { page_token: null, ...body }),
+  mailboxCheck: (provider: MailboxProvider, messageId: string, options: MailOptions) =>
+    post<MailReport>(`/api/mail/mailbox/${provider}/check`, {
+      message_id: messageId,
+      protected_domains: options.protectedDomains,
+      trusted_authserv_id: options.trustedAuthservId,
+    }),
+  mailboxDisconnect: (provider: MailboxProvider, forgetApp: boolean) =>
+    request<MailboxDisconnect>(`/api/mail/mailbox/${provider}${forgetApp ? "?forget_app=true" : ""}`, { method: "DELETE" }),
 
   bitcoinScan: (addresses: string[], lookupChain: boolean, testnet: PublicTestnet) =>
     post<ScanResult>("/api/bitcoin/scan", { addresses, lookup_chain: lookupChain, testnet }),

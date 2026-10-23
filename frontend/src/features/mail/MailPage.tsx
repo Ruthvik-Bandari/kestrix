@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMutation } from "@tanstack/react-query";
 import { useState, type SubmitEvent } from "react";
+import { useSearchParams } from "react-router";
 import { DataNote } from "../../components/DataNote";
 import {
   FailedRequest,
@@ -12,14 +13,19 @@ import {
   ToolLayout,
 } from "../../components/report";
 import { ReportOutline, stageOf, Workspace } from "../../components/toolframe";
+import { Tabs } from "../../components/Tabs";
 import { Button, Disclosure, Field } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatBytes } from "../../lib/format";
-import type { MailOptions } from "../../lib/types";
+import { isHosted } from "../../lib/mode";
+import type { MailOptions, MailboxProvider } from "../../lib/types";
 import { maxMessageBytes } from "../../lib/limits";
 import { outlines } from "../tools/frame";
 import { ToolFrame } from "../tools/ToolHeader";
+import { MailboxPanel } from "./MailboxPanel";
 import { MailReportView } from "./MailReportView";
+
+type Source = "file" | "mailbox";
 
 /** The server's message cap: 25 MB locally, 10 MB on the hosted service. */
 export function maxMessage(): number {
@@ -67,6 +73,10 @@ function HelpColumns() {
 }
 
 export default function MailPage() {
+  const [params] = useSearchParams();
+  // The mailbox connector exists only on a local server (ADR 0009); the hosted service never shows it.
+  const connector = !isHosted();
+  const [source, setSource] = useState<Source>(connector && params.has("mailbox") ? "mailbox" : "file");
   const [file, setFile] = useState<File | null>(null);
   const [domains, setDomains] = useState("");
   const [authservId, setAuthservId] = useState("");
@@ -75,8 +85,14 @@ export default function MailPage() {
     mutationFn: ({ message, options }: { message: File; options: MailOptions }) => api.analyzeMail(message, options),
   });
 
+  const check = useMutation({
+    mutationFn: ({ provider, id }: { provider: MailboxProvider; id: string }) =>
+      api.mailboxCheck(provider, id, { protectedDomains: parseDomains(domains), trustedAuthservId: authservId.trim() || null }),
+  });
+
   function choose(next: File) {
     analyze.reset();
+    check.reset();
     const limit = maxMessage();
     if (isOutlookMsg(next)) {
       setFile(null);
@@ -110,6 +126,7 @@ export default function MailPage() {
       return;
     }
     setLocalError(null);
+    check.reset();
     analyze.mutate({ message: file, options: { protectedDomains, trustedAuthservId: authservId.trim() || null } });
   }
 
@@ -118,7 +135,51 @@ export default function MailPage() {
     run();
   }
 
-  const input = (
+  const advancedOptions = (
+    <Disclosure summary="Advanced options">
+        <div className="space-y-4">
+          <Field
+            htmlFor="mail-protected"
+            label="Protected domains"
+            optional
+            hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
+          >
+            <input
+              id="mail-protected"
+              className="field font-mono"
+              type="text"
+              spellCheck={false}
+              autoComplete="off"
+              value={domains}
+              onChange={(e) => {
+                setDomains(e.target.value);
+              }}
+              placeholder="example-bank.com, example.com"
+            />
+          </Field>
+          <Field
+            htmlFor="mail-authserv"
+            label="Trusted authserv-id"
+            optional
+            hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
+          >
+            <input
+              id="mail-authserv"
+              className="field font-mono"
+              type="text"
+              spellCheck={false}
+              autoComplete="off"
+              value={authservId}
+              onChange={(e) => {
+                setAuthservId(e.target.value);
+              }}
+            />
+          </Field>
+        </div>
+      </Disclosure>
+  );
+
+  const fileForm = (
     <form onSubmit={submit} aria-label="Check a saved email">
       <Workspace
         steps={[
@@ -150,49 +211,7 @@ export default function MailPage() {
             key: "options",
             title: "Options",
             optional: true,
-            children: (
-              <Disclosure summary="Advanced options">
-                <div className="space-y-4">
-                  <Field
-                    htmlFor="mail-protected"
-                    label="Protected domains"
-                    optional
-                    hint="Domains you care about, such as your bank or employer, separated by commas. Look-alikes of them and their names in sender names are flagged. Up to 20."
-                  >
-                    <input
-                      id="mail-protected"
-                      className="field font-mono"
-                      type="text"
-                      spellCheck={false}
-                      autoComplete="off"
-                      value={domains}
-                      onChange={(e) => {
-                        setDomains(e.target.value);
-                      }}
-                      placeholder="example-bank.com, example.com"
-                    />
-                  </Field>
-                  <Field
-                    htmlFor="mail-authserv"
-                    label="Trusted authserv-id"
-                    optional
-                    hint="Your mail provider's name in the Authentication-Results header, for example mx.google.com. Leave empty to trust the topmost header."
-                  >
-                    <input
-                      id="mail-authserv"
-                      className="field font-mono"
-                      type="text"
-                      spellCheck={false}
-                      autoComplete="off"
-                      value={authservId}
-                      onChange={(e) => {
-                        setAuthservId(e.target.value);
-                      }}
-                    />
-                  </Field>
-                </div>
-              </Disclosure>
-            ),
+            children: advancedOptions,
           },
           {
             key: "run",
@@ -212,25 +231,62 @@ export default function MailPage() {
     </form>
   );
 
-  const stage = stageOf({ ready: file !== null, pending: analyze.isPending, failed: analyze.isError, done: Boolean(analyze.data) });
+  const mailboxPanel = (
+    <MailboxPanel
+      checking={check.isPending ? check.variables.id : null}
+      advanced={advancedOptions}
+      initialProvider={params.get("mailbox") === "outlook" ? "outlook" : "gmail"}
+      onCheck={(provider, id) => {
+        analyze.reset();
+        check.mutate({ provider, id });
+      }}
+    />
+  );
+  const input = connector ? (
+    <Tabs
+      label="Where the message comes from"
+      value={source}
+      onChange={(next) => {
+        setSource(next);
+      }}
+      items={[
+        { key: "file", label: "Upload a file" },
+        { key: "mailbox", label: "Check from your mailbox" },
+      ]}
+    >
+      {source === "file" ? fileForm : mailboxPanel}
+    </Tabs>
+  ) : (
+    fileForm
+  );
+
+  const pending = analyze.isPending || check.isPending;
+  const failed = analyze.isError || check.isError;
+  const report = analyze.data ?? check.data;
+  const stage = stageOf({ ready: file !== null || source === "mailbox", pending, failed, done: Boolean(report) });
 
   return (
     <ToolFrame page="mail">
       <ToolLayout input={input} stage={stage}>
         <LiveStatus
-          pending={analyze.isPending}
-          done={analyze.isSuccess}
+          pending={pending}
+          done={analyze.isSuccess || check.isSuccess}
           pendingText="Checking the message…"
           doneText="Check finished. The result is below."
         />
-        {analyze.isPending ? (
+        {pending ? (
           <PendingPanel title="Checking the message">
-            Reading the headers, sender, links and attachments. Links are not visited and attachments are not opened.
+            {check.isPending ? "Fetching the message from your mailbox, then reading " : "Reading "}the headers, sender, links and
+            attachments. Links are not visited and attachments are not opened.
           </PendingPanel>
+        ) : check.isError ? (
+          <FailedRequest error={check.error} onRetry={() => {
+            check.mutate(check.variables);
+          }} />
         ) : analyze.isError ? (
           <FailedRequest error={analyze.error} onRetry={run} />
-        ) : analyze.data ? (
-          <MailReportView report={analyze.data} />
+        ) : report ? (
+          <MailReportView report={report} />
         ) : (
           <ReportOutline sections={outlines.mail}>
             <HelpColumns />

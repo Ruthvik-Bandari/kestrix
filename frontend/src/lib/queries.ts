@@ -10,6 +10,7 @@ export const keys = {
   engine: ["detect", "engine"] as const,
   cases: ["detect", "cases"] as const,
   migration: (type: string) => ["bitcoin", "migration", type] as const,
+  mailbox: ["mail", "mailbox"] as const,
   me: ["auth", "me"] as const,
   providers: ["auth", "providers"] as const,
   history: ["history"] as const,

@@ -6,7 +6,7 @@ It is a set of heuristics, not a classifier. A `clean` verdict means none of the
 
 ## Privacy
 
-Analysis runs entirely on your machine. Nothing is sent anywhere: links are never visited or resolved, HTML is never rendered and scripts in it are skipped, and attachments are never opened, executed or extracted. The report holds reason codes, hosts, the header values needed to explain a finding, file names and hashes. It never holds the message body, link text or attachment bytes, with one exception: an `intent` finding's evidence is the short cue phrase that matched (at most 60 characters), such as `wire transfer`.
+Analysis runs entirely on your machine. Nothing is sent anywhere (the optional [mailbox connector](#mailbox-connector-local-mode-only) fetches a message you pick from your own mailbox first, and only then): links are never visited or resolved, HTML is never rendered and scripts in it are skipped, and attachments are never opened, executed or extracted. The report holds reason codes, hosts, the header values needed to explain a finding, file names and hashes. It never holds the message body, link text or attachment bytes, with one exception: an `intent` finding's evidence is the short cue phrase that matched (at most 60 characters), such as `wire transfer`.
 
 ## Commands
 
@@ -188,6 +188,25 @@ The file goes only to the Kestrix server on this computer (`POST /api/mail/analy
 - the raw JSON report, which can be copied or downloaded.
 
 Files over 25 MiB and more than 20 protected domains are refused in the browser before anything is sent. Server errors show their `reason` and `detail`. All message-derived values are rendered as plain text.
+
+## Mailbox connector (local mode only)
+
+On a local dashboard (`kestrix dashboard`) the **Email check** page has a second tab, **Check from your mailbox**, that lists messages from your Gmail or Microsoft 365 / Outlook.com mailbox so you can pick single messages to check. There is no bulk scan: nothing is read except what you search for and the messages you press **Check** on. It is [ADR 0009](../adr/0009-mailbox-connector.md); the setup steps are in the docs page "Connect Gmail or Outlook (local)" (`/docs/tools/email/connect-mailbox` in the dashboard).
+
+- **It is read-only.** The only scopes are Gmail `gmail.readonly` and Microsoft Graph delegated `Mail.Read` (plus `offline_access`, `openid`, `profile` for the refresh token and the account label). Every mail call is a `GET`. Kestrix never labels, moves, marks as read, sends or deletes.
+- **You bring your own app.** Register a Google OAuth client of type Desktop app (publishing status Testing) or a Microsoft Entra public-client app, then give Kestrix its client ID (and for Google its client secret) with `kestrix mail connect` or the dashboard. Kestrix ships no credentials.
+- **What is kept.** The refresh token and the app settings, in the `0600` `secrets.json`. Access tokens stay in memory. The message list is shown in the page only. A checked message's raw MIME is fetched into memory, analyzed and dropped; the normal report goes to Recent results like any check (its list summary holds the verdict and finding count, no subject or address).
+- **What it contacts.** Only `accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `login.microsoftonline.com` and `graph.microsoft.com` over HTTPS, after you press a connect button. Redirects are refused, answers are size-capped, and every request passes `netguard`.
+- **Hosted service.** Not available there: the routes do not exist and the page does not show the tab.
+
+| Command | What it does |
+| --- | --- |
+| `kestrix mail connect gmail --client-id ID [--client-secret S]` | Saves your app settings, then opens Google's sign-in in your browser and waits for the redirect on a one-shot `127.0.0.1` port (RFC 8252). The secret can also come from `KESTRIX_MAIL_CLIENT_SECRET`. |
+| `kestrix mail connect outlook --client-id GUID [--tenant T]` | The same for Microsoft. The tenant is `common` unless you pass `organizations`, `consumers` or a tenant ID or domain. |
+| `kestrix mail disconnect gmail\|outlook [--forget-app]` | Revokes at Google (Microsoft has no revoke call for this sign-in) and deletes the saved sign-in; `--forget-app` also deletes the client ID and secret. |
+| `kestrix mail status` | Which providers are configured or connected. Prints no secrets. |
+
+Explicit outcomes: `mailbox_not_configured`, `mailbox_not_connected` and `mailbox_reconnect_required` (HTTP 409; the saved sign-in was revoked, expired or, for a Google app in Testing status, passed its 7 days), `rate_limited` (429 with the provider's `Retry-After`), `target_unreachable` (no network), `input_too_large` (message over 25 MiB) and `upstream_error`. Routes: [`docs/api.md`](../api.md#mailbox-connector-local-mode-only).
 
 ## Limits
 

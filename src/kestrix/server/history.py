@@ -51,6 +51,8 @@ NONCE_BYTES = 12
 # The analysis routes whose successful responses are recorded, and their tool ids.
 TOOLS = {
     "/api/mail/analyze": "mail",
+    "/api/mail/mailbox/gmail/check": "mail",
+    "/api/mail/mailbox/outlook/check": "mail",
     "/api/webcheck": "webcheck",
     "/api/forensics/file": "forensics_file",
     "/api/forensics/url": "forensics_url",

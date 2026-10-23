@@ -14,6 +14,7 @@ const Detect = lazy(() => import("../features/detect/DetectPage"));
 const Webcheck = lazy(() => import("../features/webcheck/WebcheckPage"));
 const Forensics = lazy(() => import("../features/forensics/ForensicsPage"));
 const Mail = lazy(() => import("../features/mail/MailPage"));
+const MailConnect = lazy(() => import("../features/mail/MailConnectPage"));
 const Bitcoin = lazy(() => import("../features/bitcoin/BitcoinPage"));
 const Migration = lazy(() => import("../features/bitcoin/MigrationPage"));
 const Settings = lazy(() => import("../features/settings/SettingsPage"));
@@ -111,6 +112,8 @@ export function createRoutes(): RouteObject[] {
         { path: "webcheck", Component: Webcheck },
         { path: "forensics", Component: Forensics },
         { path: "mail", Component: Mail },
+        // Where Google or Microsoft returns the browser after sign-in; the mailbox connector is local only (ADR 0009).
+        { path: "mail/connect", Component: MailConnect },
         { path: "bitcoin", Component: Bitcoin },
         { path: "bitcoin/migration/:addressType", Component: Migration },
         ...shared,

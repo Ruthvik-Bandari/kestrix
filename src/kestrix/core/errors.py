@@ -50,6 +50,10 @@ class Reason(TextEnum):
     RATE_LIMITED = "rate_limited"
     BUSY = "busy"
     ANALYSIS_TIMEOUT = "analysis_timeout"
+    # Local mailbox connector (ADR 0009)
+    MAILBOX_NOT_CONFIGURED = "mailbox_not_configured"
+    MAILBOX_NOT_CONNECTED = "mailbox_not_connected"
+    MAILBOX_RECONNECT_REQUIRED = "mailbox_reconnect_required"
 
 
 class Rejected(Exception):
@@ -59,3 +63,11 @@ class Rejected(Exception):
         super().__init__(f"{reason}: {detail}")
         self.reason = reason
         self.detail = detail
+
+
+class RateLimited(Rejected):
+    """A provider answered 429 (or a quota error); ``retry_after`` is the seconds it asked us to wait."""
+
+    def __init__(self, detail: str, retry_after: int) -> None:
+        super().__init__(Reason.RATE_LIMITED, detail)
+        self.retry_after = retry_after

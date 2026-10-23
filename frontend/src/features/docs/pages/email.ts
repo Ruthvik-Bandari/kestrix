@@ -10,7 +10,7 @@ import { LIMITS_NAV, ref, toolOverview } from "./helpers";
 const BASE = "tools/email";
 
 export const emailPages: DocPage[] = [
-  toolOverview("mail", BASE, [`${BASE}/how-it-works`, `${BASE}/using-it`, `${BASE}/findings`, `${BASE}/limits`]),
+  toolOverview("mail", BASE, [`${BASE}/how-it-works`, `${BASE}/using-it`, `${BASE}/connect-mailbox`, `${BASE}/findings`, `${BASE}/limits`]),
   {
     path: `${BASE}/how-it-works`,
     title: "Email check: how it works",
@@ -120,6 +120,108 @@ export const emailPages: DocPage[] = [
         ),
         p("The report holds reason codes, hosts, the header values needed to explain a finding, file names and hashes. It never holds the message body, link text or attachment bytes, with one exception: an `intent` finding's evidence is the short cue phrase that matched, at most 60 characters."),
         see("Every finding id", `${BASE}/findings`),
+      ),
+    ],
+  },
+  {
+    path: `${BASE}/connect-mailbox`,
+    title: "Connect Gmail or Outlook (local)",
+    nav: "Connect a mailbox",
+    summary: "Local mode only: register your own app at Google or Microsoft, connect it, pick single messages to check, and revoke access.",
+    sections: [
+      section(
+        "What this does",
+        p("On your own computer, the Email check page can list messages from your Gmail or Microsoft 365 / Outlook.com mailbox so you can pick single messages to check. You search or browse, and press Check on one message at a time. There is no bulk scan, and Kestrix never changes your mail."),
+        note("Local mode only. The hosted service has no mailbox connector: its routes do not exist and its Email check page has no mailbox tab. Reading Gmail is a Google restricted scope, so a public app would need Google's verification and a security assessment. That is why you bring your own app registration.", "caution"),
+        list(
+          "Read-only: Gmail `gmail.readonly`, Microsoft Graph delegated `Mail.Read` (with `offline_access`, `openid` and `profile` for the refresh token and the account name).",
+          "Kestrix contacts only `accounts.google.com`, `oauth2.googleapis.com` and `gmail.googleapis.com` for Gmail, and `login.microsoftonline.com` and `graph.microsoft.com` for Microsoft, from your computer, and only after you press a connect button.",
+        ),
+      ),
+      section(
+        "Google: register an app for Gmail",
+        p("You need a Google account and a Google Cloud project (any project you own). These steps follow Google's guides for enabling an API, configuring the consent screen and creating a Desktop app client; Google renames menu items now and then, so match them by meaning."),
+        steps(
+          "In the Google Cloud console, open the navigation menu, then APIs & Services, then Library, then Google Workspace, choose Gmail API and select Enable.",
+          "Open Menu, then Google Auth platform, then Branding. Enter an App name and a User support email, choose the user type External, add your email as the contact address, agree to the Google API Services User Data Policy and select Create.",
+          "Open Audience. Leave the publishing status as Testing. Under Test users select Add users, enter your own Gmail address (and anyone else who will use your copy, up to 100) and select Save. Only test users can sign in to an app in Testing status.",
+          "Open Data Access, select Add or Remove Scopes, add the Gmail API scope `https://www.googleapis.com/auth/gmail.readonly` and select Save.",
+          "Open Clients and select Create Client. Set Application type to Desktop app, give it a name and select Create.",
+          "Copy the Client ID and the Client secret that Google shows for the new client. Google issues a secret for Desktop clients, and Kestrix sends it when you provide one. It is not confidential for an installed app, but treat it as private anyway.",
+        ),
+        note("A Google app in Testing status issues refresh tokens that expire after 7 days. You will connect again about once a week. Google also expires a token that has not been used for six months and one that you or an administrator revoked.", "info"),
+      ),
+      section(
+        "Microsoft: register an app for Outlook",
+        p("You need a Microsoft account. For a work or school mailbox you need permission to register apps in your tenant; if you cannot, ask your administrator. These steps follow Microsoft's guides for registering an app and adding a redirect URI."),
+        steps(
+          "Sign in to the Microsoft Entra admin center, browse to Entra ID, then App registrations, and select New registration.",
+          "Enter a Name. Under Supported account types choose Any Entra ID Tenant + Personal Microsoft accounts to use both work or school and personal mailboxes with the default tenant `common`, or Single tenant only for one organization (then pass your tenant ID to Kestrix). Select Register.",
+          "On the Overview page copy the Application (client) ID. It is a GUID.",
+          "Under Manage select Authentication, then Add Redirect URI, then the Mobile and desktop applications tile. Under Custom redirect URIs enter `http://localhost/mail/connect` and select Configure. The portal does not accept `http://127.0.0.1` here, and Microsoft ignores the port when it matches a `localhost` address, so this one entry covers every port.",
+          "Still under Authentication, open Settings and set Allow public client flows to Yes if it is not already. A public client sends no secret.",
+          "Under Manage select API permissions, then Add a permission, Microsoft Graph, Delegated permissions, and add `Mail.Read`. Some organizations stop users from consenting to apps; if sign-in asks for administrator approval, an administrator must approve `Mail.Read` for your app.",
+        ),
+      ),
+      section(
+        "Connect",
+        steps(
+          "Start the dashboard with `kestrix dashboard` and open Email check. For Outlook, open the dashboard at `http://localhost:8765` rather than `127.0.0.1`: Microsoft accepts only the `localhost` form. Gmail works with either.",
+          "Choose Check from your mailbox and your provider. Enter the client ID (and for Gmail the client secret, for Outlook the tenant if it is not `common`) and select Save app settings. The values go into your `0600` `secrets.json`, never into a log, a report or a response.",
+          "Read the notice, which says which hosts the dashboard will contact, then select Connect. Your browser opens the Google or Microsoft sign-in. Sign in with an account that is a test user (Google) or allowed by your registration (Microsoft) and approve the read-only access.",
+          "The browser returns to Kestrix, which finishes the sign-in on your computer and shows Connected as your address.",
+        ),
+        p("The command line does the same: `kestrix mail connect gmail --client-id ID` (add `--client-secret`, or set `KESTRIX_MAIL_CLIENT_SECRET` so it stays out of your shell history) or `kestrix mail connect outlook --client-id GUID [--tenant T]`. It opens your browser and waits on a one-shot `127.0.0.1` port; the same `http://localhost/mail/connect` redirect URI covers it."),
+        p("Google's consent screen shows an unverified-app warning for an app in Testing status. That is expected for your own app."),
+      ),
+      section(
+        "Pick and check messages",
+        steps(
+          "Type a search and choose Inbox, Junk or spam, or All mail, then select Search (or Show messages with an empty search). Gmail takes Gmail search words such as `from:bank.example newer_than:7d`; Outlook takes plain words matched against the sender, subject and body.",
+          "Each row shows the sender, subject, time and a preview of at most 120 characters. Use Tab or the arrow keys to reach a row's Check button. Select Show more for the next page.",
+          "Select Check on one message. Kestrix fetches its raw source into memory, runs the same offline analysis as for an uploaded file and shows the usual report. Protected domains and the authserv-id from Advanced options apply.",
+        ),
+      ),
+      section(
+        "What is kept",
+        table(
+          ["Item", "Kept?"],
+          [
+            ["The message list (sender, subject, preview)", "No. It is shown in the page and never stored or logged."],
+            ["The message source", "No. It is analyzed in memory and dropped."],
+            ["The report", "Yes, like any check, in Recent results for 30 days if history is on. The list summary holds the verdict and the number of findings, not the subject or the address."],
+            ["The refresh token and your app's client ID and secret", "Yes, in the `0600` `secrets.json`, until you disconnect (the app settings until you also forget them)."],
+            ["Access tokens", "In memory only, for under an hour."],
+          ],
+        ),
+      ),
+      section(
+        "Revoke access",
+        list(
+          "`kestrix mail disconnect gmail` or the Disconnect button revokes the token at Google and deletes it here. If Google could not be reached, the local copy is still deleted and Kestrix says so; remove the app at `https://myaccount.google.com/permissions`.",
+          "`kestrix mail disconnect outlook` deletes the token here. Microsoft has no revoke call for this sign-in, so to remove access completely, remove the app at `https://myapps.microsoft.com` (work or school account) or `https://account.live.com/consent/Manage` (personal account).",
+          "Add `--forget-app` to also delete the stored client ID and secret.",
+        ),
+      ),
+      section(
+        "Troubleshooting",
+        table(
+          ["What you see", "What to do"],
+          [
+            ["`redirect_uri_mismatch` at Google", "Use a Desktop app client, not a Web application client. Desktop clients accept any `127.0.0.1` or `localhost` port."],
+            ["Google: this app is blocked, or access denied", "Add your Google address under Audience, Test users. An app in Testing status accepts only listed test users."],
+            ["`AADSTS50011` at Microsoft (reply URL does not match)", "Register `http://localhost/mail/connect` as a Mobile and desktop applications redirect URI, and open the dashboard at `http://localhost:8765`, not `127.0.0.1`."],
+            ["`AADSTS65001` or an administrator-approval screen", "Your organization restricts user consent. Ask an administrator to approve `Mail.Read` for your app."],
+            ["`mailbox_reconnect_required`", "The saved sign-in was revoked or expired (for a Google app in Testing status: after 7 days). Select Connect again."],
+            ["`The Gmail API is not enabled`", "Enable the Gmail API in the same Google Cloud project as your client."],
+            ["`rate_limited`", "The provider asked you to wait; the message says for how long."],
+            ["`target_unreachable`", "Kestrix could not reach the provider. Check your connection or proxy."],
+            ["`input_too_large`", "The message is over 25 MiB. Download it from your mail client and check it with a file only if you must."],
+            ["No refresh token was issued", "Remove Kestrix's access at your Google or Microsoft account's app permissions page and connect again."],
+          ],
+        ),
+        see("What the email check can and cannot see", `${BASE}/limits`),
+        see("Where the connector fits in data handling", "security/data-handling"),
       ),
     ],
   },

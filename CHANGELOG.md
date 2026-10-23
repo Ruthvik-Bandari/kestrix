@@ -6,6 +6,14 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Mailbox connector (local mode only)** ([ADR 0009](docs/adr/0009-mailbox-connector.md)). The Email check page gains a
+  **Check from your mailbox** tab: connect Gmail (`gmail.readonly`) or Microsoft 365 / Outlook.com (`Mail.Read`) with
+  your own OAuth app, search or browse, and check single messages you pick; the report is the normal one and nothing
+  but it (and the usual history summary) is kept. New commands `kestrix mail connect|disconnect|status`; new routes
+  under `/api/mail/mailbox` (local only; the hosted service answers 404); new reason codes `mailbox_not_configured`,
+  `mailbox_not_connected` and `mailbox_reconnect_required`; new docs page "Connect Gmail or Outlook (local)".
+  Read-only, five fixed provider hosts, refresh token in the `0600` `secrets.json`. Tested only against mock
+  providers.
 - **Website check: announced software versions.** The check reads the versions a response announces (`Server`,
   `X-Powered-By`, `Via`, `X-AspNet-Version`, `X-AspNetMvc-Version`, `X-Generator`, `<meta name="generator">`) and
   compares them with a bundled offline data file of vendor end-of-life dates and critical advisories
