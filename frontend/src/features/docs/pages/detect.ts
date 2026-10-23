@@ -206,13 +206,33 @@ export const detectPages: DocPage[] = [
     path: `${BASE}/limits`,
     title: "Detection repair: limits and measured accuracy",
     nav: LIMITS_NAV,
-    summary: "What a repair does and does not prove. No repair success rate has been measured.",
+    summary: "What a repair does and does not prove, and the measured results of the shipped repair on a small benchmark.",
     sections: [
       ref("detect", "Limits"),
       section(
         "Measured accuracy",
-        p("Not measured. Only the baseline (B0) ships. The 11 bundled cases are synthetic and are unit-level demonstrations of each path through the workflow, so they say nothing about real telemetry. The engine tests check that each case reaches its expected outcome; that is a correctness check, not an accuracy figure."),
-        note("The research plan's later stages (retrieval, model-based proposals, fine-tuning) are not implemented in this package, and the plan's targets are goals, not measured results.", "caution"),
+        p("Measured on a small, partly synthetic benchmark: faults injected into public SigmaHQ process-creation rules, replayed on the pinned Elasticsearch against recorded Windows Sysmon events. It is exploratory and says nothing about your telemetry. The shipped repair is the deterministic generator (B0). The locked test was run once, on 2026-10-18, on 54 cases from 14 rule roots, and is spent."),
+        table(
+          ["System", "Validated success", "Outcome match", "Weakened rules"],
+          [
+            ["B0, deterministic (shipped)", "0.630", "0.982", "0"],
+            ["B1, retrieval", "0.630", "0.982", "0"],
+            ["B2, unmodified 7B model", "0.556", "0.741", "3"],
+            ["M1, LoRA fine-tune, three seeds", "0.630 each", "0.944 / 0.963 / 0.944", "0"],
+          ],
+        ),
+        list(
+          "The best possible validated success is 0.648, because a rule with only one recorded attack has nothing left to validate a repair on, so its repair is provisional. B0 reached 0.971 of the cases that can be proven, with 0.000 wrong changes and 0.018 abstained.",
+          "No learned system beat the deterministic baseline, so none ships. B2 is the only system measurably worse: 0.074 lower, with a 95% interval of -0.135 to -0.018.",
+          "By fault kind, B0 left healthy rules unchanged and reported missing telemetry in every case (1.00), repaired logic faults 0.31 of the time and mapping faults 0.31, and natural faults 0.00. The low logic and mapping rates are provisional repairs, not wrong ones.",
+          "Rule coverage: 997 of 1,182 SigmaHQ process-creation rules (84%) are in the supported subset, and the other 185 (16%) get `unsupported`. Replay matched SigmaHQ's declared match count for 83 of 83 rules, with 0 engine errors.",
+        ),
+        p("Every number, with its source file and the development results, is in `docs/benchmarks/detect.md` in the repository."),
+      ),
+      section(
+        "What is not claimed",
+        p("Not measured: results on real production rules or telemetry, on log sources other than Windows Sysmon process creation, how often an analyst accepts a proposed repair, or review time saved. Natural faults, which are maintainer fixes mined from SigmaHQ history, are few (13 cases) and no system repaired any of them, so nothing is claimed for real-world rule drift. The labels are AI-assisted; the human check was waived. The 11 bundled cases are synthetic demonstrations of each path through the workflow, and the engine tests check that each reaches its expected outcome, which is a correctness check and not an accuracy figure."),
+        note("The research plan's later stages (ranker, preference optimization, distillation) are not implemented, and the plan's targets are goals, not measured results.", "caution"),
       ),
     ],
   },

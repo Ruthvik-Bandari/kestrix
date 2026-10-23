@@ -317,6 +317,8 @@ describe("measured accuracy", () => {
     "modules/forensics.md",
     "research/linkfile-benchmark.md",
     "benchmarks/cvefixes.md",
+    "benchmarks/detect.md",
+    "benchmarks/bitcoin.md",
     "claude-plugin.md",
   ]
     .map(doc)

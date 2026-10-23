@@ -152,12 +152,26 @@ export const bitcoinPages: DocPage[] = [
     path: `${BASE}/limits`,
     title: "Bitcoin quantum risk: limits and measured accuracy",
     nav: LIMITS_NAV,
-    summary: "What the quantum-risk check does not claim, what was tested, and what was not carried over from BitShield.",
+    summary: "What the quantum-risk check does not claim, how it was tested against official vectors, and what was not carried over from BitShield.",
     sections: [
       ref("bitcoin", "Limits"),
       section(
         "Measured accuracy",
-        p("Not measured as an accuracy figure. The risk rating is a fixed rule by address type, not a statistical estimate. The address decoders are tested against the BIP-173 and BIP-350 test vectors."),
+        p("Not measured as an accuracy rate. The risk rating is a fixed rule by address type, not a statistical estimate, so there is no error rate to report. What was measured is correctness, offline, on 466 cases, and all 466 pass (100%). The evaluation found no bug."),
+        table(
+          ["Cases", "What they test", "Passed"],
+          [
+            ["238 official vectors", "Bitcoin Core's base58 and address lists, BIP-173 and BIP-350 Bech32 and Bech32m strings and segwit addresses, and the BIP-341 Taproot output keys. Every valid address gets the right type, network and payload; every invalid address and every WIF private key is refused.", "238 of 238"],
+            ["158 generated cases", "100 P2SH addresses built from BIP-13's version bytes 5 and 196 (BIP-13 publishes no vectors), and 58 raw secp256k1 public keys, valid and invalid.", "158 of 158"],
+            ["70 synthetic cases", "The rating for every address type and spend-history state, including the `unknown` cases; which addresses a scan looks up; and how three kinds of spend-history response are rated.", "70 of 70"],
+          ],
+        ),
+        list(
+          "P2PK is `critical` and `exposed`. P2TR is `high` and `exposed`. P2PKH, P2WPKH, P2SH and P2WSH are `unknown` without a spend history, `low` if never spent from and `high` if spent from.",
+          "Kestrix refuses a segwit address of an undefined type (version 1 with a program that is not 32 bytes, and versions 2 to 16), which Bitcoin Core would accept as a destination. Those 8 official cases count as passed when refused.",
+        ),
+        p("Vectors come from Bitcoin Core (MIT) and the BIPs (BSD-2-Clause and BSD-3-Clause). Per-category results, sources and licences are in `docs/benchmarks/bitcoin.md` in the repository."),
+        note("Not measured: whether real addresses have spent from themselves. That decides `low` against `high` for hash-based addresses and needs chain data, so the offline check covers the rule from spend history to rating, not the history. Also not measured: key reuse across address types, how the mempool.space lookup behaves on the live service, and the guardian's intent classification.", "caution"),
         p("No quantum computer able to break a Bitcoin key is publicly known to exist, and estimates of when one might are uncertain, so the module reports exposure, not attack timelines."),
       ),
       section(

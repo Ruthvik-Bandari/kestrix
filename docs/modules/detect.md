@@ -19,6 +19,7 @@ The rest of this page is reference material. Source files are under [`src/kestri
 - [Report and evidence JSON](#report-and-evidence-json)
 - [Bundled cases](#bundled-cases)
 - [Worked example](#worked-example)
+- [Measured accuracy](#measured-accuracy)
 - [Research roadmap (not yet implemented)](#research-roadmap-not-yet-implemented)
 
 ## Quick start
@@ -403,6 +404,27 @@ The exit code was 0. Reading the output line by line:
 
 Add `--json` to see the full report, or `--evidence-dir ./evidence` to keep a hashed copy.
 
+## Measured accuracy
+
+Measured on a small, partly synthetic benchmark of faults injected into public SigmaHQ rules and replayed on the pinned Elasticsearch against recorded Sysmon events. It is exploratory and says nothing about your telemetry. Every number below comes from a committed report, listed with its source in [`docs/benchmarks/detect.md`](../benchmarks/detect.md).
+
+**Locked test, run once on 2026-10-18 (54 cases, 14 rule roots).** The shipped B0 repaired 0.630 of the cases with full validation, where the best possible is 0.648 (35 of 54 cases can be proven; a rule with one recorded attack has nothing left to validate a repair on, so its repair is provisional). That is 0.971 of the provable cases, with outcome match 0.982, 0.018 abstained, 0.000 wrong changes and no weakened rule.
+
+| System | Validated success | Outcome match | Weakened rules |
+| --- | --- | --- | --- |
+| B0, deterministic (shipped) | 0.630 | 0.982 | 0 |
+| B1, retrieval (recommended research baseline) | 0.630 | 0.982 | 0 |
+| B2, unmodified 7B model | 0.556 | 0.741 | 3 |
+| M1, LoRA fine-tune (3 seeds) | 0.630 each | 0.944 / 0.963 / 0.944 | 0 |
+
+- **B1 and M1 tie B0.** B2 is 0.074 worse (95% CI -0.135 to -0.018). Nothing beat the deterministic baseline, so no learned system ships ([model card](../model-card.md)).
+- **By fault kind (B0 and B1):** healthy rules left unchanged 1.00, missing telemetry reported 1.00, logic faults 0.31, mapping faults 0.31, natural faults 0.00. The low logic and mapping rates are provisional repairs, not wrong ones.
+- **Development split (44 cases):** B0 and B1 0.591; B0 weakened 3 rules there, B1 none.
+- **Natural faults** (maintainer fixes mined from SigmaHQ history; 13 cases, 4 on development): validated success is 0.00 for every system. No claim is made for real-world rule drift.
+- **Rule coverage:** 997 of 1,182 SigmaHQ process-creation rules (84%) are in the supported subset; the other 185 (16%) get `unsupported`. Replay fidelity is 83 of 83 rules matching SigmaHQ's declared match count, with 0 engine errors over 997 replayed rules.
+
+**Not published:** per-case locked-test outcomes, results on production rules or other log sources, analyst acceptance rates or review time saved, and the human check of the AI-assisted labels (waived). Sources: [`data/qc/comparison-locked-test.md`](../data/qc/comparison-locked-test.md), [`data/qc/README.md`](../data/qc/README.md), [dataset card](../data/dataset-card.md).
+
 ## Research roadmap (not yet implemented)
 
 Only B0 ships in this release. The later stages come from sections 12 and 13 of the [engineering plan](../CyberGuard_Engineering_Plan.md). They are research work planned for university HPC, and none of them exists in this package.
@@ -425,4 +447,4 @@ The plan's research question asks whether execution-supervised adaptation improv
 - Confidence intervals are bootstrapped and clustered by root or rule family.
 - If adaptation gives no credible improvement over B2, the stronger baseline ships and the negative result is reported.
 
-The plan's targets (for example, 70 percent validated repair success on eligible supported test cases) are aspirational goals, not measured results. Model outputs, when they exist, will use the same candidate envelope (`model_revision`, `prompt_sha256`) and the same acceptance policy as B0.
+The plan's targets (for example, 70 percent validated repair success on eligible supported test cases) are aspirational goals; the measured results are in [Measured accuracy](#measured-accuracy), on a smaller benchmark than the plan describes. Model outputs, when they exist, will use the same candidate envelope (`model_revision`, `prompt_sha256`) and the same acceptance policy as B0.

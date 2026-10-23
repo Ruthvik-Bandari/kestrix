@@ -135,6 +135,17 @@ kestrix bitcoin ask "check 1BoatSLRHtKNngkdXEeobR76b53LETtpyT for me"
 
 **Errors.** A missing key, or a missing `[ai]` extra, gives `ai_key_missing`. A rejected key also gives `ai_key_missing`, with a prompt to set it again. API errors, connection failures and refusals give `upstream_error`. Over HTTP these are status 503 and 502.
 
+## Measured correctness
+
+An offline evaluation, `uv run python scripts/bitcoin_eval.py`, runs 466 cases and all 466 pass (100%). Per-category results, the vector sources with their licences and the full list of what is not measured are in [`docs/benchmarks/bitcoin.md`](../benchmarks/bitcoin.md); the machine-readable report is [`bitcoin.json`](../benchmarks/bitcoin.json), and a test fails if it goes out of date.
+
+- **Official vectors (238 cases):** Bitcoin Core's base58 and address lists, BIP-173 and BIP-350 Bech32 and Bech32m, and the BIP-341 Taproot output keys. Every valid address gets the right type, network and payload, and every invalid address and every WIF private key is refused.
+- **Generated (158 cases):** 100 P2SH addresses from BIP-13's version bytes and 58 raw secp256k1 public keys, valid and invalid.
+- **Synthetic (70 cases):** the rating for every address type and spend-history state, `unknown` cases included, which addresses `scan` looks up, and how three kinds of spend-history response are rated.
+- **No bug was found**, so the module is unchanged.
+
+This is a correctness check of parsing and of the type-to-rating rule, not an accuracy rate: the rating is a fixed rule, not an estimate. **Not measured:** whether real addresses have spent from themselves (it needs chain data, and decides `low` against `high` for hash-based addresses), key reuse across address types, how the mempool.space lookup behaves on the live service, and the guardian's intent classification.
+
 ## What was not carried over from BitShield
 
 BitShield was a hackathon project with a TypeScript stack. Kestrix ports its address scanner, risk explanations, migration planner and intent classifier, and re-implements them in Python with local validation. The following BitShield features are not part of this module:

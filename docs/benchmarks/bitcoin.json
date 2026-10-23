@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "generated_by": "scripts/bitcoin_eval.py",
+  "network_used": false,
+  "cases": 466,
+  "passed": 466,
+  "categories": [
+    {
+      "id": "base58_decode",
+      "title": "Base58 decoding",
+      "source": "official: Bitcoin Core base58_encode_decode.json",
+      "cases": 21,
+      "passed": 21,
+      "failures": []
+    },
+    {
+      "id": "core_base58_addresses",
+      "title": "Base58Check P2PKH and P2SH addresses (main, test)",
+      "source": "official: Bitcoin Core key_io_valid.json",
+      "cases": 22,
+      "passed": 22,
+      "failures": []
+    },
+    {
+      "id": "core_segwit_addresses",
+      "title": "Segwit v0 and v1 addresses (P2WPKH, P2WSH, P2TR; main, test, regtest)",
+      "source": "official: Bitcoin Core key_io_valid.json",
+      "cases": 24,
+      "passed": 24,
+      "failures": []
+    },
+    {
+      "id": "core_undefined_witness",
+      "title": "Valid segwit encodings with no defined output type (v1 with a non-32-byte program, v2 to v16): must be refused",
+      "source": "official: Bitcoin Core key_io_valid.json",
+      "cases": 8,
+      "passed": 8,
+      "failures": []
+    },
+    {
+      "id": "core_wif_keys",
+      "title": "WIF private keys: must be refused as addresses",
+      "source": "official: Bitcoin Core key_io_valid.json",
+      "cases": 16,
+      "passed": 16,
+      "failures": []
+    },
+    {
+      "id": "core_invalid",
+      "title": "Invalid addresses",
+      "source": "official: Bitcoin Core key_io_invalid.json",
+      "cases": 70,
+      "passed": 70,
+      "failures": []
+    },
+    {
+      "id": "bip173_bip350_strings",
+      "title": "Bech32 and Bech32m strings (valid and invalid)",
+      "source": "official: BIP-173, BIP-350",
+      "cases": 40,
+      "passed": 40,
+      "failures": []
+    },
+    {
+      "id": "bip173_bip350_segwit_valid",
+      "title": "Valid segwit addresses decode to the published scriptPubKey",
+      "source": "official: BIP-350 (supersedes BIP-173)",
+      "cases": 8,
+      "passed": 8,
+      "failures": []
+    },
+    {
+      "id": "bip173_bip350_segwit_invalid",
+      "title": "Invalid segwit addresses",
+      "source": "official: BIP-173, BIP-350",
+      "cases": 22,
+      "passed": 22,
+      "failures": []
+    },
+    {
+      "id": "bip341_taproot",
+      "title": "Taproot addresses for the BIP-341 output keys, rated high and exposed",
+      "source": "official: BIP-341 wallet-test-vectors.json",
+      "cases": 7,
+      "passed": 7,
+      "failures": []
+    },
+    {
+      "id": "bip13_p2sh",
+      "title": "P2SH version bytes 5 and 196 give leading 3 and 2 and classify as P2SH",
+      "source": "generated from BIP-13 (no official vectors exist)",
+      "cases": 100,
+      "passed": 100,
+      "failures": []
+    },
+    {
+      "id": "raw_public_keys",
+      "title": "Raw public keys: 50 valid secp256k1 keys (25 points, both encodings) and 8 invalid keys",
+      "source": "generated (pure-Python secp256k1)",
+      "cases": 58,
+      "passed": 58,
+      "failures": []
+    },
+    {
+      "id": "risk_matrix",
+      "title": "Risk and key exposure for every address type and spend-history state, unknown cases included",
+      "source": "synthetic specification from risk.py's documented rules",
+      "cases": 63,
+      "passed": 63,
+      "failures": []
+    },
+    {
+      "id": "scan_lookup_policy",
+      "title": "scan() queries spend history only where it can change the answer, and its summary is consistent",
+      "source": "synthetic",
+      "cases": 4,
+      "passed": 4,
+      "failures": []
+    },
+    {
+      "id": "chain_interpretation_fixtures",
+      "title": "Spend-history bodies (never spent, confirmed spend, mempool-only spend) give the documented rating",
+      "source": "synthetic bodies, not chain data",
+      "cases": 3,
+      "passed": 3,
+      "failures": []
+    }
+  ],
+  "not_measured": [
+    "Whether a real address has spent from itself (needs chain data).",
+    "Whether the same key is reused across address types (needs chain data).",
+    "Any prediction of when a quantum computer could break a key."
+  ]
+}
