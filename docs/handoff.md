@@ -6,55 +6,47 @@ Maintained per session: overwrite these sections at the end of every Claude Code
 
 The tip of `main`, pushed to `origin/main` after every change. The working tree is clean after the commit that updates this file (2026-10-21).
 
-## Website and workbench redesign (2026-10-21)
+## State on 2026-10-23
 
-Implemented `docs/design/2026-10-21-redesign/` PLAN.md phases 1 to 8 on `main` (`a715b99` … the commit that updates this file):
+`main` is pushed after every change; the working tree is clean. Plugin repo `kestrix-claude-plugin` is rebuilt
+from `scripts/build_plugin_repo.py` and pushed with it. Both repos are private.
 
-- **Tokens and theme (1):** graphite, ivory and green tokens. All text pairs measured at 4.5:1 or better.
-- **Landing (2):** one landing page with the real synthetic email example, replacing the six chapters.
-- **Theme and shell (3):**
-  - OLED-black dark theme, with code rain only behind the landing hero and `/signin` (owner's choice).
-  - Grouped, full-height rail and a task-first Home.
-- **Tool pages (4–5):** email, website and file/link pages have the input beside the report.
-- **Remaining pages (6):** docs, legal, guides, detection, Bitcoin, history, settings and sign-in.
-- **Public docs (7):** hosted `/docs` pages that anyone can read without signing in.
-- **Final review (8):** a sweep across both modes.
+**Measured accuracy (each locked/held-out test run once; details in the linked docs):**
 
-**Owner rule:** use screen width efficiently. That means no page-wide wrapper card, prose about 68ch, and spare width put to work. On wide screens docs and legal pages carry an "On this page" list.
+| Area | Result | Doc |
+| --- | --- | --- |
+| Email | phishing flagged 49.4% -> 61.2%, normal mail flagged 5.0% -> 1.2%, precision 95.2% | `docs/research/mail-benchmark.md` |
+| Files | benign false alarms (medium+) 4.26% -> 0.28%; synthetic catch 90 -> 168 of 180 | `docs/research/linkfile-benchmark.md` |
+| Links | phishing at low+ 58.4% -> 83.3%, at medium+ 1.8% -> 3.6% | same |
+| Code (round 1, CVEfixes test) | Python 4.4% / JS-TS 5.6% detection at 0.29 / 0.91 FA per KLOC | `docs/benchmarks/cvefixes.md` |
+| Code (round 2, fresh test2) | 8.3% -> 9.1% overall; Bandit 10.2% Py at 4x the FAs | same |
+| Vulnerability ranker model | teacher PR-AUC 0.249 on the locked test; not shipped | `docs/research/code-vuln-ml-plan.md` |
 
-**Install copy:**
-- Nothing is on PyPI yet.
-- `uv tool install "git+…"` gives the CLI, but its dashboard bundle is empty, because `server/static` is not committed.
-- The landing page and docs show the from-source build. A local from-source install shipped 44 bundle files and served the dashboard.
+All held-out sets above are spent. New rounds need new held-out data (TREC 2007 for mail once approved; newer GHSA
+advisories for code).
 
-**Checks run on the final build:**
+**Shipped this session:** redesign phases 1-8; emerald restyle of site and app; Pillow-style docs (47 pages, search,
+Security and trust, native diagrams); README architecture diagram; whole-site website check with login probes and
+one-time-code login detection; website exposure check (EOL/known-vulnerable announced versions, PHP2Shell data);
+kestrix-scan: nine dependency ecosystems, index freshness warnings, conditional `db update`, daily CI template, wider
+install guard; mail rules round 1 + casino/spam signals; forensics round-1 rules; code round 1 and 2; hosted security
+(refresh grace window, re-auth for deletion, slow-request limits, optional shared SQLite rate limiter); strict CSP,
+deploy preflight, CI security job; accessibility pass (contrast, headings, landmarks, 44 px targets, 200% text);
+security contact ruthvik299@gmail.com; language roadmap (`docs/research/language-roadmap.md`).
 
-| Check | Result |
-| --- | --- |
-| `npm run lint` / `typecheck` / `test` / `build` | clean; 214 tests |
-| `uv run pytest` | 2547 passed, 1 skipped (RLIMIT_AS, Linux only) |
-| `uv run pytest tests/server/test_hosted_spa.py` | 20 passed |
-| Playwright sweep, both modes, every route | 0 problems, 0 console errors |
-| `uv run mypy` | 3 pre-existing errors in `guardian.py` (anthropic stub); not run again after phase 7 |
+**Cluster:** irreplaceable outputs archived to `~/kestrix-archive/20261022/kestrix-scratch-keep.tar.gz` (3.2 GB,
+SHA-256 in `SHA256SUMS`): frozen splits, locks, manifests, features, reports, logs, teacher adapters, student fp16,
+M1 adapters. `/scratch` (base models 139 GB, raw corpora) is purged 2026-11-03 and is reproducible from manifests.
 
-The Playwright sweep covered:
-- local mode: 18 routes plus saved reports;
-- hosted mode: 7 public and 11 app routes;
-- 360, 390, 768, 1024 and 1440px in light and dark;
-- 200% text, reduced motion, skip link, the anonymous `/app` redirect and the hosted detection guide having no live inputs.
+**Owner-only before going public:** deploy (domain, DNS/TLS, Google/GitHub OAuth apps, production secrets, legal
+review of `docs/legal/`, monitoring, backups, HSTS preload choice; checklist in `docs/deploy.md`); PyPI trusted
+publishing (the wheel must bundle the built dashboard); making repos public; plugin marketplace submission (icon
+missing); TREC 2007 application; the paid plugin A/B eval; check repo visibility (a gitdiagram.com diagram of the
+repo was generated).
 
-**Next action:** the owner reviews the site locally. Deployment, the PyPI release (which must ship the built bundle in the wheel) and making the repo public are separate, owner-approved steps.
-
-## Email accuracy benchmark (2026-10-21, branch `feat/mailbench`, not merged)
-
-Research package `src/kestrixmailbench/` (not in the wheel), jobs `hpc/mail_*`, tests `tests/mailbench/`, write-up `docs/research/mail-benchmark.md`, aggregates `docs/data/mail/`.
-
-- **State:** acquire, build, features (16-task array), dev-metrics and learn have run on the cluster for Nazario, SpamAssassin, Enron (20,000-message seeded sample) and a synthetic source. Dev numbers and learned candidate weights exist. **The locked test has not been run** (`hpc/mail_locked.sbatch`, claims `LOCKED_EVAL.json` once). Nothing is wired into `kestrix.mail`.
-- **Data location:** raw messages only in `/scratch/bandari.ru/kestrix/mailbench/` (0700/0600). `/scratch` is purged on the first Tuesday of each month (next **2026-11-03**); `raw/` is re-fetchable with `hpc/mail_acquire.sh` from the manifest, but `work/` and `features/` must then be rebuilt (`mail_chain.sh full`, about 30 minutes plus queue time) and the split reproduces from the seed. Aggregates are committed in `docs/data/mail/`.
-- **Code on the cluster:** synced by tar over ssh from the worktree; `~/kestrix/GIT_SHA` is untouched and `~/kestrix/MAILBENCH_SHA` records HEAD plus a hash of the synced files. `bash hpc/setup_env.sh mail` adds numpy (the `research` extra) to the CPU environment.
-- **TREC 2007:** not available yet (owner is applying); add a `Source` in `src/kestrixmailbench/sources.py`.
-- **Next action:** owner reviews `docs/research/mail-benchmark.md`, chooses the weights file(s), then the one-time locked evaluation:
-  `sbatch hpc/mail_locked.sbatch --name mail-v1 --weights <reports>/mail-weights-content.json --weights <reports>/mail-weights-content_noera.json`.
+**Commands run at the end of the session:** `uv run pytest` 3155 passed, 1 skipped (RLIMIT_AS, Linux only);
+`ruff check`, `mypy` clean; `scripts/check_claude_pack.py` 177/177; frontend lint, typecheck, 292 tests, build;
+browser sweep 390 page loads with no overflow, console errors or CSP violations.
 
 ## Completed
 
@@ -109,20 +101,5 @@ Research package `src/kestrixmailbench/` (not in the wheel), jobs `hpc/mail_*`, 
 
 ## Next action
 
-State on 2026-10-17: the full pipeline has run on corrected code (review fixes 48b5b06 and 2869a39).
-
-- Held-out development results:
-  - B0 = B1 = 0.591;
-  - M1 (3 seeds) = 0.568;
-  - B2 = 0.523;
-  - B1 and M1 never weaken a rule, while B0 and B2 weakened 3 each.
-- Recommended baseline: B1. M1 does not ship.
-- Tables: `docs/data/qc/README.md`, under "Corrected results".
-
-Next:
-
-1. **Owner:** human check of the 27 events in `/scratch/$USER/kestrix/data/review/human-check.txt`, using `review-next` and `review-label`. Run it on the login node; `review-status` must run inside a job (the login node kills it).
-2. Freeze the split: `python -m kestrixbench split --freeze` in a job. Then rerun `variants.sbatch` (it writes the natural cases too), `evaluate` for b0, b1 and b2, `sft`, and M1 seeds 1 to 3 with `m1_eval`.
-3. Locked test evaluation, once: `evaluate.sbatch <sys> --locked`, then `compare --locked`. Then finalize the dataset and model cards.
-4. Optional: enlarge the split beyond 12/12/36 using the reserve (122 roots).
-5. Owner: `/work` storage, IRB question, PyPI publishing decision.
+Gmail / Microsoft 365 read-only connector for the email check (design first: scopes, local vs hosted, Google
+restricted-scope verification for a public hosted app).
