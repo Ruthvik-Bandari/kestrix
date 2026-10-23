@@ -101,8 +101,8 @@ export function AccountMenu() {
           {(user.display_name || user.email).slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <p className="truncate font-semibold text-ink">{user.display_name || user.email}</p>
-          <p className="truncate text-ink-2">{user.email}</p>
+          <p className="font-semibold text-ink [overflow-wrap:anywhere]">{user.display_name || user.email}</p>
+          <p className="text-ink-2 [overflow-wrap:anywhere]">{user.email}</p>
           <p className="text-ink-3">Signed in with {providerName[user.provider]}</p>
         </div>
       </div>
