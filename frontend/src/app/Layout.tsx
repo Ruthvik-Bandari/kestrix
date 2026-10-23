@@ -65,7 +65,7 @@ function navGroups(): NavGroup[] {
 
 const linkClass = (isActive: boolean) =>
   cx(
-    "relative flex min-h-9 items-center gap-2.5 rounded-md px-2.5 py-1 text-[0.9375rem] font-medium transition-colors duration-150",
+    "tap relative flex min-h-9 items-center gap-2.5 rounded-md px-2.5 py-1 text-[0.9375rem] font-medium transition-colors duration-150",
     isActive
       ? "nav-active font-semibold text-ink before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-accent"
       : "text-ink-2 hover:bg-inset hover:text-ink",
@@ -204,7 +204,7 @@ function NavSection({
                     {item.hint ? (
                       <>
                         {" "}
-                        <span className="block text-[0.6875rem] font-medium text-ink-3">
+                        <span className={cx("block text-[0.6875rem] font-medium", isActive ? "text-ink-2" : "text-ink-3")}>
                           {item.hint}
                         </span>
                       </>
@@ -228,7 +228,7 @@ function RailFooter({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate}
         className={({ isActive }) =>
           cx(
-            "flex min-h-9 items-center gap-3 rounded-md px-3 text-[0.8125rem] font-medium transition-colors duration-150",
+            "tap flex min-h-9 items-center gap-3 rounded-md px-3 text-[0.8125rem] font-medium transition-colors duration-150",
             isActive
               ? "nav-active text-ink"
               : "text-ink-3 hover:bg-inset hover:text-ink",
@@ -329,7 +329,7 @@ function Drawer({ onClose }: { onClose: () => void }) {
           <NavLink
             to={dashboardPath()}
             onClick={onClose}
-            className="rounded-md"
+            className="tap flex items-center rounded-md"
             aria-label="Kestrix home"
           >
             <Brand />
@@ -387,21 +387,23 @@ export function Layout() {
 
       {/* Desktop rail: the grid cell carries the background so it reaches the bottom of long pages. */}
       <div className="hidden border-r border-line bg-rail lg:block">
-        <aside className="sticky top-0 flex h-dvh flex-col gap-3 overflow-y-auto px-3 py-4">
-          <NavLink
-            to={dashboardPath()}
-            className="mb-1 rounded-md px-2"
-            aria-label="Kestrix home"
-          >
-            <Brand />
-          </NavLink>
+        <div className="sticky top-0 flex h-dvh flex-col gap-3 overflow-y-auto px-3 py-4">
+          <header className="mb-1">
+            <NavLink
+              to={dashboardPath()}
+              className="tap flex items-center rounded-md px-2"
+              aria-label="Kestrix home"
+            >
+              <Brand />
+            </NavLink>
+          </header>
           <nav aria-label="Main">
             <NavList />
           </nav>
           <div className="mt-auto space-y-3 pt-3">
             <RailFooter />
           </div>
-        </aside>
+        </div>
       </div>
 
       {/* Mobile top bar */}
@@ -409,7 +411,7 @@ export function Layout() {
         <div className="flex h-14 items-center justify-between px-4">
           <NavLink
             to={dashboardPath()}
-            className="rounded-md"
+            className="tap flex items-center rounded-md"
             aria-label="Kestrix home"
           >
             <Brand />

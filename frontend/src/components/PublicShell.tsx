@@ -134,7 +134,7 @@ export function PublicShell({
       </a>
       <header className="bg-rail sticky top-0 z-40 border-b border-line">
         <div className="mx-auto flex h-16 max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6 md:grid md:grid-cols-[1fr_auto_1fr]">
-          <Link to={landingPath()} className="flex items-center gap-2.5 rounded-md md:justify-self-start" aria-label="Kestrix home">
+          <Link to={landingPath()} className="tap flex items-center gap-2.5 rounded-md md:justify-self-start" aria-label="Kestrix home">
             <BrandMark size={28} />
             <span className="text-lg font-semibold tracking-[-0.02em] text-ink">Kestrix</span>
           </Link>

@@ -36,17 +36,20 @@ export function ToolLayout({
 }) {
   useReportStage(stage);
   return (
-    <div className="grid gap-6 min-[1100px]:grid-cols-[24rem_minmax(0,1fr)] min-[1100px]:gap-8">
-      <div className="min-w-0 space-y-4">
-        {input}
-        {jump && stage === "result" ? (
-          <div className="tool-sticky hidden min-[1100px]:block">
-            <JumpList />
-          </div>
-        ) : null}
-      </div>
-      <div id={REPORT_ID} className="@container min-w-0 space-y-6">
-        {children}
+    // Two columns when the content area is wide enough (a container query, so larger text sizes fall back to one column).
+    <div className="@container/tool">
+      <div className="grid gap-6 @min-[50rem]/tool:grid-cols-[24rem_minmax(0,1fr)] @min-[50rem]/tool:gap-8">
+        <div className="min-w-0 space-y-4">
+          {input}
+          {jump && stage === "result" ? (
+            <div className="tool-sticky hidden @min-[50rem]/tool:block">
+              <JumpList />
+            </div>
+          ) : null}
+        </div>
+        <div id={REPORT_ID} className="@container min-w-0 space-y-6">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -443,7 +446,7 @@ export function FindingList<T extends { severity: Severity; title: string }>({
                   setPicked(key);
                 }}
                 className={cx(
-                  "inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-[0.875rem] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--focus) motion-reduce:transition-none sm:min-h-9",
+                  "tap inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-[0.875rem] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--focus) motion-reduce:transition-none sm:min-h-9",
                   active ? "border-ink bg-ink text-bg" : "border-line-strong bg-surface-solid text-ink hover:bg-inset",
                 )}
               >

@@ -48,7 +48,7 @@ function Row({
           aria-current={isCurrent ? "page" : undefined}
           onClick={onNavigate}
           className={cx(
-            "flex min-h-9 min-w-0 flex-1 items-center rounded-lg px-2.5 text-[0.875rem] leading-snug transition-colors duration-150 motion-reduce:transition-none",
+            "tap flex min-h-9 min-w-0 flex-1 items-center rounded-lg px-2.5 text-[0.875rem] leading-snug transition-colors duration-150 motion-reduce:transition-none",
             isCurrent
               ? "bg-accent-soft font-medium text-accent-text"
               : isAncestor
@@ -114,7 +114,7 @@ export function DocsTree({ current, onNavigate }: { current: string; onNavigate?
         aria-current={current === "" ? "page" : undefined}
         onClick={onNavigate}
         className={cx(
-          "flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[0.875rem] font-medium transition-colors duration-150 motion-reduce:transition-none",
+          "tap flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[0.875rem] font-medium transition-colors duration-150 motion-reduce:transition-none",
           current === "" ? "bg-accent-soft text-accent-text" : "text-ink hover:bg-inset",
         )}
       >

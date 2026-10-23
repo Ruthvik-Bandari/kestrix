@@ -167,7 +167,7 @@ export function Chips({ chips }: { chips: Chip[] }) {
             {chip.text}
           </>
         );
-        const cls = "inline-flex min-h-7 items-center gap-1.5 rounded-md border border-line bg-surface-solid px-2.5 py-1 text-[0.8125rem] leading-tight text-ink";
+        const cls = "tap inline-flex min-h-7 items-center gap-1.5 rounded-md border border-line bg-surface-solid px-2.5 py-1 text-[0.8125rem] leading-tight text-ink";
         return (
           <li key={chip.text}>
             {chip.to ? (
@@ -214,7 +214,7 @@ export function Workspace({ steps, label = "Workspace" }: { steps: WorkStep[]; l
               >
                 {index + 1}
               </span>
-              <h3 className="text-[0.9375rem] font-semibold text-ink">{step.title}</h3>
+              <h2 className="text-[0.9375rem] font-semibold text-ink">{step.title}</h2>
               {step.optional ? <span className="text-[0.8125rem] text-ink-2">optional</span> : null}
             </div>
             <div className="space-y-3">{step.children}</div>
@@ -309,7 +309,7 @@ export function JumpList() {
           <li key={item.id}>
             <a
               href={`#${item.id}`}
-              className="flex min-h-8 items-center gap-2 rounded-md px-2 text-[0.875rem] text-ink-2 transition-colors duration-150 hover:bg-inset hover:text-ink motion-reduce:transition-none"
+              className="tap flex min-h-8 items-center gap-2 rounded-md px-2 text-[0.875rem] text-ink-2 transition-colors duration-150 hover:bg-inset hover:text-ink motion-reduce:transition-none"
               onClick={(event) => {
                 const target = document.getElementById(item.id);
                 if (!target) return;

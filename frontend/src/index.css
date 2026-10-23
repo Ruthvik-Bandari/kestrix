@@ -430,7 +430,11 @@
     background: var(--line);
     color: var(--ink-3);
   }
-  /* Pill badge: a dot and a short label, e.g. "Evidence, clearly". */
+  /* Over the landing beams the translucent fill can fall below 4.5:1; keep a dark backing there. */
+.scope-dark .btn-secondary {
+  background: rgb(3 10 7 / 0.82);
+}
+/* Pill badge: a dot and a short label, e.g. "Evidence, clearly". */
   .pill {
     display: inline-flex;
     align-items: center;
@@ -884,6 +888,18 @@
   }
 }
 
+
+/* Touch targets: 44px on phones and tablets. Unlayered so it beats the size utilities on single components. */
+@media (max-width: 1023px), (pointer: coarse) {
+  .btn-sm,
+  .tap,
+  [role="tab"] {
+    min-height: 2.75rem;
+  }
+  .btn-sm {
+    min-width: 2.75rem;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

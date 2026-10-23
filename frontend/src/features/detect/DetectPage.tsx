@@ -141,7 +141,7 @@ export default function DetectPage() {
             {engineDown && !run.data ? <EngineDown /> : null}
             {result ?? (
               // The case list is taller than a screen, so the explanation stays in view beside it.
-              <div className="min-[1100px]:sticky min-[1100px]:top-6">
+              <div className="@min-[50rem]/tool:sticky @min-[50rem]/tool:top-6">
                 <Before />
               </div>
             )}

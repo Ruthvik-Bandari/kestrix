@@ -118,7 +118,7 @@ function CandidateItem({
         </ul>
       ) : null}
       <details className="mt-2 text-[0.875rem]">
-        <summary className="inline-flex min-h-8 items-center text-ink-2 hover:text-ink">Engine query</summary>
+        <summary className="tap inline-flex min-h-8 items-center text-ink-2 hover:text-ink">Engine query</summary>
         <div className="mt-2">
           <CodeBlock label={`Lucene query for ${candidate.proposal_id}`} maxHeight="10rem">
             {(entry.validation ?? entry.development).query ?? "(no query)"}

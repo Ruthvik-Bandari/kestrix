@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "../../components/Icon";
 import { DocsSearch } from "./DocsSearch";
 import { DocsTree } from "./DocsTree";
@@ -59,7 +60,8 @@ export function DocsDrawer({
     };
   }, [focusSearch]);
 
-  return (
+  // Rendered into <body>: inside the public shell the page's sticky header would otherwise sit above the drawer.
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" aria-hidden="true" onClick={onClose} />
       <div
@@ -79,6 +81,7 @@ export function DocsDrawer({
         <DocsSearch inputRef={search} variant="inline" onNavigate={onClose} />
         <DocsTree current={current} onNavigate={onClose} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

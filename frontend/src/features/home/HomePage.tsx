@@ -26,7 +26,7 @@ function TaskRow({
   children: ReactNode;
 }) {
   return (
-    <li className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+    <li className="flex flex-col gap-3 px-4 py-4 @min-[36rem]:flex-row @min-[36rem]:items-center @min-[36rem]:gap-4 sm:px-5">
       <span className="flex min-w-0 flex-1 items-center gap-4">
         <span className="launcher-icon flex size-11 flex-none items-center justify-center rounded-lg">
           <Icon name={icon} size={22} className="text-accent-text" />
@@ -45,7 +45,7 @@ function TaskRow({
 
 function Tasks() {
   return (
-    <section aria-labelledby="tasks-title" className="panel">
+    <section aria-labelledby="tasks-title" className="panel @container">
       <h2
         id="tasks-title"
         className="border-b border-line px-4 py-3 text-base font-semibold sm:px-5"
@@ -204,7 +204,7 @@ function RecentResults() {
                         to={dashboardPath(
                           `history/${encodeURIComponent(item.id)}`,
                         )}
-                        className="inline-flex items-center gap-2 font-semibold text-accent-text underline-offset-4 hover:underline"
+                        className="tap inline-flex items-center gap-2 font-semibold text-accent-text underline-offset-4 hover:underline"
                       >
                         <Icon name={meta.icon} size={16} />
                         {meta.name}
@@ -331,14 +331,16 @@ export default function HomePage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-10 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-10">
-          <Tasks />
-          <RecentResults />
-        </div>
-        <div className="space-y-8 xl:pt-1">
-          <WhereChecksRun />
-          <OtherTools />
+      <div className="@container">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-10 @min-[60rem]:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="space-y-10">
+            <Tasks />
+            <RecentResults />
+          </div>
+          <div className="space-y-8 @min-[60rem]:pt-1">
+            <WhereChecksRun />
+            <OtherTools />
+          </div>
         </div>
       </div>
     </>

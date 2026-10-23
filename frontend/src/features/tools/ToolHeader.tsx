@@ -31,7 +31,7 @@ export function HistoryStats({ frame }: { frame: FrameKey }) {
   const chip = verdictChip(last);
   const more = data.total > data.items.length;
   return (
-    <aside aria-label="Your saved reports for this tool" className="min-w-0 rounded-xl border border-line bg-surface-solid px-4 py-3 lg:w-[17.5rem]">
+    <aside aria-label="Your saved reports for this tool" className="min-w-0 rounded-xl border border-line bg-surface-solid px-4 py-3 @min-[40rem]:w-[17.5rem]">
       <p className="text-[0.75rem] font-semibold tracking-[0.1em] text-ink-2 uppercase">Your saved reports</p>
       <p className="mt-1 flex items-baseline gap-1.5">
         <span className="num text-2xl leading-none font-semibold text-ink">
@@ -81,8 +81,8 @@ export function ToolHeader({
   const stage = useStage();
   useTitle(tool.name);
   return (
-    <header className="band-motif mb-6 rounded-xl border border-line bg-inset/50 px-4 py-4 sm:px-6 sm:py-5">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-8">
+    <header className="band-motif @container mb-6 rounded-xl border border-line bg-inset/50 px-4 py-4 sm:px-6 sm:py-5">
+      <div className="grid gap-5 @min-[40rem]:grid-cols-[minmax(0,1fr)_auto] @min-[40rem]:items-start @min-[40rem]:gap-8">
         <div className="flex min-w-0 gap-4 sm:gap-5">
           <span
             className="flex size-12 flex-none items-center justify-center rounded-xl bg-accent text-on-accent shadow-glow sm:size-14"
@@ -102,7 +102,7 @@ export function ToolHeader({
           </div>
         </div>
         {aside || !guide ? (
-          <div className="flex flex-wrap items-start gap-3 lg:justify-end">
+          <div className="flex flex-wrap items-start gap-3 @min-[40rem]:justify-end">
             {aside}
             {guide ? null : <HistoryStats frame={frame} />}
           </div>

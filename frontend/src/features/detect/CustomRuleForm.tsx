@@ -239,7 +239,7 @@ export function CustomRuleForm({
         Paste or load your own rule, field mapping and labeled events. They are sent only to the Kestrix server on
         this computer and replayed on the local engine.
       </p>
-      <div className="grid items-start gap-6 min-[1100px]:grid-cols-2">
+      <div className="grid items-start gap-6 min-[68.75rem]:grid-cols-2">
         <Panel as="section" className="space-y-3">
           {input("rule")}
           <div className="flex flex-wrap items-center gap-2">
@@ -272,12 +272,12 @@ export function CustomRuleForm({
         </Panel>
         <Panel as="section">{input("mapping")}</Panel>
       </div>
-      <div className="grid items-start gap-6 min-[1100px]:grid-cols-2">
+      <div className="grid items-start gap-6 min-[68.75rem]:grid-cols-2">
         <Panel as="section">{input("development")}</Panel>
         <Panel as="section">{input("validation")}</Panel>
       </div>
       <Disclosure summary="Advanced: healthy reference">
-        <div className="grid gap-6 min-[1100px]:grid-cols-2">
+        <div className="grid gap-6 min-[68.75rem]:grid-cols-2">
           {input("healthy_rule")}
           {input("healthy_mapping")}
         </div>
