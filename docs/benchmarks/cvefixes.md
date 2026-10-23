@@ -462,3 +462,101 @@ touched, in a root of its own (`/scratch/$USER/kestrix/codebench3`): `clone` (tr
 post-cutoff advisories with fix commits exist (the select report counts them), freeze the scanner first, and report
 the result next to Bandit and ESLint as for test2. The set will hold Python, JavaScript and TypeScript pairs only: the
 advisory miner fetches those files, which is why the web files above come from CVEfixes.
+
+
+## Round 3: the Bandit gap (tuning numbers, 2026-10-23)
+
+**Every number below is a tuning number.** Both held-out sets (the round-1 test and test2) are spent, so round 3 uses the
+round-2 tuning data (round-1 dev plus the round-1 test: 17,474 file pairs, 8,806 in scope, 3,778 of them Python) for the
+gap analysis, the rule choices and the measurements, the round-2 keep rule, and one repository bootstrap. Bandit's
+findings on that data are the dev scan (`base`) and the locked-test scan of the same Bandit 1.9.4, merged. Aggregates:
+[`docs/data/codebench/`](../data/codebench/README.md) (`codebench-gap-r3-gap*.json`, `codebench-compare-r3*.json`).
+
+### Where Bandit detects and Kestrix does not
+
+Python, in-scope pairs, `kestrixcodebench bandit-gap` (a pair counts when the tool has a finding of one of the pair's
+families within 3 lines of a changed line). Bandit detects 233 pairs (6.17%), Kestrix 184 (4.87%); both 131, only Bandit
+102, only Kestrix 53. The 102 by Bandit test id (a pair can carry several ids), with each test's alerts per KLOC on
+fixed and unchanged files:
+
+| Bandit test | Gap pairs (of pairs it detects) | What it reports | Alerts per KLOC | What Kestrix has |
+| --- | --- | --- | --- | --- |
+| B308, B703, B704 | 32 (34), 30 (32), 4 (4) | `mark_safe` and `Markup` | 0.067, 0.059, 0.042 | `py.xss.mark_safe` was tried in round 1: +31% alerts, reverted |
+| B404, B603, B607, B605 | 10 (13), 7 (12), 2 (5), 2 (10) | `subprocess` import, `subprocess` without a shell | 0.095, 0.144, 0.066, 0.027 | import and no-shell checks are lint-level; not a rule here |
+| B701 | 10 (10) | Jinja2 `Environment` without autoescape | 0.009 | round 2 `p8` failed the keep rule; narrowed below |
+| B314, B405, B319, B409, B411 | 10 (10), 7 (7), 1, 1, 1 | stdlib XML parsers and imports | 0.014, 0.015, 0.001, 0.001, 0.003 | none for the stdlib parsers by design |
+| B403 | 8 (25) | `pickle` import | 0.029 | the call rules are in place; the import is lint-level |
+| B608 | 6 (20) | SQL built from strings | 0.068 | `py.sql.string_built` (different shapes) |
+| B202 | 6 (15) | tar `extractall` | 0.007 | `py.archive.extract` |
+| B105, B311, B310 | 3, 2, 2 | hard-coded password, `random`, `urlopen` | 0.212, 0.087, 0.019 | noisy; not a rule here |
+
+By family the gap is XSS 46, command injection 17, XML 12, deserialization 8, path traversal 6, SQL injection 6, secrets
+3, SSRF 2, weak randomness 2. Reading a handful of missed pairs on the cluster (no code is quoted or committed): the
+`mark_safe` pairs are the shape round 1 measured, the XML pairs parse a response body or request body with
+`xml.etree.ElementTree.fromstring`, the Jinja pairs are `Environment(loader=FileSystemLoader(...))` in web code, and the
+tar pairs call `extractall` on a parameter or pass `members=` or their own `filter=`. The checks the brief named first
+(`yaml.load` without a safe loader, `tempfile.mktemp`, `verify=False`, XML parsers with `resolve_entities`, `assert` for
+access, `ssl` unverified contexts) are already rules, and none of their Bandit tests is in the gap.
+
+### Changes, each measured alone
+
+Each new rule has its own rule id, so each was measured as the final scan with the other new rules' findings removed
+(`hpc/codebench_derive.py`), against `r3-t0` (the scanner at the commit this round started from, scanned on the tuning
+data). The baseline is 0.293 Python alerts per KLOC (about 2,170 alerts). The keep rule is unchanged: detection up, and
+the paired change in alerts within noise or under 2% of the baseline.
+
+| Change | Detection, points | Fix-aware, points | Alerts per KLOC | Decision |
+| --- | --- | --- | --- | --- |
+| c1. `py.archive.extract`: `extract`/`extractall` on a parameter named `tar`, `tf`, `tarball`, `archive` ... | +0.00 [+0.00, +0.00] (+0 pairs) | -0.03 | +0.0001 [+0.0000, +0.0005] (+1 alert, +0.0%) | revert (no detection) |
+| c2. stdlib XML `fromstring`/`XML`/`parseString` of a non-literal, any file | +0.21 [+0.03, +0.49] (+8 pairs) | +0.13 | +0.0085 [+0.0049, +0.0137] (+63 alerts, +2.9%) | revert (over the 2% line, interval excludes 0) |
+| c3. stdlib XML `parse`/`iterparse` of a non-literal, any file | +0.05 [+0.00, +0.14] (+2 pairs) | +0.00 | +0.0051 [+0.0014, +0.0114] (+38 alerts, +1.7%) | not kept: passes the line, but 19 alerts per added pair against 11 for the scanner as a whole (a judgement call, see below) |
+| c2+c3 together | +0.26 [+0.07, +0.57] (+10 pairs) | +0.16 | +0.0134 [+0.0075, +0.0216] (+100 alerts, +4.6%) | revert |
+| c4. `py.xml.stdlib_parse`, only when the argument is `.content`, `.text`, `.body`, `.data` or `.read()` | +0.03 [+0.00, +0.10] (+1 pair) | +0.03 | +0.0031 [+0.0009, +0.0071] (+23 alerts, +1.1%) | not kept: adds no pair c5 does not |
+| **c5. `py.xml.stdlib_parse`: c2 only in files that import a web framework or an HTTP or socket library** | +0.16 [+0.00, +0.46] (+6 pairs) | +0.11 | +0.0032 [+0.0015, +0.0058] (+24 alerts, +1.1%) | **keep** |
+| c6. Jinja2 `Environment(autoescape=False)`, explicit | +0.00 [+0.00, +0.00] (+0 pairs) | -0.03 | +0.0003 [+0.0000, +0.0007] (+2 alerts, +0.1%) | revert (no detection; 1 finding in the data) |
+| c7. Jinja2 `Environment` with no `autoescape` in a file that imports a web framework | +0.03 [+0.00, +0.10] (+1 pair) | -0.03 | +0.0008 [+0.0002, +0.0018] (+6 alerts, +0.3%) | keep (merged into c9) |
+| c8. Jinja2 `Environment` with no `autoescape` and a `FileSystemLoader` or `PackageLoader` | +0.08 [+0.00, +0.20] (+3 pairs) | +0.00 | +0.0038 [+0.0011, +0.0084] (+28 alerts, +1.3%) | keep (merged into c9) |
+| **c9. `py.xss.autoescape_off` = c7 or c8, one finding per call** | +0.08 [+0.00, +0.20] (+3 pairs) | +0.03 | +0.0038 [+0.0011, +0.0083] (+28 alerts, +1.3%) | **keep** |
+
+`py.xss.autoescape_off` failed in round 2 (`p8`: +9 pairs for +71 alerts, +3.4%; `p8b`: +7 for +45, +2.1%). Narrowed to file
+loaders and web files it keeps 3 of those pairs for 28 alerts. The c6 shape (explicit `autoescape=False`) is the narrowest
+one the brief named; the data has one instance of it, so it does not pass. c3 passes the 2% line alone but is the worst
+ratio of the changes tried, and c3 and c5 together would take the round past 2% of the alert rate; it is left out and is a
+one-line addition (`_STDLIB_XML_FILE` in `python_rules.py`) if the review prefers the rule applied strictly.
+
+The final scanner against `r3-t0`, paired (Python; JavaScript and TypeScript did not change):
+
+| Run | Subset | Detection % | Fix-aware % | Alerts/KLOC (after) | Alerts/KLOC (unchanged) | Precision % |
+| --- | --- | --- | --- | --- | --- | --- |
+| `r3-t0` | python (3,778 in scope) | 4.87 [3.18, 7.40] | 3.39 | 0.281 | 0.318 | 11.7 |
+| round 3 | python | 5.11 [3.34, 7.76] | 3.52 | 0.288 | 0.325 | 11.9 |
+| `r3-t0` | all (8,806) | 5.97 [4.57, 7.72] | 4.28 | 0.526 | 0.355 | 12.6 |
+| round 3 | all | 6.08 [4.64, 7.83] | 4.34 | 0.530 | 0.360 | 12.7 |
+
+Change: Python detection **+0.24 points** [+0.06, +0.57] (+9 pairs), fix-aware +0.13, alerts per KLOC +0.0070 [+0.0037,
++0.0121] (+52 alerts, **+2.4%**). That is just over the 2% line, as in round 2: each kept change is under it alone, and
+together they are not. The Bandit-only pairs fall from 102 to 93 (both 131 to 140); Bandit still detects more Python pairs
+on this data (233 against 193). The gap that remains is mostly `mark_safe` (round 1 measured it) and import-level checks.
+
+### The jQuery switch
+
+`js.dom.xss_sink` kept 3,875 of its findings in the jQuery `.html(x)` form. They are now `js.dom.xss_sink.jquery`
+(on by default); `rules.disable = ["js.dom.xss_sink.jquery"]` turns them off. Measured as the final scanner against the
+final scanner without that rule id (paired, JavaScript and TypeScript, 5,028 in scope): detection **-0.86 points**
+[-1.30, -0.52] (-43 pairs), fix-aware -0.30, alerts per KLOC **-0.309** [-0.536, -0.143] (-2,013 alerts, **-44.7%**). With
+round 2's narrower forms (`j7`: -123 pairs and -53.5% of the alerts; `j7b`: -26 pairs and -34.7%) the trade-off is steady
+at every width: 19 to 59 alerts avoided for each detected pair lost. The switch hands the choice to the project;
+the default stays on, since the benchmark counts those pairs.
+
+### Speed
+
+One core, every dev file of the Python/JavaScript/TypeScript benchmark (39,420 files), all eight shards in turn, two repetitions each, scanner of the starting commit against the final scanner, same node (job 11327757, node c0616): baseline 38.5 and 42.1 files per second, final 41.9 and 41.7 (means 40.3 and 41.8). No measurable slowdown (the limit was 10%; the first baseline repetition was the slow one); the scanner still has no runtime dependencies.
+
+### What round 3 does not show
+
+- Tuning numbers only: the gap was read, and the rules written and kept, on the same data they are scored on. The next
+  held-out set is `test3` (see Phase 1). Nine more detected pairs of 3,778 is inside every interval.
+- Bandit's `mark_safe` tests are 46 of the 102 gap pairs and stay open: round 1 showed the rule costs 31% more alerts.
+- The XML rule reports a risk (entity expansion and size) the Python documentation lists, not an external-entity read;
+  its CWE is 776 and its severity low. The Jinja rule is a default that is often right for plain-text templates.
+- Bandit's test ids B404, B403 and B405 are import checks; matching them would add alerts without a weakness at the line.

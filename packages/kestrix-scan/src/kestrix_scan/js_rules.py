@@ -373,11 +373,12 @@ class _Checker:
             return
         origin = best(origins, HTML, _REMOTE)
         what = "jQuery .html()" if jquery else sink
+        rule = "js.dom.xss_sink.jquery" if jquery else "js.dom.xss_sink"
         if origin is None:
-            self.hit("js.dom.xss_sink", at, f"{what} receives a value that is not a literal.", "medium")
+            self.hit(rule, at, f"{what} receives a value that is not a literal.", "medium")
             return
         self.hit(
-            "js.dom.xss_sink",
+            rule,
             at,
             f"{what} receives {origin.label} (line {origin.trace[0].line}), which an attacker can set through a link.",
             confidence=CONFIDENCE[origin.kind],

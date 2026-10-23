@@ -5,6 +5,18 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Round 3, the Bandit gap (tuning numbers, not a held-out result).** On the tuning data Bandit detects 233 of 3,778
+  in-scope Python pairs and Kestrix 184; 102 pairs are Bandit-only. Two new Python rules close 9 of them: `py.xml.stdlib_parse`
+  (stdlib XML `fromstring`/`parseString` of a non-literal in a file that handles network data, CWE-776, low) and
+  `py.xss.autoescape_off` (Jinja2 `Environment` with no `autoescape` that loads template files or sits in a web file,
+  CWE-79, low). Python detection 4.87% to 5.11% (+9 pairs, +0.24 points, interval +0.06 to +0.57), alerts +2.4%. Tried
+  and left out (they fail the keep rule): tar `extract` on parameters, stdlib XML in any file or `parse()` of files,
+  `autoescape=False`. Bandit's `mark_safe` tests (B308, B703, B704) are the largest part of the gap and were measured
+  in round 1 (+31% alerts). Speed unchanged (40.3 and 41.8 files per second, baseline and final). Numbers: `docs/benchmarks/cvefixes.md`.
+- **`js.dom.xss_sink.jquery`: the jQuery `.html(x)` form of `js.dom.xss_sink` is its own rule id** (default on), so
+  `rules.disable = ["js.dom.xss_sink.jquery"]` switches it off. Findings of that form change rule id: baselines
+  written earlier need `--write-baseline` again for them; `kestrix: ignore[js.dom.xss_sink]` and disabling
+  `js.dom.xss_sink` still cover it. The registry grows from 73 to 76 rules.
 - **Install guard: typosquat warning.** A requested PyPI, npm, crates.io or Packagist package that is not popular but
   is a near-miss of a popular one (swapped, dropped, doubled or neighbouring-key letters, look-alike characters,
   removed separators, `python-`/`-js` affixes) and has no advisory now gets a non-blocking warning that names the

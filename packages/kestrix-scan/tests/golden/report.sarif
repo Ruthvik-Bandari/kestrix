@@ -738,6 +738,58 @@
               }
             },
             {
+              "id": "py.xml.stdlib_parse",
+              "name": "PyXmlStdlibParse",
+              "shortDescription": {
+                "text": "Standard-library XML parser given a string, in a file that handles network data"
+              },
+              "fullDescription": {
+                "text": "xml.etree, minidom, pulldom and sax parse a document, including its entity definitions, without a size or expansion limit of their own. Python's \"XML vulnerabilities\" table lists quadratic blowup as a risk of all of them, and older Expat releases also expand nested entities (billion laughs). They do not read external entities by default. Reported, at low severity, when fromstring, XML or parseString gets a value that is not a literal in a file that imports a web framework or an HTTP or socket library (requests, httpx, urllib, aiohttp, http, socket), where the text is likely to come from outside. Not reported: parse() of a file, and any file that imports defusedxml."
+              },
+              "help": {
+                "text": "Parse untrusted XML with defusedxml (defusedxml.ElementTree.fromstring), and bound the input size before parsing.",
+                "markdown": "**Why:** xml.etree, minidom, pulldom and sax parse a document, including its entity definitions, without a size or expansion limit of their own. Python's \"XML vulnerabilities\" table lists quadratic blowup as a risk of all of them, and older Expat releases also expand nested entities (billion laughs). They do not read external entities by default. Reported, at low severity, when fromstring, XML or parseString gets a value that is not a literal in a file that imports a web framework or an HTTP or socket library (requests, httpx, urllib, aiohttp, http, socket), where the text is likely to come from outside. Not reported: parse() of a file, and any file that imports defusedxml.\n\n**Fix:** Parse untrusted XML with defusedxml (defusedxml.ElementTree.fromstring), and bound the input size before parsing."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-776"
+                ]
+              }
+            },
+            {
+              "id": "py.xss.autoescape_off",
+              "name": "PyXssAutoescapeOff",
+              "shortDescription": {
+                "text": "Jinja2 Environment created without autoescape"
+              },
+              "fullDescription": {
+                "text": "Jinja2's Environment does not escape rendered values unless autoescape is on, so a user-supplied value in an HTML template becomes cross-site scripting. Reported, at low severity, when autoescape is left out and the Environment loads template files (FileSystemLoader, PackageLoader) or the file imports a web framework. An explicit autoescape argument, or **options that may hold one, is not reported."
+              },
+              "help": {
+                "text": "Pass autoescape=True, or jinja2.select_autoescape(['html', 'xml']) so HTML templates are escaped and plain-text ones are not.",
+                "markdown": "**Why:** Jinja2's Environment does not escape rendered values unless autoescape is on, so a user-supplied value in an HTML template becomes cross-site scripting. Reported, at low severity, when autoescape is left out and the Environment loads template files (FileSystemLoader, PackageLoader) or the file imports a web framework. An explicit autoescape argument, or **options that may hold one, is not reported.\n\n**Fix:** Pass autoescape=True, or jinja2.select_autoescape(['html', 'xml']) so HTML templates are escaped and plain-text ones are not."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
               "id": "config.claude.hook_remote_exec",
               "name": "ConfigClaudeHookRemoteExec",
               "shortDescription": {
@@ -1269,6 +1321,32 @@
               "help": {
                 "text": "Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.",
                 "markdown": "**Why:** innerHTML, outerHTML, insertAdjacentHTML, document.write, React's dangerouslySetInnerHTML and jQuery .html() parse their value as HTML, so markup in it runs as script in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.\n\n**Fix:** Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "js.dom.xss_sink.jquery",
+              "name": "JsDomXssSinkJquery",
+              "shortDescription": {
+                "text": "jQuery .html() given a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "The jQuery form of js.dom.xss_sink: .html(value) on a jQuery object parses the value as HTML, so markup in it runs as script in the page (XSS). It is the noisiest form of that rule, because .html() is often given markup the page built itself; it is its own rule id so a project can switch it off (rules.disable = [\"js.dom.xss_sink.jquery\"]) and keep the other HTML sinks. Disabling js.dom.xss_sink disables it too, and a kestrix: ignore[js.dom.xss_sink] comment covers it."
+              },
+              "help": {
+                "text": "Use .text(value) for text. If you must insert HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.",
+                "markdown": "**Why:** The jQuery form of js.dom.xss_sink: .html(value) on a jQuery object parses the value as HTML, so markup in it runs as script in the page (XSS). It is the noisiest form of that rule, because .html() is often given markup the page built itself; it is its own rule id so a project can switch it off (rules.disable = [\"js.dom.xss_sink.jquery\"]) and keep the other HTML sinks. Disabling js.dom.xss_sink disables it too, and a kestrix: ignore[js.dom.xss_sink] comment covers it.\n\n**Fix:** Use .text(value) for text. If you must insert HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate."
               },
               "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
               "defaultConfiguration": {
@@ -1947,7 +2025,7 @@
       "results": [
         {
           "ruleId": "secret.github_token",
-          "ruleIndex": 35,
+          "ruleIndex": 37,
           "level": "error",
           "message": {
             "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."

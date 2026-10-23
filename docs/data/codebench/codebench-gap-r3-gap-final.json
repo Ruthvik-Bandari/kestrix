@@ -1,0 +1,180 @@
+{
+  "both": 140,
+  "by_bandit_test": [
+    {
+      "alerts_on_fixed_and_unchanged": 500,
+      "alerts_per_kloc": 0.0672,
+      "detected_pairs": 34,
+      "gap_pairs": 32,
+      "rule": "B308"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 442,
+      "alerts_per_kloc": 0.0594,
+      "detected_pairs": 32,
+      "gap_pairs": 30,
+      "rule": "B703"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 705,
+      "alerts_per_kloc": 0.0948,
+      "detected_pairs": 13,
+      "gap_pairs": 10,
+      "rule": "B404"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 212,
+      "alerts_per_kloc": 0.0285,
+      "detected_pairs": 25,
+      "gap_pairs": 8,
+      "rule": "B403"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 69,
+      "alerts_per_kloc": 0.0093,
+      "detected_pairs": 10,
+      "gap_pairs": 7,
+      "rule": "B701"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 1070,
+      "alerts_per_kloc": 0.1438,
+      "detected_pairs": 12,
+      "gap_pairs": 7,
+      "rule": "B603"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 508,
+      "alerts_per_kloc": 0.0683,
+      "detected_pairs": 20,
+      "gap_pairs": 6,
+      "rule": "B608"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 52,
+      "alerts_per_kloc": 0.007,
+      "detected_pairs": 15,
+      "gap_pairs": 6,
+      "rule": "B202"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 314,
+      "alerts_per_kloc": 0.0422,
+      "detected_pairs": 4,
+      "gap_pairs": 4,
+      "rule": "B704"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 104,
+      "alerts_per_kloc": 0.014,
+      "detected_pairs": 10,
+      "gap_pairs": 4,
+      "rule": "B314"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 1573,
+      "alerts_per_kloc": 0.2115,
+      "detected_pairs": 4,
+      "gap_pairs": 3,
+      "rule": "B105"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 110,
+      "alerts_per_kloc": 0.0148,
+      "detected_pairs": 7,
+      "gap_pairs": 3,
+      "rule": "B405"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 646,
+      "alerts_per_kloc": 0.0868,
+      "detected_pairs": 5,
+      "gap_pairs": 2,
+      "rule": "B311"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 203,
+      "alerts_per_kloc": 0.0273,
+      "detected_pairs": 10,
+      "gap_pairs": 2,
+      "rule": "B605"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 492,
+      "alerts_per_kloc": 0.0661,
+      "detected_pairs": 5,
+      "gap_pairs": 2,
+      "rule": "B607"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 138,
+      "alerts_per_kloc": 0.0186,
+      "detected_pairs": 2,
+      "gap_pairs": 2,
+      "rule": "B310"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 4,
+      "alerts_per_kloc": 0.0005,
+      "detected_pairs": 1,
+      "gap_pairs": 1,
+      "rule": "B409"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 5,
+      "alerts_per_kloc": 0.0007,
+      "detected_pairs": 1,
+      "gap_pairs": 1,
+      "rule": "B319"
+    },
+    {
+      "alerts_on_fixed_and_unchanged": 23,
+      "alerts_per_kloc": 0.0031,
+      "detected_pairs": 1,
+      "gap_pairs": 1,
+      "rule": "B411"
+    }
+  ],
+  "by_bandit_test_and_family": {
+    "B105 secrets": 3,
+    "B202 pathtraver": 6,
+    "B308 xss": 32,
+    "B310 ssrf": 2,
+    "B311 weakrand": 2,
+    "B314 xxe": 4,
+    "B319 xxe": 1,
+    "B403 deserialization": 8,
+    "B404 cmdi": 10,
+    "B405 xxe": 3,
+    "B409 xxe": 1,
+    "B411 xxe": 1,
+    "B603 cmdi": 7,
+    "B605 cmdi": 2,
+    "B607 cmdi": 2,
+    "B608 sqli": 6,
+    "B701 xss": 7,
+    "B703 xss": 30,
+    "B704 xss": 4
+  },
+  "by_family": {
+    "cmdi": 17,
+    "deserialization": 8,
+    "pathtraver": 6,
+    "secrets": 3,
+    "sqli": 6,
+    "ssrf": 2,
+    "weakrand": 2,
+    "xss": 43,
+    "xxe": 6
+  },
+  "only_bandit": 93,
+  "only_kestrix": 53,
+  "pairs_in_scope": 3778,
+  "runs": {
+    "bandit": "bandit-tuning",
+    "kestrix": "r3-final"
+  },
+  "schema_version": 1,
+  "split": "tuning",
+  "subset": "python"
+}

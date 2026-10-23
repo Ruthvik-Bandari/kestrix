@@ -231,6 +231,22 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cwe.mitre.org/data/definitions/22.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `py.xml.stdlib_parse`
+
+- CWE: [CWE-776](https://cwe.mitre.org/data/definitions/776.html)
+- Documentation: <https://docs.python.org/3/library/xml.html#xml-vulnerabilities>
+- Documentation: <https://pypi.org/project/defusedxml/>
+- Documentation: <https://cwe.mitre.org/data/definitions/776.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.xss.autoescape_off`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#autoescaping>
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#jinja2.select_autoescape>
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#jinja2.FileSystemLoader>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `config.claude.hook_remote_exec`
 
 - CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
@@ -378,6 +394,14 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Document/write>
 - Documentation: <https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html>
 - Documentation: <https://api.jquery.com/html/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.dom.xss_sink.jquery`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://api.jquery.com/html/>
+- Documentation: <https://api.jquery.com/text/>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
 ## `js.sql.string_built`

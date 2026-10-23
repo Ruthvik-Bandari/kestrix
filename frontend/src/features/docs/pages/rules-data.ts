@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (73 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (76 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -34,6 +34,8 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["py.cookie.insecure", "medium", "CWE-614", "Cookie set without the Secure or HttpOnly flag"],
   ["py.trust_boundary.session", "low", "CWE-501", "Request data stored in the session without validation"],
   ["py.archive.extract", "medium", "CWE-22", "Tar archive extracted without a member filter"],
+  ["py.xml.stdlib_parse", "low", "CWE-776", "Standard-library XML parser given a string, in a file that handles network data"],
+  ["py.xss.autoescape_off", "low", "CWE-79", "Jinja2 Environment created without autoescape"],
   ["config.claude.hook_remote_exec", "critical", "CWE-494", "Claude Code hook runs a script downloaded at run time"],
   ["config.claude.permissions_bypass", "high", "CWE-250", "Project settings skip Claude Code permission prompts"],
   ["config.mcp.unpinned_launcher", "medium", "CWE-829", "MCP server launched from a package without a pinned version"],
@@ -55,6 +57,7 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["js.exec.eval", "high", "CWE-95", "eval, new Function or a string timer with code that is not a literal"],
   ["js.child_process.shell", "high", "CWE-78", "child_process command built from strings and run through a shell"],
   ["js.dom.xss_sink", "high", "CWE-79", "HTML sink given a value that is not a literal"],
+  ["js.dom.xss_sink.jquery", "high", "CWE-79", "jQuery .html() given a value that is not a literal"],
   ["js.sql.string_built", "high", "CWE-89", "SQL text built with a template literal or concatenation"],
   ["js.tls.reject_unauthorized", "high", "CWE-295", "TLS certificate verification disabled"],
   ["js.crypto.weak_hash", "medium", "CWE-328", "MD5 or SHA-1 hash"],

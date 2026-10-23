@@ -189,7 +189,8 @@ def scan_text(
         notes.extend(dep_notes)
     for item in hits:
         ids_here = suppressions.get(item.line, frozenset()) | suppressions.get(item.line - 1, frozenset())
-        if item.rule_id in ids_here:
+        parent = item.rule_id.rpartition(".")[0]  # a variant id (js.dom.xss_sink.jquery) is covered by its parent rule
+        if item.rule_id in ids_here or (parent in RULES and parent in ids_here):
             suppressed += 1
             continue
         findings.append(_finding(item, candidate.rel))

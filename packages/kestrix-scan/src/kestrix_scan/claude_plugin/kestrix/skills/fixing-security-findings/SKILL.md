@@ -830,6 +830,63 @@ def unpack(path, dest):
         tar.extractall(dest, filter="data")
 ```
 
+### `py.xml.stdlib_parse`: Standard-library XML parser given a string, in a file that handles network data
+
+CWE-776 · default severity low · confidence low
+
+**Why:** xml.etree, minidom, pulldom and sax parse a document, including its entity definitions, without a size or expansion limit of their own. Python's "XML vulnerabilities" table lists quadratic blowup as a risk of all of them, and older Expat releases also expand nested entities (billion laughs). They do not read external entities by default. Reported, at low severity, when fromstring, XML or parseString gets a value that is not a literal in a file that imports a web framework or an HTTP or socket library (requests, httpx, urllib, aiohttp, http, socket), where the text is likely to come from outside. Not reported: parse() of a file, and any file that imports defusedxml.
+
+**Fix:** Parse untrusted XML with defusedxml (defusedxml.ElementTree.fromstring), and bound the input size before parsing.
+
+Before:
+
+```python
+import requests
+import xml.etree.ElementTree as ET
+
+
+def feed(url):
+    return ET.fromstring(requests.get(url, timeout=10).content)
+```
+
+After:
+
+```python
+import requests
+import defusedxml.ElementTree as ET
+
+
+def feed(url):
+    return ET.fromstring(requests.get(url, timeout=10).content)
+```
+
+### `py.xss.autoescape_off`: Jinja2 Environment created without autoescape
+
+CWE-79 · default severity low · confidence low
+
+**Why:** Jinja2's Environment does not escape rendered values unless autoescape is on, so a user-supplied value in an HTML template becomes cross-site scripting. Reported, at low severity, when autoescape is left out and the Environment loads template files (FileSystemLoader, PackageLoader) or the file imports a web framework. An explicit autoescape argument, or **options that may hold one, is not reported.
+
+**Fix:** Pass autoescape=True, or jinja2.select_autoescape(['html', 'xml']) so HTML templates are escaped and plain-text ones are not.
+
+Before:
+
+```python
+import jinja2
+
+env = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))
+```
+
+After:
+
+```python
+import jinja2
+
+env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader("templates"),
+    autoescape=jinja2.select_autoescape(["html", "xml"]),
+)
+```
+
 ## Claude Code and MCP configuration rules
 
 These rules read `.claude/settings.json`, `.claude/settings.local.json`, a plugin's `hooks/hooks.json` and `.mcp.json`. JSON has no comments, so a confirmed false positive is handled with `rules.disable` or a baseline instead of an inline suppression.
@@ -1192,6 +1249,30 @@ After:
 ```javascript
 function greet(name) {
   document.getElementById('greeting').textContent = `Hello ${name}`;
+}
+```
+
+### `js.dom.xss_sink.jquery`: jQuery .html() given a value that is not a literal
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** The jQuery form of js.dom.xss_sink: .html(value) on a jQuery object parses the value as HTML, so markup in it runs as script in the page (XSS). It is the noisiest form of that rule, because .html() is often given markup the page built itself; it is its own rule id so a project can switch it off (rules.disable = ["js.dom.xss_sink.jquery"]) and keep the other HTML sinks. Disabling js.dom.xss_sink disables it too, and a kestrix: ignore[js.dom.xss_sink] comment covers it.
+
+**Fix:** Use .text(value) for text. If you must insert HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.
+
+Before:
+
+```javascript
+function greet(name) {
+  $('#greeting').html(`Hello ${name}`);
+}
+```
+
+After:
+
+```javascript
+function greet(name) {
+  $('#greeting').text(`Hello ${name}`);
 }
 ```
 

@@ -227,6 +227,11 @@ POSITIVE = [
         "import tarfile\ndef f(p):\n    tar = tarfile.open(p, 'r:gz')\n    tar.extractall(path='out')\n",
     ),
     ("py.archive.extract", "import tarfile\ndef f(p, m):\n    tarfile.open(p).extract(m, 'out')\n"),
+    (
+        "py.xml.stdlib_parse",
+        "import requests\nimport xml.etree.ElementTree as ET\ndef f(raw):\n    return ET.fromstring(raw)\n",
+    ),
+    ("py.xss.autoescape_off", "import jinja2\nenv = jinja2.Environment(loader=jinja2.FileSystemLoader('t'))\n"),
 ]
 
 NEGATIVE = [
@@ -418,6 +423,8 @@ NEGATIVE = [
         "import zipfile\ndef f(p):\n    with zipfile.ZipFile(p) as z:\n        z.extractall('out')\n",
     ),
     ("py.archive.extract", "import tarfile\ndef f(box):\n    box.extractall('out')\n"),
+    ("py.xml.stdlib_parse", "import xml.etree.ElementTree as ET\ndef f(raw):\n    return ET.fromstring(raw)\n"),
+    ("py.xss.autoescape_off", "import jinja2\nenv = jinja2.Environment(autoescape=True)\n"),
 ]
 
 

@@ -86,6 +86,21 @@ _SAX_EXTERNAL_FEATURES = frozenset(
     }
 )
 _JWT_DECODE = frozenset({"jwt.decode", "jose.jwt.decode"})
+_STDLIB_XML_MODULES = (
+    "xml.etree.ElementTree",
+    "xml.etree.cElementTree",
+    "xml.dom.minidom",
+    "xml.dom.pulldom",
+    "xml.sax",
+)
+_STDLIB_XML_STRING = frozenset(
+    f"{module}.{name}"
+    for module in _STDLIB_XML_MODULES
+    for name in ("fromstring", "XML", "fromstringlist", "parseString")
+)
+_NETWORK_LIBRARIES = frozenset({"requests", "httpx", "urllib", "urllib3", "aiohttp", "http", "socket"})
+_JINJA_ENVIRONMENTS = frozenset({"jinja2.Environment", "jinja2.environment.Environment"})
+_JINJA_FILE_LOADERS = frozenset({"jinja2.FileSystemLoader", "jinja2.PackageLoader"})
 # Taint sinks: call -> (position, keyword) of the argument that must not carry tainted data.
 _PATH_SINKS: dict[str, tuple[int, str]] = {
     "open": (0, "file"),
@@ -169,6 +184,7 @@ _LDAP3 = frozenset({"search", "paged_search"})
 _XPATH_PATH_METHODS = frozenset({"find", "findall", "findtext", "iterfind"})
 _XPATH_SYNTAX = re.compile(r"[\[@]|//|::|^\.?/")
 _WEB_FRAMEWORKS = frozenset({"flask", "django", "starlette", "fastapi", "werkzeug"})
+_JINJA_WEB_FRAMEWORKS = _WEB_FRAMEWORKS | {"aiohttp", "tornado", "sanic", "bottle", "pyramid", "falcon", "cherrypy"}
 _MUTATORS = frozenset(
     {
         "update",
@@ -842,6 +858,8 @@ class _Checker:
         if name in _JWT_DECODE:
             self._jwt(node)
         self._xml(node, name, attr)
+        if name in _JINJA_ENVIRONMENTS:
+            self._jinja_environment(node)
         if attr == "set_cookie" and self.imported & _WEB_FRAMEWORKS:
             self._cookie(node)
         self._model_load(node, name)
@@ -1443,11 +1461,38 @@ class _Checker:
                     "low",
                     cwe="CWE-776",
                 )
+        elif (
+            name in _STDLIB_XML_STRING
+            and node.args
+            and not isinstance(node.args[0], ast.Starred)
+            and "defusedxml" not in self.imported
+            and self.imported & (_NETWORK_LIBRARIES | _WEB_FRAMEWORKS)
+            and not self.literal(node.args[0])
+        ):
+            self.hit("py.xml.stdlib_parse", node, f"{name}() parses a string in a file that handles network data.")
         elif attr == "setFeature" and len(node.args) == 2 and _truthy_const(node.args[1]):
             feature = node.args[0]
             label = self.qualname(feature) or (feature.value if isinstance(feature, ast.Constant) else None)
             if label in _SAX_EXTERNAL_FEATURES:
                 self.hit("py.xml.unsafe_parser", node, "SAX parser told to resolve external entities (setFeature).")
+
+    def _jinja_environment(self, node: ast.Call) -> None:
+        """``jinja2.Environment(...)`` with autoescape left at its default (off) where it loads template files or the
+        file belongs to a web application."""
+        autoescape = _keyword(node, "autoescape")
+        if (
+            autoescape is not None
+            or any(kw.arg is None for kw in node.keywords)
+            or any(isinstance(arg, ast.Starred) for arg in node.args)
+        ):
+            return
+        loader = _keyword(node, "loader")
+        if (
+            isinstance(loader, ast.Call) and self.qualname(loader.func) in _JINJA_FILE_LOADERS
+        ) or self.imported & _JINJA_WEB_FRAMEWORKS:
+            self.hit(
+                "py.xss.autoescape_off", node, "Jinja2 Environment created without autoescape (the default is off)."
+            )
 
     def _cookie(self, node: ast.Call) -> None:
         """``response.set_cookie`` without ``secure=True`` and ``httponly=True`` (Flask, Django, Starlette)."""

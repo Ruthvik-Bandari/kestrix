@@ -99,6 +99,14 @@ EXAMPLES: dict[str, tuple[str, str]] = {
         "import tarfile\n\n\ndef unpack(path, dest):\n    with tarfile.open(path) as tar:\n        tar.extractall(dest)\n",
         'import tarfile\n\n\ndef unpack(path, dest):\n    with tarfile.open(path) as tar:\n        tar.extractall(dest, filter="data")\n',
     ),
+    "py.xml.stdlib_parse": (
+        "import requests\nimport xml.etree.ElementTree as ET\n\n\ndef feed(url):\n    return ET.fromstring(requests.get(url, timeout=10).content)\n",
+        "import requests\nimport defusedxml.ElementTree as ET\n\n\ndef feed(url):\n    return ET.fromstring(requests.get(url, timeout=10).content)\n",
+    ),
+    "py.xss.autoescape_off": (
+        'import jinja2\n\nenv = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))\n',
+        'import jinja2\n\nenv = jinja2.Environment(\n    loader=jinja2.FileSystemLoader("templates"),\n    autoescape=jinja2.select_autoescape(["html", "xml"]),\n)\n',
+    ),
     "py.ssrf.request": (
         'import requests\nfrom flask import request\n\n\ndef preview():\n    url = request.args["url"]\n    return requests.get(url, timeout=10).text\n',
         'import requests\nfrom flask import request\n\n\ndef preview():\n    page = request.args["page"]\n    return requests.get(f"https://docs.example.com/{page}", timeout=10).text\n',
@@ -158,6 +166,10 @@ JS_EXAMPLES: dict[str, tuple[str, str]] = {
     "js.dom.xss_sink": (
         "function greet(name) {\n  document.getElementById('greeting').innerHTML = `Hello ${name}`;\n}\n",
         "function greet(name) {\n  document.getElementById('greeting').textContent = `Hello ${name}`;\n}\n",
+    ),
+    "js.dom.xss_sink.jquery": (
+        "function greet(name) {\n  $('#greeting').html(`Hello ${name}`);\n}\n",
+        "function greet(name) {\n  $('#greeting').text(`Hello ${name}`);\n}\n",
     ),
     "js.sql.string_built": (
         "async function findUser(pool, id) {\n  return pool.query(`SELECT * FROM users WHERE id = ${id}`);\n}\n",

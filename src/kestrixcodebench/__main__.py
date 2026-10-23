@@ -4,7 +4,7 @@
 
 ``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
 into dev and a locked test and writes the files. ``scan`` runs one tool on dev shards (a Slurm array task);
-``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``web-corpus`` scans directory trees of web files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
+``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus`` scans directory trees of web files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
 ``table`` prints Markdown tables from a report; ``locked-test`` claims the lock and evaluates the test split once.
 Reports hold counts, rates, intervals and rule ids only. Exit status is 1 on failure.
 """
@@ -25,6 +25,7 @@ COMMANDS = (
     "dev-metrics",
     "compare",
     "rule-rates",
+    "bandit-gap",
     "web-corpus",
     "examples",
     "table",
@@ -203,6 +204,11 @@ def _run(args: argparse.Namespace) -> int:
 
         _need(args.corpus_dir, "--corpus-dir")
         print(web_corpus(layout, args.corpus_dir, args.label))
+        return 0
+    if args.command == "bandit-gap":
+        from .gap import bandit_gap
+
+        print(bandit_gap(layout, _runs(args.tool_run, args.run, ("kestrix", "bandit")), args.split, args.label))
         return 0
     if args.command == "rule-rates":
         from .rates import rule_rates

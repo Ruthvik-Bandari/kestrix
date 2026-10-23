@@ -1,0 +1,276 @@
+{
+  "base": "r3-t0",
+  "bootstrap": {
+    "resamples": 1000,
+    "unit": "repository"
+  },
+  "new": "r3b-xw",
+  "schema_version": 1,
+  "split": "tuning",
+  "subsets": {
+    "all": {
+      "alerts_per_kloc": {
+        "base": 0.478562,
+        "ci95": [
+          0.000765,
+          0.003019
+        ],
+        "delta": 0.00172,
+        "k_base": 6677.0,
+        "k_new": 6701.0,
+        "new": 0.480282
+      },
+      "detection": {
+        "base": 0.059732,
+        "ci95": [
+          0.0,
+          0.001758
+        ],
+        "delta": 0.000681,
+        "k_base": 526.0,
+        "k_new": 532.0,
+        "new": 0.060413
+      },
+      "detection_fix_weighted": {
+        "base": 0.088628,
+        "ci95": [
+          0.0,
+          0.001899
+        ],
+        "delta": 0.000802,
+        "k_base": 276.2980475056256,
+        "k_new": 278.7980475056256,
+        "new": 0.08943
+      },
+      "fix_aware_detection": {
+        "base": 0.042812,
+        "ci95": [
+          0.0,
+          0.001401
+        ],
+        "delta": 0.000454,
+        "k_base": 377.0,
+        "k_new": 381.0,
+        "new": 0.043266
+      }
+    },
+    "javascript": {
+      "alerts_per_kloc": {
+        "base": 1.337434,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 3971.0,
+        "k_new": 3971.0,
+        "new": 1.337434
+      },
+      "detection": {
+        "base": 0.085873,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 186.0,
+        "k_new": 186.0,
+        "new": 0.085873
+      },
+      "detection_fix_weighted": {
+        "base": 0.101113,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 107.86414141414141,
+        "k_new": 107.86414141414141,
+        "new": 0.101113
+      },
+      "fix_aware_detection": {
+        "base": 0.054478,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 118.0,
+        "k_new": 118.0,
+        "new": 0.054478
+      }
+    },
+    "js_ts": {
+      "alerts_per_kloc": {
+        "base": 0.6909,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 4500.0,
+        "k_new": 4500.0,
+        "new": 0.6909
+      },
+      "detection": {
+        "base": 0.068019,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 342.0,
+        "k_new": 342.0,
+        "new": 0.068019
+      },
+      "detection_fix_weighted": {
+        "base": 0.085332,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 164.49756713803998,
+        "k_new": 164.49756713803998,
+        "new": 0.085332
+      },
+      "fix_aware_detection": {
+        "base": 0.049523,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 249.0,
+        "k_new": 249.0,
+        "new": 0.049523
+      }
+    },
+    "python": {
+      "alerts_per_kloc": {
+        "base": 0.292647,
+        "ci95": [
+          0.001491,
+          0.005781
+        ],
+        "delta": 0.003226,
+        "k_base": 2177.0,
+        "k_new": 2201.0,
+        "new": 0.295874
+      },
+      "detection": {
+        "base": 0.048703,
+        "ci95": [
+          0.0,
+          0.004555
+        ],
+        "delta": 0.001588,
+        "k_base": 184.0,
+        "k_new": 190.0,
+        "new": 0.050291
+      },
+      "detection_fix_weighted": {
+        "base": 0.093969,
+        "ci95": [
+          0.0,
+          0.00526
+        ],
+        "delta": 0.002101,
+        "k_base": 111.80048036758564,
+        "k_new": 114.30048036758564,
+        "new": 0.09607
+      },
+      "fix_aware_detection": {
+        "base": 0.03388,
+        "ci95": [
+          0.0,
+          0.003414
+        ],
+        "delta": 0.001059,
+        "k_base": 128.0,
+        "k_new": 132.0,
+        "new": 0.034939
+      }
+    },
+    "typescript": {
+      "alerts_per_kloc": {
+        "base": 0.149261,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 529.0,
+        "k_new": 529.0,
+        "new": 0.149261
+      },
+      "detection": {
+        "base": 0.054507,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 156.0,
+        "k_new": 156.0,
+        "new": 0.054507
+      },
+      "detection_fix_weighted": {
+        "base": 0.065779,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 56.633425723898554,
+        "k_new": 56.633425723898554,
+        "new": 0.065779
+      },
+      "fix_aware_detection": {
+        "base": 0.045772,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 131.0,
+        "k_new": 131.0,
+        "new": 0.045772
+      }
+    },
+    "web": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    }
+  }
+}
