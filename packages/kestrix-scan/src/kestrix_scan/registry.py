@@ -26,7 +26,9 @@ class Rule:
     title: str
     why: str
     fix: str
-    language: str  # "python" or "any" (any text file)
+    language: (
+        str  # python, javascript, web (HTML, Vue, Svelte, CSS, next.config), config, dependency or any (text file)
+    )
     sources: tuple[str, ...]  # language, library or standard documentation the rule was written from
 
     @property
@@ -900,6 +902,191 @@ _RULES = (
             "https://platform.openai.com/docs/api-reference/chat/create",
             "https://docs.claude.com/en/api/messages",
             "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval",
+        ),
+    ),
+    # ----- web files and frameworks (web_rules.py; js.angular.* and next.* also in js_rules.py)
+    Rule(
+        "js.angular.bypass_trust",
+        "CWE-79",
+        "high",
+        "medium",
+        "Angular bypassSecurityTrust* of a value that is not a literal",
+        "DomSanitizer.bypassSecurityTrustHtml, Url, Script, ResourceUrl and Style tell Angular to stop sanitizing a value. If it comes from a user, a URL or the network, markup or a javascript: URL in it runs in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.",
+        "Bind the plain value and let Angular sanitize it. If you must render HTML, sanitize it first with DOMPurify.sanitize and mark only that result as trusted; build URLs from a fixed origin and an encoded path.",
+        "javascript",
+        sources=(
+            "https://angular.dev/best-practices/security#trusting-safe-values",
+            "https://angular.dev/api/platform-browser/DomSanitizer",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+        ),
+    ),
+    Rule(
+        "vue.xss.v_html",
+        "CWE-79",
+        "high",
+        "medium",
+        "Vue v-html with a value that is not a literal",
+        "v-html sets the element's innerHTML from the expression, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL (for example $route.query), medium otherwise; calls to sanitize*, purify* and escape* functions and a $t('key') translation are not reported.",
+        "Render text with v-text or Vue's mustache interpolation, which Vue escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and bind the sanitized value.",
+        "web",
+        sources=(
+            "https://vuejs.org/guide/essentials/template-syntax.html#raw-html",
+            "https://vuejs.org/guide/best-practices/security.html#html-injection",
+        ),
+    ),
+    Rule(
+        "svelte.xss.at_html",
+        "CWE-79",
+        "high",
+        "medium",
+        "Svelte {@html} with a value that is not a literal",
+        "{@html expr} inserts the value as unescaped HTML, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL ($page.url, searchParams), medium otherwise; sanitize*, purify* and escape* calls are not reported.",
+        "Render text with {value}, which Svelte escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and pass the sanitized value.",
+        "web",
+        sources=(
+            "https://svelte.dev/docs/svelte/@html",
+            "https://svelte.dev/docs/svelte/legacy-@html",
+        ),
+    ),
+    Rule(
+        "web.url.dynamic_scheme",
+        "CWE-79",
+        "medium",
+        "low",
+        "Link or frame URL bound to a value that is not a literal (javascript: URLs)",
+        "A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported.",
+        "Accept only http(s) and relative URLs: parse the value with new URL(value, location.origin) and check url.protocol is 'http:' or 'https:' before binding it, or build the link from a fixed origin and an encoded path.",
+        "web",
+        sources=(
+            "https://vuejs.org/guide/best-practices/security.html#injection",
+            "https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/javascript",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+        ),
+    ),
+    Rule(
+        "html.inline.event_handler",
+        "CWE-693",
+        "low",
+        "medium",
+        "Inline event handler attribute (onclick and the like)",
+        "An attribute such as onclick or onload holds JavaScript, so the page needs a Content-Security-Policy with 'unsafe-inline' to work, which also lets injected markup run script.",
+        "Attach the handler from a script file with addEventListener and drop 'unsafe-inline' from script-src.",
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes#event_handler_attributes",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#inline_javascript",
+        ),
+    ),
+    Rule(
+        "html.url.javascript_scheme",
+        "CWE-693",
+        "low",
+        "medium",
+        "javascript: URL in href, src, action or formaction",
+        "A javascript: URL runs inline script when used, so the page needs a Content-Security-Policy with 'unsafe-inline'. The no-op forms javascript:void(0), javascript:; and javascript:undefined are not reported.",
+        "Use a button with an event listener from a script file, or a real URL.",
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/javascript",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#inline_javascript",
+        ),
+    ),
+    Rule(
+        "html.link.target_blank",
+        "CWE-1022",
+        "low",
+        "medium",
+        'target="_blank" link to an external page without rel="noopener"',
+        'Without noopener the opened page can read and redirect window.opener on browsers that do not imply it (all current browsers do for target="_blank", older ones do not). Only absolute http(s) and protocol-relative links are reported; rel="noreferrer" also counts as safe.',
+        'Add rel="noopener noreferrer" to the link.',
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/noopener",
+            "https://owasp.org/www-community/attacks/Reverse_Tabnabbing",
+        ),
+    ),
+    Rule(
+        "html.form.http_action",
+        "CWE-319",
+        "medium",
+        "high",
+        "Form that posts to an http: URL",
+        'A form with action="http://..." sends what the user typed (often a password or personal data) without encryption, where anyone on the network path can read or change it. Loopback hosts are not reported.',
+        "Post to an https:// URL, or to a relative path on an https site.",
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form#action",
+            "https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content",
+        ),
+    ),
+    Rule(
+        "html.mixed.http_resource",
+        "CWE-319",
+        "low",
+        "medium",
+        "Script, stylesheet, frame or image loaded over http:",
+        "A script, stylesheet, iframe or image with an http: URL can be altered in transit and is blocked or downgraded as mixed content on an https page. Loopback hosts are not reported.",
+        "Load the resource over https://, or host it yourself.",
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content",
+            "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script#src",
+        ),
+    ),
+    Rule(
+        "html.angular.inner_html",
+        "CWE-79",
+        "low",
+        "low",
+        "Angular [innerHTML] binding of a value that is not a literal",
+        "Angular sanitizes [innerHTML] values, so the binding is safe unless the value was marked trusted with bypassSecurityTrustHtml. It is reported at low severity as a place to check where the value comes from, in .html templates and in inline template: strings of .ts files.",
+        "Bind plain text with Angular's interpolation or [textContent]. Keep [innerHTML] for values that Angular sanitizes, and sanitize with DOMPurify before any bypassSecurityTrustHtml call.",
+        "web",
+        sources=(
+            "https://angular.dev/best-practices/security#sanitization-and-security-contexts",
+            "https://angular.dev/guide/templates/binding",
+        ),
+    ),
+    Rule(
+        "css.import.http",
+        "CWE-319",
+        "low",
+        "medium",
+        "CSS @import or url() over http:",
+        "A stylesheet that imports another stylesheet or loads an asset over http: can be altered in transit, which lets an attacker restyle the page or load a tracking image. Loopback hosts are not reported.",
+        "Use https:// URLs, or host the file yourself.",
+        "web",
+        sources=(
+            "https://developer.mozilla.org/en-US/docs/Web/CSS/@import",
+            "https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content",
+        ),
+    ),
+    Rule(
+        "css.expression.legacy",
+        "CWE-79",
+        "low",
+        "medium",
+        "CSS expression() (Internet Explorer 7 and older)",
+        "expression() in a declaration runs JavaScript in Internet Explorer 7 and older. No supported browser does, so the finding marks legacy code or an injection gadget.",
+        "Remove the declaration and use CSS or a script instead.",
+        "web",
+        sources=(
+            "https://learn.microsoft.com/en-us/previous-versions/ms537634(v=vs.85)",
+            "https://cwe.mitre.org/data/definitions/79.html",
+        ),
+    ),
+    Rule(
+        "next.images.wildcard_host",
+        "CWE-918",
+        "low",
+        "high",
+        "next.config images.remotePatterns allows hostname '**'",
+        "With hostname '**' Next.js's image optimizer (/_next/image) fetches, resizes and serves an image from any host, so the server can be made to request internal addresses or be used to spend bandwidth on other people's files. A missing Content-Security-Policy in headers() is not reported: it is too common to be a useful finding.",
+        "List the hosts you use: remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }], with a pathname where possible.",
+        "web",
+        sources=(
+            "https://nextjs.org/docs/app/api-reference/components/image#remotepatterns",
+            "https://nextjs.org/docs/app/api-reference/components/image#domains",
         ),
     ),
 )

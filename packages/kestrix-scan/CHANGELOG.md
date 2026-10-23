@@ -11,6 +11,33 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
   likely package; known malware is still denied. Offline, from the bundled `popular_names.json` (top 5,000 names per
   ecosystem, refreshed by hand with `scripts/refresh_popular_names.py`); `install-allow` in `[tool.kestrix]` lists
   names it never flags. Measurements and limits: `docs/modules/code.md`.
+- **Phase 1 of the language roadmap: the web stack (13 new rules, 73 in all; tuning numbers, not a held-out result).**
+  - New files read: `.vue`, `.svelte`, `.html`, `.htm`, `.css`, `.scss` and `next.config.*`, with a bounded stdlib tag
+    scanner (`html_tokens.py`, `web_rules.py`). `<script>` blocks of Vue, Svelte and HTML files go through the `js.*` rules
+    with the file's line numbers, `<style>` blocks through the CSS rules. Suppress with `<!-- kestrix: ignore[id] reason -->`
+    in markup (`//` and `/* */` in scripts, styles and CSS as before). New skipped directories: `.next`, `.nuxt`,
+    `.svelte-kit`, `.output`, `.angular`. The Claude Code hook and plugin scan the new extensions too (the hook context still lists
+    medium severity and above, so the low-severity web rules show up in scans and CI).
+  - New rules: `vue.xss.v_html` (CWE-79), `svelte.xss.at_html` (CWE-79), `web.url.dynamic_scheme` (CWE-79, low unless the
+    value reads the route), `html.inline.event_handler` and `html.url.javascript_scheme` (CWE-693, low),
+    `html.link.target_blank` (CWE-1022, low), `html.form.http_action` (CWE-319, medium), `html.mixed.http_resource`
+    (CWE-319, low), `html.angular.inner_html` (CWE-79, low), `css.import.http` (CWE-319, low), `css.expression.legacy`
+    (CWE-79, low), `next.images.wildcard_host` (CWE-918, low) and `js.angular.bypass_trust` (CWE-79, `bypassSecurityTrust*`
+    of a non-literal). A missing Content-Security-Policy is deliberately not reported.
+  - Wider sources and sinks for existing rules: Next.js route-handler `params`/`searchParams`/`context.params`,
+    `request.json()`/`formData()`/`text()`, server-action `FormData`, `redirect()`/`permanentRedirect()`/`NextResponse.redirect()`/
+    `Response.redirect()` (open redirect), `useSearchParams()` from `next/navigation`; Koa `ctx.get()`, `ctx.headers`; NestJS `@Query()`,
+    `@Body()`, `@Param()`, `@Headers()` parameters (and `@Req()` makes `req` a parameter); Fastify was covered. In
+    `new URL(input, base)` only `input` carries taint (19 fewer alerts on the tuning data).
+  - The registry grows from 60 to 73 rules; the SARIF rule list, the rules table, the provenance page, the fix playbook and the plugin's
+    skill text list them. Rule ids of existing rules are unchanged.
+  - Measured on the tuning data (docs/benchmarks/cvefixes.md, "Phase 1"): JavaScript and TypeScript detection 6.72% to 6.80%
+    (+4 pairs), alerts +0.2%; `js.angular.bypass_trust` +3 pairs for 0 alerts, NestJS +1 for 1 alert, the `new URL`
+    narrowing -19 alerts; the Next.js, Koa and request-body sources added no detection (+10 alerts together) and are kept
+    because they were asked for. On 92 web-file pairs of CVE fixes (73 in scope) the web rules detect 27.4% [7.4, 50.9] (13 pairs by
+    `vue.xss.v_html`), where the scanner detected none before. Scan speed on 39,420 mixed files: 42.2 files per second before, 42.4 after (no measurable slowdown).
+  - `kestrixcodebench`: web files are a language (`web`) in a benchmark root of their own, `rule-rates` and `web-corpus` commands,
+    and `test2-select --published-after` with `hpc/codebench_heldout_future.sh` for a future test3.
 
 - **Dependency checks the day an advisory drops: fresher data, more ecosystems.**
   - Ecosystems: Packagist (`composer.lock`), Go (`go.mod`, `go.sum`), crates.io (`Cargo.lock`), Maven (`pom.xml`,

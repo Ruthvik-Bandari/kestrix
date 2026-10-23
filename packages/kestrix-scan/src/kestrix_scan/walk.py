@@ -45,6 +45,11 @@ SKIP_DIRS = frozenset(
         "site-packages",
         "vendor",
         "third_party",
+        ".next",
+        ".nuxt",
+        ".svelte-kit",
+        ".output",
+        ".angular",
     }
 )
 _GIT_TIMEOUT_S = 10

@@ -470,3 +470,96 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://docs.claude.com/en/api/messages>
 - Documentation: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.angular.bypass_trust`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://angular.dev/best-practices/security#trusting-safe-values>
+- Documentation: <https://angular.dev/api/platform-browser/DomSanitizer>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `vue.xss.v_html`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://vuejs.org/guide/essentials/template-syntax.html#raw-html>
+- Documentation: <https://vuejs.org/guide/best-practices/security.html#html-injection>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `svelte.xss.at_html`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://svelte.dev/docs/svelte/@html>
+- Documentation: <https://svelte.dev/docs/svelte/legacy-@html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `web.url.dynamic_scheme`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://vuejs.org/guide/best-practices/security.html#injection>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/javascript>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.inline.event_handler`
+
+- CWE: [CWE-693](https://cwe.mitre.org/data/definitions/693.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes#event_handler_attributes>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#inline_javascript>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.url.javascript_scheme`
+
+- CWE: [CWE-693](https://cwe.mitre.org/data/definitions/693.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/javascript>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#inline_javascript>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.link.target_blank`
+
+- CWE: [CWE-1022](https://cwe.mitre.org/data/definitions/1022.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/noopener>
+- Documentation: <https://owasp.org/www-community/attacks/Reverse_Tabnabbing>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.form.http_action`
+
+- CWE: [CWE-319](https://cwe.mitre.org/data/definitions/319.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form#action>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.mixed.http_resource`
+
+- CWE: [CWE-319](https://cwe.mitre.org/data/definitions/319.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script#src>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `html.angular.inner_html`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://angular.dev/best-practices/security#sanitization-and-security-contexts>
+- Documentation: <https://angular.dev/guide/templates/binding>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `css.import.http`
+
+- CWE: [CWE-319](https://cwe.mitre.org/data/definitions/319.html)
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/CSS/@import>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `css.expression.legacy`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://learn.microsoft.com/en-us/previous-versions/ms537634(v=vs.85)>
+- Documentation: <https://cwe.mitre.org/data/definitions/79.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `next.images.wildcard_host`
+
+- CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
+- Documentation: <https://nextjs.org/docs/app/api-reference/components/image#remotepatterns>
+- Documentation: <https://nextjs.org/docs/app/api-reference/components/image#domains>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

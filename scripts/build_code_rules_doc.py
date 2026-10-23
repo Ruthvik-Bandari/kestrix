@@ -32,6 +32,7 @@ def rules_table() -> str:
         scope = {
             "python": "Python",
             "javascript": "JavaScript, TypeScript",
+            "web": "HTML, Vue, Svelte, CSS, next.config",
             "config": "Claude Code and MCP config",
             "dependency": "lockfiles",
         }.get(rule.language, "any text file")

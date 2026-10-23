@@ -31,7 +31,7 @@ def test_every_js_suffix_gets_the_js_rules(tmp_path: Path, suffix: str) -> None:
     assert rule_ids == {"js.exec.eval"}
 
 
-@pytest.mark.parametrize("name", ["App.vue", "App.svelte", "calc.py", "notes.md", "calc.js.txt"])
+@pytest.mark.parametrize("name", ["calc.py", "notes.md", "calc.js.txt"])
 def test_other_files_do_not_get_the_js_rules(tmp_path: Path, name: str) -> None:
     rule_ids, _ = _scan_one(tmp_path, name, "<script>\n" + EVAL + "</script>\n")
     assert not {rule_id for rule_id in rule_ids if rule_id.startswith("js.")}

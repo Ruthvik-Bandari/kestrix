@@ -49,6 +49,7 @@ SUBSETS: dict[str, tuple[str, ...]] = {
     "javascript": ("javascript",),
     "typescript": ("typescript",),
     "js_ts": ("javascript", "typescript"),
+    "web": ("web",),  # .vue, .svelte, .html, .css: only kestrix-scan reads them
 }
 
 Finding = tuple[str, int, int, tuple[str, ...]]  # rule, line, end line, families

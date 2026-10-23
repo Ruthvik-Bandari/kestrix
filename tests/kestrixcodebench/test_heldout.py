@@ -246,3 +246,16 @@ def test_locked_test2_refuses_a_root_that_is_not_an_unevaluated_test2(tmp_path):
     )
     with pytest.raises(CodeBenchError, match="unevaluated test2"):
         heldout.locked_test2(layout, "x", {}, "sha", reps=5, others=())
+
+
+def test_select_published_after_keeps_only_newer_advisories(tmp_path):
+    old, vul = tables(tmp_path)
+    root = tmp_path / "t3"
+    advisory(
+        root, "GHSA-new1-aaaa-aaaa", [], [f"https://github.com/Fresh/lib/commit/{'1' * 40}"]
+    )  # published 2026-10-20
+    report = heldout.select_targets(root, old, vul, published_after="2026-10-19")
+    assert report["selected"]["advisories"] == 1 and report["published_after"] == "2026-10-19"
+    report = heldout.select_targets(root, old, vul, published_after="2026-10-20")
+    assert report["selected"]["advisories"] == 0
+    assert report["counts"]["excluded_published_on_or_before_cutoff"] == 1

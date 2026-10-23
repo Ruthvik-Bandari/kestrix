@@ -1,6 +1,6 @@
 # kestrix-scan
 
-**Local security checks for Python, JavaScript and TypeScript code, hard-coded secrets and dependencies.**
+**Local security checks for Python, JavaScript and TypeScript code, HTML, Vue, Svelte and CSS files, hard-coded secrets and dependencies.**
 `kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
 randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
@@ -243,16 +243,21 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 60 rules. They cover Python (28 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 73 rules. They cover Python (28 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
-LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), JavaScript and TypeScript (14 `js.*`
+LLM output reaching code, a shell, SQL or a path; plus unsafe model loading), JavaScript and TypeScript (15 `js.*`
 rules for `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts`: `eval` and `new Function`,
 `child_process` shells, DOM and React HTML sinks, SQL built from strings, `rejectUnauthorized: false`, MD5/SHA-1,
 `Math.random()` for secrets, JWT `none` and `ignoreExpiration`, Express, Koa and hapi request data (including the request URL) reaching files, URLs and
-redirects, prototype pollution, wildcard CORS with credentials, and LLM output reaching `eval`, a shell or HTML),
-Claude Code and MCP configuration
+redirects, prototype pollution, wildcard CORS with credentials, Angular `bypassSecurityTrust*`, and LLM output reaching `eval`, a shell or HTML; request
+sources also include Next.js route handlers, `params` and server-action `FormData`, Fastify, Koa and NestJS decorators),
+web files (12 rules in `vue.*`, `svelte.*`, `web.*`, `html.*`, `css.*` and `next.*` for `.vue`, `.svelte`, `.html`, `.htm`,
+`.css`, `.scss` and `next.config.*`: `v-html` and `{@html}` with a non-literal value, `javascript:` links, inline event
+handlers, `target="_blank"` without `noopener`, forms and subresources over `http:`, Angular `[innerHTML]`, remote CSS over
+`http:` and `expression()`, and a `**` image host in `next.config`; mostly low severity, with `<script>` blocks run through the
+`js.*` rules), Claude Code and MCP configuration
 (5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and
 literal credentials), secrets in any text file (11 `secret.*` rules: AWS, GitHub, Slack, Stripe, Google, Anthropic
 and OpenAI-style keys, private keys, JWTs and high-entropy credentials), and dependencies in lockfiles (2 `dep.*`
@@ -267,7 +272,9 @@ TypeScript annotations) feeds a structural matcher that knows calls, member chai
 attributes, function scopes and `import`/`require` aliases, plus a light same-function taint for Express request
 data, the URL and LLM output. Every rule matches a precise shape and stays quiet when the code is ambiguous, so it
 misses more than a parser-based tool would, by design. Minified files (a `.min.` name or an average line over 500
-characters) are skipped as `minified`. Vue and Svelte files are not analyzed.
+characters) are skipped as `minified`. Vue, Svelte and HTML files are read with a bounded tag scanner (no HTML parser): the
+template rules look at directives and attributes, `<script>` bodies go through the JavaScript rules with the file's line
+numbers, and a missing Content-Security-Policy is deliberately not reported.
 
 Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is
 claimed, and no findings means no rule fired, not that the code is secure. A

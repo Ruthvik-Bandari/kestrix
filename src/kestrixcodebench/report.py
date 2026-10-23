@@ -38,7 +38,7 @@ VARIANT_DROPS = frozenset({"security/detect-object-injection"})
 
 # Which language subsets a tool is run on (a baseline is scored only where it applies).
 TOOL_SUBSETS: dict[str, tuple[str, ...]] = {
-    "kestrix": ("all", "python", "javascript", "typescript", "js_ts"),
+    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web"),
     "bandit": ("python",),
     "eslint": ("javascript", "typescript", "js_ts"),
     VARIANT: ("javascript", "typescript", "js_ts"),

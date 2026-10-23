@@ -229,6 +229,7 @@ def _registry_counts() -> dict[str, int]:
     counts: dict[str, int] = {}
     for rule in registry_rules():
         family = rule.id.split(".")[0]
+        family = "web" if family in {"vue", "svelte", "web", "html", "css", "next"} else family
         counts[family] = counts.get(family, 0) + 1
     return counts
 
@@ -238,11 +239,11 @@ def test_readme_rule_counts_match_the_registry() -> None:
     total = sum(counts.values())
     readme = _text("README.md")
     stated = re.search(
-        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
+        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) web-file, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
         readme,
     )
     assert stated, "README.md must state the rule count per family"
-    expected = (total, counts["py"], counts["js"], counts["secret"], counts["dep"], counts["config"])
+    expected = (total, counts["py"], counts["js"], counts["web"], counts["secret"], counts["dep"], counts["config"])
     assert tuple(int(n) for n in stated.groups()) == expected
     # no other count of rules anywhere in the README, and the rule-counting sentences name the same numbers
     assert {int(n) for n in re.findall(r"(\d+) rules in all", readme)} == {total}
@@ -260,7 +261,10 @@ def test_other_docs_state_the_same_rule_counts() -> None:
         assert found, family
         assert {int(a or b) for a, b in found} == {counts[family]}, family
     doc = (REPO / "docs/claude-plugin.md").read_text(encoding="utf-8")
-    assert f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['secret']} secret," in doc
+    assert (
+        f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['web']} web-file, {counts['secret']} secret,"
+        in doc
+    )
     assert f"{counts['dep']} dependency, {counts['config']} agent-config rules" in doc
     submission = (REPO / "docs/plugin-submission.md").read_text(encoding="utf-8")
     assert {int(n) for n in re.findall(r"Its (\d+) rules", submission)} == {total}

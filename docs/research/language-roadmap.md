@@ -1,6 +1,6 @@
 # Language and framework roadmap for kestrix-scan
 
-Status: plan (2026-10-22). Nothing here is shipped until its phase passes the measurement gate below.
+Status: Phase 1 (web stack) implemented 2026-10-23 and measured on tuning data only (see [the Phase 1 section of the CVE-fix benchmark](../benchmarks/cvefixes.md#phase-1-the-web-stack-tuning-numbers-2026-10-23)); its held-out `test3` is not yet run. Phases 2 to 5 are plans. Nothing is shipped as "measured" until its phase passes the measurement gate below.
 
 ## Why
 
@@ -34,6 +34,8 @@ about it truthfully.
 ## Phases
 
 ### Phase 1: the web stack (highest reach)
+
+**Status: shipped in `kestrix-scan` (unreleased) with tuning numbers.** 13 rules and the Next.js, Fastify, Koa and NestJS sources are in; HTML, Vue, Svelte, CSS and `next.config` files are read; the Claude plugin hooks scan the new extensions. On the tuning data JavaScript and TypeScript detection moved 6.72% to 6.80% (+4 pairs, +0.2% alerts) and the web rules detect 27.4% [7.4, 50.9] of 73 in-scope web-file pairs (13 pairs by `vue.xss.v_html`; none before). Not done: the one-time held-out measurement (`hpc/codebench_heldout_future.sh` builds `test3` from advisories published after 2026-10-22), a comparison tool for web files (none is licensed for the use), and rule evidence for the CSS, mixed-content, form and `target="_blank"` checks (no detection data; they raise 0.47 findings per KLOC on 123 KLOC of other web files). A missing Content-Security-Policy in `headers()` is not flagged: too noisy. Table below is the original plan.
 
 | Target | What the rules look for (examples) | Notes |
 | --- | --- | --- |

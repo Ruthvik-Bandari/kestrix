@@ -36,6 +36,15 @@ def test_skips_dependency_and_build_dirs(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("no_git")
+def test_skips_framework_build_dirs_and_keeps_web_files(tmp_path: Path) -> None:
+    skipped = (".next/server/p.html", ".nuxt/dist/a.vue", ".svelte-kit/output/a.svelte", ".output/public/i.html")
+    kept = ("src/App.vue", "src/Page.svelte", "public/index.html", "styles/site.scss", "next.config.mjs")
+    for rel in (*skipped, *kept, ".angular/cache/x.css"):
+        write(tmp_path, rel)
+    assert names(tmp_path) == sorted(kept)
+
+
+@pytest.mark.usefixtures("no_git")
 def test_big_file_is_reported_as_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(walk, "MAX_FILE_BYTES", 10)
     write(tmp_path, "big.py", "x = '" + "a" * 20 + "'\n")

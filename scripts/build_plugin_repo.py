@@ -65,9 +65,13 @@ HOOK_COMMAND = re.compile(r'python3 "\$\{CLAUDE_PLUGIN_ROOT\}/([A-Za-z0-9_./-]+)
 FOLDER_NAME = re.compile(r"[A-Za-z0-9._-]+")
 BENCHMARKS = {"benchmarks/scorecard.md": "benchmarkpython.md", "benchmarks/plugin-ab.md": "plugin-ab.md"}
 RELATIVE_LINK = re.compile(r"\[([^\]]+)\]\((?!https?://|#|mailto:)[^)]*\)")
+WEB_PREFIXES = frozenset(
+    {"vue", "svelte", "web", "html", "css", "next"}
+)  # rule ids of HTML, Vue, Svelte, CSS, next.config
 RULE_FAMILIES = (
     ("py", "Python"),
     ("js", "JS/TS"),
+    ("web", "web-file"),
     ("secret", "secret"),
     ("dep", "dependency"),
     ("config", "agent-config"),
@@ -75,10 +79,12 @@ RULE_FAMILIES = (
 
 
 def rule_counts() -> tuple[int, str]:
-    """(total, "27 Python, 14 JS/TS, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
+    """(total, "28 Python, 15 JS/TS, 12 web-file, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
     counts: dict[str, int] = {}
     for rule in rules():
-        counts[rule.id.split(".")[0]] = counts.get(rule.id.split(".")[0], 0) + 1
+        family = rule.id.split(".")[0]
+        family = "web" if family in WEB_PREFIXES else family
+        counts[family] = counts.get(family, 0) + 1
     known = {prefix for prefix, _ in RULE_FAMILIES}
     if set(counts) != known:
         raise SystemExit(f"the rule registry has families {sorted(set(counts) - known)} that README.md does not name")

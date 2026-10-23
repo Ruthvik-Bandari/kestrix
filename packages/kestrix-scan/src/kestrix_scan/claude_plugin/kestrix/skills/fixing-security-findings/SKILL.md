@@ -1,6 +1,6 @@
 ---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -1493,4 +1493,286 @@ export async function calculate(question, model) {
   if (!Number.isFinite(value)) throw new Error('the model did not return a number');
   return value;
 }
+```
+
+### `js.angular.bypass_trust`: Angular bypassSecurityTrust* of a value that is not a literal
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** DomSanitizer.bypassSecurityTrustHtml, Url, Script, ResourceUrl and Style tell Angular to stop sanitizing a value. If it comes from a user, a URL or the network, markup or a javascript: URL in it runs in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.
+
+**Fix:** Bind the plain value and let Angular sanitize it. If you must render HTML, sanitize it first with DOMPurify.sanitize and mark only that result as trusted; build URLs from a fixed origin and an encoded path.
+
+Before:
+
+```javascript
+import { DomSanitizer } from '@angular/platform-browser';
+
+export function render(sanitizer: DomSanitizer, html: string) {
+  return sanitizer.bypassSecurityTrustHtml(html);
+}
+```
+
+After:
+
+```javascript
+import DOMPurify from 'dompurify';
+import { DomSanitizer } from '@angular/platform-browser';
+
+export function render(sanitizer: DomSanitizer, html: string) {
+  return sanitizer.bypassSecurityTrustHtml(DOMPurify.sanitize(html));
+}
+```
+
+## Web file rules (HTML, Vue, Svelte, Angular templates, CSS, next.config)
+
+These rules read `.html`, `.htm`, `.vue`, `.svelte`, `.css` and `.scss` files, the Angular `[innerHTML]` binding in `.ts` inline templates, and `next.config.js`, `.mjs`, `.ts`. Script blocks in `.html`, `.vue` and `.svelte` files also get the `js.*` rules above. Suppress a confirmed false positive with `<!-- kestrix: ignore[<rule-id>] <reason> -->` in markup, `// ...` in a script block or SCSS, or `/* ... */` in CSS, on the line or the line above.
+
+### `vue.xss.v_html`: Vue v-html with a value that is not a literal
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** v-html sets the element's innerHTML from the expression, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL (for example $route.query), medium otherwise; calls to sanitize*, purify* and escape* functions and a $t('key') translation are not reported.
+
+**Fix:** Render text with v-text or Vue's mustache interpolation, which Vue escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and bind the sanitized value.
+
+Before (`Post.vue`):
+
+```vue
+<template>
+  <article v-html="post.body"></article>
+</template>
+```
+
+After:
+
+```vue
+<template>
+  <article v-text="post.body"></article>
+</template>
+```
+
+### `svelte.xss.at_html`: Svelte {@html} with a value that is not a literal
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** {@html expr} inserts the value as unescaped HTML, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL ($page.url, searchParams), medium otherwise; sanitize*, purify* and escape* calls are not reported.
+
+**Fix:** Render text with {value}, which Svelte escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and pass the sanitized value.
+
+Before (`Post.svelte`):
+
+```svelte
+<article>{@html post.body}</article>
+```
+
+After:
+
+```svelte
+<article>{post.body}</article>
+```
+
+### `web.url.dynamic_scheme`: Link or frame URL bound to a value that is not a literal (javascript: URLs)
+
+CWE-79 · default severity medium · confidence low
+
+**Why:** A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported.
+
+**Fix:** Accept only http(s) and relative URLs: parse the value with new URL(value, location.origin) and check url.protocol is 'http:' or 'https:' before binding it, or build the link from a fixed origin and an encoded path.
+
+Before (`Link.vue`):
+
+```vue
+<template>
+  <a :href="link">Open</a>
+</template>
+```
+
+After:
+
+```vue
+<template>
+  <a :href="'/go/' + encodeURIComponent(id)">Open</a>
+</template>
+```
+
+### `html.inline.event_handler`: Inline event handler attribute (onclick and the like)
+
+CWE-693 · default severity low · confidence medium
+
+**Why:** An attribute such as onclick or onload holds JavaScript, so the page needs a Content-Security-Policy with 'unsafe-inline' to work, which also lets injected markup run script.
+
+**Fix:** Attach the handler from a script file with addEventListener and drop 'unsafe-inline' from script-src.
+
+Before (`index.html`):
+
+```html
+<button onclick="save()">Save</button>
+```
+
+After:
+
+```html
+<button id="save">Save</button>
+<script src="/save.js"></script>
+```
+
+### `html.url.javascript_scheme`: javascript: URL in href, src, action or formaction
+
+CWE-693 · default severity low · confidence medium
+
+**Why:** A javascript: URL runs inline script when used, so the page needs a Content-Security-Policy with 'unsafe-inline'. The no-op forms javascript:void(0), javascript:; and javascript:undefined are not reported.
+
+**Fix:** Use a button with an event listener from a script file, or a real URL.
+
+Before (`index.html`):
+
+```html
+<a href="javascript:openMenu()">Menu</a>
+```
+
+After:
+
+```html
+<button type="button" id="menu">Menu</button>
+```
+
+### `html.link.target_blank`: target="_blank" link to an external page without rel="noopener"
+
+CWE-1022 · default severity low · confidence medium
+
+**Why:** Without noopener the opened page can read and redirect window.opener on browsers that do not imply it (all current browsers do for target="_blank", older ones do not). Only absolute http(s) and protocol-relative links are reported; rel="noreferrer" also counts as safe.
+
+**Fix:** Add rel="noopener noreferrer" to the link.
+
+Before (`index.html`):
+
+```html
+<a href="https://example.com/docs" target="_blank">Docs</a>
+```
+
+After:
+
+```html
+<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">Docs</a>
+```
+
+### `html.form.http_action`: Form that posts to an http: URL
+
+CWE-319 · default severity medium · confidence high
+
+**Why:** A form with action="http://..." sends what the user typed (often a password or personal data) without encryption, where anyone on the network path can read or change it. Loopback hosts are not reported.
+
+**Fix:** Post to an https:// URL, or to a relative path on an https site.
+
+Before (`login.html`):
+
+```html
+<form action="http://example.com/login" method="post"></form>
+```
+
+After:
+
+```html
+<form action="https://example.com/login" method="post"></form>
+```
+
+### `html.mixed.http_resource`: Script, stylesheet, frame or image loaded over http:
+
+CWE-319 · default severity low · confidence medium
+
+**Why:** A script, stylesheet, iframe or image with an http: URL can be altered in transit and is blocked or downgraded as mixed content on an https page. Loopback hosts are not reported.
+
+**Fix:** Load the resource over https://, or host it yourself.
+
+Before (`index.html`):
+
+```html
+<script src="http://cdn.example.com/app.js"></script>
+```
+
+After:
+
+```html
+<script src="https://cdn.example.com/app.js"></script>
+```
+
+### `html.angular.inner_html`: Angular [innerHTML] binding of a value that is not a literal
+
+CWE-79 · default severity low · confidence low
+
+**Why:** Angular sanitizes [innerHTML] values, so the binding is safe unless the value was marked trusted with bypassSecurityTrustHtml. It is reported at low severity as a place to check where the value comes from, in .html templates and in inline template: strings of .ts files.
+
+**Fix:** Bind plain text with Angular's interpolation or [textContent]. Keep [innerHTML] for values that Angular sanitizes, and sanitize with DOMPurify before any bypassSecurityTrustHtml call.
+
+Before (`post.component.html`):
+
+```html
+<div [innerHTML]="body"></div>
+```
+
+After:
+
+```html
+<div [textContent]="body"></div>
+```
+
+### `css.import.http`: CSS @import or url() over http:
+
+CWE-319 · default severity low · confidence medium
+
+**Why:** A stylesheet that imports another stylesheet or loads an asset over http: can be altered in transit, which lets an attacker restyle the page or load a tracking image. Loopback hosts are not reported.
+
+**Fix:** Use https:// URLs, or host the file yourself.
+
+Before (`site.css`):
+
+```css
+@import url(http://fonts.example.com/font.css);
+```
+
+After:
+
+```css
+@import url(https://fonts.example.com/font.css);
+```
+
+### `css.expression.legacy`: CSS expression() (Internet Explorer 7 and older)
+
+CWE-79 · default severity low · confidence medium
+
+**Why:** expression() in a declaration runs JavaScript in Internet Explorer 7 and older. No supported browser does, so the finding marks legacy code or an injection gadget.
+
+**Fix:** Remove the declaration and use CSS or a script instead.
+
+Before (`site.css`):
+
+```css
+.box { width: expression(document.body.clientWidth - 20); }
+```
+
+After:
+
+```css
+.box { width: calc(100vw - 20px); }
+```
+
+### `next.images.wildcard_host`: next.config images.remotePatterns allows hostname '**'
+
+CWE-918 · default severity low · confidence high
+
+**Why:** With hostname '**' Next.js's image optimizer (/_next/image) fetches, resizes and serves an image from any host, so the server can be made to request internal addresses or be used to spend bandwidth on other people's files. A missing Content-Security-Policy in headers() is not reported: it is too common to be a useful finding.
+
+**Fix:** List the hosts you use: remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }], with a pathname where possible.
+
+Before (`next.config.js`):
+
+```javascript
+module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] } };
+```
+
+After:
+
+```javascript
+module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }] } };
 ```

@@ -25,7 +25,7 @@ import time
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .common import EXTENSIONS, KINDS, LOCK_NAME, CodeBenchError, Layout, now, write_json, write_jsonl
+from .common import EXTENSIONS, KINDS, LOCK_NAME, WEB_EXTENSIONS, CodeBenchError, Layout, now, write_json, write_jsonl
 from .families import bandit_families, eslint_families, kestrix_families
 
 TOOLS = ("kestrix", "bandit", "eslint")
@@ -156,10 +156,12 @@ def _version(args: list[str]) -> str:
 
 
 def count_files(directory: Path, tool: str) -> dict[str, int]:
-    """Files per kind that the tool can read: every file for kestrix, ``.py`` for bandit, JavaScript and TypeScript for eslint."""
-    wanted = {"kestrix": tuple(EXTENSIONS), "bandit": (".py",), "eslint": tuple(e for e in EXTENSIONS if e != ".py")}[
-        base_tool(tool)
-    ]
+    """Files per kind that the tool can read: every source and web file for kestrix, ``.py`` for bandit, JavaScript and TypeScript for eslint."""
+    wanted = {
+        "kestrix": tuple(EXTENSIONS),
+        "bandit": (".py",),
+        "eslint": tuple(e for e in EXTENSIONS if e != ".py" and e not in WEB_EXTENSIONS),
+    }[base_tool(tool)]
     return {kind: sum(1 for p in (directory / kind).glob("*") if p.suffix in wanted) for kind in KINDS}
 
 

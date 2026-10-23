@@ -69,9 +69,14 @@ def size_reason(text: str, *, minimum: bool) -> str | None:
     return None
 
 
-def pair_reason(pair: RawPair) -> str | None:
+def _language_ok(path: str, only: str | None) -> bool:
+    found = language_of(path)
+    return found is not None and (only is None or found[0] == only)
+
+
+def pair_reason(pair: RawPair, only: str | None = None) -> str | None:
     """Why a changed file is left out of the benchmark, or None to keep it."""
-    if language_of(pair.path) is None:
+    if not _language_ok(pair.path, only):
         return "other_language"
     reason = path_reason(pair.path) or content_reason(pair.before) or content_reason(pair.after)
     if reason:
@@ -84,8 +89,8 @@ def pair_reason(pair: RawPair) -> str | None:
     return None
 
 
-def unchanged_reason(item: RawUnchanged) -> str | None:
-    if language_of(item.path) is None:
+def unchanged_reason(item: RawUnchanged, only: str | None = None) -> str | None:
+    if not _language_ok(item.path, only):
         return "other_language"
     return path_reason(item.path) or content_reason(item.text) or size_reason(item.text, minimum=True)
 
@@ -94,12 +99,12 @@ def file_id(*parts: str) -> str:
     return sha256_text("\x1f".join(parts))[:16]
 
 
-def merge_pairs(pairs: list[RawPair], dropped: Counter[str]) -> list[dict[str, Any]]:
+def merge_pairs(pairs: list[RawPair], dropped: Counter[str], only: str | None = None) -> list[dict[str, Any]]:
     """Filter and de-duplicate; one record per distinct (before, after) text, with the diff computed once."""
     rows: dict[str, dict[str, Any]] = {}
     texts: dict[str, tuple[str, str]] = {}
     for pair in pairs:
-        reason = pair_reason(pair)
+        reason = pair_reason(pair, only)
         if reason:
             dropped[f"{pair.source}:{reason}"] += 1
             continue
@@ -144,11 +149,11 @@ def merge_pairs(pairs: list[RawPair], dropped: Counter[str]) -> list[dict[str, A
 
 
 def merge_unchanged(
-    items: list[RawUnchanged], known_texts: set[str], dropped: Counter[str]
+    items: list[RawUnchanged], known_texts: set[str], dropped: Counter[str], only: str | None = None
 ) -> list[tuple[dict[str, Any], str]]:
     out: dict[str, tuple[dict[str, Any], str]] = {}
     for item in items:
-        reason = unchanged_reason(item)
+        reason = unchanged_reason(item, only)
         if reason:
             dropped[f"unchanged:{reason}"] += 1
             continue
@@ -258,8 +263,14 @@ def manifest(
     return body
 
 
-def build(layout: Layout, cvefixes_db: Path, vul_root: Path, limit: int | None = None) -> dict[str, Any]:
-    """Read both sources, filter, de-duplicate, split and write the files and the manifest."""
+def build(
+    layout: Layout, cvefixes_db: Path, vul_root: Path, limit: int | None = None, only_language: str | None = None
+) -> dict[str, Any]:
+    """Read both sources, filter, de-duplicate, split and write the files and the manifest.
+
+    ``only_language`` ("web") keeps only that language's files: the web-file benchmark is built in its own root, so the
+    ids and the split of the Python, JavaScript and TypeScript benchmark are untouched.
+    """
     if not cvefixes_db.is_file():
         raise CodeBenchError(f"{cvefixes_db} is missing")
     os.umask(0o077)
@@ -273,10 +284,10 @@ def build(layout: Layout, cvefixes_db: Path, vul_root: Path, limit: int | None =
                 break
             raw.append(pair)
     by_source = Counter(p.source for p in raw)
-    pairs = merge_pairs(raw, dropped)
+    pairs = merge_pairs(raw, dropped, only_language)
     texts = {r["id"]: r.pop("_text") for r in pairs}
     known = {r["before_sha"] for r in pairs} | {r["after_sha"] for r in pairs}
-    unchanged_items = merge_unchanged(raw_unchanged, known, dropped)
+    unchanged_items = merge_unchanged(raw_unchanged, known, dropped, only_language)
     unchanged = [row for row, _ in unchanged_items]
     unchanged_text = {row["id"]: text for row, text in unchanged_items}
     split, group = split_rows(pairs, unchanged)

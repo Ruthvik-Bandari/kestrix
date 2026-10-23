@@ -143,6 +143,10 @@ EXAMPLES: dict[str, tuple[str, str]] = {
 
 # js rule id -> (before, after), JavaScript as a file named app.js would hold it. The test runs the js.* rules on both.
 JS_EXAMPLES: dict[str, tuple[str, str]] = {
+    "js.angular.bypass_trust": (
+        "import { DomSanitizer } from '@angular/platform-browser';\n\nexport function render(sanitizer: DomSanitizer, html: string) {\n  return sanitizer.bypassSecurityTrustHtml(html);\n}\n",
+        "import DOMPurify from 'dompurify';\nimport { DomSanitizer } from '@angular/platform-browser';\n\nexport function render(sanitizer: DomSanitizer, html: string) {\n  return sanitizer.bypassSecurityTrustHtml(DOMPurify.sanitize(html));\n}\n",
+    ),
     "js.exec.eval": (
         "function parse(text) {\n  return eval(text);\n}\n",
         "function parse(text) {\n  return JSON.parse(text);\n}\n",
@@ -201,6 +205,82 @@ JS_EXAMPLES: dict[str, tuple[str, str]] = {
     ),
 }
 
+# web rule id -> (file name, language of the code block, before, after); both are scanned in the test.
+WEB_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
+    "vue.xss.v_html": (
+        "Post.vue",
+        "vue",
+        '<template>\n  <article v-html="post.body"></article>\n</template>\n',
+        '<template>\n  <article v-text="post.body"></article>\n</template>\n',
+    ),
+    "svelte.xss.at_html": (
+        "Post.svelte",
+        "svelte",
+        "<article>{@html post.body}</article>\n",
+        "<article>{post.body}</article>\n",
+    ),
+    "web.url.dynamic_scheme": (
+        "Link.vue",
+        "vue",
+        '<template>\n  <a :href="link">Open</a>\n</template>\n',
+        "<template>\n  <a :href=\"'/go/' + encodeURIComponent(id)\">Open</a>\n</template>\n",
+    ),
+    "html.inline.event_handler": (
+        "index.html",
+        "html",
+        '<button onclick="save()">Save</button>\n',
+        '<button id="save">Save</button>\n<script src="/save.js"></script>\n',
+    ),
+    "html.url.javascript_scheme": (
+        "index.html",
+        "html",
+        '<a href="javascript:openMenu()">Menu</a>\n',
+        '<button type="button" id="menu">Menu</button>\n',
+    ),
+    "html.link.target_blank": (
+        "index.html",
+        "html",
+        '<a href="https://example.com/docs" target="_blank">Docs</a>\n',
+        '<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">Docs</a>\n',
+    ),
+    "html.form.http_action": (
+        "login.html",
+        "html",
+        '<form action="http://example.com/login" method="post"></form>\n',
+        '<form action="https://example.com/login" method="post"></form>\n',
+    ),
+    "html.mixed.http_resource": (
+        "index.html",
+        "html",
+        '<script src="http://cdn.example.com/app.js"></script>\n',
+        '<script src="https://cdn.example.com/app.js"></script>\n',
+    ),
+    "html.angular.inner_html": (
+        "post.component.html",
+        "html",
+        '<div [innerHTML]="body"></div>\n',
+        '<div [textContent]="body"></div>\n',
+    ),
+    "css.import.http": (
+        "site.css",
+        "css",
+        "@import url(http://fonts.example.com/font.css);\n",
+        "@import url(https://fonts.example.com/font.css);\n",
+    ),
+    "css.expression.legacy": (
+        "site.css",
+        "css",
+        ".box { width: expression(document.body.clientWidth - 20); }\n",
+        ".box { width: calc(100vw - 20px); }\n",
+    ),
+    "next.images.wildcard_host": (
+        "next.config.js",
+        "javascript",
+        "module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] } };\n",
+        "module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }] } };\n",
+    ),
+}
+
 # The literal a credential example shows. It is not secret-shaped, so the playbook itself stays clean; the
 # test replaces it with a synthetic token assembled at run time.
 SECRET_PLACEHOLDER = "<the literal token>"  # noqa: S105 - a placeholder, not a credential
@@ -241,7 +321,7 @@ CREDENTIAL_EXAMPLE_AFTER = (
 
 HEADER = """---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -318,6 +398,34 @@ def _js_section(rule: Rule) -> str:
     )
 
 
+def _web_section(rule: Rule) -> str:
+    name, language, before, after = WEB_EXAMPLES[rule.id]
+    return "\n".join(
+        [
+            f"### `{rule.id}`: {rule.title}",
+            "",
+            _meta(rule),
+            "",
+            f"**Why:** {rule.why}",
+            "",
+            f"**Fix:** {rule.fix}",
+            "",
+            f"Before (`{name}`):",
+            "",
+            f"```{language}",
+            before.rstrip("\n"),
+            "```",
+            "",
+            "After:",
+            "",
+            f"```{language}",
+            after.rstrip("\n"),
+            "```",
+            "",
+        ]
+    )
+
+
 def _config_section(rule: Rule) -> str:
     name, before, after = CONFIG_EXAMPLES[rule.id]
     return "\n".join(
@@ -357,6 +465,7 @@ def render() -> str:
         ("python", set(EXAMPLES)),
         ("config", set(CONFIG_EXAMPLES)),
         ("javascript", set(JS_EXAMPLES)),
+        ("web", set(WEB_EXAMPLES)),
     ):
         ids = {rule.id for rule in RULES.values() if rule.language == language}
         if examples != ids:
@@ -401,6 +510,15 @@ def render() -> str:
         "false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.\n",
     ]
     parts += [_js_section(rule) for rule in RULES.values() if rule.language == "javascript"]
+    parts += [
+        "## Web file rules (HTML, Vue, Svelte, Angular templates, CSS, next.config)\n",
+        "These rules read `.html`, `.htm`, `.vue`, `.svelte`, `.css` and `.scss` files, the Angular `[innerHTML]` binding "
+        "in `.ts` inline templates, and `next.config.js`, `.mjs`, `.ts`. Script blocks in `.html`, `.vue` and `.svelte` "
+        "files also get the `js.*` rules above. Suppress a confirmed false positive with "
+        "`<!-- kestrix: ignore[<rule-id>] <reason> -->` in markup, `// ...` in a script block or SCSS, or "
+        "`/* ... */` in CSS, on the line or the line above.\n",
+    ]
+    parts += [_web_section(rule) for rule in RULES.values() if rule.language == "web"]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

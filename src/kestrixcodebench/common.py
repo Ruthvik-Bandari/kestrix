@@ -30,7 +30,16 @@ EXTENSIONS = {
     ".tsx": "typescript",
     ".mts": "typescript",
     ".cts": "typescript",
+    # web files (kestrix-scan Phase 1); no other tool reads them, and the original subsets do not include them
+    ".vue": "web",
+    ".svelte": "web",
+    ".html": "web",
+    ".htm": "web",
+    ".css": "web",
+    ".scss": "web",
 }
+WEB_LANGUAGE = "web"
+WEB_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language == WEB_LANGUAGE)
 
 
 class CodeBenchError(RuntimeError):

@@ -4,7 +4,7 @@
 
 ``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
 into dev and a locked test and writes the files. ``scan`` runs one tool on dev shards (a Slurm array task);
-``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
+``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``web-corpus`` scans directory trees of web files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
 ``table`` prints Markdown tables from a report; ``locked-test`` claims the lock and evaluates the test split once.
 Reports hold counts, rates, intervals and rule ids only. Exit status is 1 on failure.
 """
@@ -24,6 +24,8 @@ COMMANDS = (
     "scan",
     "dev-metrics",
     "compare",
+    "rule-rates",
+    "web-corpus",
     "examples",
     "table",
     "locked-test",
@@ -51,6 +53,10 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--cvefixes-db", type=Path, help="build: kestrixvul's work/cvefixes.sqlite")
     p.add_argument("--vul-root", type=Path, help="build: kestrixvul's root (work/ghsa.jsonl, mine/)")
     p.add_argument("--limit", type=int, help="build: at most this many changed files per source (smoke runs)")
+    p.add_argument(
+        "--only-language", choices=("python", "javascript", "typescript", "web"), help="build: keep one language"
+    )
+    p.add_argument("--corpus-dir", type=Path, action="append", help="web-corpus: a directory tree to scan (repeat)")
     p.add_argument("--tool", help="scan: kestrix, bandit or eslint; examples: the tool to analyse")
     p.add_argument("--shard", type=int, help="scan: shard number, or omit to scan every shard in turn")
     p.add_argument("--run", default="base", help="scan: run name for the output; dev-metrics: default run per tool")
@@ -77,6 +83,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--allow-morefixes", action="store_true", help="test2-select: also take commits only MoreFixes holds"
     )
+    p.add_argument("--published-after", help="test2-select: only advisories published after YYYY-MM-DD (a test3)")
     p.add_argument("--workers", type=int, default=8, help="test2-fetch: repositories in parallel")
     p.add_argument("--interval", type=float, default=1.0, help="test2-fetch: seconds between git requests")
     return p
@@ -125,6 +132,7 @@ def _test2(args: argparse.Namespace, layout: Layout, code_sha: str) -> int:
             args.vul_root,
             allow_morefixes=args.allow_morefixes,
             allow_known_repos=args.allow_known_repos,
+            published_after=args.published_after,
         )
         print(json.dumps({k: report[k] for k in ("counts", "tiers", "selected")}))
         return 0
@@ -157,7 +165,7 @@ def _run(args: argparse.Namespace) -> int:
         from .build import build
 
         _need(args.cvefixes_db and args.vul_root, "--cvefixes-db and --vul-root")
-        body = build(layout, args.cvefixes_db, args.vul_root, args.limit)
+        body = build(layout, args.cvefixes_db, args.vul_root, args.limit, args.only_language)
         print(
             json.dumps(
                 {
@@ -189,6 +197,17 @@ def _run(args: argparse.Namespace) -> int:
         from .report import compare_runs
 
         print(compare_runs(layout, args.base_run, args.run, args.label, reps=args.bootstrap, split=args.split))
+        return 0
+    if args.command == "web-corpus":
+        from .corpus import web_corpus
+
+        _need(args.corpus_dir, "--corpus-dir")
+        print(web_corpus(layout, args.corpus_dir, args.label))
+        return 0
+    if args.command == "rule-rates":
+        from .rates import rule_rates
+
+        print(rule_rates(layout, args.run, args.split, args.label))
         return 0
     if args.command.startswith(("test2-", "locked-test2")):
         return _test2(args, layout, code_sha)

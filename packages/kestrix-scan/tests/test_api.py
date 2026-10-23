@@ -39,7 +39,7 @@ def test_scan_returns_typed_frozen_findings(tmp_path: Path) -> None:
 
 def test_rules_lists_the_registry_in_order() -> None:
     ids = [rule.id for rule in kestrix_scan.rules()]
-    assert ids[0] == "py.exec.eval" and ids[-1] == "js.llm.output_to_sink" and len(ids) == len(set(ids))
+    assert ids[0] == "py.exec.eval" and ids[-1] == "next.images.wildcard_host" and len(ids) == len(set(ids))
     assert all(rule.cwe.startswith("CWE-") and rule.sources for rule in kestrix_scan.rules())
 
 
