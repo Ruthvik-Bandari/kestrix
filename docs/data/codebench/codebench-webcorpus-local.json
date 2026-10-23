@@ -1,0 +1,62 @@
+{
+  "all_rules_per_kloc": 0.47,
+  "files_scanned": {
+    ".css": 342,
+    ".html": 146,
+    ".scss": 4
+  },
+  "files_skipped": {
+    ".css:duplicate": 606,
+    ".css:minified": 43,
+    ".html:duplicate": 163,
+    ".html:minified": 57,
+    ".scss:duplicate": 17
+  },
+  "kloc": {
+    ".css": 95.0,
+    ".html": 27.2,
+    ".scss": 1.1
+  },
+  "label": "desktop",
+  "roots": [
+    "Desktop"
+  ],
+  "rules": {
+    "html.inline.event_handler": {
+      "by_extension": {
+        ".html": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0243
+    },
+    "html.link.target_blank": {
+      "by_extension": {
+        ".html": 29
+      },
+      "findings": 29,
+      "per_kloc": 0.235
+    },
+    "html.mixed.http_resource": {
+      "by_extension": {
+        ".html": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0081
+    },
+    "js.dom.xss_sink": {
+      "by_extension": {
+        ".html": 24
+      },
+      "findings": 24,
+      "per_kloc": 0.1945
+    },
+    "js.exec.eval": {
+      "by_extension": {
+        ".html": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0081
+    }
+  },
+  "schema_version": 1
+}

@@ -144,6 +144,13 @@ _URL_SINKS = frozenset(
 )
 _CONFIG_URL_CALLS = frozenset({"axios", "axios.request"})
 _REDIRECT_RECEIVERS = frozenset({"res", "response", "ctx", "reply", "h"})
+_NEXT_REDIRECTS = {
+    "next/navigation.redirect": "redirect()",
+    "next/navigation.permanentRedirect": "permanentRedirect()",
+    "next/server.NextResponse.redirect": "NextResponse.redirect()",
+    "Response.redirect": "Response.redirect()",
+}
+_TRUST_KINDS = frozenset({"Html", "Url", "Script", "ResourceUrl", "Style"})
 _LOCATION_HEADERS = frozenset({"setHeader", "header", "set", "append"})
 _MERGES = frozenset({"lodash.merge", "lodash.mergeWith", "lodash.defaultsDeep"})
 _PROTO_KEYS = frozenset({"__proto__", "constructor", "prototype"})
@@ -152,6 +159,12 @@ _HEADER_SETTERS = frozenset({"setHeader", "header", "set", "append"})
 _ACAO = "access-control-allow-origin"
 _ACAC = "access-control-allow-credentials"
 _HTML_SANITIZERS = frozenset({"sanitize", "sanitizeHtml", "escapeHtml", "escapeHTML", "escape", "encode"})
+
+_INNER_HTML_BINDING = re.compile(r"\[(?:inner|outer)HTML\]\s*=\s*[\"']\s*[^\"'\s]", re.IGNORECASE)
+ANGULAR_INNER_HTML_MESSAGE = (
+    "[innerHTML] binds a value that is not a literal. Angular sanitizes it unless the value was marked trusted "
+    "(bypassSecurityTrustHtml), so check where the value comes from."
+)
 
 _WORDS = re.compile(r"[_\-]+|(?<=[a-z0-9])(?=[A-Z])")
 _SECRET_WORDS = frozenset(
@@ -176,22 +189,37 @@ def minified(text: str, rel: str) -> bool:
     return len(text) / (text.count("\n") + 1) > MAX_AVERAGE_LINE
 
 
+_NEXT_IMPORT = re.compile(r"""(?:\bfrom|\brequire\(|\bimport\()\s*['"]next(?:/[\w./-]*)?['"]""")
+_NEXT_PATH = re.compile(r"(?:^|/)pages/api/|(?:^|/)app/(?:.*/)?(?:route|page|layout)\.[cm]?[jt]sx?$")
+_NEXT_CONFIG = re.compile(r"(?:^|/)next\.config\.[cm]?[jt]s$")
+
+
 def check_js(text: str, rel: str) -> list[Hit] | SkipReason:
     """Rule hits for one JavaScript or TypeScript file, or the reason it was not analyzed."""
     if minified(text, rel):
         return "minified"
     suffix = "." + rel.rsplit(".", 1)[-1].lower() if "." in rel else ""
-    tokens = tokenize(text, jsx=suffix not in _NO_JSX, tsx=suffix == ".tsx")
+    return check_js_source(text, rel, jsx=suffix not in _NO_JSX, tsx=suffix == ".tsx")
+
+
+def check_js_source(text: str, rel: str, *, jsx: bool, tsx: bool) -> list[Hit] | SkipReason:
+    """The ``js.*`` hits of ``text`` as JavaScript or TypeScript (also a script block cut out of a web file).
+
+    ``rel`` only tells the Next.js rules where the code lives (``next.config.*``, ``app/**/route.ts``).
+    """
+    tokens = tokenize(text, jsx=jsx, tsx=tsx)
     if tokens is None:
         return "too_complex"
+    next_context = bool(_NEXT_IMPORT.search(text) or _NEXT_PATH.search(rel) or "use server" in text)
     try:
-        return _Checker(Index(tokens, text.splitlines())).run()
+        return _Checker(Index(tokens, text.splitlines(), next_context=next_context), rel).run()
     except RecursionError:
         return "too_complex"
 
 
 class _Checker:
-    def __init__(self, index: Index) -> None:
+    def __init__(self, index: Index, rel: str = "") -> None:
+        self.rel = rel
         self.ix = index
         self.toks = index.toks
         self.hits: list[Hit] = []
@@ -245,6 +273,8 @@ class _Checker:
         self._object_keys()
         self._insecure_random()
         self._cors_headers()
+        if _NEXT_CONFIG.search(self.rel):
+            self._next_config()
         unique: dict[tuple[str, int], Hit] = {}
         for item in self.hits:
             unique.setdefault((item.rule_id, item.line), item)
@@ -398,6 +428,13 @@ class _Checker:
             if dynamic and _SQL.search(text):
                 message = f"SQL text passed to .{last}() is built with a template literal or concatenation."
                 self._sink("js.sql.string_built", at, first, sink_class=SQL, sink=f".{last}()", message=message)
+        elif (
+            last.startswith("bypassSecurityTrust")
+            and last[19:] in _TRUST_KINDS
+            and first is not None
+            and len(segs) >= 2
+        ):
+            self._angular_trust(at, last, first)
         elif name == "crypto.createHash" and first is not None:
             algorithm = ix.string_value(*first)
             if algorithm is not None and algorithm.lower() in _WEAK_HASHES:
@@ -483,6 +520,46 @@ class _Checker:
             return True
         return any(seg.kind == "name" and seg.value.startswith("$") and len(seg.value) > 1 for seg in segs[:-1])
 
+    def _angular_trust(self, at: int, method: str, arg: tuple[int, int]) -> None:
+        """``sanitizer.bypassSecurityTrustHtml(x)`` and its Url, Script, ResourceUrl and Style siblings."""
+        lo, hi = arg
+        if lo >= hi or self.ix.literal(lo, hi) or self._sanitized_html(lo, hi):
+            return
+        origin = best(self.ix.taint(lo, hi), HTML, _REMOTE)
+        what = f"{method}() marks a value that is not a literal as trusted, so Angular stops sanitizing it."
+        if origin is None:
+            self.hit("js.angular.bypass_trust", at, what, "medium")
+            return
+        self.hit(
+            "js.angular.bypass_trust",
+            at,
+            f"{what} The value comes from {origin.label} (line {origin.trace[0].line}).",
+            confidence=CONFIDENCE[origin.kind],
+            trace=self._trace(origin, at, f"{method}()"),
+        )
+
+    def _next_config(self) -> None:
+        """``images: { remotePatterns: [{ hostname: '**' }] }`` in ``next.config.*``: the image optimizer fetches any host."""
+        ix = self.ix
+        toks = self.toks
+        if "remotePatterns" not in {t.value for t in toks if t.kind == NAME}:
+            return
+        for k, tok in enumerate(toks):
+            if (
+                tok.value != "hostname"
+                or tok.kind not in (NAME, STR)
+                or k + 2 >= ix.n
+                or not is_punct(toks[k + 1], ":")
+            ):
+                continue
+            value = toks[k + 2]
+            if value.kind == STR and value.value == "**":
+                self.hit(
+                    "next.images.wildcard_host",
+                    k,
+                    "images.remotePatterns allows hostname '**', so /_next/image fetches and serves images from any host.",
+                )
+
     def _jwt(self, at: int, options_span: tuple[int, int]) -> None:
         ix = self.ix
         options = ix.object_entries(*options_span)
@@ -540,6 +617,10 @@ class _Checker:
                 span = entries["url"]
             self._taint_hit(
                 "js.ssrf.request", at, span, sink_class=URL, sink=f"{name}()", verb="fetches a URL taken from"
+            )
+        elif name in _NEXT_REDIRECTS:
+            self._taint_hit(
+                "js.redirect.open", at, first, sink_class=REDIRECT, sink=_NEXT_REDIRECTS[name], verb="redirects to"
             )
         elif last == "redirect" and receiver in _REDIRECT_RECEIVERS:
             sink = f"{receiver}.redirect()"
@@ -715,6 +796,10 @@ class _Checker:
             if tok.kind not in (NAME, STR) or k + 1 >= ix.n or not is_punct(toks[k + 1], ":"):
                 continue
             if k == 0 or not is_punct(toks[k - 1], "{", ","):
+                continue
+            if tok.value == "template" and k + 2 < ix.n and toks[k + 2].kind in (STR, TPL):
+                if _INNER_HTML_BINDING.search(toks[k + 2].value):
+                    self.hit("html.angular.inner_html", k, ANGULAR_INNER_HTML_MESSAGE)
                 continue
             value = (k + 2, ix.expr_end(k + 2))
             if tok.value == "rejectUnauthorized" and _false(ix, value):

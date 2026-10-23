@@ -118,7 +118,7 @@ export const pluginPages: DocPage[] = [
           "Scanned: files changed through `Write`, `Edit`, `MultiEdit` and `NotebookEdit`, and, in a git repository, the source-like files (at most 20) that a Bash command created or modified.",
           "Not scanned: edits made outside Claude Code; files a Bash command changed outside a git repository; a command that commits what it changed in the same command; files over 1 MiB; anything before the plugin was loaded.",
           "Analysis is per file, with taint tracked within one function. There is no whole-program or cross-file analysis.",
-          "The scanner has 60 rules: 28 Python, 14 JS/TS, 11 secret, 2 dependency and 5 agent-config rules.",
+          "The scanner has 73 rules: 28 Python, 15 JS/TS, 12 web-file, 11 secret, 2 dependency and 5 agent-config rules.",
           "It fails open: a missing scanner, a timeout or an error never blocks an edit.",
         ),
         note("No findings is not proof of security.", "caution"),

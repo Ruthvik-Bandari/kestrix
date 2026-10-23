@@ -28,11 +28,14 @@ into a called function. Sources:
 
 - ``request`` (high): Express ``req``/``request`` ``.params``/``.query``/``.body``/``.headers``/``.cookies``/
   ``.signedCookies``/``.files`` and ``req.param()``/``req.get()``/``req.header()``; Koa ``ctx.query``/
-  ``ctx.params``/``ctx.request.query|body``. The base name must be a parameter of some function in the file.
+  ``ctx.params``/``ctx.request.query|body``/``ctx.get()``/``ctx.headers``; Fetch-API ``request.json()``/``formData()``/
+  ``text()``; in a Next.js file the ``params``/``searchParams`` parameters, ``context.params`` and a ``'use server'``
+  action's ``FormData`` argument; NestJS parameters decorated ``@Query()``/``@Body()``/``@Param()``/``@Headers()``.
+  The base name must be a parameter of some function in the file.
 - ``dom`` (high): ``location``, ``window.location``, ``document.location``, ``document.URL``,
   ``document.documentURI``, ``window.name``, the ``data`` of the first parameter of a ``message`` event
   listener (``addEventListener('message', ...)`` or ``onmessage = ...``), and React Router's
-  ``useSearchParams()``/``useParams()``/``useLocation()``.
+  ``useSearchParams()``/``useParams()``/``useLocation()`` and Next's ``useSearchParams()``/``useParams()``.
 - ``llm`` (high): the result of ``....chat.completions.create(...)``, ``....messages.create(...)``,
   ``....responses.create(...)`` and ``....completions.create(...)`` in a file that imports ``openai`` or
   ``@anthropic-ai/sdk``.
@@ -40,7 +43,8 @@ into a called function. Sources:
 It flows through bindings, ``+`` and templates, ``||``/``??``/``&&``, ternary branches, ``await``, arrays and
 object literals, member access and indexing, string and array methods called on tainted data, and the calls
 ``path.join``/``resolve``/``normalize``, ``String``, ``decodeURIComponent``, ``JSON.parse``, ``Buffer.from``,
-``Object.keys``/``values``/``entries``, ``Array.from``, ``new URL`` and ``new URLSearchParams``. Every other
+``Object.keys``/``values``/``entries``, ``Array.from``, ``new URL`` (only its first argument: the base of ``new URL(x, base)`` only completes a relative ``x``) and
+``new URLSearchParams``. Every other
 call returns clean data. Comparisons, ``typeof``, ``!`` and numeric conversion (``Number``, ``parseInt``,
 ``parseFloat``) give clean values. Sanitizers clear one sink class: ``path.basename`` (path),
 ``DOMPurify.sanitize``, ``sanitizeHtml``, ``escapeHtml``, ``encodeURIComponent`` ... (html), ``shell-quote``
@@ -116,6 +120,7 @@ GLOBALS = frozenset(
         "Array",
         "URL",
         "URLSearchParams",
+        "Response",
         "require",
         "jQuery",
         "$",
@@ -148,8 +153,18 @@ _REQUEST_FIELDS = frozenset(
     }
 )
 _REQUEST_CALLS = frozenset({"param", "get", "header"})
-_KOA_FIELDS = frozenset({"query", "params", "querystring", "url", "originalUrl", "path"})
+_KOA_FIELDS = frozenset({"query", "params", "querystring", "url", "originalUrl", "path", "headers"})
 _ROUTER_HOOKS = frozenset({"useSearchParams", "useParams", "useLocation"})
+_ROUTER_MODULES = ("react-router", "next/navigation")
+_BODY_READERS = frozenset({"json", "formData", "text", "arrayBuffer", "blob"})  # Fetch-API Request (Next.js, Remix)
+_NEXT_PARAMS = frozenset({"params", "searchParams"})  # Next.js route handler context and page props
+_FORM_PARAMS = frozenset({"formData", "form", "fd"})  # a 'use server' action's FormData argument
+_NEST_SOURCES = {
+    "Query": "NestJS @Query()",
+    "Body": "NestJS @Body()",
+    "Param": "NestJS @Param()",
+    "Headers": "NestJS @Headers()",
+}
 _DOM_DOCUMENT = frozenset({"location", "URL", "documentURI"})
 _PROPAGATE_CALLS = frozenset(
     {
@@ -170,6 +185,7 @@ _PROPAGATE_CALLS = frozenset(
         "URL",
         "URLSearchParams",
         "String.raw",
+        "Object.fromEntries",
     }
 )
 _NUMERIC_CALLS = frozenset({"Number", "parseInt", "parseFloat", "Boolean", "Number.parseInt", "Number.parseFloat"})
@@ -315,8 +331,9 @@ def _add(origins: list[Origin], new: list[Origin]) -> list[Origin]:
 
 
 class Index:
-    def __init__(self, tokens: list[Token], lines: list[str]) -> None:
+    def __init__(self, tokens: list[Token], lines: list[str], *, next_context: bool = False) -> None:
         self.toks = tokens
+        self.next_context = next_context  # a Next.js file: route handler params, server actions
         self.n = len(tokens)
         self.lines = lines
         self.match = [-1] * self.n
@@ -330,8 +347,10 @@ class Index:
         self.declared: set[str] = set()
         self.params: set[str] = set()
         self.message_params: set[tuple[int, str]] = set()
+        self.source_params: dict[tuple[int, str], str] = {}  # (function scope, parameter name) -> request source label
         self.modules: set[str] = set()
         self.strings = frozenset(t.value for t in tokens if t.kind == STR)
+        self._use_server = next_context and "use server" in self.strings
         self._memo: dict[tuple[int, int], list[Origin]] = {}
         self._ends: dict[int, int] = {}  # expr_end memo, without and with a top-level comma ending the expression
         self._ends_comma: dict[int, int] = {}
@@ -700,7 +719,7 @@ class Index:
         toks = self.toks
         names: list[str] = []
         for lo, hi in self.split(open_ + 1, close):
-            k = lo
+            k = self._skip_decorators(lo, hi)[0]
             while k < hi and (is_punct(toks[k], "...") or (toks[k].kind == NAME and toks[k].value in _MODIFIERS)):
                 k += 1
             if k >= hi:
@@ -727,11 +746,65 @@ class Index:
                 names.append((tok.value, k))
         return names
 
+    def _skip_decorators(self, lo: int, hi: int) -> tuple[int, list[tuple[str, bool]]]:
+        """Past the decorators ``@Name`` and ``@Name(args)`` at ``lo``: (index, [(name, takes a Parse*Pipe), ...])."""
+        toks = self.toks
+        found: list[tuple[str, bool]] = []
+        k = lo
+        while k + 1 < hi and is_punct(toks[k], "@") and toks[k + 1].kind == NAME:
+            name = toks[k + 1].value
+            k += 2
+            while k + 1 < hi and is_punct(toks[k], ".") and toks[k + 1].kind == NAME:
+                name, k = toks[k + 1].value, k + 2
+            piped = False
+            if k < hi and is_punct(toks[k], "("):
+                close = self.close_of(k)
+                piped = any(
+                    t.kind == NAME and t.value.startswith("Parse") and t.value.endswith("Pipe") for t in toks[k:close]
+                )
+                k = close + 1
+            found.append((name, piped))
+        return k, found
+
+    def _framework_params(self, start: int, scope: int) -> None:
+        """Register request-carrying parameters: NestJS decorated ones, Next.js ``params``, a server action's FormData."""
+        toks = self.toks
+        open_ = next((j for j in range(start, min(start + 12, self.n)) if is_punct(toks[j], "(")), None)
+        if open_ is None or self.match[open_] < 0:
+            return
+        close = self.match[open_]
+        for lo, hi in self.split(open_ + 1, close):
+            k, decorators = self._skip_decorators(lo, hi)
+            while k < hi and toks[k].kind == NAME and toks[k].value in _MODIFIERS:
+                k += 1
+            if k >= hi:
+                continue
+            if is_punct(toks[k], "{"):
+                names = [name for name, _ in self._pattern_names(k)]
+                annotated = ""
+            elif toks[k].kind == NAME:
+                names = [toks[k].value]
+                colon = k + 2 if k + 1 < hi and is_punct(toks[k + 1], "?") else k + 1
+                annotated = toks[colon + 1].value if colon + 1 < hi and is_punct(toks[colon], ":") else ""
+            else:
+                continue
+            label = next((_NEST_SOURCES[d] for d, piped in decorators if d in _NEST_SOURCES and not piped), None)
+            if label is not None and annotated not in ("number", "boolean"):
+                for name in names:
+                    self.source_params[(scope, name)] = f"{label} parameter"
+            elif self.next_context:
+                for name in names:
+                    if name in _NEXT_PARAMS:
+                        self.source_params[(scope, name)] = f"Next.js {name}"
+                    elif self._use_server and (name in _FORM_PARAMS or annotated == "FormData"):
+                        self.source_params[(scope, name)] = "Next.js server action FormData"
+
     def _function_params(self, start: int, scope: int, params: list[str]) -> None:
         self.params.update(params)
         self.declared.update(params)
         for name in params:
             self._bind(scope, Binding(name, start, start, start, "param"))
+        self._framework_params(start, scope)
         if not params:
             return
         toks = self.toks
@@ -1301,6 +1374,8 @@ class Index:
             return []
         if name in _PROPAGATE_CALLS or name in _CLEARING_CALLS:
             origins: list[Origin] = []
+            if name == "URL" and len(args) >= 2:
+                args = args[:1]  # new URL(input, base): the base only fills in a relative input
             for a, b in args:
                 origins = _add(origins, self.taint(a, b, depth + 1))
             clear = _CLEARING_CALLS.get(name or "", frozenset())
@@ -1344,15 +1419,37 @@ class Index:
         names = [seg.value if seg.kind == "name" else "()" if seg.kind == "call" else "[]" for seg in segs]
         first = names[0]
         line = self.toks[chain.start].line
+        if self.source_params:
+            for sid in self.scope_chain(chain.start):
+                if (sid, first) in self.source_params:
+                    return self._origin("request", self.source_params[(sid, first)], line), 1
+                if (sid, first) in self.bindings:
+                    break  # a nearer binding of the same name shadows the parameter
         if first in ("req", "request") and len(segs) >= 2 and first in self.params:
+            if segs[1].kind == "name" and names[1] in _BODY_READERS and len(segs) >= 3 and segs[2].kind == "call":
+                return self._origin("request", f"Request {first}.{names[1]}()", line), 3
             if segs[1].kind == "name" and names[1] in _REQUEST_FIELDS:
                 return self._origin("request", f"Express {first}.{names[1]}", line), 2
             if segs[1].kind == "name" and names[1] in _REQUEST_CALLS and len(segs) >= 3 and segs[2].kind == "call":
                 return self._origin("request", f"Express {first}.{names[1]}()", line), 3
+        if (
+            self.next_context
+            and first == "context"
+            and first in self.params
+            and len(segs) >= 2
+            and names[1] == "params"
+        ):
+            return self._origin("request", "Next.js route params", line), 2
         if first == "ctx" and len(segs) >= 2 and first in self.params and segs[1].kind == "name":
+            if names[1] == "get" and len(segs) >= 3 and segs[2].kind == "call":
+                return self._origin("request", "Koa ctx.get()", line), 3
             if names[1] in _KOA_FIELDS:
                 return self._origin("request", f"Koa ctx.{names[1]}", line), 2
-            if names[1] == "request" and len(segs) >= 3 and names[2] in ("query", "body", "url", "path", "files"):
+            if (
+                names[1] == "request"
+                and len(segs) >= 3
+                and names[2] in ("query", "body", "url", "path", "files", "headers")
+            ):
                 return self._origin("request", f"Koa ctx.request.{names[2]}", line), 3
         dom = self._dom_source(chain, names)
         if dom is not None:
@@ -1372,8 +1469,8 @@ class Index:
             second = names[1] if len(names) >= 2 else ""
             if second == "data" and any((sid, first) in self.message_params for sid in self.scope_chain(chain.start)):
                 return "postMessage event.data", 2
-            if first in _ROUTER_HOOKS and second == "()" and self.aliases.get(first, "").startswith("react-router"):
-                return f"React Router {first}()", 2
+            if first in _ROUTER_HOOKS and second == "()" and self.aliases.get(first, "").startswith(_ROUTER_MODULES):
+                return f"{'Next.js' if self.aliases[first].startswith('next/') else 'React Router'} {first}()", 2
             return None
         offset = 1 if first in _GLOBAL_OBJECTS and len(names) > 1 else 0
         head = names[offset]

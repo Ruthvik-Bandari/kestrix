@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (60 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (73 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -25,7 +25,7 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["py.path.traversal", "medium", "CWE-22", "File path built from request data"],
   ["py.ssrf.request", "medium", "CWE-918", "HTTP request to a URL taken from request data or model output"],
   ["py.redirect.open", "medium", "CWE-601", "Redirect to a location taken from request data"],
-  ["py.xss.markup", "high", "CWE-79", "Request data marked as safe HTML or used as a template"],
+  ["py.xss.markup", "high", "CWE-79", "Request data or rendered Markdown marked as safe HTML, or request data used as a template"],
   ["py.llm.output_to_sink", "high", "CWE-94", "LLM output used as code, a shell command, SQL or a file path"],
   ["py.ml.unsafe_model_load", "high", "CWE-502", "Model loaded in a way that can run code from the file"],
   ["py.xss.reflected", "medium", "CWE-79", "HTML response built from request data without escaping"],
@@ -66,4 +66,17 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["js.proto.pollution", "medium", "CWE-1321", "Object keys from request data written without a __proto__ guard"],
   ["js.cors.wildcard_credentials", "medium", "CWE-942", "CORS allows any origin together with credentials"],
   ["js.llm.output_to_sink", "high", "CWE-94", "LLM output used as code, a shell command or HTML"],
+  ["js.angular.bypass_trust", "high", "CWE-79", "Angular bypassSecurityTrust* of a value that is not a literal"],
+  ["vue.xss.v_html", "high", "CWE-79", "Vue v-html with a value that is not a literal"],
+  ["svelte.xss.at_html", "high", "CWE-79", "Svelte {@html} with a value that is not a literal"],
+  ["web.url.dynamic_scheme", "medium", "CWE-79", "Link or frame URL bound to a value that is not a literal (javascript: URLs)"],
+  ["html.inline.event_handler", "low", "CWE-693", "Inline event handler attribute (onclick and the like)"],
+  ["html.url.javascript_scheme", "low", "CWE-693", "javascript: URL in href, src, action or formaction"],
+  ["html.link.target_blank", "low", "CWE-1022", "target=\"_blank\" link to an external page without rel=\"noopener\""],
+  ["html.form.http_action", "medium", "CWE-319", "Form that posts to an http: URL"],
+  ["html.mixed.http_resource", "low", "CWE-319", "Script, stylesheet, frame or image loaded over http:"],
+  ["html.angular.inner_html", "low", "CWE-79", "Angular [innerHTML] binding of a value that is not a literal"],
+  ["css.import.http", "low", "CWE-319", "CSS @import or url() over http:"],
+  ["css.expression.legacy", "low", "CWE-79", "CSS expression() (Internet Explorer 7 and older)"],
+  ["next.images.wildcard_host", "low", "CWE-918", "next.config images.remotePatterns allows hostname '**'"],
 ];

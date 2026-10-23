@@ -1568,6 +1568,344 @@
                   "CWE-94"
                 ]
               }
+            },
+            {
+              "id": "js.angular.bypass_trust",
+              "name": "JsAngularBypassTrust",
+              "shortDescription": {
+                "text": "Angular bypassSecurityTrust* of a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "DomSanitizer.bypassSecurityTrustHtml, Url, Script, ResourceUrl and Style tell Angular to stop sanitizing a value. If it comes from a user, a URL or the network, markup or a javascript: URL in it runs in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function."
+              },
+              "help": {
+                "text": "Bind the plain value and let Angular sanitize it. If you must render HTML, sanitize it first with DOMPurify.sanitize and mark only that result as trusted; build URLs from a fixed origin and an encoded path.",
+                "markdown": "**Why:** DomSanitizer.bypassSecurityTrustHtml, Url, Script, ResourceUrl and Style tell Angular to stop sanitizing a value. If it comes from a user, a URL or the network, markup or a javascript: URL in it runs in the page (XSS). It is high when the value comes from the URL, window.name or a postMessage in the same function.\n\n**Fix:** Bind the plain value and let Angular sanitize it. If you must render HTML, sanitize it first with DOMPurify.sanitize and mark only that result as trusted; build URLs from a fixed origin and an encoded path."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "vue.xss.v_html",
+              "name": "VueXssVHtml",
+              "shortDescription": {
+                "text": "Vue v-html with a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "v-html sets the element's innerHTML from the expression, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL (for example $route.query), medium otherwise; calls to sanitize*, purify* and escape* functions and a $t('key') translation are not reported."
+              },
+              "help": {
+                "text": "Render text with v-text or Vue's mustache interpolation, which Vue escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and bind the sanitized value.",
+                "markdown": "**Why:** v-html sets the element's innerHTML from the expression, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL (for example $route.query), medium otherwise; calls to sanitize*, purify* and escape* functions and a $t('key') translation are not reported.\n\n**Fix:** Render text with v-text or Vue's mustache interpolation, which Vue escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and bind the sanitized value."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "svelte.xss.at_html",
+              "name": "SvelteXssAtHtml",
+              "shortDescription": {
+                "text": "Svelte {@html} with a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "{@html expr} inserts the value as unescaped HTML, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL ($page.url, searchParams), medium otherwise; sanitize*, purify* and escape* calls are not reported."
+              },
+              "help": {
+                "text": "Render text with {value}, which Svelte escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and pass the sanitized value.",
+                "markdown": "**Why:** {@html expr} inserts the value as unescaped HTML, so markup in it runs as script in the page (XSS). It is high when the expression reads the route or URL ($page.url, searchParams), medium otherwise; sanitize*, purify* and escape* calls are not reported.\n\n**Fix:** Render text with {value}, which Svelte escapes. If you must render HTML, sanitize it first (DOMPurify.sanitize) and pass the sanitized value."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "web.url.dynamic_scheme",
+              "name": "WebUrlDynamicScheme",
+              "shortDescription": {
+                "text": "Link or frame URL bound to a value that is not a literal (javascript: URLs)"
+              },
+              "fullDescription": {
+                "text": "A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported."
+              },
+              "help": {
+                "text": "Accept only http(s) and relative URLs: parse the value with new URL(value, location.origin) and check url.protocol is 'http:' or 'https:' before binding it, or build the link from a fixed origin and an encoded path.",
+                "markdown": "**Why:** A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported.\n\n**Fix:** Accept only http(s) and relative URLs: parse the value with new URL(value, location.origin) and check url.protocol is 'http:' or 'https:' before binding it, or build the link from a fixed origin and an encoded path."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "html.inline.event_handler",
+              "name": "HtmlInlineEventHandler",
+              "shortDescription": {
+                "text": "Inline event handler attribute (onclick and the like)"
+              },
+              "fullDescription": {
+                "text": "An attribute such as onclick or onload holds JavaScript, so the page needs a Content-Security-Policy with 'unsafe-inline' to work, which also lets injected markup run script."
+              },
+              "help": {
+                "text": "Attach the handler from a script file with addEventListener and drop 'unsafe-inline' from script-src.",
+                "markdown": "**Why:** An attribute such as onclick or onload holds JavaScript, so the page needs a Content-Security-Policy with 'unsafe-inline' to work, which also lets injected markup run script.\n\n**Fix:** Attach the handler from a script file with addEventListener and drop 'unsafe-inline' from script-src."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-693"
+                ]
+              }
+            },
+            {
+              "id": "html.url.javascript_scheme",
+              "name": "HtmlUrlJavascriptScheme",
+              "shortDescription": {
+                "text": "javascript: URL in href, src, action or formaction"
+              },
+              "fullDescription": {
+                "text": "A javascript: URL runs inline script when used, so the page needs a Content-Security-Policy with 'unsafe-inline'. The no-op forms javascript:void(0), javascript:; and javascript:undefined are not reported."
+              },
+              "help": {
+                "text": "Use a button with an event listener from a script file, or a real URL.",
+                "markdown": "**Why:** A javascript: URL runs inline script when used, so the page needs a Content-Security-Policy with 'unsafe-inline'. The no-op forms javascript:void(0), javascript:; and javascript:undefined are not reported.\n\n**Fix:** Use a button with an event listener from a script file, or a real URL."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-693"
+                ]
+              }
+            },
+            {
+              "id": "html.link.target_blank",
+              "name": "HtmlLinkTargetBlank",
+              "shortDescription": {
+                "text": "target=\"_blank\" link to an external page without rel=\"noopener\""
+              },
+              "fullDescription": {
+                "text": "Without noopener the opened page can read and redirect window.opener on browsers that do not imply it (all current browsers do for target=\"_blank\", older ones do not). Only absolute http(s) and protocol-relative links are reported; rel=\"noreferrer\" also counts as safe."
+              },
+              "help": {
+                "text": "Add rel=\"noopener noreferrer\" to the link.",
+                "markdown": "**Why:** Without noopener the opened page can read and redirect window.opener on browsers that do not imply it (all current browsers do for target=\"_blank\", older ones do not). Only absolute http(s) and protocol-relative links are reported; rel=\"noreferrer\" also counts as safe.\n\n**Fix:** Add rel=\"noopener noreferrer\" to the link."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-1022"
+                ]
+              }
+            },
+            {
+              "id": "html.form.http_action",
+              "name": "HtmlFormHttpAction",
+              "shortDescription": {
+                "text": "Form that posts to an http: URL"
+              },
+              "fullDescription": {
+                "text": "A form with action=\"http://...\" sends what the user typed (often a password or personal data) without encryption, where anyone on the network path can read or change it. Loopback hosts are not reported."
+              },
+              "help": {
+                "text": "Post to an https:// URL, or to a relative path on an https site.",
+                "markdown": "**Why:** A form with action=\"http://...\" sends what the user typed (often a password or personal data) without encryption, where anyone on the network path can read or change it. Loopback hosts are not reported.\n\n**Fix:** Post to an https:// URL, or to a relative path on an https site."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-319"
+                ]
+              }
+            },
+            {
+              "id": "html.mixed.http_resource",
+              "name": "HtmlMixedHttpResource",
+              "shortDescription": {
+                "text": "Script, stylesheet, frame or image loaded over http:"
+              },
+              "fullDescription": {
+                "text": "A script, stylesheet, iframe or image with an http: URL can be altered in transit and is blocked or downgraded as mixed content on an https page. Loopback hosts are not reported."
+              },
+              "help": {
+                "text": "Load the resource over https://, or host it yourself.",
+                "markdown": "**Why:** A script, stylesheet, iframe or image with an http: URL can be altered in transit and is blocked or downgraded as mixed content on an https page. Loopback hosts are not reported.\n\n**Fix:** Load the resource over https://, or host it yourself."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-319"
+                ]
+              }
+            },
+            {
+              "id": "html.angular.inner_html",
+              "name": "HtmlAngularInnerHtml",
+              "shortDescription": {
+                "text": "Angular [innerHTML] binding of a value that is not a literal"
+              },
+              "fullDescription": {
+                "text": "Angular sanitizes [innerHTML] values, so the binding is safe unless the value was marked trusted with bypassSecurityTrustHtml. It is reported at low severity as a place to check where the value comes from, in .html templates and in inline template: strings of .ts files."
+              },
+              "help": {
+                "text": "Bind plain text with Angular's interpolation or [textContent]. Keep [innerHTML] for values that Angular sanitizes, and sanitize with DOMPurify before any bypassSecurityTrustHtml call.",
+                "markdown": "**Why:** Angular sanitizes [innerHTML] values, so the binding is safe unless the value was marked trusted with bypassSecurityTrustHtml. It is reported at low severity as a place to check where the value comes from, in .html templates and in inline template: strings of .ts files.\n\n**Fix:** Bind plain text with Angular's interpolation or [textContent]. Keep [innerHTML] for values that Angular sanitizes, and sanitize with DOMPurify before any bypassSecurityTrustHtml call."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "css.import.http",
+              "name": "CssImportHttp",
+              "shortDescription": {
+                "text": "CSS @import or url() over http:"
+              },
+              "fullDescription": {
+                "text": "A stylesheet that imports another stylesheet or loads an asset over http: can be altered in transit, which lets an attacker restyle the page or load a tracking image. Loopback hosts are not reported."
+              },
+              "help": {
+                "text": "Use https:// URLs, or host the file yourself.",
+                "markdown": "**Why:** A stylesheet that imports another stylesheet or loads an asset over http: can be altered in transit, which lets an attacker restyle the page or load a tracking image. Loopback hosts are not reported.\n\n**Fix:** Use https:// URLs, or host the file yourself."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-319"
+                ]
+              }
+            },
+            {
+              "id": "css.expression.legacy",
+              "name": "CssExpressionLegacy",
+              "shortDescription": {
+                "text": "CSS expression() (Internet Explorer 7 and older)"
+              },
+              "fullDescription": {
+                "text": "expression() in a declaration runs JavaScript in Internet Explorer 7 and older. No supported browser does, so the finding marks legacy code or an injection gadget."
+              },
+              "help": {
+                "text": "Remove the declaration and use CSS or a script instead.",
+                "markdown": "**Why:** expression() in a declaration runs JavaScript in Internet Explorer 7 and older. No supported browser does, so the finding marks legacy code or an injection gadget.\n\n**Fix:** Remove the declaration and use CSS or a script instead."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "next.images.wildcard_host",
+              "name": "NextImagesWildcardHost",
+              "shortDescription": {
+                "text": "next.config images.remotePatterns allows hostname '**'"
+              },
+              "fullDescription": {
+                "text": "With hostname '**' Next.js's image optimizer (/_next/image) fetches, resizes and serves an image from any host, so the server can be made to request internal addresses or be used to spend bandwidth on other people's files. A missing Content-Security-Policy in headers() is not reported: it is too common to be a useful finding."
+              },
+              "help": {
+                "text": "List the hosts you use: remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }], with a pathname where possible.",
+                "markdown": "**Why:** With hostname '**' Next.js's image optimizer (/_next/image) fetches, resizes and serves an image from any host, so the server can be made to request internal addresses or be used to spend bandwidth on other people's files. A missing Content-Security-Policy in headers() is not reported: it is too common to be a useful finding.\n\n**Fix:** List the hosts you use: remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }], with a pathname where possible."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-918"
+                ]
+              }
             }
           ]
         }

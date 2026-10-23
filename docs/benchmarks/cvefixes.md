@@ -346,3 +346,119 @@ What test2 shows:
   times the false alarms; without its noisiest rule ESLint detects less than Kestrix.
 - **Using two tools still catches the most:** Kestrix with Bandit detects 11.8% of Python pairs.
 - test2 is now spent.
+
+
+## Phase 1: the web stack (tuning numbers, 2026-10-23)
+
+Phase 1 of the [language roadmap](../research/language-roadmap.md) adds web-file rules (HTML, Vue, Svelte, CSS,
+`next.config`), Angular's `bypassSecurityTrust*`, and request sources for Next.js, Fastify, Koa and NestJS. **Every
+number below is a tuning number.** All earlier held-out sets are spent (round-1 test, test2), the rules were written
+and kept with these files in view, and there is no fresh set yet: `hpc/codebench_heldout_future.sh` builds a `test3`
+from advisories published after 2026-10-22 once they exist (see the end of this section). Aggregates:
+[`docs/data/codebench/`](../data/codebench/README.md).
+
+### Method
+
+- **Code and JavaScript/TypeScript changes** use the round-2 tuning data (round-1 dev plus the spent round-1 test:
+  17,474 pairs, 8,806 in scope, 4,396 KLOC of after-files and unchanged JavaScript and TypeScript), the round-2
+  keep rule, and one repository bootstrap. The baseline is the scanner of the commit the phase started from (`w-base`,
+  which reproduces the round-2 numbers: JS/TS detection 6.72%, 0.689 alerts per KLOC). Each change was measured
+  **leave-one-out**: the final scanner against the final scanner with only that change switched off (a copy of the
+  tree with one constant or condition edited, `hpc/codebench_web_variants.py`), which is the change's marginal effect in
+  the final scanner (round 2 measured each change alone against the baseline; these changes touch separate sources and
+  sinks, so the marginal and the stand-alone effect are close, but they are not the same measurement).
+- **Web files** are in a benchmark root of their own (`--only-language web`, job 11322685), so the ids and the split of
+  the Python/JavaScript/TypeScript benchmark are unchanged. The CVEfixes working database holds only **183**
+  `.html`/`.htm`/`.vue`/`.svelte`/`.css` changed files (180 with both versions; the mined advisory commits hold none, and no unchanged web
+  file was sampled): after the round-1 filters (tests, vendored, minified, generated, duplicates) **92 pairs from 32 projects remain, 73
+  in scope** (39 of them XSS, the rest CSRF, SSRF, command and code injection, path traversal and redirect), 27.9 KLOC
+  of after-files. They are all tuning data (the claim file of the spent round-1 test is copied into that root). The
+  scanner before Phase 1 reads these files for secrets only, so its detection is 0 by construction.
+- **Keep rule:** unchanged from round 2 (paired detection up; alerts per KLOC within noise or under 2% of the baseline
+  rate). Where the data cannot show detection the table says so instead of inventing a number.
+
+### JavaScript and TypeScript changes (leave-one-out, tuning data)
+
+Baseline: 0.689 alerts per KLOC (4,490 alerts) and 338 detected pairs in JavaScript and TypeScript. Python did not change.
+
+| Change | Detection, points | Alerts per KLOC | Decision |
+| --- | --- | --- | --- |
+| `js.angular.bypass_trust` (`bypassSecurityTrust*` of a non-literal) | +0.06 [+0.00, +0.20] (+3 pairs) | +0.0000 (+0 alerts) | keep |
+| NestJS `@Query()`/`@Body()`/`@Param()`/`@Headers()` parameters as sources | +0.02 [+0.00, +0.07] (+1 pair) | +0.0002 (+1 alert, 0.0%) | keep |
+| `new URL(input, base)`: only `input` carries taint | +0.00 (+0 pairs) | -0.0029 [-0.0092, +0.0000] (-19 alerts, -0.4%) | keep (fewer alerts, same detection) |
+| Next.js route-handler `params`/`searchParams`, `context.params`, server-action `FormData` | +0.00 (+0 pairs) | +0.0000 (+0 alerts) | no evidence in the data; **kept because requested, fails the keep rule** |
+| Next.js `redirect()`, `permanentRedirect()`, `NextResponse.redirect()`, `Response.redirect()` | +0.00 (+0 pairs) | +0.0009 [+0.0000, +0.0024] (+6 alerts, +0.1%) | no detection, +6 alerts: **kept because requested, fails the keep rule** |
+| Koa `ctx.get()`, `ctx.headers`, `ctx.request.headers` | +0.00 (+0 pairs) | +0.0003 (+2 alerts, 0.0%) | **kept because requested, fails the keep rule** |
+| `request.json()`, `.formData()`, `.text()`, `.arrayBuffer()`, `.blob()` as sources | +0.00 (+0 pairs) | +0.0002 (+1 alert, 0.0%) | **kept because requested, fails the keep rule** |
+
+All together, the final scanner against the round-2 scanner: JavaScript and TypeScript detection **6.72% to 6.80%**
+(+0.08 points [+0.00, +0.23], +4 pairs), alerts per KLOC 0.689 to 0.691 (+0.0015 [+0.0003, +0.0032], +10 alerts,
++0.2%); overall 5.93% to 5.97%. The Fastify sources needed no change (`request.query`, `.params` and `.body` were
+sources already; tests cover them). The four changes marked "kept because requested" have no detection in this data
+(the tuning files hold almost no Next.js, Koa or NestJS code) and together add 10 alerts; each one is a one-line
+revert (`_NEXT_REDIRECTS = {}`, `next_context = False`, the Koa branches, `_BODY_READERS`) if the review prefers to
+apply the keep rule strictly.
+
+### Web-file rules (tuning data, 92 pairs, 73 in scope)
+
+Per rule, counted on its own findings (`kestrixcodebench rule-rates`): the in-scope pairs it detects (a finding of the
+pair's family within 3 lines of a changed line), and the alerts it raises on the after-files (27.9 KLOC; the web
+benchmark has no unchanged files). `html.*` and `css.import.http` findings carry CWEs outside the benchmark's families
+(CWE-693, 1022 and 319), so they never count as detections or alerts; their counts are shown as findings.
+
+| Rule | Detected pairs | Alerts on after-files (per KLOC) | Findings near a change / on before-files | Decision |
+| --- | --- | --- | --- | --- |
+| `vue.xss.v_html` | **13** of 73 | 1 (0.04) | 16 / 17 | keep |
+| `svelte.xss.at_html` | 3 | 2 (0.07) | 5 / 5 | keep |
+| `web.url.dynamic_scheme` | 3 | 10 (0.36) | 4 / 10 | keep (3.3 alerts per detected pair, below the scanner's usual 11) |
+| `html.inline.event_handler` | n/a (lint-level, CWE-693) | 0 alerts; 34 findings (1.2 per KLOC) | 2 / 34 | **no measurable detection; kept because requested**, low severity |
+| `html.url.javascript_scheme`, `html.link.target_blank`, `html.form.http_action`, `html.mixed.http_resource`, `html.angular.inner_html`, `css.import.http`, `css.expression.legacy` | 0 findings in these 92 files | 0 | 0 / 0 | **no data**: see the clean-corpus counts below; kept because requested |
+| `js.*` rules inside web-file `<script>` blocks | `js.dom.xss_sink` 2; `js.exec.eval` 0 | 38 (1.36) and 83 (2.97) | 13 / 38 and 14 / 84 | see below |
+
+Web-file detection as a whole: **27.4%** [7.4, 50.9] of the 73 in-scope pairs (20 pairs), fix-aware 19.2% [2.6, 41.9], against
+0 before Phase 1; alerts 4.80 per KLOC on after-files [0.97, 12.03] (134 alerts) at 17.3% precision proxy. The
+intervals are wide (32 projects) and 13 of the 20 detected pairs are `v-html` fixes. **79 of the 83 `js.exec.eval`
+alerts and 16 of the 38 `js.dom.xss_sink` alerts come from one repository** (a legacy calendar widget with one script in
+each of its `.htm` pages), so the 4.80 per KLOC mostly describes that project; leaving it out the eval rule raises 4 alerts and
+the XSS-sink rule 22. Running the existing JavaScript rules over `<script>` blocks therefore costs alerts in
+legacy pages with no detection gain here (`js.exec.eval` detects 0 of 73), and fails the keep rule on this data; it
+stays because the roadmap asks for it and the alerts concentrate in one project.
+
+### Clean web files (no CVE fix touched them)
+
+The CVE data has no unchanged web files, so the false-alarm rate was measured on web files already on the machine
+(`kestrixcodebench web-corpus`): 492 distinct files, 123 KLOC (342 `.css`, 146 `.html`, 4 `.scss`; 606 duplicates, 43 minified `.css` and
+57 minified `.html` skipped), from third-party packages and the project's own sites. **0.47 findings per KLOC in all**: `html.link.target_blank` 29 (0.235 per KLOC), `js.dom.xss_sink`
+in inline scripts 24 (0.19), `html.inline.event_handler` 3, `html.mixed.http_resource` 1, `js.exec.eval` 1; the other
+rules, the CSS rules and every Vue and Svelte rule: 0. These are library and project files, not a labelled clean set,
+so a finding may be real; read it as an upper bound for hand-written code, on a corpus that holds no Vue or Svelte file.
+
+### Speed
+
+One core, every dev file of the Python/JavaScript/TypeScript benchmark (39,420 files, no web files), all eight shards in turn, two
+repetitions each, scanner of the starting commit against the final scanner, same node (job 11323099): baseline 41.2 and 43.1 files per second,
+final 42.7 and 42.0 (means 42.2 and 42.4). No measurable slowdown (the limit was 10%); the scanner still has no runtime dependencies. Web files are
+scanned in one pass of the tag scanner plus the JavaScript and CSS passes over their script and style blocks, and the 92-pair
+web benchmark (about 28 KLOC) scans in seconds. Pathological inputs (tag, brace and comment floods) are linear and tested.
+
+### What this does not show
+
+- The web-file numbers come from 92 pairs, 13 of them `v-html`; they are an existence proof for `v-html` and
+  `{@html}` detection, not a rate. The CSS, mixed-content, form, `target="_blank"` and `javascript:` rules have no
+  detection data at all.
+- No Next.js, NestJS, Fastify or Koa fixture is in the tuning data in numbers that move any rate; those sources are
+  covered by unit tests only.
+- `next.images.wildcard_host` and the web rules are not compared with another tool: no licensed open-source scanner covers
+  these file types in the same way (ESLint's security plugin reads JavaScript only, and Semgrep is not used, see
+  [Tools](#method)).
+- Everything is tuning data. The held-out test3 below has not been built.
+
+### test3: a fresh held-out set
+
+`hpc/codebench_heldout_future.sh` runs the test2 pipeline against a fresh clone of the GitHub Advisory Database and keeps
+only advisories published after a cutoff (`--published-after`, default 2026-10-22), minus everything the benchmark has
+touched, in a root of its own (`/scratch/$USER/kestrix/codebench3`): `clone` (transfer node), `select`, `fetch`
+(transfer node), `build`, and `eval`, which only prints the one-time `locked-test2` command. Run it once enough
+post-cutoff advisories with fix commits exist (the select report counts them), freeze the scanner first, and report
+the result next to Bandit and ESLint as for test2. The set will hold Python, JavaScript and TypeScript pairs only: the
+advisory miner fetches those files, which is why the web files above come from CVEfixes.

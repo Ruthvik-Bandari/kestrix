@@ -188,3 +188,86 @@ def test_scan_runs_kestrix_on_a_shard(tmp_path):
     assert [(r["k"], r["i"], r["r"]) for r in rows] == [("b", "aa11", "py.os.system")]
     report = json.loads(layout.scan_report("t", "kestrix", 0).read_text())
     assert report["files"] == {"b": 1, "a": 1, "u": 1} and report["findings"] == 1
+
+
+def test_web_files_are_a_language_and_only_language_keeps_one(tmp_path):
+    from kestrixcodebench.build import language_of, pair_reason
+
+    assert [language_of(f"a{ext}") for ext in (".vue", ".svelte", ".html", ".htm", ".css", ".scss")] == [
+        ("web", ".vue"),
+        ("web", ".svelte"),
+        ("web", ".html"),
+        ("web", ".htm"),
+        ("web", ".css"),
+        ("web", ".scss"),
+    ]
+    before = "<p>\n<div v-html='a'></div>\n<b>\n<i>\n<u>\n</p>\n"
+    after = before.replace("v-html='a'", "")
+    pair = RawPair("cvefixes", ["o/r"], "c" * 40, "", ["CVE-2020-1"], [], [79], "src/a.vue", before, after)
+    assert pair_reason(pair) is None
+    assert pair_reason(pair, "web") is None
+    assert pair_reason(pair, "python") == "other_language"
+    py = RawPair("cvefixes", ["o/r"], "c" * 40, "", ["CVE-2020-1"], [], [79], "src/a.py", VULN, FIXED)
+    assert pair_reason(py, "web") == "other_language"
+
+
+def test_scan_counts_web_files_for_kestrix_only():
+    from kestrixcodebench.scan import count_files
+
+    # only the file-name filter is exercised: an empty directory gives zero for every kind
+    assert count_files(Path("/nonexistent"), "kestrix") == {"b": 0, "a": 0, "u": 0}
+
+
+def test_web_corpus_counts_findings_per_rule(tmp_path):
+    from kestrixcodebench.corpus import web_corpus
+
+    tree = tmp_path / "pkg" / "node_modules" / "lib"
+    tree.mkdir(parents=True)
+    (tree / "a.html").write_text('<button onclick="go()">x</button>\n<p>fine</p>\n')
+    (tree / "b.css").write_text(".a { color: red; }\n")
+    (tree / "c.py").write_text("x = 1\n")
+    layout = Layout(tmp_path / "root")
+    report = json.loads(web_corpus(layout, [tmp_path / "pkg"], "t").read_text())
+    assert report["files_scanned"] == {".css": 1, ".html": 1}
+    assert report["rules"]["html.inline.event_handler"]["findings"] == 1
+    assert report["all_rules_per_kloc"] == pytest.approx(1 / 0.005, rel=0.01)
+
+
+def test_rule_rates_counts_every_rule_even_without_a_family(tmp_path):
+    from kestrixcodebench.common import SHARDS, write_json, write_jsonl
+    from kestrixcodebench.rates import rule_rates
+
+    layout = Layout(tmp_path)
+    pair = {
+        "id": "p1",
+        "split": "dev",
+        "language": "web",
+        "repos": ["o/r"],
+        "commits": ["c"],
+        "families": ["xss"],
+        "after_lines": 100,
+        "before_lines": 100,
+        "ops": [[4, 5, 4, 5]],
+        "old_ranges": [[5, 5]],
+    }
+    unchanged = {"id": "u1", "split": "dev", "language": "web", "repo": "o/r", "lines": 100}
+    write_jsonl(layout.pairs, [pair])
+    write_jsonl(layout.unchanged, [unchanged])
+    rows = {
+        0: [
+            {"k": "b", "i": "p1", "r": "html.form.http_action", "l": 5, "e": 5, "f": []},
+            {"k": "b", "i": "p1", "r": "html.form.http_action", "l": 90, "e": 90, "f": []},
+            {"k": "a", "i": "p1", "r": "html.form.http_action", "l": 90, "e": 90, "f": []},
+            {"k": "u", "i": "u1", "r": "css.import.http", "l": 1, "e": 1, "f": []},
+        ]
+    }
+    for shard in range(SHARDS):
+        write_jsonl(layout.findings_file("r", "kestrix", shard), rows.get(shard, []))
+    write_json(layout.reports / "x.json", {})
+    out = json.loads(rule_rates(layout, "r", "dev", "t").read_text())
+    by_rule = {r["rule"]: r for r in out["rules"]}
+    form = by_rule["html.form.http_action"]
+    assert (form["before_any"], form["before_near_change"], form["after"], form["unchanged"]) == (2, 1, 1, 0)
+    assert (form["detected_pairs"], form["after_alerts"]) == (0, 0)  # no family on these findings: lint-level
+    assert by_rule["css.import.http"]["unchanged"] == 1
+    assert form["clean_alerts_per_kloc"] == pytest.approx(1 / 0.2)

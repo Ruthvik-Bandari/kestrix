@@ -29,6 +29,9 @@ def only(source: str, rule_id: str, rel: str = "app.js") -> Hit:
 
 
 POSITIVE = [
+    # js.angular.bypass_trust
+    ("js.angular.bypass_trust", "class A { f(s: DomSanitizer, v: string) { return s.bypassSecurityTrustHtml(v); } }"),
+    ("js.angular.bypass_trust", "function f(s) { return s.bypassSecurityTrustResourceUrl('/p/' + id); }"),
     # js.exec.eval
     ("js.exec.eval", "function f(x) { return eval(x) }"),
     ("js.exec.eval", "function f(x) { return window.eval('(' + x + ')') }"),
@@ -209,6 +212,10 @@ POSITIVE = [
 ]
 
 NEGATIVE = [
+    # js.angular.bypass_trust: literal values, sanitized values, other methods
+    ("js.angular.bypass_trust", "function f(s) { return s.bypassSecurityTrustHtml('<b>fixed</b>'); }"),
+    ("js.angular.bypass_trust", "function f(s, v) { return s.bypassSecurityTrustHtml(DOMPurify.sanitize(v)); }"),
+    ("js.angular.bypass_trust", "function f(s, v) { return s.sanitize(1, v); }"),
     # js.exec.eval: literals, functions passed to timers, methods that are not the global eval
     ("js.exec.eval", "eval('1 + 1'); const C = 'x'; eval(C + 'y')"),
     ("js.exec.eval", "setTimeout(tick, 10); setInterval(() => go(), 5); setTimeout(function () {}, 1)"),

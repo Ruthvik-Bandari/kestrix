@@ -125,6 +125,7 @@ modules = [
     "kestrix_scan.ecoversions",
     "kestrix_scan.errors",
     "kestrix_scan.hook",
+    "kestrix_scan.html_tokens",
     "kestrix_scan.init",
     "kestrix_scan.install_guard",
     "kestrix_scan.js_index",
@@ -144,6 +145,7 @@ modules = [
     "kestrix_scan.taint",
     "kestrix_scan.versions",
     "kestrix_scan.walk",
+    "kestrix_scan.web_rules",
 ]
 strict = true
 packages = ["kestrix", "kestrixbench", "bench", "kestrixvul", "kestrixmailbench", "kestrixcodebench", "kestrixlinkfilebench"]

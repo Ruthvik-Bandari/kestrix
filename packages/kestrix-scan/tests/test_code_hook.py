@@ -195,3 +195,23 @@ def test_a_single_finding_keeps_its_explanation_and_fix(tmp_path: Path) -> None:
     context = json.loads(reply)["hookSpecificOutput"]["additionalContext"]
     assert "request.args" in context and "Fix: Pass the command as a list" in context
     assert "…" not in context
+
+
+def test_hook_scans_web_files(tmp_path: Path) -> None:
+    for name, text, rule in (
+        ("App.vue", '<template>\n  <div v-html="body"></div>\n</template>\n', "vue.xss.v_html"),
+        ("page.html", '<form action="http://example.com/login"></form>\n', "html.form.http_action"),
+        ("Post.svelte", "<p>{@html body}</p>\n", "svelte.xss.at_html"),
+    ):
+        target = tmp_path / name
+        target.write_text(text)
+        payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}, "cwd": str(tmp_path)}
+        context = _context({**payload, "tool_response": {"type": "create"}})
+        assert context is not None and rule in context, name
+
+
+def test_hook_context_leaves_out_low_severity_web_findings(tmp_path: Path) -> None:
+    target = tmp_path / "site.css"
+    target.write_text("@import url(http://example.com/a.css);\n")
+    payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}, "cwd": str(tmp_path)}
+    assert _context({**payload, "tool_response": {"type": "create"}}) is None  # the hook reports medium and above

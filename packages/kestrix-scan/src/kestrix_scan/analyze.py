@@ -8,6 +8,7 @@ that gives a reason, then, across the scan, drop findings outside the ``--diff``
 findings whose fingerprint is in the baseline.
 
 JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
+HTML, Vue, Svelte and Angular templates take ``<!-- kestrix: ignore[...] reason -->``; CSS takes ``/* ... */``.
 A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
 
 Suppression: ``# kestrix: ignore[rule-id] reason`` (or ``// kestrix: ignore[...] reason``) on the
@@ -37,13 +38,14 @@ from .python_rules import check_python
 from .registry import RULES, Hit
 from .secrets import check_secrets, redact
 from .walk import MAX_FILE_BYTES, Candidate, Unreadable, collect, file_limit, git_executable, is_within, read_text
+from .web_rules import WEB_SUFFIXES, check_web
 
 FailOn = Literal["low", "medium", "high", "critical", "none"]
 MAX_BASELINE_BYTES = 10 * 1024 * 1024
 PYTHON_SUFFIXES = frozenset({".py", ".pyw"})
 MISSING_REASON = "kestrix.suppression.missing_reason"
 
-_SUPPRESSION = re.compile(r"(?:#|//|/\*)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
+_SUPPRESSION = re.compile(r"(?:#|//|/\*|<!--)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
@@ -152,6 +154,12 @@ def scan_text(
             skip = SkippedFile(path=candidate.rel, reason=result)
     elif candidate.path.suffix in JS_SUFFIXES:
         result = check_js(text, candidate.rel)
+        if isinstance(result, list):
+            hits.extend(result)
+        else:
+            skip = SkippedFile(path=candidate.rel, reason=result)
+    elif candidate.path.suffix.lower() in WEB_SUFFIXES:
+        result = check_web(text, candidate.rel)
         if isinstance(result, list):
             hits.extend(result)
         else:

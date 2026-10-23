@@ -164,20 +164,36 @@ def advisory_records(checkout: Path) -> list[dict[str, Any]]:
     return out
 
 
+def _published_after(records: list[dict[str, Any]], cutoff: str | None, stats: Counter[str]) -> list[dict[str, Any]]:
+    """The records published after ``cutoff`` (``YYYY-MM-DD``); all of them when there is no cutoff."""
+    if cutoff is None:
+        return records
+    kept = [r for r in records if str(r.get("published") or "")[:10] > cutoff]
+    stats["excluded_published_on_or_before_cutoff"] = len(records) - len(kept)
+    return kept
+
+
 def select_targets(
-    root: Path, codebench: Path, vul: Path, *, allow_morefixes: bool = False, allow_known_repos: bool = False
+    root: Path,
+    codebench: Path,
+    vul: Path,
+    *,
+    allow_morefixes: bool = False,
+    allow_known_repos: bool = False,
+    published_after: str | None = None,
 ) -> dict[str, Any]:
     """Pick the advisories and fix commits of ``test2`` and write ``work/ghsa.jsonl`` and ``work/mine_targets.jsonl``.
 
     An advisory or commit is out when round 1's core data holds its GHSA id, a CVE alias or the commit. MoreFixes-only
     commits (``allow_morefixes``) and repositories round 1 already scanned (``allow_known_repos``) are kept out unless
-    asked for; the report counts what each of the four settings would give.
+    asked for; the report counts what each of the four settings would give. ``published_after`` (``YYYY-MM-DD``) keeps
+    only advisories published after that day: a ``test3`` of advisories that did not exist when the rules were tuned.
     """
     os.umask(0o077)
     private_dir(root / "work")
     old = load_existing(codebench, vul, root / "work" / "existing.json")
-    records = advisory_records(root / "raw" / "ghsa")
     stats: Counter[str] = Counter()
+    records = _published_after(advisory_records(root / "raw" / "ghsa"), published_after, stats)
     stats["advisories_reviewed_pypi_npm"] = len(records)
     tiers: dict[tuple[bool, bool], dict[str, set[Any]]] = {
         (m, r): {"advisories": set(), "commits": set(), "repos": set()} for m in (False, True) for r in (False, True)
@@ -235,6 +251,7 @@ def select_targets(
         "generated_at": now(),
         "allow_morefixes": allow_morefixes,
         "allow_known_repos": allow_known_repos,
+        "published_after": published_after,
         "existing_data": dict(sorted(old.sources.items())),
         "counts": dict(sorted(stats.items())),
         "tiers": {

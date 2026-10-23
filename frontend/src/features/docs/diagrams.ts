@@ -48,7 +48,7 @@ export const architectureDiagram: DiagramData = {
     { id: "hist", group: "server", kind: "store", label: "Recent results", sublabel: "30 days, encrypted when hosted" },
     { id: "iso", group: "server", label: "Isolated workers", sublabel: "one limited process per upload" },
 
-    { id: "rules", group: "scanner", label: "60 rules", sublabel: "Python, JS/TS, secrets, dependencies, agent config" },
+    { id: "rules", group: "scanner", label: "73 rules", sublabel: "Python, JS/TS, web files, secrets, dependencies, agent config" },
     { id: "taint", group: "scanner", label: "Source to sink traces", sublabel: "tracked within one function" },
     { id: "osv", group: "scanner", kind: "store", label: "Local OSV index", sublabel: "vulnerability data, read offline" },
 

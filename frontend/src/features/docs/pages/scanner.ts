@@ -20,7 +20,12 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
   {
     heading: "JavaScript and TypeScript (js.*)",
     prefixes: ["js."],
-    intro: "Run on `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts` files with a bounded tokenizer, not a full parser. Vue and Svelte files get only the secret rules.",
+    intro: "Run on `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.mts` and `.cts` files with a bounded tokenizer, not a full parser. Includes Angular's bypassSecurityTrust* and the Next.js, Fastify, Koa and NestJS request sources. Script blocks of `.html`, `.vue` and `.svelte` files get these rules too.",
+  },
+  {
+    heading: "Web files (vue.*, svelte.*, web.*, html.*, css.*, next.*)",
+    prefixes: ["vue.", "svelte.", "web.", "html.", "css.", "next."],
+    intro: "Run on `.vue`, `.svelte`, `.html`, `.htm`, `.css` and `.scss` files with a bounded tag scanner, and on `next.config.*`. Mostly low severity; a missing Content-Security-Policy is not reported.",
   },
   { heading: "Secrets (secret.*)", prefixes: ["secret."], intro: "Run on every text file. Findings show only the kind of secret and its first four characters, never the value." },
   {
