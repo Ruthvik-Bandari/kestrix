@@ -5,6 +5,13 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Install guard: typosquat warning.** A requested PyPI, npm, crates.io or Packagist package that is not popular but
+  is a near-miss of a popular one (swapped, dropped, doubled or neighbouring-key letters, look-alike characters,
+  removed separators, `python-`/`-js` affixes) and has no advisory now gets a non-blocking warning that names the
+  likely package; known malware is still denied. Offline, from the bundled `popular_names.json` (top 5,000 names per
+  ecosystem, refreshed by hand with `scripts/refresh_popular_names.py`); `install-allow` in `[tool.kestrix]` lists
+  names it never flags. Measurements and limits: `docs/modules/code.md`.
+
 - **Dependency checks the day an advisory drops: fresher data, more ecosystems.**
   - Ecosystems: Packagist (`composer.lock`), Go (`go.mod`, `go.sum`), crates.io (`Cargo.lock`), Maven (`pom.xml`,
     `gradle.lockfile`), RubyGems (`Gemfile.lock`), NuGet (`packages.lock.json`), Pub (`pubspec.lock`) and Bun

@@ -16,6 +16,7 @@ Keys::
     rules.disable = ["py.crypto.weak_hash"]
     ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
     claude.install-guard = false          # turn off the Claude Code install guard for this project
+    install-allow = ["reqeusts-internal", "@myorg/*"]   # names the typosquat check never flags
     db-max-age-days = 7                   # warn when the OSV index is older (env KESTRIX_SCAN_MAX_AGE_DAYS wins)
     db-ecosystems = ["PyPI", "npm", "Go"] # what `db update` downloads besides those it finds in the project
 
@@ -48,7 +49,17 @@ CONFIG_FILE = ".kestrix.toml"
 PYPROJECT = "pyproject.toml"
 MAX_CONFIG_BYTES = 1024 * 1024
 _TOP_KEYS = frozenset(
-    {"fail-on", "exclude", "baseline", "rules", "ignore-advisories", "claude", "db-max-age-days", "db-ecosystems"}
+    {
+        "fail-on",
+        "exclude",
+        "baseline",
+        "rules",
+        "ignore-advisories",
+        "claude",
+        "db-max-age-days",
+        "db-ecosystems",
+        "install-allow",
+    }
 )
 _RULE_KEYS = frozenset({"enable", "disable"})
 _CLAUDE_KEYS = frozenset({"install-guard"})
@@ -65,6 +76,7 @@ class Config:
     baseline: Path | None = None
     ignore_advisories: tuple[tuple[str, str], ...] = ()  # (advisory id or alias, reason)
     install_guard: bool | None = None  # claude.install-guard; None means on
+    install_allow: tuple[str, ...] = ()  # package names (globs allowed) the typosquat check never flags
     db_max_age_days: int | None = None  # None means 7
     db_ecosystems: tuple[str, ...] = ()  # extra OSV ecosystems for `db update`
     source: Path | None = None  # the file the settings came from, if any
@@ -171,6 +183,7 @@ def from_mapping(data: Mapping[str, Any], *, base: Path, source: Path | None = N
         baseline=(base / baseline) if baseline else None,
         ignore_advisories=_advisory_reasons(data.get("ignore-advisories", {}), where),
         install_guard=guard,
+        install_allow=_strings(data.get("install-allow", []), f"{where}: install-allow"),
         db_max_age_days=max_age,
         db_ecosystems=ecosystems,
         source=source,

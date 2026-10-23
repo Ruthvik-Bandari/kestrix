@@ -57,6 +57,7 @@ rules.enable = ["py.", "secret."]
 rules.disable = ["py.crypto.weak_hash"]
 ignore-advisories = {"GHSA-xxxx-xxxx-xxxx" = "not reachable: we never parse untrusted XML"}
 claude.install-guard = false
+install-allow = ["reqeusts-internal", "@myorg/*"]
 ```
 
 | Key | Meaning |
@@ -68,6 +69,7 @@ claude.install-guard = false
 | `rules.disable` | rule ids or prefixes to leave out, applied after `enable` |
 | `ignore-advisories` | a table of advisory id (or alias, such as a CVE) to the reason it does not apply; the reason is required. Those advisories are left out of [dependency findings](#dependencies) and install-guard decisions. |
 | `claude.install-guard` | `false` turns off the Claude Code [install guard](../claude-plugin.md#pretooluse-on-bash-the-install-guard) for this project |
+| `install-allow` | package names (`*` globs allowed, compared after the registry's own normalization) that the install guard's [typosquat check](#typosquat-check-install-guard) never flags |
 
 The scanner looks for settings from the scan root upwards: in each directory it reads `.kestrix.toml` first, then `pyproject.toml` if it has a `[tool.kestrix]` table, and the first one found wins. The search stops at the directory holding `.git`. Command-line options override settings. An unknown key prints a `warning:` line on stderr and is ignored; an unknown rule id or prefix, a bad value or invalid TOML is an error (exit 2), and a misspelled rule id gets a suggestion (`did you mean 'py.subprocess.shell_true'?`). The Claude Code hook applies `rules` and `exclude` too (not `baseline`, since it already reports only new findings), and so does `pytest --kestrix`.
 
@@ -323,6 +325,36 @@ requirements.txt
 **Suppression.** In a requirements file, `# kestrix: ignore[<rule id or advisory id>] reason` on the line or the line above drops the finding or that one advisory. Lockfiles have no comments, so for them (and everywhere) use `ignore-advisories` in [configuration](#configuration), with a reason per advisory.
 
 **Not covered.** Reachability is not analyzed: a finding means the version is affected, not that your code calls the vulnerable function. The nine ecosystems above are indexed; Maven versions managed by a parent POM or BOM, unresolved properties and GIT-only advisory ranges are not evaluated. The PHP interpreter, a web server or any other runtime is not a lockfile dependency, so this check cannot see it: the website check's exposure finding covers server and runtime versions seen from outside. Unpinned requirements, `package.json` ranges and `pyproject.toml` dependency lists are not resolved; check the lockfile instead. Advisory data is as good as OSV's.
+
+### Typosquat check (install guard)
+
+The Claude Code [install guard](../claude-plugin.md#pretooluse-on-bash-the-install-guard) also warns when a requested package is **not popular but a near-miss of a popular one and has no advisory**, as in `pip install reqeusts` (for `requests`) or `npm i expres`. It is a non-blocking warning: the hook returns `additionalContext` that names the likely package (`did you mean requests?`) and asks Claude to confirm the name with the user. A package with a `MAL-` or other malware advisory is still denied, and a name with any advisory in the index is not treated as a squat. The check needs no index (without one it says the advisory check could not run), uses the bundled snapshot `kestrix_scan/popular_names.json` (top 5,000 names for PyPI, npm, crates.io and Packagist, 378 KB, generated 2026-10-23, sources and licences in [dataset-licenses.md](../research/dataset-licenses.md#popular-package-names-install-guard-typosquat-check)) and opens no socket. RubyGems, Go and NuGet have no list and are not checked. Refresh the snapshot by hand with `python3 scripts/refresh_popular_names.py`; allow a name with `install-allow` in `[tool.kestrix]`.
+
+Rules, in order, applied to the normalized name (PEP 503 for PyPI, `-` for `_` on crates.io, lower case; npm scopes and Packagist vendors stay part of the name). A name already in the list is never flagged, nor is one shorter than 5 characters.
+
+| Rule | Matches | Popularity gap guard |
+| --- | --- | --- |
+| `homoglyph` | equal once `0`/`o`, `1`/`l`/`i`, `5`/`s`, `rn`/`m`, `vv`/`w`, accents and common Cyrillic or Greek look-alikes are folded | any listed name |
+| `separator` | equal once `-`, `_` and `.` are removed (`crossenv` for `cross-env`) | any listed name |
+| `affix` | a listed name plus `python-`, `py`, `py-`, `node-`, `js-`, `lib`, `the-`, `-js`, `-py`, `-python`, `-node`, `-npm`, `-lib`... | top 1,500 |
+| `edit` | Damerau-Levenshtein (optimal string alignment) distance 1, or 2 when the name has 10 or more characters | a swap, a doubled letter (added or removed) or a neighbouring-key slip: any listed name; another single edit (name of 7 or more characters): top 1,500; two edits: top 1,000 |
+
+Edits that add, remove or change a digit are ignored (`boto`, `boto3`), and a name in the popular package's own npm scope or Packagist vendor is never flagged because only its owner can publish there. The reason is spelled out (`two adjacent letters are swapped`, `` `u` is added ``) with the target's rank. The rules are deterministic; this is a heuristic, not a probability.
+
+**Measured 2026-10-23** (`python3 scripts/measure_typosquat.py`, seed 20261023; the snapshot above; the local OSV index of 2026-10-22):
+
+| | PyPI | npm | crates.io | Packagist |
+| --- | --- | --- | --- | --- |
+| Listed names flagged (false positives, top 5,000) | 0 of 5,000 | 0 of 5,000 | 0 of 5,000 | 0 of 5,000 |
+| Established tail flagged (ranks 5,001 to 10,000, real packages) | 52 of 5,000 (1.04%) | 35 (0.70%) | 85 (1.70%) | 2 (0.04%) |
+| Synthetic squats caught (10,000 per ecosystem, 10 classes, no combosquats) | 71.2% | 72.4% | 70.9% | 72.7% |
+| Precision on a 2 : 1 mixture (synthetic squats vs the tail above; not a base rate) | 99.3% | 99.5% | 98.8% | 99.97% |
+
+PyPI also: a seeded sample of 20,000 of the 921,050 names in `pypi.org/simple/` (unlabeled, includes real squats) is flagged at 0.41%. A check takes about 0.2 ms after the snapshot loads (mean over 5,000 tail names per ecosystem, 0.19 to 0.37 ms); the whole hook process takes about 0.13 s with or without a squat.
+
+Recall by synthetic class (PyPI; the other ecosystems are within 10 points): swap, doubled letter, neighbouring key, homoglyph and separator 100%; dropped letter 40%, inserted letter 50%, other substitution 53% and conventional affix 49% (the rest hit a name outside the rank guards or a short name); two random edits 21%; combosquats (`name-utils`, `name-security`) 0%, by design, since a longer name that contains a real one cannot be told from a legitimate add-on. The generator and the rules share their vocabulary, so these numbers show what the rules cover, not how real attackers behave. The independent check is the names of packages reported as malicious in OSV (`MAL-`, names only): of 11,863 PyPI names, 809 (6.8%) are flagged, and of the 900 whose name is one edit from a listed name (any rank, any length) 780 (86.7%) are; on npm, 324 of 222,300 (0.15%) are flagged, and of the 34 squat-shaped ones in a sample of 20,000 names, 20 (58.8%) are. Most reported malicious names are not squats of a popular name at all and are left to the advisory check. Flagged examples: `opnepyxl` for `openpyxl`, `pilkow` for `pillow`, `exprses` for `express`, `@angulra/core` for `@angular/core`.
+
+**Limits.** About 1 in 100 established but less popular packages gets a warning, mostly siblings and forks (`pytest-cover`, `serde-valid`, `simpy`); that is why it is a warning and Claude asks the user instead of refusing. A squat that is not close to a top-5,000 name, a combosquat, a squat of a package outside the snapshot, and a squat of a RubyGems, Go or NuGet package are not detected. The snapshot ages: a package that became popular after 2026-10-23 may be missing, and a legitimate new package near a popular one is flagged until it is allowed. The PyPI list has no licence file (see the dataset note).
 
 ## Suppression
 
