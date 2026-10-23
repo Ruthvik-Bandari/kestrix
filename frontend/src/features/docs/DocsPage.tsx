@@ -167,6 +167,7 @@ function DocsBody() {
   const heading = useRef<HTMLHeadingElement>(null);
   const treeSearch = useRef<HTMLInputElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
+  const treeColumn = useRef<HTMLElement>(null);
   const [drawer, setDrawer] = useState<"nav" | "search" | null>(null);
   useTitle(page ? (page.path ? `${page.title} · Docs` : "Docs") : "Docs");
 
@@ -197,7 +198,9 @@ function DocsBody() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || isTyping(event.target)) return;
       event.preventDefault();
-      const wide = typeof window.matchMedia !== "function" || window.matchMedia(layout.treeQuery).matches;
+      const wide =
+        (typeof window.matchMedia !== "function" || window.matchMedia(layout.treeQuery).matches) &&
+        (!treeColumn.current || getComputedStyle(treeColumn.current).display !== "none");
       if (wide) treeSearch.current?.focus();
       else setDrawer("search");
     };
@@ -210,15 +213,15 @@ function DocsBody() {
   if (resolved.kind === "redirect") return <Navigate to={docPath(resolved.to)} replace />;
 
   return (
-    <div className="grid min-w-0 gap-y-6">
+    <div className="@container grid min-w-0 gap-y-6">
       <a
         href="#docs-content"
-        className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60]"
+        className="sr-only rounded-lg bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:top-20 focus:left-2 focus:z-[60]"
       >
         Skip to the page content
       </a>
       <div className={cx("grid min-w-0 gap-y-6", layout.grid)}>
-        <aside aria-label="Documentation navigation" className={cx("self-start border-r border-line pr-5", layout.tree)}>
+        <aside ref={treeColumn} aria-label="Documentation navigation" className={cx("self-start border-r border-line pr-5", layout.tree)}>
           <div className={cx("flex flex-col gap-3", layout.treeSticky)}>
             <DocsSearch inputRef={treeSearch} variant="popover" />
             <DocsTree current={path} />

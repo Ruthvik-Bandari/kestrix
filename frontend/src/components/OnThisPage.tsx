@@ -95,7 +95,7 @@ export function OnThisPageMenu({ items, className }: { items: TocItem[]; classNa
       <ul className="border-t border-line px-2 py-2">
         {items.map((item) => (
           <li key={item.id}>
-            <a href={`#${item.id}`} className="flex min-h-9 items-center rounded-lg px-2 text-[0.875rem] text-ink-2 hover:bg-inset hover:text-ink">
+            <a href={`#${item.id}`} className="tap flex min-h-9 items-center rounded-lg px-2 text-[0.875rem] text-ink-2 hover:bg-inset hover:text-ink">
               {item.label}
             </a>
           </li>

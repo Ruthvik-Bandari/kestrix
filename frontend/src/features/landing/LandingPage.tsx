@@ -59,7 +59,7 @@ function navItems(): NavItem[] {
 }
 
 const navLink =
-  "inline-flex min-h-11 items-center rounded-md px-3 text-[0.9375rem] font-medium text-ink-2 transition-colors hover:text-ink";
+  "inline-flex min-h-11 items-center rounded-md px-3 text-[0.9375rem] font-medium text-ink transition-colors hover:text-accent-text";
 
 function NavLink({ item, onNavigate, className }: { item: NavItem; onNavigate?: () => void; className?: string }) {
   if ("anchor" in item) {
@@ -453,7 +453,7 @@ function Notice() {
         : undefined;
   if (!notice) return null;
   return (
-    <div className="fixed inset-x-4 top-24 z-40 mx-auto max-w-[40rem]">
+    <div className="absolute inset-x-4 top-24 z-40 mx-auto max-w-[40rem]">
       <div role={notice.tone === "crit" ? "alert" : "status"} className={cx("flex items-center gap-3 rounded-xl border border-line px-4 py-3 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.6)]", notice.tone === "crit" ? "bg-crit-bg" : "bg-ok-bg")}>
         <Icon name={notice.tone === "crit" ? "xCircle" : "checkCircle"} size={20} className={notice.tone === "crit" ? "text-crit" : "text-ok"} />
         <p className="flex-1 font-medium text-ink">{notice.text}</p>

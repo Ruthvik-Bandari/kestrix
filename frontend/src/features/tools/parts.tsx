@@ -65,7 +65,7 @@ export function ExampleOutput({ example, className }: { example: Example; classN
       >
         <code>{example.text}</code>
       </pre>
-      <p className="mt-2 text-[0.8125rem] text-ink-3">{example.source}</p>
+      <p className="mt-2 text-[0.8125rem] [overflow-wrap:anywhere] text-ink-3">{example.source}</p>
     </figure>
   );
 }

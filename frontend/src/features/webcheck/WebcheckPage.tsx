@@ -387,7 +387,7 @@ function PagesChecked({ report }: { report: WebReport }) {
 function FindingPages({ paths, total }: { paths: string[]; total: number }) {
   return (
     <details className="group max-w-[68ch]">
-      <summary className="inline-flex min-h-8 cursor-pointer items-center gap-1.5 text-[0.875rem] font-medium text-ink select-none">
+      <summary className="tap inline-flex min-h-8 cursor-pointer items-center gap-1.5 text-[0.875rem] font-medium text-ink select-none">
         <Icon
           name="chevronDown"
           size={14}

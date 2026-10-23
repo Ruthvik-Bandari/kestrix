@@ -167,6 +167,8 @@ describe("a page", () => {
     fireEvent.click(open);
     const dialog = screen.getByRole("dialog", { name: "Documentation menu" });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
+    // Portalled to <body>, so a sticky page header can never sit above it.
+    expect(dialog.closest("#root, main")).toBeNull();
     expect(within(dialog).getByRole("navigation", { name: "Documentation" })).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();

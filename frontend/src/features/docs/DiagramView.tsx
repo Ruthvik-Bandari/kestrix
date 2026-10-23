@@ -52,7 +52,7 @@ export function DiagramView({ diagram }: { diagram: DiagramData }) {
   return (
     <figure className="@container my-2 max-w-full">
       <figcaption className="mb-2 text-[0.8125rem] font-semibold text-ink-2">{diagram.title}</figcaption>
-      <div className="hidden @min-[620px]:block">
+      <div className="hidden @min-[38.75rem]:block">
         <svg
           role="img"
           aria-label={`${diagram.title}. ${diagram.summary}`}
@@ -129,8 +129,8 @@ export function DiagramView({ diagram }: { diagram: DiagramData }) {
           )}
         </svg>
       </div>
-      <div className="@min-[620px]:sr-only">
-        <p className="text-[0.8125rem] text-ink-2 @min-[620px]:sr-only">{diagram.summary}</p>
+      <div className="@min-[38.75rem]:sr-only">
+        <p className="text-[0.8125rem] text-ink-2 @min-[38.75rem]:sr-only">{diagram.summary}</p>
         <div className="mt-3 space-y-3">
           {text.groups.map((group) => (
             <section key={group.title} aria-label={group.title} className={`rounded-xl border bg-inset/50 px-3.5 py-3 ${group.outside ? "border-dashed border-line-strong" : "border-line"}`}>
