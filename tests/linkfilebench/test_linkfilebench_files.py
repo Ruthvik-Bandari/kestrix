@@ -129,9 +129,9 @@ def test_every_synthetic_family_triggers_what_it_was_built_for_and_controls_stay
         alarm = max(
             (f.severity for f in report.findings if category(f.id) == SECURITY and f.severity != "info"), default="none"
         )
-        if case.family == "script_attachment" and case.name.endswith(".js"):
-            continue  # JavaScript is only a low signal by design
         assert set(case.expected) <= fired, (case.family, case.name, sorted(fired))
         if case.label == "benign":
-            assert alarm == "none", (case.family, sorted(fired))
-    assert FAMILY_BY_NAME["html_obfuscated"].expected == ()
+            # plain JavaScript is a low signal by design; controls must stay below medium
+            assert alarm in ("none", "low"), (case.family, sorted(fired))
+            assert alarm == "none" or case.family == "ctrl_clean_js", (case.family, sorted(fired))
+    assert FAMILY_BY_NAME["html_obfuscated"].expected == ("obfuscated_html",)

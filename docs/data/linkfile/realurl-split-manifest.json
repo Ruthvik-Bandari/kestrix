@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-10-23T13:50:19+00:00",
+  "ids_sha256_all": "0d9abefd97b3428a1157bfbde694941fe59e2f7e3707f73d6a3102e3aaa72891",
+  "kind": "realurl",
+  "schema_version": 1,
+  "seed": "kestrixlinkfile-v1",
+  "splits": {
+    "dev": {
+      "by_source_label": {
+        "blogspot.com/benign": 3500,
+        "github.io/benign": 3500,
+        "netlify.app/benign": 3499,
+        "top_domain/benign": 31790,
+        "vercel.app/benign": 3500
+      },
+      "groups": 13518,
+      "ids_sha256": "56b989ce938193f6c7b0c4768d06c76d7d694a862663149046109eacb71b4dbd",
+      "items": 45789
+    },
+    "test": {
+      "by_source_label": {
+        "blogspot.com/benign": 1500,
+        "github.io/benign": 1500,
+        "netlify.app/benign": 1501,
+        "top_domain/benign": 13636,
+        "vercel.app/benign": 1500
+      },
+      "groups": 5800,
+      "ids_sha256": "8266b19e8eaa02a434b729e4a1718d4827d69312663ffe3e21cbb873532accc3",
+      "items": 19637
+    }
+  },
+  "stratified_by": "commonest source and label of the group",
+  "test_fraction_target": 0.3,
+  "unit": "group = sampled Majestic domain (top_domain) or full host (user-content platform pages)"
+}
