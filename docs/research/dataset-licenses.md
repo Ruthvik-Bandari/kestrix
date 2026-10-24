@@ -94,3 +94,17 @@ The link and file accuracy benchmark ([`linkfile-benchmark.md`](linkfile-benchma
 | PhishTank | Terms conflict (archived 2006 personal-use text, registration, no automated access without permission) | <https://phishtank.org/terms.php> | not used | Skipped; PhiUSIIL's URLs derive from it and carry PhiUSIIL's license. |
 | MalwareBazaar, VirusShare, SOREL, UNSAFE-DOCS | Live malware | | not used | Never downloaded. |
 
+## Modern mailing-list mail (`kestrixmailbench.modern`)
+
+The "Modern normal mail (2022-2026)" section of [`mail-benchmark.md`](mail-benchmark.md) measures false alarms of `kestrix.mail` on public mailing-list archives. Eval only, no model is trained. Checked 2026-10-23; not legal advice.
+
+| Source | Terms found | URL | Tier | Notes |
+| --- | --- | --- | --- | --- |
+| Apache Software Foundation list archives via the Pony Mail API (`lists.apache.org/api/mbox.lua`) | No license on the archive. ASF privacy policy: list mail is public, third parties may collect it; reuse is not addressed. `lists.apache.org` has no `robots.txt`; `mail-archives.apache.org` forbids bots (not used). | <https://lists.apache.org/> | eval | Eight lists (kafka, spark, flink, airflow, arrow), 3 months a year 2022-2026, 120 requests about 3 s apart from the transfer node. Message text keeps each author's copyright. Raw mbox under `/scratch/$USER/kestrix/mailmodern/` only (0700/0600); aggregates only in git; no body, address or subject is printed. **Owner to confirm the ASF route.** |
+| GNU project list archive (`lists.gnu.org/archive/mbox/LIST/YYYY-MM`) | No license stated. `robots.txt`: `Crawl-delay: 10`, archive not disallowed. | <https://lists.gnu.org/archive/> | eval | Seven lists (emacs-devel, help-gnu-emacs, guile-devel, guile-user, coreutils, grub-devel, bug-bash), 105 requests 11 s apart. Same storage and reporting rules. |
+| Python `mail.python.org` (Mailman 3 export) | `robots.txt` disallows `/*/export/` | | **not used** | |
+| Fedora, `lists.fedoraproject.org` | Export strips the headers; `robots.txt` blocks ClaudeBot | | **not used** | |
+| Linux kernel `lore.kernel.org` | `robots.txt` blocks the listed crawlers | | **not used** | |
+| IETF `mailarchive.ietf.org` | `robots.txt` disallows `/arch/export/` | | **not used** | |
+| Synthetic modern newsletters and notices | Generated here (Apache-2.0) | `src/kestrixmailbench/modern_synth.py` | eval only | `.example` senders only; reported separately, never pooled with real mail. |
+

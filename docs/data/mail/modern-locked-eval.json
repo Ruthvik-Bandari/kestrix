@@ -1,0 +1,8 @@
+{
+  "finished": "2026-10-24T16:42:23+00:00",
+  "name": "modern-heldout-current-rules",
+  "report": "modern-heldout.json",
+  "report_sha256": "023ecc045b60a266063c71cd804d3c6831595e3efaff88f1b4a307557a12b451",
+  "rules": "unmodified kestrix.mail",
+  "started": "2026-10-24T16:39:47+00:00"
+}
