@@ -14,7 +14,7 @@ Canonical sequence (example: a Sigma parser change):
 /kx-documentation support matrix
 ```
 
-1. Start in plan mode (`claude --permission-mode plan`). Read `CLAUDE.md`, `docs/handoff.md`
+1. Start in plan mode (`claude --permission-mode plan`). Read `CLAUDE.md`, `.claude/handoff.md`
    and the relevant ADRs.
 2. Run `/kx-repo-audit` when the checkout is new; otherwise skim the handoff.
 3. Agree changed paths, contracts, failure states, tests and commands before editing.
@@ -33,7 +33,7 @@ separate files or a separate worktree and name one integration owner.
 
 ## Session handoff procedure
 
-Before ending a session, update `docs/handoff.md`:
+Before ending a session, update `.claude/handoff.md`:
 
 - Current git SHA (`git rev-parse HEAD`) and whether the tree is clean.
 - Completed slice, and anything left partially done.

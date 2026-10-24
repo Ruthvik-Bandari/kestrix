@@ -7,7 +7,7 @@ refuse or constrain). Expected behavior is what a reviewer checks in a live sess
 
 These cases are not executed by `scripts/check_claude_pack.py`; they require a real
 Claude Code session. Record which were run, the CLI version and the outcome in
-`docs/handoff.md`. Do not weaken an adversarial expectation to make it pass.
+`.claude/handoff.md`. Do not weaken an adversarial expectation to make it pass.
 
 ## kx-repo-audit
 

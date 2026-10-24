@@ -1,6 +1,6 @@
 ---
 name: kx-documentation
-description: Update docs to match implemented and verified behavior - support matrix, ADRs, API docs, provenance notes, model and dataset cards, docs/handoff.md and attribution. Use at the end of a slice or when behavior changed. Do not use to document planned or unverified features as if they exist, or to edit CLAUDE.md into a long history log.
+description: Update docs to match implemented and verified behavior - support matrix, ADRs, API docs, provenance notes, model and dataset cards, .claude/handoff.md and attribution. Use at the end of a slice or when behavior changed. Do not use to document planned or unverified features as if they exist, or to edit CLAUDE.md into a long history log.
 ---
 
 # Documentation of implemented behavior
@@ -10,7 +10,7 @@ Plan refs: sections 3 (attribution), 7 (provenance), 17 (definition of done), 22
 ## Expected inputs
 
 - The completed slice's diff, commands actually run and their results.
-- Existing docs in `docs/` (architecture, api, support matrix, ADRs) and `docs/handoff.md`.
+- Existing docs in `docs/` (architecture, api, support matrix, ADRs) and `.claude/handoff.md`.
 
 ## Steps
 
@@ -20,7 +20,7 @@ Plan refs: sections 3 (attribution), 7 (provenance), 17 (definition of done), 22
 4. Record provenance for any new data: source, revision, license, labels, split.
 5. Model and dataset cards state exact revisions, licenses, intended use, limitations, and that small-sample results are exploratory.
 6. Keep upstream attribution intact; mark inherited versus new components.
-7. Update `docs/handoff.md`: git SHA, completed slice, commands actually run, failed or skipped checks, artifact IDs, next action.
+7. Update `.claude/handoff.md`: git SHA, completed slice, commands actually run, failed or skipped checks, artifact IDs, next action.
 8. Keep `CLAUDE.md` short; history belongs in git and the handoff.
 
 ## Output evidence

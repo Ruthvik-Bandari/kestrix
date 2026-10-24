@@ -4,7 +4,7 @@ Local-first security workbench: the `kestrix` package (Python 3.10+) with a Type
 FastAPI server that serves a bundled React dashboard on 127.0.0.1:8765. Platform decision:
 `docs/adr/0001-platform-direction.md`. Detection-repair research plan:
 `docs/history/cyberguard-engineering-plan.md` (its CyberGuard/Spring Boot wording is historical).
-Session state: `docs/handoff.md`. Workflow: `.claude/workflow.md`.
+Session state: `.claude/handoff.md`. Workflow: `.claude/workflow.md`.
 
 ## Layout
 

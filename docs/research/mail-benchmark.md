@@ -418,7 +418,7 @@ Phishing by Nazario file, flagged before and after: `phishing0.mbox` 69.3% to 77
 
 ## Reproduce
 
-On the cluster ([`docs/hpc.md`](../hpc.md)), from `~/kestrix` after syncing the repository and `bash research/hpc/common/setup_env.sh mail`:
+On the cluster ([`docs/research/hpc.md`](hpc.md)), from `~/kestrix` after syncing the repository and `bash research/hpc/common/setup_env.sh mail`:
 
 ```bash
 ssh explorer-xfer 'mkdir -p /scratch/$USER/kestrix/mailbench/logs && cd ~/kestrix && nohup bash -l research/hpc/mail/mail_acquire.sh > /scratch/$USER/kestrix/mailbench/logs/acquire.log 2>&1 &'

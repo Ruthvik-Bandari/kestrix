@@ -482,8 +482,8 @@ manifests, and writes aggregate QC reports. Related docs:
 - [research/results/sources.md](research/results/sources.md): the license record.
 - [research/results/policy.md](research/results/policy.md): the data and model guardrails.
 - [research/results/compliance.md](research/results/compliance.md): the approvals checklist.
-- [docs/hpc.md](docs/hpc.md): cluster jobs and choosing GPUs by task.
-- [docs/research.md](docs/research.md): the research pipeline end to end (benchmark → B0/B1/B2 → M1 → locked comparison).
+- [docs/research/hpc.md](docs/research/hpc.md): cluster jobs and choosing GPUs by task.
+- [docs/research/detect-runbook.md](docs/research/detect-runbook.md): the research pipeline end to end (benchmark → B0/B1/B2 → M1 → locked comparison).
 - [research/results/dataset-card.md](research/results/dataset-card.md) and [docs/model-card.md](docs/model-card.md): the benchmark and the M1 adapter, with results and limitations.
 
 ## Credits and license

@@ -46,7 +46,7 @@ Retention, per the plan: raw lab event captures are deleted after 30 days. Sanit
 
 - Run work through Slurm. Never compute on login nodes; Research Computing terminates such jobs.
 - Use the cluster only for Northeastern research or coursework. Never share accounts or credentials.
-- Pick GPUs by task size; see `docs/hpc.md`. Measure before scaling up. Initial budget: 40 to 80 GPU hours.
+- Pick GPUs by task size; see `docs/research/hpc.md`. Measure before scaling up. Initial budget: 40 to 80 GPU hours.
 - Publications that use the cluster include Research Computing's acknowledgement statement.
 
 ## 6. AI assistant boundary

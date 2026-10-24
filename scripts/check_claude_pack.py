@@ -42,7 +42,7 @@ RULES = {"python": "src/kestrix/**/*.py", "ui": "frontend/**", "backend": "src/k
 REQUIRED_DENY = ["**/.env", "**/.env.*", "**/*.pem", "data/raw/**", "data/locked/**", "**/secrets/**"]
 DOCS = [
     "CLAUDE.md",
-    "docs/handoff.md",
+    ".claude/handoff.md",
     ".claude/workflow.md",
     ".claude/skill_validation_cases.md",
     ".claude/hooks/test_protect_paths.py",

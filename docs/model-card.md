@@ -68,7 +68,7 @@ All comparisons are paired, and the intervals come from a root-resampling bootst
 
 ## Reproduce
 
-Follow [`docs/research.md`](research.md), steps 9 to 11. The commands are:
+Follow [`docs/research/detect-runbook.md`](research/detect-runbook.md), steps 9 to 11. The commands are:
 
 - `research/hpc/detect/sft.sbatch`;
 - `research/hpc/detect/m1.sbatch --max-steps 5`, then `research/hpc/detect/m1.sbatch --train-seed N`;

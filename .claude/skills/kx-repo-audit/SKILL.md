@@ -10,11 +10,11 @@ Read-only inspection that separates observed facts from assumptions. Plan refs: 
 ## Expected inputs
 
 - The current checkout and `git log` / `git remote -v` / `git status`.
-- `docs/handoff.md` (previous session state), if present.
+- `.claude/handoff.md` (previous session state), if present.
 
 ## Steps
 
-1. Record current branch, HEAD SHA, whether the tree is clean, and untracked paths. Compare with the SHA in `docs/handoff.md`; if they differ, say so; do not guess.
+1. Record current branch, HEAD SHA, whether the tree is clean, and untracked paths. Compare with the SHA in `.claude/handoff.md`; if they differ, say so; do not guess.
 2. Confirm `LICENSE` is Apache-2.0 and that `NOTICE` and README credit the adapted projects (CyberSafeX Detection Suite, BitShield) and pySigma.
 3. Inventory build and test entry points by reading files, not by assuming: `pyproject.toml` (scripts, extras, pytest markers, ruff and mypy config), `uv.lock`, `frontend/package.json` scripts and `frontend/.nvmrc`, `.github/workflows/*`, `scripts/*`. List each command with its source file.
 4. Check dependency locks: `uv.lock`, `frontend/package-lock.json`, GitHub Actions pinned by SHA. Note anything unpinned (floating Docker tags, `latest` images, an Elasticsearch image without its digest).
