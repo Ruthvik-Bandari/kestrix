@@ -104,11 +104,6 @@ export function toolFor(page: ToolPage): Tool {
   return tool;
 }
 
-/** Whether the tool runs on your own computer only in this mode (shown as "Run locally"). */
-export function runsLocallyOnly(tool: Tool): boolean {
-  return !tool.live || !pageAvailable(tool.page);
-}
-
 /**
  * The short availability hint for navigation and Home, or null where the tool simply runs:
  * "Guide" where the page is always a setup guide (code scanner, Claude integration), "Local guide"

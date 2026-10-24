@@ -1,0 +1,268 @@
+{
+  "generated_at": "2026-10-24T17:20:58+00:00",
+  "n": {
+    "asf_dev_spark": 1909,
+    "asf_user_spark": 728,
+    "modern_asf": 12327,
+    "modern_gnu": 10976,
+    "modern_ham_all": 23303,
+    "old_enron_ham": 13986,
+    "old_phishing": 6070,
+    "old_spam": 1546,
+    "old_spamassassin_ham": 2757
+  },
+  "note": "Dev only. The shipped analyzer (P1+P3+P6 implemented in kestrix.mail) run through the variants harness; its base column.",
+  "schema_version": 1,
+  "split": "dev",
+  "variants": {
+    "implemented_rules": {
+      "asf_dev_spark": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.028287,
+            0.045574
+          ],
+          "groups": 5,
+          "k": 70,
+          "n": 1909,
+          "rate": 0.036668
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.025144,
+            0.042431
+          ],
+          "groups": 5,
+          "k": 64,
+          "n": 1909,
+          "rate": 0.033525
+        }
+      },
+      "asf_user_spark": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.001374,
+            0.013736
+          ],
+          "groups": 5,
+          "k": 5,
+          "n": 728,
+          "rate": 0.006868
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.001374,
+            0.010989
+          ],
+          "groups": 5,
+          "k": 4,
+          "n": 728,
+          "rate": 0.005495
+        }
+      },
+      "modern_asf": {
+        "flagged": {
+          "ci95": [
+            0.002037,
+            0.015752
+          ],
+          "ci95_message": [
+            0.006003,
+            0.009005
+          ],
+          "groups": 25,
+          "k": 92,
+          "n": 12327,
+          "rate": 0.007463
+        },
+        "malicious": {
+          "ci95": [
+            0.001204,
+            0.014143
+          ],
+          "ci95_message": [
+            0.004705,
+            0.007463
+          ],
+          "groups": 25,
+          "k": 75,
+          "n": 12327,
+          "rate": 0.006084
+        }
+      },
+      "modern_gnu": {
+        "flagged": {
+          "ci95": [
+            0.000926,
+            0.003116
+          ],
+          "ci95_message": [
+            0.001184,
+            0.002915
+          ],
+          "groups": 25,
+          "k": 22,
+          "n": 10976,
+          "rate": 0.002004
+        },
+        "malicious": {
+          "ci95": [
+            0.0,
+            0.000432
+          ],
+          "ci95_message": [
+            0.0,
+            0.000456
+          ],
+          "groups": 25,
+          "k": 2,
+          "n": 10976,
+          "rate": 0.000182
+        }
+      },
+      "modern_ham_all": {
+        "flagged": {
+          "ci95": [
+            0.00193,
+            0.008942
+          ],
+          "ci95_message": [
+            0.004034,
+            0.005793
+          ],
+          "groups": 50,
+          "k": 114,
+          "n": 23303,
+          "rate": 0.004892
+        },
+        "malicious": {
+          "ci95": [
+            0.000604,
+            0.006972
+          ],
+          "ci95_message": [
+            0.002575,
+            0.004034
+          ],
+          "groups": 50,
+          "k": 77,
+          "n": 23303,
+          "rate": 0.003304
+        }
+      },
+      "old_enron_ham": {
+        "flagged": {
+          "ci95": [
+            0.00507,
+            0.009762
+          ],
+          "ci95_message": [
+            0.00572,
+            0.008437
+          ],
+          "groups": 257,
+          "k": 99,
+          "n": 13986,
+          "rate": 0.007079
+        },
+        "malicious": {
+          "ci95": [
+            0.000176,
+            0.000891
+          ],
+          "ci95_message": [
+            0.000143,
+            0.00093
+          ],
+          "groups": 257,
+          "k": 7,
+          "n": 13986,
+          "rate": 0.000501
+        }
+      },
+      "old_phishing": {
+        "flagged": {
+          "ci95": [
+            0.618063,
+            0.740909
+          ],
+          "ci95_message": [
+            0.672484,
+            0.696046
+          ],
+          "groups": 25,
+          "k": 4155,
+          "n": 6070,
+          "rate": 0.684514
+        },
+        "malicious": {
+          "ci95": [
+            0.096157,
+            0.140297
+          ],
+          "ci95_message": [
+            0.107249,
+            0.123229
+          ],
+          "groups": 25,
+          "k": 698,
+          "n": 6070,
+          "rate": 0.114992
+        }
+      },
+      "old_spam": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.414602,
+            0.464424
+          ],
+          "groups": 2,
+          "k": 678,
+          "n": 1546,
+          "rate": 0.438551
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.027814,
+            0.047219
+          ],
+          "groups": 2,
+          "k": 58,
+          "n": 1546,
+          "rate": 0.037516
+        }
+      },
+      "old_spamassassin_ham": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.036997,
+            0.052593
+          ],
+          "groups": 4,
+          "k": 123,
+          "n": 2757,
+          "rate": 0.044614
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.004353,
+            0.011244
+          ],
+          "groups": 4,
+          "k": 21,
+          "n": 2757,
+          "rate": 0.007617
+        }
+      },
+      "synthetic_modern_flagged": 0
+    }
+  }
+}

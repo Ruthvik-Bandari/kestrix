@@ -2,7 +2,7 @@
 
 This page records how well `kestrix.mail` detects phishing and spam on public corpora, why it misses or over-flags, and what signal weights a simple explainable model learns from the same data. It is research tooling: the package is [`src/kestrixmailbench/`](../../src/kestrixmailbench/) (not in the published wheel), the jobs are `hpc/mail_*`, and the aggregate outputs are in [`docs/data/mail/`](../data/mail/README.md).
 
-**Status (2026-10-22).** Everything below is **development-split** numbers. Sections up to "Learned weights" describe the rules as shipped when the benchmark ran; [Round 1](#round-1-rule-changes-measured-on-dev) records the rule changes made from that analysis and their before and after numbers. The locked test split has not been opened. No learned weights are wired into `kestrix.mail`; `docs/modules/mail.md` still says Kestrix has not measured detection or false-alarm rates, and that stays true until the locked test has run and the owner decides.
+**Status (2026-10-24, modern-mail section added at the end).** Everything below is **development-split** numbers. Sections up to "Learned weights" describe the rules as shipped when the benchmark ran; [Round 1](#round-1-rule-changes-measured-on-dev) records the rule changes made from that analysis and their before and after numbers. The locked test split has not been opened. No learned weights are wired into `kestrix.mail`; `docs/modules/mail.md` still says Kestrix has not measured detection or false-alarm rates, and that stays true until the locked test has run and the owner decides.
 
 ## What the dev numbers say
 
@@ -474,3 +474,113 @@ What the locked test shows:
 - **Limits:** the normal mail is 1999–2005 and Enron lacks most headers, so modern false-alarm rates are unknown; spam
   has 238 test messages and wide intervals. The locked test is now spent; future rounds need new held-out data (for
   example TREC 2007 if the usage agreement is approved).
+
+## Modern normal mail (2022-2026)
+
+Measured 2026-10-23 and 2026-10-24 on the rules at `main` 0ca93a7 (round 1 included). Question: how often does the email check flag *modern* normal mail, given that the benchmark's normal mail is 1999-2005 (Enron lacks nearly every modern header; SpamAssassin ham is one person's 2002 lists)? Code: `src/kestrixmailbench/modern*.py`; jobs `hpc/modern_*.sbatch`; aggregates `docs/data/mail/modern-*.json`.
+
+### Data and its bias
+
+Public mailing-list archives with raw headers, three months a year (spread over the year) 2022-2026, at most 250 messages per list-month after exact and near-duplicate removal (same rule as above).
+
+| Source | Lists (dev / held out) | Read | Kept | Headers |
+| --- | --- | --- | --- | --- |
+| Apache Software Foundation, `lists.apache.org` API | dev: dev@airflow, dev@arrow, dev@kafka, dev@spark, user@spark; held out: dev@flink, user@flink, users@kafka | 32,925 | 19,119 (dev 12,327; held out 6,792) | Authentication-Results on 97% (topmost is ASF's own stamp), Received, DKIM, ARC on 12%, list headers |
+| GNU, `lists.gnu.org` mbox archive | dev: coreutils, emacs-devel, grub-devel, guile-user, help-gnu-emacs; held out: bug-bash, guile-devel | 28,031 | 14,103 (dev 10,976; held out 3,127) | Received, DKIM-Signature (82%), Received-SPF, ARC on 8%, list headers; no Authentication-Results on 96% |
+| Synthetic modern newsletters and notices (`.example` senders, 8 families x 15, labelled separately) | n/a | 120 | 120 | provider-style: DKIM by the sending provider, bounce domain on the provider, one-click List-Unsubscribe, ARC, tracked HTTPS links, tracking pixel |
+
+Two months are missing (`user@spark` 2023-03 and 2024-11: the API stalled). The split is by *list*: three of eight ASF lists and two of seven GNU lists were held out by seeded hash before any measurement (dev 23,303 messages in 50 list-year groups, held out 9,919 in 25). Bootstrap resamples list-year groups, so with 5-15 lists the intervals are wide; a message-level interval is shown where it is the only one.
+
+**Bias, stated plainly.** This is mailing-list mail between technical people, not a personal inbox. List servers add list headers and rewrite nothing the rules use; the senders are developers (code, logs, private IP addresses, URLs, patches) and the mail is partly automated (Jira, GitHub, Jenkins). It has no bank statements, shipping notices, marketing newsletters or family mail. Messages are labelled normal by origin, not by hand: a few may be real spam that got through, which would make the rates upper bounds. Both archives drop or keep what their servers accepted, so spam rejected upstream is absent. Authentication is the archive's view, not a mailbox's (see below).
+
+### Results: current rules
+
+Verdict `suspicious` or `malicious` counts as flagged. Same analyzer as the shipped code, all findings (the content-only figure differs by under 0.05 points).
+
+| Cohort | Messages | Flagged | Malicious |
+| --- | --- | --- | --- |
+| Dev, all modern lists | 23,303 | 1.03% (0.43-1.92) | 0.64% (0.10-1.45) |
+| Dev, ASF | 12,327 | 1.72% (0.63-3.45) | 1.18% (0.23-2.73) |
+| Dev, GNU | 10,976 | 0.26% (0.15-0.39) | 0.02% (0.00-0.04) |
+| **Held out, all modern lists (one run)** | 9,919 | **2.61% (0.62-5.20)** | **0.41% (0.10-0.83)** |
+| Held out, ASF | 6,792 | 3.74% (0.92-7.60) | 0.60% (0.15-1.21) |
+| Held out, GNU | 3,127 | 0.16% (0.00-0.54) | 0.00% |
+| Synthetic modern (regression set) | 120 | 0 | 0 |
+| For comparison: 1999-2005 ham, round-1 rules, dev | Enron 13,986 / SpamAssassin 2,757 | 0.7% / 4.5% | 0.05% / 0.8% |
+| For comparison: 1999-2005 ham, locked test | Enron 6,014 / SpamAssassin 1,536 | 1.3% / 1.0% | n/a |
+
+Modern list mail is flagged about 1-3% of the time, in the range of the old Enron and SpamAssassin ham, not ten times worse; the held-out rate is higher than dev's and its interval overlaps it. The false alarms are concentrated in a few lists, not spread:
+
+| List | Dev flagged | Held-out flagged |
+| --- | --- | --- |
+| asf dev-spark / user-spark | 7.2% / 7.4% | |
+| asf user-flink | | 10.8% |
+| asf users-kafka | | 1.0% |
+| asf dev-airflow, dev-arrow, dev-kafka, dev-flink | 0.5%, 0.2%, 0.0% | dev-flink 0.2% |
+| all five GNU dev lists / both held-out GNU lists | 0.16-0.35% | 0.04%, 0.56% |
+
+By year (dev, ASF): 2022 2.4%, 2023 1.9%, 2024 3.3%, 2025 0.2%, 2026 0.8%; GNU 0.0-0.4% every year. The swings follow which lists and threads fall in a year, not a trend. Messages the headers mark as automated (Jira, GitHub, Jenkins, Auto-Submitted) are flagged 0.0% on dev (1,525) and 0.3% on held out (1,679): the false alarms are human mail.
+
+### What misfires (dev only)
+
+Of the 241 dev flags, 148 are `malicious`. By finding (share of flagged dev messages): `links.text_href_mismatch` 60% (97% of the malicious ones), `links.ip_host` 17%, `sender.reply_to_mismatch` 7%, `sender.display_name_spoof` 4%, `links.sender_domain_mismatch`, `punycode_host`, `credential_request`, `dangerous_type` and `dmarc_fail` 2% each; three flags come from the weak-signal combination. `return_path_mismatch` is on 36% of all messages and `auth.missing` on 47% but neither flags anything alone (the first is excluded from the combination; the second is info).
+
+- **`text_href_mismatch` (high).** It fires when an HTML link's visible text is a bare web address that is neither the destination nor the sender's domain. 138 of the 145 dev messages are in `dev@spark` and `user@spark`. In a tally of link classes (one message can count in several), 95 entries are links through a URL-rewriting gateway (host names such as Outlook Safe Links, Proofpoint URL Defense or Mimecast; the visible address was kept and the href replaced); in 36 of those the wrapped address is the one the text shows, in 59 no wrapped address could be read. The other 78 entries go to an ordinary host with a different name than the text. A message that quotes a GitHub or Apache address as text and links elsewhere also fires.
+- **`ip_host` (medium).** 37 of 41 dev cases are private addresses (192.168.x.x, 10.x.x.x, loopback) in technical discussion; phishing kits use public addresses.
+- **`reply_to_mismatch` (medium), the round-1 exemption.** On ASF the exemption works: of 6,652 dev messages with a foreign Reply-To, 6,640 (99.8%) are explained by `List-Id`, `List-Post` or `List-Unsubscribe` and become the info finding. The 12 left carry a list header and a Reply-To at a free-mail provider (a participant's own setting). On GNU lists a foreign Reply-To is almost absent (10 of 10,976 messages). On the held-out lists it is the main cause, not a small one: 186 of 2,569 foreign-Reply-To messages stay `reply_to_mismatch` and make up about two thirds of the held-out flags (user@flink: 10.8% flagged). The dev rule that covers the same finding class (free-mail Reply-To, proposal P6) is not measured on held out, by design.
+
+### Authentication on real modern headers
+
+- The auth analyzer trusts the topmost `Authentication-Results`. On ASF 97% of messages have one and 63% have two or more (the ASF mail gateway's own stamp, topmost, plus `spamproc*.apache.org` stamps lower down). For 11,264 dev messages the topmost stamp is `apache.org`, which almost never carries a method result; for 771 it is a `spamproc*.apache.org` stamp, which does. Across dev only 2 messages show `dmarc=pass`, 85 `dmarc=none`, 53 `spf=pass` and 853 `dkim=pass`. Where results exist at all they are probably in the other stamps, which the analyzer by design does not read without `trusted_authserv_ids` (not checked message by message). So on this archive the auth analyzer is mostly blind, not wrong; it produced 3 `dkim_fail`, 4 `dmarc_fail` (all four flagged), 8 `spf_softfail` and 182 low `dkim_not_aligned` messages in 23,303.
+- GNU has no `Authentication-Results` (96%), so every such message gets `auth.missing` (info) and verdict `insufficient_evidence`, which is why 44% of dev messages are `insufficient_evidence`, not `clean`. Authentication that GNU does record (DKIM-Signature on 83%, Received-SPF on 88%) is not read by the analyzer.
+- **List re-signing:** ARC seals are on 12% of ASF and 8% of GNU messages, none is read. The "list re-signing or footer breaks DKIM" case was not seen: 3 `dkim_fail` in 23,303 dev messages. These archives may not show it (the footer-adding, subject-rewriting lists were not sampled, and the topmost stamp is mostly result-less), so absence here is weak evidence.
+- `dkim_not_aligned` (low) appears on 0.8% of messages (senders that DKIM-sign with a service domain); it never flags alone.
+
+Not tested: a user's own mailbox, whose topmost `Authentication-Results` is the provider's and carries real results; this is the case the analyzer was written for.
+
+### Proposed rule changes (design on dev) and what was applied
+
+**Applied 2026-10-24: P1, P3 and P6 are now in `kestrix.mail`** (`analyzers.py`; docs in `docs/modules/mail.md`). Rerun on dev with the real implementation (`docs/data/mail/modern-variants-applied.json`; harness base column): modern dev flagged 0.49% (114 of 23,303; 0.19-0.89) and malicious 0.33% (77), old-dev phishing 68.45% flagged / 11.50% malicious, spam 43.86%, SpamAssassin ham 4.46%, Enron ham 0.71%, synthetic modern 0 flagged: the P1 + P3 + P6 row below, message for message (same counts in every cohort). Two details differ from the proposal text. The shipped gateway list is anchored to vendor domains, not the broad `REWRITER` pattern: Outlook Safe Links `*.safelinks.protection.outlook.com`, Proofpoint `urldefense.com` and `urldefense.proofpoint.com`, Mimecast `protect-<region>.mimecast.com` and `*.mimecastprotect.com`, plus Barracuda `linkprotect.cudasvc.com` and Cisco `secure-web.cisco.com`. A first version with only the first three vendors gave 126 flagged (0.54%) because 176 dev links went through Barracuda and 4 through Cisco; adding them (the only other gateways seen in dev links) restored the exact numbers. A Proofpoint PhishAlarm host (`*-phishalarm-*.proofpoint.com`, 6 links) matched the old pattern but is a reporting button, not a rewriter, and is not in the list. Proofpoint v2/v3 and Mimecast/Cisco links carry the target in the path or an encoded query value, so for them the wrapped address is usually unreadable and only the text comparison is skipped. Held-out lists were not run. The numbers below are the design measurements.
+
+All numbers below are dev. Variants are applied by monkeypatch in `src/kestrixmailbench/modern_proposals.py` over the unmodified `kestrix.mail`, run on the modern dev lists and on the old dev corpora (24,359 messages) to see what each change costs in catch. Dev only: the held-out lists were not used for any of these and were not re-run with them.
+
+| Variant | Modern dev flagged / malicious | Old dev phishing flagged / malicious | Old dev spam | SA ham | Decision |
+| --- | --- | --- | --- | --- | --- |
+| current rules | 1.03% (0.43-1.92) / 0.64% | 68.47% / 11.50% | 43.86% | 4.46% | |
+| P1 unwrap rewriter links | 0.73% / 0.33% | 68.47% / 11.50% | 43.86% | 4.46% | adopt |
+| P3 private-IP links are info | 0.86% / 0.64% | 68.45% / 11.50% | 43.86% | 4.46% | adopt |
+| P6 list Reply-To at free-mail is low | 0.97% / 0.64% | 68.47% / 11.50% | 43.86% | 4.46% | adopt |
+| **P1 + P3 + P6** | **0.49% (0.19-0.89) / 0.33% (0.06-0.70)** | **68.45% (61.81-74.09) / 11.50%** | 43.86% | 4.46% | **adopt** |
+| P4 tracker link text not compared | 1.01% / 0.61% | 68.25% / 11.22% | 43.60% | 4.10% | reject (loses catch) |
+| P1 + P3 + P4 + P6 | 0.47% / 0.31% | 68.24% / 11.22% | 43.60% | 4.10% | reject |
+
+1. **P1, `mail.links.text_href_mismatch` and the other link checks (`analyzers._link_findings`).** Before analyzing a link, if the destination host belongs to a URL-rewriting gateway (`safelinks.protection.outlook.com` and the regional `eurNN`/`namNN` forms, `urldefense*`, `*.proofpoint.com`, `*.mimecast.com`, `linkprotect`, `secure-web`, `protection.outlook`), take the address wrapped in a query parameter as the destination (first value starting `http://` or `https://`); if none can be read, do not compare the visible text (the destination is unknown, so no mismatch can be claimed). Dev: ASF `dev@spark` 7.2% to 4.1%, modern flagged 1.03% to 0.73%, malicious 0.64% to 0.33%; no change on any old corpus. Residual: the 78 ordinary-host entries are untouched and are the likely source of most of `dev@spark`'s remaining 3.7% (not verified message by message). The host pattern is `REWRITER` in `modern_proposals.py` (it also matches generic regional gateway prefixes such as `eur01.` and `nam04.`, which a careful implementation should anchor to the known gateway domains).
+2. **P3, `mail.links.ip_host`.** Severity `info` when the host is an IP address that is not globally routable (`ipaddress.ip_address(host).is_global` is false: private, loopback, link-local, documentation). Public and malformed numeric hosts stay medium. Dev: `user@spark` 7.4% to 3.7%, modern flagged 1.03% to 0.86%; old phishing 68.47% to 68.45% (one message).
+3. **P6, `mail.sender.reply_to_mismatch`.** When `list_domains(msg)` is non-empty (list mail) and every Reply-To domain is a free-mail provider (gmail, googlemail, outlook, hotmail, live, yahoo, icloud, protonmail, proton.me, qq, 163, 126, mykolab), severity `low` instead of `medium`. Dev: `user@spark` 7.4% to 5.9%, modern flagged 1.03% to 0.97%. This is the change aimed at the held-out `user@flink` cause, which is a hypothesis: it was not measured there.
+4. **Not adopted: P4** (not comparing bare-address text on click-tracking destinations). It gives back catch (phishing malicious 11.50% to 11.22%, spam 43.86% to 43.60%) for 0.02 points fewer modern false alarms; round 1 reached the same conclusion for a similar rule.
+5. **Authentication, to be decided, not measured.** (a) Document that `trusted_authserv_ids` should name the receiving gateway (here `spamproc1-he-*.apache.org`), since the topmost stamp can be a result-less relay stamp. (b) Optionally read `Received-SPF` and the DKIM-Signature presence when no Authentication-Results exists (GNU), so that `auth.missing` stops turning 44% of a no-header archive into `insufficient_evidence`. Neither changes false alarms; both change what the verdict says.
+
+Synthetic modern cohort: the 120 messages (receipts, password resets, shipping, ESP newsletters, security alerts, invites, bank statements, code notifications) are all clean under every variant; their only findings are low (`return_path_mismatch`, `dkim_not_aligned`, and `credential_request` on the DMARC-passing security alert). That is a regression check on shapes I wrote after reading the dev causes, not evidence about real mail.
+
+### Held-out claim
+
+`reports/LOCKED_EVAL.json` on the cluster was claimed once (job 11346774, rules unmodified, features of the held-out lists computed in that job) and is copied to [`modern-locked-eval.json`](../data/mail/modern-locked-eval.json). The held-out measurement was run for the current rules only; no variant was run on it. Anything further on those five lists is no longer a held-out measurement.
+
+### Caveats
+
+- Mailing-list mail, technical senders, a partly automated corpus, 25 groups on held out; the intervals are wide and the held-out and dev rates differ by a factor of 2.5 because of two or three lists. Two of five held-out lists carry most of the held-out false alarms.
+- `dev@spark` alone is 124 of the 145 dev `text_href_mismatch` messages: one list, probably a few vendor-style HTML threads. P1's gain is therefore measured mostly on one list.
+- Labels are by origin. Near-duplicate removal shrinks repeated automated mail, so notification templates are under-weighted.
+- `max 250 per list-month` makes the busy lists (kafka, flink, emacs-devel) sampled rather than complete.
+- ASF terms: the privacy policy says list mail is public and may be collected by third parties; it does not address bulk reuse. `mail-archives.apache.org` forbids bots, so the Pony Mail API (no `robots.txt`) was used at about one request per 3 seconds, 120 requests. GNU's `robots.txt` allows the archive with `Crawl-delay: 10`; requests were 11 seconds apart (105 requests). Please confirm the owner is comfortable with the ASF route.
+
+### Reproduce
+
+Code sync to `/scratch/$USER/kestrix/mailmodern-code` (home was over quota), data under `/scratch/$USER/kestrix/mailmodern`:
+
+```bash
+ssh explorer-xfer 'cd /scratch/$USER/kestrix/mailmodern-code && PYTHONPATH=src uv run --no-project --python 3.12 python -m kestrixmailbench.modern acquire --root /scratch/$USER/kestrix/mailmodern'
+sbatch hpc/modern_build.sbatch; sbatch hpc/modern_features.sbatch; sbatch hpc/modern_report.sbatch; sbatch hpc/modern_diag.sbatch
+sbatch hpc/modern_variants.sbatch; sbatch hpc/modern_variants_report.sbatch   # dev only
+sbatch hpc/modern_heldout.sbatch                                              # once; claims LOCKED_EVAL.json
+```

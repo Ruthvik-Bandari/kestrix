@@ -28,15 +28,15 @@ LinkFileBenchError = MailBenchError
 SEED = "kestrixlinkfile-v1"
 TEST_FRACTION = 0.3
 SPLITS = ("dev", "test")
-KINDS = ("link", "file")
-DEFAULT_SHARDS = {"link": 16, "file": 20}
+KINDS = ("link", "file", "realurl")
+DEFAULT_SHARDS = {"link": 16, "file": 20, "realurl": 4}
 PHISHING = "phishing"
 BENIGN = "benign"
 LABELS = (PHISHING, BENIGN)
 
 
 def kind_layout(root: Path, kind: str, shards: int | None = None) -> Layout:
-    """Layout of one benchmark (``link`` or ``file``) under ``root``; the raw downloads stay in ``root/raw``."""
+    """Layout of one benchmark (``link``, ``file`` or ``realurl``) under ``root``; the raw downloads stay in ``root/raw``."""
     if kind not in KINDS:
         raise LinkFileBenchError(f"unknown benchmark kind {kind!r}")
     return Layout(root / kind, shards or DEFAULT_SHARDS[kind])

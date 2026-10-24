@@ -27,7 +27,7 @@ def ids(url: str) -> set[str]:
         ("https://bit.ly/3abcDEF", "url_shortener"),
         ("https://paypal.com.account-check.net/", "brand_in_subdomain"),
         ("https://paypal-secure.com/", "brand_in_domain"),
-        ("https://example.com/" + "a" * 120, "long_url"),
+        ("https://example.com/" + "a" * 190, "long_url"),
         ("http://example.com/", "not_https"),
         ("https://example.com:8443/", "unusual_port"),
         ("https://example.com/account/verify", "suspicious_keywords"),

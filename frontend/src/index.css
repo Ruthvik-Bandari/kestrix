@@ -25,7 +25,7 @@
 
 
 /*
- * Tokens: emerald direction (docs/design/2026-10-21-redesign/DESIGN.md, "Emerald direction (2026-10-22)").
+ * Tokens: emerald direction (docs/design-system.md, "Emerald direction (2026-10-22)").
  * Dark is the reference look: near-black green field, raised surfaces with 1px green-tinted hairlines,
  * emerald actions, a restrained glow (--glow) used only on primary buttons, focus, the dial and the
  * active navigation item. Light keeps the same family: ivory-green surfaces and a deep emerald action.

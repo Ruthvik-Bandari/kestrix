@@ -2,13 +2,13 @@
 
 This page records how well the `kestrix.forensics` URL checker and file checker do on public data, where they fail, and what one round of rule changes bought. It is research tooling: the package is [`src/kestrixlinkfilebench/`](../../src/kestrixlinkfilebench/) (not in the published wheel; it follows the [email benchmark](mail-benchmark.md) and imports its shared helpers), the jobs are `hpc/linkfile_*`, and the aggregate outputs are in [`docs/data/linkfile/`](../data/linkfile/README.md).
 
-**Status (2026-10-22).** Every number below is a **development-split** number. The locked test split has not been analyzed or opened. The module page [`forensics.md`](../modules/forensics.md) still says the checks are not verdicts; nothing here changes that.
+**Status (2026-10-23).** The first sections (up to round 1) are **development-split** numbers; the one-time locked test of 2026-10-22 is reported under *Locked test*. Round 2 (below it) was measured on the development splits, and its real-URL test split was evaluated once on 2026-10-23. The module page [`forensics.md`](../modules/forensics.md) still says the checks are not verdicts; nothing here changes that.
 
 ## What the dev numbers say
 
 - **The link results mostly measure how the data was collected.** In PhiUSIIL every legitimate URL is an `https` host root (no path, no query). Phishing URLs are 54% `http`, 24% have a path. The baseline "catches" 63.7% of phishing at `low` or higher, but 54% of all phishing is flagged by `not_https` alone, and on a matched subset (https, bare host, same length band) the baseline catch is **9.0%** (6.4-14.6) at `low` or higher and **0.3%** at `medium` or higher.
 - **Almost nothing reaches `medium`.** At `medium` or higher the baseline flags 2.0% of phishing (1.6-2.5) and no benign URL; `high` is reached by 4 URLs in 66,593. The score weights are too small for the signals that fire on real phishing hosts.
-- **Link false alarms are measured only on host roots.** Benign false alarms are 0.1% (PhiUSIIL roots) and 1.6% (Majestic roots, 83% of them `suspicious_tld`) at `low` or higher, and zero at `medium`. There are no benign URLs with paths, queries or `http` in the data, so `long_url`, `suspicious_keywords`, `not_https` and every path signal have no measurable false-alarm rate here. These rates are a floor, not an estimate for real browsing.
+- **Link false alarms were first measured only on host roots (superseded by round 2, which measures real URLs).** Benign false alarms are 0.1% (PhiUSIIL roots) and 1.6% (Majestic roots, 83% of them `suspicious_tld`) at `low` or higher, and zero at `medium`. There are no benign URLs with paths, queries or `http` in the data, so `long_url`, `suspicious_keywords`, `not_https` and every path signal have no measurable false-alarm rate here. These rates are a floor, not an estimate for real browsing.
 - **File false alarms on real documents are dominated by two format blind spots.** On Govdocs1 (12,816 presumed-benign files) the baseline raises a security finding at `medium` or higher on **5.0%** (3.8-6.6): 74% of those are `high_entropy_file` on legacy PowerPoint (`.ppt`, 473 of 722), then Flash (`.swf`, 65) and legacy Word (`.doc`, 48). Legacy Office (OLE2) and Flash store compressed data, which the checker did not know.
 - **File recall is measured only on synthetic cases.** The baseline catches 180 of 360 dev cases at `medium` or higher (9 of 18 families fully). It misses macro Office files, encrypted ZIPs, programs appended to PDFs or images, SVG scripts and script attachments, because it has no rule for them.
 - **Round 1 (details below) cut file false alarms from 5.0% to 0.2% at `medium` or higher and raised synthetic catch from 180 to 336 of 360, with no benign-control alarm. For links it raised `low`-or-higher catch from 63.7% to 86.4% and `medium`-or-higher from 2.0% to 3.0%, with false alarms unchanged (0.2% and 1.7% at `low`). Most of the link gain comes from two signals whose benign side the data cannot test (see the caveat in round 1).**
@@ -20,6 +20,7 @@ This page records how well the `kestrix.forensics` URL checker and file checker 
 | PhiUSIIL Phishing URL dataset (UCI 967) | phishing and benign URLs (label 1 = legitimate, 0 = phishing, inverted here) | 95,124 phishing, 134,807 benign (of 100,945 and 134,850) | 15,376,007 B zip, sha256 `0a639fd0...c9a59a` | CC BY 4.0 | <https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset> |
 | Majestic Million | 30,000 seeded domains turned into host-root URLs (`https://domain/`, half with `www.`): 28,270 kept | 28,270 benign | 78,945,327 B csv, sha256 `78b104b1...2a8a3c` | CC BY 3.0 | <https://majestic.com/reports/majestic-million> |
 | Govdocs1 (Digital Corpora), 20 seeded zip threads of 1,000 (`144 152 217 240 264 327 366 444 470 489 536 553 569 653 656 683 763 822 827 880`) | false alarms on real files of many formats | 19,693 files (of 19,734 read; 31 content duplicates, 10 over 50 MiB dropped) | 8,129,431,646 B in 20 zips | "freely redistributable" (no formal license) | <https://downloads.digitalcorpora.org/corpora/files/govdocs1/zipfiles/> |
+| Common Crawl URL index, crawl `CC-MAIN-2026-43` (round 2) | benign full URLs: 45,426 pages of 5,000 Majestic top-100,000 domains plus 20,000 user-site pages on four platforms (after the cap, 65,426 URLs, 19,318 groups) | 65,426 | `cluster.idx` 104,520,381 B, plus several GB of range reads | Common Crawl Terms of Use (limited license; crawled content stays under its owners' terms) | <https://commoncrawl.org/terms-of-use> |
 | Synthetic files (`synth.py`) | recall per case, benign controls | 900 (18 malicious-style and 12 benign-control families x 30) | generated in memory | Generated here (Apache-2.0) | `src/kestrixlinkfilebench/synth.py` |
 
 [`linkfilebench-manifest.json`](../data/linkfile/linkfilebench-manifest.json) records URL, size, SHA-256 and download time of every file (trust on first use, downloaded 2026-10-22 on the transfer node).
@@ -115,12 +116,104 @@ L1 and L2 together: **86.4% (82.7-89.5) caught at `low` or higher, 3.0% (2.4-3.8
 
 **Caveat on L1 and L2, which the data cannot resolve.** In this data legitimate URLs are popular roots, so a legitimate user page on a free host (a student site on `github.io`, a store on `weebly.com`) is absent: the benign false-alarm side of `hosting_platform_subdomain` is zero by construction, and `digits_in_subdomain` fires on 0.06% of benign roots mostly because a few generated names exist. The matched-subset jump from 9.0% to 75.9% reflects that the phishing side is rich in platform subdomains (45% of https host-root phishing is on a static or cloud host, 14% on a site builder) while the benign side has none. The rule is kept at `low` severity because the host class is a documented abuse pattern and a `low` finding alone prompts no alarm, but its false-alarm cost on real browsing is **unmeasured**. A benign URL set with paths, queries and platform subdomains is needed to measure it. Nothing in round 1 moves a phishing URL to `high`, and `medium` or higher catch stays at 3.0%: a score of 30 needs several signals that real phishing hosts rarely carry together.
 
+## Round 2 (2026-10-23): file gaps and real-browsing links
+
+Rules and data added after the locked test. Round 2 is measured on the **development split only**, and the old locked splits stay spent: nothing here was tuned on them. The code versions are in [`linkfile-rules-round2.json`](../data/linkfile/linkfile-rules-round2.json); each candidate was measured on the cluster with the same synthetic cases, the same 12,816 Govdocs1 dev files and the same split as round 1.
+
+### File gaps
+
+**Decision rule, fixed before measuring.** As in round 1, keep a change if its target synthetic family is caught more and Govdocs dev false alarms at `medium` or higher rise by at most 0.1 point. A change that only adds `low` findings is judged at `medium` or higher too, and its rise at `low` or higher is reported next to it.
+
+| Change | Govdocs dev, `medium`+ | Govdocs dev, `low`+ | Synthetic target | Decision |
+| --- | --- | --- | --- | --- |
+| Shipped rules (round 1), re-measured | 0.23% (29 files) | 0.23% (30) | 336 of 440 malicious-style files caught, 16 of 22 families | |
+| G1: `macro_office_file` for legacy OLE2 files (`.doc .xls .ppt`) at `medium` | 0.23% to 1.04% (+104 files: 95 `.xls`, 9 `.doc`) | | `macro_doc_legacy`, `macro_xls_legacy` 0 to 20 of 20 each | reject: +0.81 point |
+| G1: the same at `low` | 0.23% (unchanged) | 0.23% to 1.05% (+104) | both families raise the finding at `low` only (caught at `medium`: 0 of 40) | keep at `low`, see below |
+| G2 v1: `obfuscated_html`, a decoder (`eval`, `document.write`, `Function(`) run on `atob`/`unescape`/`decodeURIComponent`/`fromCharCode` | 0.23% to 0.68% (+58 `.html` files) | | | reject: +0.45 point |
+| G2 v2: the decoder must be run on a string of 100 or more characters (or 20 or more character codes), or sit within 700 characters of a 300-character or longer base64, hex, `\xNN` or `%uNNNN` blob; inline images ignored; a `data:` or `blob:` script URL; or two weaker signals together | 0.23% (unchanged, 0 of 2,751 `.html` files) | 0.23% (unchanged) | `html_obfuscated` and `html_form_redirect` 0 to 20 of 20 each | keep |
+| G3: `.js` is `medium` when it uses `WScript`, `ActiveXObject`, `Scripting.FileSystemObject`, `Shell.Application`, `WSH`, `GetObject(` or `eval(` of an encoded string; `low` otherwise | unchanged (no `.js` files in the dev threads) | unchanged | `wsh_js` 0 to 20 of 20; `script_attachment` `.js` variants now all caught (16 to 20 of 20) | keep; real false-alarm cost unmeasured |
+
+G1 `medium` and G2 v1 were measured in one combined run; their Govdocs effects are separated by finding id, which is exact because each file raises one of them.
+
+Kept together: Govdocs security alarms at `medium` or higher **0.23% (0.13-0.33), unchanged**; at `low` or higher **0.23% to 1.05%** (0.63-1.53), all of the rise legacy macros; synthetic malicious-style files caught at `medium` or higher **336 to 400 of 440** (20 of 22 families fully; the other two are the legacy-macro families, which raise `low`); the 16 benign-control families raise nothing at `medium` or higher (0 of 320), and 20 `low` alarms are the plain `.js` control, which is `low` by design.
+
+What the numbers mean and do not:
+
+- **Legacy macros are common in legitimate files.** 104 of 2,461 legacy Office (OLE2) files in the dev threads hold a VBA project (4.2%; 95 of 887 `.xls`, 9 of 845 `.doc`, none of 722 `.ppt`). A directory check cannot tell a government form with a macro from a malicious document, so the finding stays `low` and its text says so. The rise at `low` or higher (+0.81 point) is above the 0.1 point limit; the finding is kept at `low` for visibility, and moving it to `info` is a one-word change if that rise is not acceptable. The macro is never read or decompressed: only the compound-file directory is parsed, with bounded sector, chain and entry counts; a damaged file gives an `info` note, `ole_unreadable`, and no macro claim.
+- **HTML obfuscation was tuned on Govdocs dev.** Version 1 fired on the classic analytics snippet `document.write(unescape("%3Cscript ..."))`, which is on legitimate pages; version 2 needs a long encoded string. Govdocs holds no `.htm` or `.svg` files in dev and old web pages only, so modern minified or generated pages are unmeasured. The synthetic cases are written by the same author as the rules and show only that each shape is caught.
+- **JavaScript.** Govdocs dev has no `.js`; the `medium` rule can fire on legitimate Windows administration scripts and on `eval(unescape(...))` in old libraries.
+
+### Real-browsing false alarms on links (Common Crawl)
+
+**Why.** The benign URLs of the first benchmark were host roots, so `long_url`, `not_https`, the keyword and path signals, and the two round-1 subdomain signals had no measurable false-alarm rate on real links. Round 2 builds a benign sample of full URLs and measures them.
+
+**Dataset** ([`commoncrawl-manifest.json`](../data/linkfile/commoncrawl-manifest.json), [`realurl-build.json`](../data/linkfile/realurl-build.json), [`realurl-split-manifest.json`](../data/linkfile/realurl-split-manifest.json)).
+
+- *Source and terms.* The Common Crawl URL index of crawl `CC-MAIN-2026-43` (crawled 2026-10-05 to 2026-10-18), read through the public `cluster.idx` and `cdx-*.gz` files with range requests of about 250 KB. Terms of Use <https://commoncrawl.org/terms-of-use> (last updated 2024-03-07; saved copy hash `d438ca60...2342c4`): a limited, non-exclusive license to use the service; the crawled content may be subject to its owners' own terms; no unlawful use, no violation of others' rights, no collecting of personal information for use apart from the content. Only the text of index lines (URL, HTTP status, MIME type) is read: no page is fetched, no URL is visited, and the URLs are not redistributed (they stay under `/scratch`, mode 0700/0600); the repository holds counts and rates. This is not legal advice.
+- *Top domains.* A seeded sample (`kestrixlinkfile-v1`) of 12,000 domains from the first 100,000 Majestic ranks was tried in order until 5,000 had at least one usable page (7,900 were tried, 63% had one in the crawl; HTTP status 200 and an HTML MIME type). Up to 10 URLs per domain came from one or two random blocks of the domain's key range. This gave 45,428 URLs, 45,426 after exact deduplication. Both `http` and `https` pages are kept as crawled: 89.9% are `https` in the dev sample.
+- *User-content hosts.* Random blocks inside the key range of `github.io`, `vercel.app`, `netlify.app` and `blogspot.com` (every `*.platform` host is contiguous in the index), at most 2 URLs per host, then whole hosts in seeded order until 5,000 URLs per platform. `wordpress.com` (2 index blocks) and `pages.dev` (1 block) had no usable pages in this crawl and are not measured. The four platforms hold 0.8% (`blogspot.com`), 0.02%, 0.01% and 0.005% of this crawl's index blocks.
+- *Split.* By domain (`top_domain`) or by full host (platform pages, so that a platform is spread over both sides), before any look at results: dev 45,789 URLs in 13,518 groups; test 19,637 URLs in 5,800 groups.
+- *Metric.* A false alarm is a URL at `low` or higher, or at `medium` or higher; rates are shares of the sample with grouped 95% bootstrap intervals. All items are benign by assumption (popular sites and user pages the crawler reached; some may host abuse), so rates are upper bounds on false alarms for this kind of page. They say nothing about links in mail, which skew to short-lived, promotional or login pages.
+
+**What the shipped rules do on real URLs (dev, 45,789 URLs).**
+
+| Cohort | URLs (groups) | `low` or higher | `medium` or higher |
+| --- | --- | --- | --- |
+| All | 45,789 (13,518) | **52.5%** (51.6-53.5) | 0.20% (0.14-0.27) |
+| Top domains | 31,790 (3,495) | **31.6%** (30.5-32.7) | 0.08% (0.02-0.19) |
+| User-content hosts, all four | 13,999 (10,023) | **100.0%** | 0.46% (0.34-0.58) |
+| `blogspot.com` / `github.io` / `netlify.app` / `vercel.app` | 3,500 / 3,500 / 3,499 / 3,500 | 100.0% each | 0.06% / 0.49% / 0.14% / 1.14% |
+
+Share of each cohort that raises each finding at any severity (shipped rules), the false-alarm rate per finding id:
+
+| Finding id | Top domains | User-content hosts |
+| --- | --- | --- |
+| `long_url` (100 characters or more) | **19.9%** (19.0-20.8) | 4.0% (3.7-4.4) |
+| `not_https` | **10.2%** (9.3-11.1) | 3.2% (2.9-3.6) |
+| `hosting_platform_subdomain` | 0.03% (0.00-0.10) | **100.0%** (by construction: every page is on a listed host) |
+| `digits_in_subdomain` | 0.89% (0.66-1.19) | 6.7% (6.3-7.2); `netlify.app` 11.2% (10.1-12.5), `github.io` 5.9%, `vercel.app` 6.8% |
+| `suspicious_keywords` | 1.7% (1.5-1.9) | 1.0% (0.8-1.1) |
+| `many_subdomains` | 0.39% (0.22-0.56) | 0 |
+| `suspicious_tld` | 0.33% (0.15-0.54) | 0 |
+| `unusual_port` | 0.28% (0.13-0.44) | 0 |
+| `brand_in_subdomain` | 0.24% (0.11-0.40) | 0.45% (0.34-0.57); `vercel.app` 1.14% (0.77-1.52) |
+| `international_host` | 0.07% (0.01-0.16) | 0 |
+
+By shape (top domains, dev): every `http` page is at `low` (100.0% of 164 bare and 3,062 with a path), `https` bare hosts 9.2%, `https` with a path 24.3%. So the first benchmark's picture reverses on real links: `long_url` and `not_https`, which look like phishing in PhiUSIIL (3.2% and 54.3% of phishing) fire on one real page in five and one in ten.
+
+**Decisions** (each candidate measured on the real dev sample and on the PhiUSIIL dev split; codes and job ids in [`linkfile-rules-round2.json`](../data/linkfile/linkfile-rules-round2.json); M6 and M5's first look used 100 resamples, the final rules' run and the others use 1,000; the final rules' report is [`link-dev-metrics-round2.json`](../data/linkfile/link-dev-metrics-round2.json)):
+
+| Candidate | Real URLs `low`+ (all / top / platforms) | Phishing `low`+ / `medium`+ (matched subset `low`+) | Decision |
+| --- | --- | --- | --- |
+| Shipped round-1 rules | 52.5% / 31.6% / 100.0% | 86.4% (82.7-89.5) / 3.0% (2.4-3.8) (75.9%) | |
+| M4: `hosting_platform_subdomain` shown as `info`, no weight | 26.5% / 31.6% / 14.7% | 76.6% / 2.8% (45.4%) | reject: same `low` result as M1, and it also drops the corroborated `medium` cases (2.8% against 3.0%) |
+| M3: weight only when corroborated or the subdomain looks generated (two or more hyphens, or 20+ characters) | 31.9% / 31.6% / 32.7% | 79.7% / 3.0% (49.8%) | reject: 2.2 times the platform false alarms of M1 for 3 points of catch |
+| M1: weight only when another weighted finding is present | 26.5% / 31.6% / 14.7% | 76.6% (71.1-82.2) / 3.0% (2.4-3.8) (45.4%) | keep |
+| M1 plus `long_url` as `info` (M6) | 12.6% / 13.2% / 11.2% | 75.4% / 2.9% (45.4%), 100 resamples | reject: 1.8 points fewer top-domain false alarms than M5 (13.2% against 15.0%) but it drops the signal, with `medium` catch 2.9% against 3.0% (within noise); M5 keeps very long URLs as a weak true signal |
+| **M1 plus `long_url` from 200 characters (M5), the final rules** | **13.9% / 15.0% / 11.3%** | **75.6% (70.0-81.3) / 3.0% (2.4-3.8) (45.4%)** | **keep** |
+
+The platform candidates M1, M3 and M4 were designed from the signal definitions and run on the PhiUSIIL dev split before any real-URL number existed; M5 and M6 (`long_url`) were added after the shipped rules' real-URL rates were known. The rule applied was a judgement made at that point, not a pre-registered one: change a signal when it flags more than 5% of the real dev sample on its own, and keep the change when the `medium`-or-higher phishing catch does not fall and the `low`-or-higher catch falls by less than 12 points. `long_url` (19.9%) and the platform signal (100% of platform pages) were over the line; `not_https` (10.2%) is too, but it is the strongest real phishing signal (54% of PhiUSIIL phishing is `http`) and an unencrypted page is a true warning, so it stays and its false alarms are reported. Per-signal results of the final rules, `low`-or-higher false alarms on the real dev sample: all 13.9% (13.2-14.6), top domains 15.0% (14.0-16.0), user-content hosts 11.3% (10.8-12.0); `medium` or higher 0.18% (0.12-0.24). About two thirds of the final rules' top-domain `low` alarms (3,226 of 4,767) are `http` pages, which all raise `not_https`.
+
+What changed in the rules: `hosting_platform_subdomain` still appears on every page of a listed host, but as `info` without weight unless another weighted finding is present (then `low`, weight 10 as before); `long_url` starts at 200 characters. Cost, measured on the PhiUSIIL dev split: phishing at `low` or higher **86.4% (82.7-89.5) to 75.6% (70.0-81.3)**, at `medium` or higher unchanged at 3.0%, benign host-root false alarms unchanged (0.2% and 1.6%). On the matched subset (https host roots on both sides) the `low` catch falls from 75.9% to 45.4%, which shows how much of round 1's matched-subset gain was the platform signal alone. The platform signal alone is therefore a measurable trade: it caught about ten points of phishing at the price of flagging every legitimate user page.
+
+**Locked test of the real URLs, run once on 2026-10-23** ([`realurl-locked-realurl-v1.json`](../data/linkfile/realurl-locked-realurl-v1.json), claim [`realurl-LOCKED_EVAL.json`](../data/linkfile/realurl-LOCKED_EVAL.json); 19,637 URLs in 5,800 groups, never analyzed before; shipped rules `0ca93a7+main-rules`, final rules `0ca93a7+worktree-c47647f043dc`):
+
+| Cohort | Shipped rules, `low`+ | Final rules, `low`+ | Shipped, `medium`+ | Final, `medium`+ |
+| --- | --- | --- | --- | --- |
+| All | 52.2% (50.7-53.6) | **13.5%** (12.4-14.6) | 0.24% (0.13-0.37) | 0.18% (0.10-0.27) |
+| Top domains (13,636) | 31.1% (29.4-32.8) | 14.6% (13.1-16.2) | 0.19% (0.05-0.37) | 0.10% (0.03-0.20) |
+| User-content hosts (6,001) | 100.0% | 11.0% (10.1-11.9) | 0.35% (0.18-0.53) | 0.35% (0.18-0.53) |
+
+`long_url` on test: 19.7% (shipped) and 2.0% (200 characters) of top-domain URLs; `not_https` 9.5%; `digits_in_subdomain` 0.68% of top domains and 6.6% of platform pages. The test agrees with dev within its intervals, so the dev tuning did not overfit this sample. No `high` alarm on either side.
+
+**Limits of the real-URL numbers.** The sample is one crawl of pages the crawler reached on popular domains and four platforms; mail links, short-lived campaign pages, tracking redirects and login pages are not in it. `wordpress.com`, `pages.dev` and the rest of the platform list are unmeasured. Majestic rank is a link-popularity ranking, so it can include domains that are not benign. What remains at `low` on top-domain pages is mostly `not_https`, a true property of the link. Phishing catch is measured on PhiUSIIL, whose benign side is host roots (see the leakage section), so the 10-point catch loss is measured against a data set whose platform signal was inflated by collection; the real cost to catch on live phishing is unknown.
+
 ## Limits and caveats
 
-- Links: benign URLs are `https` host roots only; false-alarm rates are floors; brand, path and keyword signals cannot be validated against real legitimate links. TLD and URL shape are the only strata (no registration age in the data).
+- Links: in the PhiUSIIL and Majestic data the benign URLs are `https` host roots only, so those false-alarm rates are floors; round 2 adds real URLs (Common Crawl) for false alarms, but they carry no phishing label, so catch is still measured on PhiUSIIL alone. TLD and URL shape are the only strata (no registration age in the data).
 - The registered-domain grouping is an approximation. The group bootstrap interval is wide where a few groups are large.
 - Files: Govdocs1 is US government web documents from about 2009 and holds few Office Open XML files (3 `.docx` in the sample), so the macro rule's false-alarm cost on modern documents is unmeasured. Recall is synthetic only.
-- Both rule rounds were measured on the same dev split they were derived from; the locked test is the unbiased comparison.
+- Rounds 1 and 2 were measured on the same dev splits they were derived from; the locked tests are the unbiased comparisons. Round 2's file rules have no locked test (the file test split was spent in round 1), so their numbers are development numbers.
 - `/scratch` is purged on 2026-11-03; every download is reproducible from the manifest, and raw data never left the cluster.
 
 ## Reproducing

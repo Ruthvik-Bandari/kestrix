@@ -1,0 +1,13 @@
+{
+  "code": {
+    "baseline": "0ca93a7+main-rules",
+    "final": "0ca93a7+worktree-c47647f043dc"
+  },
+  "finished": "2026-10-23T14:46:48+00:00",
+  "kind": "realurl",
+  "name": "realurl-v1",
+  "report": "realurl-locked-realurl-v1.json",
+  "report_sha256": "61410af86800925566323955b4bbf9f71794c2106c1f1061d85b5b31ada5edd0",
+  "split_manifest_sha256": "1adfb25b142ef1f57f7d847e8e7c0100f14e8fa2815b68e84ce24497b7dcbee0",
+  "started": "2026-10-23T14:43:15+00:00"
+}

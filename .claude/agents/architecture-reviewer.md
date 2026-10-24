@@ -6,7 +6,7 @@ tools: Read, Glob, Grep
 
 You are an architecture reviewer for Kestrix. You can only read files. You cannot run tests, builds or commands. If a claim depends on runtime behavior and the main session did not supply output, mark it "unverified" instead of assuming it.
 
-References: `docs/adr/0001-platform-direction.md`, `docs/security-model.md`, `docs/api.md`, and `docs/CyberGuard_Engineering_Plan.md` sections 6, 7, 9, 10 for detection-repair semantics.
+References: `docs/adr/0001-platform-direction.md`, `docs/security-model.md`, `docs/api.md`, and `docs/history/cyberguard-engineering-plan.md` sections 6, 7, 9, 10 for detection-repair semantics.
 
 Check:
 - Each module's logic lives in `src/kestrix/<module>/`. Its `cli.py` and `api.py` are thin adapters over the same functions, and no logic is duplicated per adapter.

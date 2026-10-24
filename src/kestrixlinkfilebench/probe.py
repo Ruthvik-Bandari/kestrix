@@ -11,12 +11,16 @@ dev (stored features of an earlier run), so the tags describe what the rules mis
 
 from __future__ import annotations
 
+import io
 import math
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
+
+from kestrix.forensics.analysis import _WSH_API, _wsh_style, html_obfuscation_signals
+from kestrix.forensics.ole import parse_ole_directory
 
 from .common import BENIGN, PHISHING, Layout, LinkFileBenchError, now, read_jsonl, write_json
 from .features import read_features
@@ -161,6 +165,33 @@ def _head_class(head: bytes, type_id: str) -> set[str]:
     return tags
 
 
+HTML_EXT = frozenset({"html", "htm", "xhtml", "shtml", "svg"})
+OLE_NAMES = ("VBA", "Macros", "_VBA_PROJECT", "_VBA_PROJECT_CUR", "PROJECT", "PROJECTwm")
+
+
+def _sample(data: bytes) -> bytes:
+    """The first and last 64 KiB, like the analyzer's header and tail samples."""
+    return data if len(data) <= 131072 else data[:65536] + data[-65536:]
+
+
+def content_tags(data: bytes, ext: str, type_id: str) -> set[str]:
+    """Tags for the content rules of the gaps round: HTML signals, Windows Script Host JavaScript, OLE macro names."""
+    tags: set[str] = set()
+    if ext in HTML_EXT and type_id in ("text", "unknown"):
+        signals = html_obfuscation_signals(_sample(data).decode("latin-1"))
+        tags |= {f"sig:{name}" for name in signals} | {f"sigset:{'+'.join(sorted(signals)) or 'none'}"}
+    elif ext == "js":
+        text = _sample(data).decode("latin-1")
+        tags.add("js_wsh" if _wsh_style(text) else "js_plain")
+        if _WSH_API.search(text):
+            tags.add("js_wsh_api")
+    elif type_id == "ole2":
+        result = parse_ole_directory(io.BytesIO(data), len(data))
+        tags.add("ole_vba" if result.has_vba else "ole_readable_no_vba" if result.readable else "ole_unreadable")
+        tags |= {f"ole_has:{n}" for n in OLE_NAMES if n in result.names}
+    return tags
+
+
 def probe_files(layout: Layout, raw: Path, meta: dict[str, dict[str, Any]], threads: list[str]) -> dict[str, Any]:
     dev = {r["id"]: r for r in read_features(layout, "dev") if r["source"] == GOVDOCS}
     cohorts: dict[str, Counter[str]] = defaultdict(Counter)
@@ -186,7 +217,9 @@ def probe_files(layout: Layout, raw: Path, meta: dict[str, dict[str, Any]], thre
                     names.append("alarm_medium_or_higher")
                 with archive.open(info) as fh:
                     head = fh.read(65536)
-                _add(cohorts, sizes, names, _head_class(head, row["type"]) | {f"ext:{row['ext']}"})
+                    rest = fh.read() if row["type"] == "ole2" or row["ext"] in HTML_EXT | {"js"} else b""
+                extra = content_tags(head + rest, row["ext"], row["type"])
+                _add(cohorts, sizes, names, _head_class(head, row["type"]) | {f"ext:{row['ext']}"} | extra)
     return _finish(cohorts, sizes)
 
 

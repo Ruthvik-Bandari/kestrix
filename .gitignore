@@ -49,3 +49,5 @@ mlruns/
 
 # Benchmark downloads, tool environments and raw reports (third-party licences; never commit)
 bench/.cache/
+bench-results/
+.gstack/

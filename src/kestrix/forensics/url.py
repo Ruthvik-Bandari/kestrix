@@ -18,11 +18,12 @@ from ..core.errors import Reason, Rejected
 from .models import Finding, Severity, UrlLevel, UrlReport, by_severity
 
 MAX_URL_CHARS = 8192
-LONG_URL_CHARS = 100
+LONG_URL_CHARS = 200  # real pages often pass 100 characters (20% of a benign sample did); 200 is rarer
 MANY_SUBDOMAINS = 3
 KEYWORD_WEIGHT = 5
 MAX_KEYWORD_WEIGHT = 15
 MANY_SUBDOMAIN_DIGITS = 3
+PLATFORM_ID = "hosting_platform_subdomain"
 
 _SCHEME = re.compile(r"[a-zA-Z][a-zA-Z0-9+.\-]*://")
 _LABEL = re.compile(r"[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?")
@@ -93,6 +94,7 @@ def analyze_url(raw: str) -> UrlReport:
     parts, port = _split(url)
     host = _parse_host(parts)
     hits = [*_host_checks(host), *_url_checks(url, parts, port, host)]
+    hits = _corroborate_platform(hits)
     score = min(100, sum(weight for _, weight in hits))
     return UrlReport(
         url=url,
@@ -104,6 +106,32 @@ def analyze_url(raw: str) -> UrlReport:
         level=_level(score),
         findings=by_severity(finding for finding, _ in hits),
     )
+
+
+def _corroborate_platform(hits: list[_Hit]) -> list[_Hit]:
+    """Count a free-hosting subdomain only when another sign is present.
+
+    On its own it fires on every page of those services, including the many legitimate ones, so it is shown as
+    ``info`` without weight; next to any weighted finding it keeps its ``low`` severity and weight.
+    """
+    if any(weight for finding, weight in hits if finding.id != PLATFORM_ID):
+        return hits
+    return [
+        (
+            (
+                finding.model_copy(
+                    update={
+                        "severity": "info",
+                        "explanation": f"{finding.explanation} Alone it is not counted: it fits every page on this service.",
+                    }
+                ),
+                0,
+            )
+            if finding.id == PLATFORM_ID
+            else (finding, weight)
+        )
+        for finding, weight in hits
+    ]
 
 
 def _split(url: str) -> tuple[SplitResult, int | None]:

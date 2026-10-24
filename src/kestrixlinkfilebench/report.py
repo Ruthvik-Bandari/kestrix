@@ -14,13 +14,20 @@ from .common import Layout, LinkFileBenchError, file_sha256, now, write_json
 from .features import code_versions, feature_errors, read_features
 from .leakage import leakage_report
 from .metrics import file_report, link_report
+from .realurls import realurl_report
 
-BOOTSTRAP_UNIT = {"link": "registered domain (offline approximation)", "file": "Govdocs1 thread"}
+BOOTSTRAP_UNIT = {
+    "link": "registered domain (offline approximation)",
+    "file": "Govdocs1 thread",
+    "realurl": "sampled domain or platform host",
+}
 REPORT = "{kind}-dev-metrics.json"
 LOCKED_REPORT = "{kind}-locked-{name}.json"
 
 
 def system_report(kind: str, frame: Frame, reps: int, seed: int) -> dict[str, Any]:
+    if kind == "realurl":
+        return realurl_report(frame, reps, seed)
     if kind == "link":
         return {**link_report(frame, reps, seed), "leakage": leakage_report(frame, reps, seed)}
     return file_report(frame, reps, seed)

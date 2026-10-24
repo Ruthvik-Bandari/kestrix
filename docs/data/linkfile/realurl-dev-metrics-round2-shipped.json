@@ -1,0 +1,1381 @@
+{
+  "bootstrap": {
+    "resamples": 1000,
+    "seed": 0,
+    "unit": "sampled domain or platform host"
+  },
+  "code": [
+    "0ca93a7+main-rules"
+  ],
+  "cohorts": {
+    "all": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13518,
+          "k": 0,
+          "n": 45789,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.515898,
+            0.534995
+          ],
+          "ci95_message": [
+            0.520626,
+            0.529911
+          ],
+          "groups": 13518,
+          "k": 24051,
+          "n": 45789,
+          "rate": 0.525257
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.001378,
+            0.002717
+          ],
+          "ci95_message": [
+            0.001594,
+            0.002402
+          ],
+          "groups": 13518,
+          "k": 91,
+          "n": 45789,
+          "rate": 0.001987
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 138,
+        "digits_in_subdomain": 1226,
+        "hosting_platform_subdomain": 14009,
+        "international_host": 22,
+        "long_url": 6893,
+        "many_subdomains": 123,
+        "not_https": 3676,
+        "suspicious_keywords": 673,
+        "suspicious_tld": 105,
+        "unusual_port": 89
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.002055,
+            0.004136
+          ],
+          "ci95_message": [
+            0.002512,
+            0.003517
+          ],
+          "groups": 13518,
+          "k": 138,
+          "n": 45789,
+          "rate": 0.003014
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.024427,
+            0.029216
+          ],
+          "ci95_message": [
+            0.025334,
+            0.028282
+          ],
+          "groups": 13518,
+          "k": 1226,
+          "n": 45789,
+          "rate": 0.026775
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            0.297359,
+            0.314348
+          ],
+          "ci95_message": [
+            0.301623,
+            0.310272
+          ],
+          "groups": 13518,
+          "k": 14009,
+          "n": 45789,
+          "rate": 0.305947
+        },
+        "international_host": {
+          "ci95": [
+            4.4e-05,
+            0.001072
+          ],
+          "ci95_message": [
+            0.000284,
+            0.000699
+          ],
+          "groups": 13518,
+          "k": 22,
+          "n": 45789,
+          "rate": 0.00048
+        },
+        "long_url": {
+          "ci95": [
+            0.144473,
+            0.156797
+          ],
+          "ci95_message": [
+            0.147262,
+            0.153859
+          ],
+          "groups": 13518,
+          "k": 6893,
+          "n": 45789,
+          "rate": 0.150538
+        },
+        "many_subdomains": {
+          "ci95": [
+            0.001609,
+            0.003851
+          ],
+          "ci95_message": [
+            0.002228,
+            0.003167
+          ],
+          "groups": 13518,
+          "k": 123,
+          "n": 45789,
+          "rate": 0.002686
+        },
+        "not_https": {
+          "ci95": [
+            0.073918,
+            0.087078
+          ],
+          "ci95_message": [
+            0.077812,
+            0.082837
+          ],
+          "groups": 13518,
+          "k": 3676,
+          "n": 45789,
+          "rate": 0.080281
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.013045,
+            0.016431
+          ],
+          "ci95_message": [
+            0.01365,
+            0.015833
+          ],
+          "groups": 13518,
+          "k": 673,
+          "n": 45789,
+          "rate": 0.014698
+        },
+        "suspicious_tld": {
+          "ci95": [
+            0.001039,
+            0.003683
+          ],
+          "ci95_message": [
+            0.001878,
+            0.00273
+          ],
+          "groups": 13518,
+          "k": 105,
+          "n": 45789,
+          "rate": 0.002293
+        },
+        "unusual_port": {
+          "ci95": [
+            0.000933,
+            0.003104
+          ],
+          "ci95_message": [
+            0.001551,
+            0.002359
+          ],
+          "groups": 13518,
+          "k": 89,
+          "n": 45789,
+          "rate": 0.001944
+        }
+      },
+      "groups": 13518,
+      "https_share": 0.9197,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.52327,
+        "medium": 0.001987,
+        "none": 0.474743
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+hosting_platform_subdomain": 56,
+        "digits_in_subdomain": 159,
+        "digits_in_subdomain+hosting_platform_subdomain": 874,
+        "hosting_platform_subdomain": 11935,
+        "hosting_platform_subdomain+long_url": 501,
+        "hosting_platform_subdomain+not_https": 418,
+        "hosting_platform_subdomain+suspicious_keywords": 126,
+        "long_url": 5843,
+        "long_url+not_https": 174,
+        "long_url+suspicious_keywords": 202,
+        "many_subdomains": 65,
+        "not_https": 2843,
+        "not_https+unusual_port": 66,
+        "suspicious_keywords": 306,
+        "suspicious_tld": 65
+      },
+      "n": 45789
+    },
+    "blogspot.com": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2106,
+          "k": 0,
+          "n": 3500,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2106,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.001717
+          ],
+          "ci95_message": [
+            0.0,
+            0.001429
+          ],
+          "groups": 2106,
+          "k": 2,
+          "n": 3500,
+          "rate": 0.000571
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 2,
+        "digits_in_subdomain": 104,
+        "hosting_platform_subdomain": 3500,
+        "long_url": 165,
+        "not_https": 319,
+        "suspicious_keywords": 7
+      },
+      "finding_rate": {
+        "digits_in_subdomain": {
+          "ci95": [
+            0.022879,
+            0.037261
+          ],
+          "ci95_message": [
+            0.024,
+            0.03515
+          ],
+          "groups": 2106,
+          "k": 104,
+          "n": 3500,
+          "rate": 0.029714
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2106,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "long_url": {
+          "ci95": [
+            0.039668,
+            0.055509
+          ],
+          "ci95_message": [
+            0.040286,
+            0.054286
+          ],
+          "groups": 2106,
+          "k": 165,
+          "n": 3500,
+          "rate": 0.047143
+        },
+        "not_https": {
+          "ci95": [
+            0.08097,
+            0.102852
+          ],
+          "ci95_message": [
+            0.082,
+            0.10115
+          ],
+          "groups": 2106,
+          "k": 319,
+          "n": 3500,
+          "rate": 0.091143
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.000571,
+            0.003762
+          ],
+          "ci95_message": [
+            0.000571,
+            0.003714
+          ],
+          "groups": 2106,
+          "k": 7,
+          "n": 3500,
+          "rate": 0.002
+        }
+      },
+      "groups": 2106,
+      "https_share": 0.9089,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.999429,
+        "medium": 0.000571,
+        "none": 0.0
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+hosting_platform_subdomain": 2,
+        "digits_in_subdomain+hosting_platform_subdomain": 89,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url": 4,
+        "digits_in_subdomain+hosting_platform_subdomain+not_https": 11,
+        "hosting_platform_subdomain": 2924,
+        "hosting_platform_subdomain+long_url": 157,
+        "hosting_platform_subdomain+long_url+not_https": 4,
+        "hosting_platform_subdomain+not_https": 302,
+        "hosting_platform_subdomain+not_https+suspicious_keywords": 2,
+        "hosting_platform_subdomain+suspicious_keywords": 5
+      },
+      "n": 3500
+    },
+    "github.io": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2535,
+          "k": 0,
+          "n": 3500,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2535,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.001998,
+            0.008041
+          ],
+          "ci95_message": [
+            0.002571,
+            0.007429
+          ],
+          "groups": 2535,
+          "k": 17,
+          "n": 3500,
+          "rate": 0.004857
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 16,
+        "digits_in_subdomain": 207,
+        "hosting_platform_subdomain": 3500,
+        "long_url": 119,
+        "not_https": 125,
+        "suspicious_keywords": 16
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.001715,
+            0.007666
+          ],
+          "ci95_message": [
+            0.002564,
+            0.006864
+          ],
+          "groups": 2535,
+          "k": 16,
+          "n": 3500,
+          "rate": 0.004571
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.049527,
+            0.068981
+          ],
+          "ci95_message": [
+            0.052,
+            0.06715
+          ],
+          "groups": 2535,
+          "k": 207,
+          "n": 3500,
+          "rate": 0.059143
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2535,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "long_url": {
+          "ci95": [
+            0.027952,
+            0.040561
+          ],
+          "ci95_message": [
+            0.028,
+            0.040007
+          ],
+          "groups": 2535,
+          "k": 119,
+          "n": 3500,
+          "rate": 0.034
+        },
+        "not_https": {
+          "ci95": [
+            0.028569,
+            0.043248
+          ],
+          "ci95_message": [
+            0.029714,
+            0.042
+          ],
+          "groups": 2535,
+          "k": 125,
+          "n": 3500,
+          "rate": 0.035714
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.002305,
+            0.006941
+          ],
+          "ci95_message": [
+            0.002564,
+            0.006864
+          ],
+          "groups": 2535,
+          "k": 16,
+          "n": 3500,
+          "rate": 0.004571
+        }
+      },
+      "groups": 2535,
+      "https_share": 0.9643,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.995143,
+        "medium": 0.004857,
+        "none": 0.0
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+digits_in_subdomain+hosting_platform_subdomain": 1,
+        "brand_in_subdomain+hosting_platform_subdomain": 12,
+        "brand_in_subdomain+hosting_platform_subdomain+long_url": 3,
+        "digits_in_subdomain+hosting_platform_subdomain": 192,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url": 5,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url+not_https": 1,
+        "digits_in_subdomain+hosting_platform_subdomain+not_https": 7,
+        "digits_in_subdomain+hosting_platform_subdomain+suspicious_keywords": 1,
+        "hosting_platform_subdomain": 3043,
+        "hosting_platform_subdomain+long_url": 104,
+        "hosting_platform_subdomain+long_url+not_https": 4,
+        "hosting_platform_subdomain+long_url+suspicious_keywords": 2,
+        "hosting_platform_subdomain+not_https": 112,
+        "hosting_platform_subdomain+not_https+suspicious_keywords": 1,
+        "hosting_platform_subdomain+suspicious_keywords": 12
+      },
+      "n": 3500
+    },
+    "netlify.app": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2500,
+          "k": 0,
+          "n": 3499,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2500,
+          "k": 3499,
+          "n": 3499,
+          "rate": 1.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.000286,
+            0.002826
+          ],
+          "ci95_message": [
+            0.000286,
+            0.002858
+          ],
+          "groups": 2500,
+          "k": 5,
+          "n": 3499,
+          "rate": 0.001429
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 5,
+        "digits_in_subdomain": 393,
+        "hosting_platform_subdomain": 3499,
+        "long_url": 178,
+        "not_https": 6,
+        "suspicious_keywords": 19
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.000286,
+            0.002826
+          ],
+          "ci95_message": [
+            0.000286,
+            0.002858
+          ],
+          "groups": 2500,
+          "k": 5,
+          "n": 3499,
+          "rate": 0.001429
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.100884,
+            0.124609
+          ],
+          "ci95_message": [
+            0.102315,
+            0.123464
+          ],
+          "groups": 2500,
+          "k": 393,
+          "n": 3499,
+          "rate": 0.112318
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2500,
+          "k": 3499,
+          "n": 3499,
+          "rate": 1.0
+        },
+        "long_url": {
+          "ci95": [
+            0.042442,
+            0.05899
+          ],
+          "ci95_message": [
+            0.044013,
+            0.058302
+          ],
+          "groups": 2500,
+          "k": 178,
+          "n": 3499,
+          "rate": 0.050872
+        },
+        "not_https": {
+          "ci95": [
+            0.000567,
+            0.003117
+          ],
+          "ci95_message": [
+            0.000572,
+            0.003144
+          ],
+          "groups": 2500,
+          "k": 6,
+          "n": 3499,
+          "rate": 0.001715
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.003116,
+            0.007784
+          ],
+          "ci95_message": [
+            0.003144,
+            0.008002
+          ],
+          "groups": 2500,
+          "k": 19,
+          "n": 3499,
+          "rate": 0.00543
+        }
+      },
+      "groups": 2500,
+      "https_share": 0.9983,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.998571,
+        "medium": 0.001429,
+        "none": 0.0
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+hosting_platform_subdomain": 5,
+        "digits_in_subdomain+hosting_platform_subdomain": 373,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url": 17,
+        "digits_in_subdomain+hosting_platform_subdomain+not_https": 2,
+        "digits_in_subdomain+hosting_platform_subdomain+suspicious_keywords": 1,
+        "hosting_platform_subdomain": 2918,
+        "hosting_platform_subdomain+long_url": 161,
+        "hosting_platform_subdomain+not_https": 4,
+        "hosting_platform_subdomain+suspicious_keywords": 18
+      },
+      "n": 3499
+    },
+    "platforms_all": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10023,
+          "k": 0,
+          "n": 13999,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 10023,
+          "k": 13999,
+          "n": 13999,
+          "rate": 1.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.003372,
+            0.005815
+          ],
+          "ci95_message": [
+            0.003429,
+            0.005786
+          ],
+          "groups": 10023,
+          "k": 64,
+          "n": 13999,
+          "rate": 0.004572
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 63,
+        "digits_in_subdomain": 943,
+        "hosting_platform_subdomain": 13999,
+        "long_url": 563,
+        "not_https": 450,
+        "suspicious_keywords": 135
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.003361,
+            0.005735
+          ],
+          "ci95_message": [
+            0.003357,
+            0.005715
+          ],
+          "groups": 10023,
+          "k": 63,
+          "n": 13999,
+          "rate": 0.0045
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.062549,
+            0.072432
+          ],
+          "ci95_message": [
+            0.063362,
+            0.07165
+          ],
+          "groups": 10023,
+          "k": 943,
+          "n": 13999,
+          "rate": 0.067362
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 10023,
+          "k": 13999,
+          "n": 13999,
+          "rate": 1.0
+        },
+        "long_url": {
+          "ci95": [
+            0.036659,
+            0.043919
+          ],
+          "ci95_message": [
+            0.037074,
+            0.043648
+          ],
+          "groups": 10023,
+          "k": 563,
+          "n": 13999,
+          "rate": 0.040217
+        },
+        "not_https": {
+          "ci95": [
+            0.028795,
+            0.035826
+          ],
+          "ci95_message": [
+            0.029429,
+            0.035219
+          ],
+          "groups": 10023,
+          "k": 450,
+          "n": 13999,
+          "rate": 0.032145
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.007784,
+            0.011424
+          ],
+          "ci95_message": [
+            0.008072,
+            0.011287
+          ],
+          "groups": 10023,
+          "k": 135,
+          "n": 13999,
+          "rate": 0.009644
+        }
+      },
+      "groups": 10023,
+      "https_share": 0.9679,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.995428,
+        "medium": 0.004572,
+        "none": 0.0
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+digits_in_subdomain+hosting_platform_subdomain": 1,
+        "brand_in_subdomain+hosting_platform_subdomain": 56,
+        "brand_in_subdomain+hosting_platform_subdomain+long_url": 5,
+        "digits_in_subdomain+hosting_platform_subdomain": 874,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url": 45,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url+not_https": 1,
+        "digits_in_subdomain+hosting_platform_subdomain+not_https": 20,
+        "digits_in_subdomain+hosting_platform_subdomain+suspicious_keywords": 2,
+        "hosting_platform_subdomain": 11935,
+        "hosting_platform_subdomain+long_url": 501,
+        "hosting_platform_subdomain+long_url+not_https": 8,
+        "hosting_platform_subdomain+long_url+suspicious_keywords": 3,
+        "hosting_platform_subdomain+not_https": 418,
+        "hosting_platform_subdomain+not_https+suspicious_keywords": 3,
+        "hosting_platform_subdomain+suspicious_keywords": 126
+      },
+      "n": 13999
+    },
+    "top_domain": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 3495,
+          "k": 0,
+          "n": 31790,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.305403,
+            0.326679
+          ],
+          "ci95_message": [
+            0.31104,
+            0.321422
+          ],
+          "groups": 3495,
+          "k": 10052,
+          "n": 31790,
+          "rate": 0.3162
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.000187,
+            0.001851
+          ],
+          "ci95_message": [
+            0.000535,
+            0.001195
+          ],
+          "groups": 3495,
+          "k": 27,
+          "n": 31790,
+          "rate": 0.000849
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 75,
+        "digits_in_subdomain": 283,
+        "hosting_platform_subdomain": 10,
+        "international_host": 22,
+        "long_url": 6330,
+        "many_subdomains": 123,
+        "not_https": 3226,
+        "suspicious_keywords": 538,
+        "suspicious_tld": 105,
+        "unusual_port": 89
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.001061,
+            0.00402
+          ],
+          "ci95_message": [
+            0.001824,
+            0.002894
+          ],
+          "groups": 3495,
+          "k": 75,
+          "n": 31790,
+          "rate": 0.002359
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.006618,
+            0.011926
+          ],
+          "ci95_message": [
+            0.007927,
+            0.010003
+          ],
+          "groups": 3495,
+          "k": 283,
+          "n": 31790,
+          "rate": 0.008902
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            0.0,
+            0.000951
+          ],
+          "ci95_message": [
+            0.000126,
+            0.000535
+          ],
+          "groups": 3495,
+          "k": 10,
+          "n": 31790,
+          "rate": 0.000315
+        },
+        "international_host": {
+          "ci95": [
+            6.3e-05,
+            0.001597
+          ],
+          "ci95_message": [
+            0.000409,
+            0.001007
+          ],
+          "groups": 3495,
+          "k": 22,
+          "n": 31790,
+          "rate": 0.000692
+        },
+        "long_url": {
+          "ci95": [
+            0.190317,
+            0.207857
+          ],
+          "ci95_message": [
+            0.194714,
+            0.203556
+          ],
+          "groups": 3495,
+          "k": 6330,
+          "n": 31790,
+          "rate": 0.199119
+        },
+        "many_subdomains": {
+          "ci95": [
+            0.002215,
+            0.005552
+          ],
+          "ci95_message": [
+            0.003209,
+            0.004561
+          ],
+          "groups": 3495,
+          "k": 123,
+          "n": 31790,
+          "rate": 0.003869
+        },
+        "not_https": {
+          "ci95": [
+            0.092493,
+            0.111092
+          ],
+          "ci95_message": [
+            0.098176,
+            0.104846
+          ],
+          "groups": 3495,
+          "k": 3226,
+          "n": 31790,
+          "rate": 0.101478
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.014706,
+            0.019306
+          ],
+          "ci95_message": [
+            0.015602,
+            0.018433
+          ],
+          "groups": 3495,
+          "k": 538,
+          "n": 31790,
+          "rate": 0.016924
+        },
+        "suspicious_tld": {
+          "ci95": [
+            0.001484,
+            0.005372
+          ],
+          "ci95_message": [
+            0.002705,
+            0.003932
+          ],
+          "groups": 3495,
+          "k": 105,
+          "n": 31790,
+          "rate": 0.003303
+        },
+        "unusual_port": {
+          "ci95": [
+            0.001344,
+            0.004411
+          ],
+          "ci95_message": [
+            0.002233,
+            0.003397
+          ],
+          "groups": 3495,
+          "k": 89,
+          "n": 31790,
+          "rate": 0.0028
+        }
+      },
+      "groups": 3495,
+      "https_share": 0.8985,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.315351,
+        "medium": 0.000849,
+        "none": 0.6838
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain": 49,
+        "digits_in_subdomain": 159,
+        "digits_in_subdomain+long_url": 55,
+        "digits_in_subdomain+not_https": 36,
+        "long_url": 5843,
+        "long_url+many_subdomains": 21,
+        "long_url+not_https": 174,
+        "long_url+suspicious_keywords": 202,
+        "many_subdomains": 65,
+        "not_https": 2843,
+        "not_https+suspicious_keywords": 19,
+        "not_https+suspicious_tld": 40,
+        "not_https+unusual_port": 66,
+        "suspicious_keywords": 306,
+        "suspicious_tld": 65
+      },
+      "n": 31790
+    },
+    "vercel.app": {
+      "at_level": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2882,
+          "k": 0,
+          "n": 3500,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2882,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.007745,
+            0.015248
+          ],
+          "ci95_message": [
+            0.008,
+            0.015143
+          ],
+          "groups": 2882,
+          "k": 40,
+          "n": 3500,
+          "rate": 0.011429
+        }
+      },
+      "finding_items": {
+        "brand_in_subdomain": 40,
+        "digits_in_subdomain": 239,
+        "hosting_platform_subdomain": 3500,
+        "long_url": 101,
+        "suspicious_keywords": 93
+      },
+      "finding_rate": {
+        "brand_in_subdomain": {
+          "ci95": [
+            0.007745,
+            0.015248
+          ],
+          "ci95_message": [
+            0.008,
+            0.015143
+          ],
+          "groups": 2882,
+          "k": 40,
+          "n": 3500,
+          "rate": 0.011429
+        },
+        "digits_in_subdomain": {
+          "ci95": [
+            0.059022,
+            0.078202
+          ],
+          "ci95_message": [
+            0.060286,
+            0.076857
+          ],
+          "groups": 2882,
+          "k": 239,
+          "n": 3500,
+          "rate": 0.068286
+        },
+        "hosting_platform_subdomain": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "ci95_message": [
+            1.0,
+            1.0
+          ],
+          "groups": 2882,
+          "k": 3500,
+          "n": 3500,
+          "rate": 1.0
+        },
+        "long_url": {
+          "ci95": [
+            0.022582,
+            0.035158
+          ],
+          "ci95_message": [
+            0.023429,
+            0.034286
+          ],
+          "groups": 2882,
+          "k": 101,
+          "n": 3500,
+          "rate": 0.028857
+        },
+        "suspicious_keywords": {
+          "ci95": [
+            0.021313,
+            0.03265
+          ],
+          "ci95_message": [
+            0.021429,
+            0.032
+          ],
+          "groups": 2882,
+          "k": 93,
+          "n": 3500,
+          "rate": 0.026571
+        }
+      },
+      "groups": 2882,
+      "https_share": 1.0,
+      "level_share": {
+        "high": 0.0,
+        "low": 0.988571,
+        "medium": 0.011429,
+        "none": 0.0
+      },
+      "low_or_higher_by_findings": {
+        "brand_in_subdomain+hosting_platform_subdomain": 37,
+        "brand_in_subdomain+hosting_platform_subdomain+long_url": 2,
+        "brand_in_subdomain+hosting_platform_subdomain+suspicious_keywords": 1,
+        "digits_in_subdomain+hosting_platform_subdomain": 220,
+        "digits_in_subdomain+hosting_platform_subdomain+long_url": 19,
+        "hosting_platform_subdomain": 3050,
+        "hosting_platform_subdomain+long_url": 79,
+        "hosting_platform_subdomain+long_url+suspicious_keywords": 1,
+        "hosting_platform_subdomain+suspicious_keywords": 91
+      },
+      "n": 3500
+    }
+  },
+  "feature_errors": {},
+  "generated_at": "2026-10-23T14:01:20+00:00",
+  "items": 45789,
+  "kind": "realurl",
+  "schema_version": 1,
+  "split": "dev",
+  "split_manifest_sha256": null,
+  "top_domain_by_shape": {
+    "top_domain/http/bare": {
+      "low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 126,
+        "k": 164,
+        "n": 164,
+        "rate": 1.0
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 126,
+        "k": 0,
+        "n": 164,
+        "rate": 0.0
+      },
+      "n": 164
+    },
+    "top_domain/http/path_or_query": {
+      "low_or_higher": {
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "ci95_message": [
+          1.0,
+          1.0
+        ],
+        "groups": 549,
+        "k": 3062,
+        "n": 3062,
+        "rate": 1.0
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.000317,
+          0.011739
+        ],
+        "ci95_message": [
+          0.002286,
+          0.007185
+        ],
+        "groups": 549,
+        "k": 14,
+        "n": 3062,
+        "rate": 0.004572
+      },
+      "n": 3062
+    },
+    "top_domain/https/bare": {
+      "low_or_higher": {
+        "ci95": [
+          0.059849,
+          0.126604
+        ],
+        "ci95_message": [
+          0.072879,
+          0.111141
+        ],
+        "groups": 517,
+        "k": 77,
+        "n": 837,
+        "rate": 0.091995
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "ci95_message": [
+          0.0,
+          0.0
+        ],
+        "groups": 517,
+        "k": 0,
+        "n": 837,
+        "rate": 0.0
+      },
+      "n": 837
+    },
+    "top_domain/https/path_or_query": {
+      "low_or_higher": {
+        "ci95": [
+          0.233768,
+          0.252796
+        ],
+        "ci95_message": [
+          0.238322,
+          0.248532
+        ],
+        "groups": 3121,
+        "k": 6749,
+        "n": 27727,
+        "rate": 0.243409
+      },
+      "medium_or_higher": {
+        "ci95": [
+          7.3e-05,
+          0.000938
+        ],
+        "ci95_message": [
+          0.000216,
+          0.000757
+        ],
+        "groups": 3121,
+        "k": 13,
+        "n": 27727,
+        "rate": 0.000469
+      },
+      "n": 27727
+    }
+  }
+}
