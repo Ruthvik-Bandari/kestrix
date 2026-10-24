@@ -724,6 +724,16 @@ def test_bash_source_like_names() -> None:
         assert module.source_like(name), name
     for name in ("App.vue", "src/Page.svelte", "index.html", "old.htm", "site.css", "theme.SCSS"):
         assert module.source_like(name), name
+    for name in (
+        "infra/main.tf",
+        "Dockerfile",
+        "web/Dockerfile.dev",
+        "app.dockerfile",
+        "Containerfile",
+        "run.bash",
+        ".github/workflows/ci.yml",
+    ):
+        assert module.source_like(name), name
     for name in ("notes.txt", "package-lock.json", "image.png", "Makefile", "uv.lock"):
         assert not module.source_like(name), name
 

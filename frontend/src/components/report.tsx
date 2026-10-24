@@ -131,16 +131,6 @@ export function PendingPanel({ title, children }: { title: string; children: Rea
   );
 }
 
-/** Help shown beside the input before a result: flat, with the heading and a body at the full column width. */
-export function HelpPanel({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section aria-label={title}>
-      <h2 className="text-lg font-semibold tracking-[-0.01em]">{title}</h2>
-      <div className="@container mt-4">{children}</div>
-    </section>
-  );
-}
-
 /**
  * One section of a report: an icon, the heading, an optional count and aside. By default a panel with a
  * tinted header strip; `flat` leaves the body unframed for sections that bring their own list or table.

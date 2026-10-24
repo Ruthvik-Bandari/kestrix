@@ -79,9 +79,9 @@ POSITIVE = [
     ("js.dom.xss_sink", "function f(v) { document.querySelector('#o')?.insertAdjacentHTML('beforeend', v) }"),
     ("js.dom.xss_sink", "function f(v) { document.write(v) }"),
     ("js.dom.xss_sink", "function f(v) { document.writeln('<p>' + v) }"),
-    ("js.dom.xss_sink", "function f(d) { $('#out').html(d.name) }"),
-    ("js.dom.xss_sink", "function f(d) { jQuery('.x').first().html(d) }"),
-    ("js.dom.xss_sink", "function f($el, d) { $el.html(d) }"),
+    ("js.dom.xss_sink.jquery", "function f(d) { $('#out').html(d.name) }"),
+    ("js.dom.xss_sink.jquery", "function f(d) { jQuery('.x').first().html(d) }"),
+    ("js.dom.xss_sink.jquery", "function f($el, d) { $el.html(d) }"),
     ("js.dom.xss_sink", "export const A = ({ html }) => <div dangerouslySetInnerHTML={{ __html: html }} />;"),
     (
         "js.dom.xss_sink",
@@ -249,6 +249,9 @@ NEGATIVE = [
     ("js.dom.xss_sink", "if (el.innerHTML == v) {} const same = el.innerHTML === v"),
     ("js.dom.xss_sink", "export const A = () => <div dangerouslySetInnerHTML={{ __html: '<b>x</b>' }} />;"),
     ("js.dom.xss_sink", "function f(v) { res.html(v); template.html(v) }"),
+    ("js.dom.xss_sink.jquery", "function f(d) { $('#out').html('<b>x</b>'); $('#out').text(d) }"),
+    ("js.dom.xss_sink.jquery", "function f(v) { res.html(v); template.html(v); el.innerHTML = v }"),
+    ("js.dom.xss_sink", "function f(d) { $('#out').html(d.name) }"),
     ("js.dom.xss_sink", "const html = el.innerHTML;"),
     # js.sql.string_built: parameters, tagged templates, no SQL text, literal templates
     ("js.sql.string_built", "function f(id) { return pool.query('SELECT * FROM users WHERE id = $1', [id]) }"),

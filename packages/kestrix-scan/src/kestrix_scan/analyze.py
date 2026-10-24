@@ -9,6 +9,7 @@ findings whose fingerprint is in the baseline.
 
 JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
 HTML, Vue, Svelte and Angular templates take ``<!-- kestrix: ignore[...] reason -->``; CSS takes ``/* ... */``.
+GitHub Actions, Dockerfile, shell, Terraform and Kubernetes files (``iac.py``) take ``# kestrix: ignore[...] reason``.
 A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
 
 Suppression: ``# kestrix: ignore[rule-id] reason`` (or ``// kestrix: ignore[...] reason``) on the
@@ -24,7 +25,7 @@ import re
 import subprocess
 import tempfile
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -32,8 +33,9 @@ from . import deps
 from .agent_config import check_config, config_kind
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
+from .iac import check_iac, iac_kind
 from .js_rules import JS_SUFFIXES, check_js
-from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, count, fingerprint, ordered
+from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, SkipReason, count, fingerprint, ordered
 from .python_rules import check_python
 from .registry import RULES, Hit
 from .secrets import check_secrets, redact
@@ -49,7 +51,7 @@ _SUPPRESSION = re.compile(r"(?:#|//|/\*|<!--)\s*kestrix:\s*ignore\[([^\]\n]*)\](
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
-_CONFIG_SECRET_RULES = frozenset({"config.mcp.secret_inline", "config.claude.env_leak"})
+_CONFIG_SECRET_RULES = frozenset({"config.mcp.secret_inline", "config.claude.env_leak", "docker.env.secret"})
 
 
 def scan(
@@ -164,8 +166,8 @@ def scan_text(
             hits.extend(result)
         else:
             skip = SkippedFile(path=candidate.rel, reason=result)
-    elif config_kind(candidate.rel) is not None:
-        result = check_config(text, candidate.rel)
+    elif (checker := _structured_checker(candidate.rel, text)) is not None:
+        result = checker(text, candidate.rel)
         if isinstance(result, list):
             hits.extend(result)
         else:
@@ -189,11 +191,19 @@ def scan_text(
         notes.extend(dep_notes)
     for item in hits:
         ids_here = suppressions.get(item.line, frozenset()) | suppressions.get(item.line - 1, frozenset())
-        if item.rule_id in ids_here:
+        parent = item.rule_id.rpartition(".")[0]  # a variant id (js.dom.xss_sink.jquery) is covered by its parent rule
+        if item.rule_id in ids_here or (parent in RULES and parent in ids_here):
             suppressed += 1
             continue
         findings.append(_finding(item, candidate.rel))
     return findings, notes, suppressed, skip
+
+
+def _structured_checker(rel: str, text: str) -> Callable[[str, str], list[Hit] | SkipReason] | None:
+    """The checker for a CI, infrastructure or Claude Code configuration file, chosen by its path, else None."""
+    if iac_kind(rel, text) is not None:
+        return check_iac
+    return check_config if config_kind(rel) is not None else None
 
 
 def _finding(item: Hit, rel: str) -> Finding:

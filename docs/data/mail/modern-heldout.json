@@ -1,0 +1,1054 @@
+{
+  "all_findings": {
+    "all": {
+      "flagged": {
+        "ci95": [
+          0.006181,
+          0.052029
+        ],
+        "ci95_message": [
+          0.023087,
+          0.02934
+        ],
+        "groups": 25,
+        "k": 259,
+        "n": 9919,
+        "rate": 0.026112
+      },
+      "malicious": {
+        "ci95": [
+          0.000988,
+          0.008316
+        ],
+        "ci95_message": [
+          0.002823,
+          0.005444
+        ],
+        "groups": 25,
+        "k": 41,
+        "n": 9919,
+        "rate": 0.004133
+      }
+    },
+    "automated_notification": {
+      "marked_automated": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.000596,
+            0.005956
+          ],
+          "groups": 5,
+          "k": 5,
+          "n": 1679,
+          "rate": 0.002978
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 5,
+          "k": 0,
+          "n": 1679,
+          "rate": 0.0
+        }
+      },
+      "not_marked": {
+        "flagged": {
+          "ci95": [
+            0.006961,
+            0.059939
+          ],
+          "ci95_message": [
+            0.027306,
+            0.034709
+          ],
+          "groups": 25,
+          "k": 254,
+          "n": 8240,
+          "rate": 0.030825
+        },
+        "malicious": {
+          "ci95": [
+            0.001262,
+            0.009585
+          ],
+          "ci95_message": [
+            0.003398,
+            0.006553
+          ],
+          "groups": 25,
+          "k": 41,
+          "n": 8240,
+          "rate": 0.004976
+        }
+      }
+    },
+    "by_list": {
+      "asf|dev-flink": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.001067,
+            0.004007
+          ],
+          "groups": 5,
+          "k": 9,
+          "n": 3750,
+          "rate": 0.0024
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.001333
+          ],
+          "groups": 5,
+          "k": 2,
+          "n": 3750,
+          "rate": 0.000533
+        }
+      },
+      "asf|user-flink": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.095978,
+            0.121115
+          ],
+          "groups": 5,
+          "k": 236,
+          "n": 2188,
+          "rate": 0.107861
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.011426,
+            0.021938
+          ],
+          "groups": 5,
+          "k": 36,
+          "n": 2188,
+          "rate": 0.016453
+        }
+      },
+      "asf|users-kafka": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.004684,
+            0.017564
+          ],
+          "groups": 5,
+          "k": 9,
+          "n": 854,
+          "rate": 0.010539
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.008197
+          ],
+          "groups": 5,
+          "k": 3,
+          "n": 854,
+          "rate": 0.003513
+        }
+      },
+      "gnu|bug-bash": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.001244
+          ],
+          "groups": 5,
+          "k": 1,
+          "n": 2412,
+          "rate": 0.000415
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 5,
+          "k": 0,
+          "n": 2412,
+          "rate": 0.0
+        }
+      },
+      "gnu|guile-devel": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.001399,
+            0.011189
+          ],
+          "groups": 5,
+          "k": 4,
+          "n": 715,
+          "rate": 0.005594
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 5,
+          "k": 0,
+          "n": 715,
+          "rate": 0.0
+        }
+      }
+    },
+    "by_source": {
+      "asf": {
+        "flagged": {
+          "ci95": [
+            0.009176,
+            0.075979
+          ],
+          "ci95_message": [
+            0.033127,
+            0.041965
+          ],
+          "groups": 15,
+          "k": 254,
+          "n": 6792,
+          "rate": 0.037397
+        },
+        "malicious": {
+          "ci95": [
+            0.001473,
+            0.012103
+          ],
+          "ci95_message": [
+            0.004122,
+            0.007951
+          ],
+          "groups": 15,
+          "k": 41,
+          "n": 6792,
+          "rate": 0.006037
+        }
+      },
+      "gnu": {
+        "flagged": {
+          "ci95": [
+            0.0,
+            0.005399
+          ],
+          "ci95_message": [
+            0.00032,
+            0.003198
+          ],
+          "groups": 10,
+          "k": 5,
+          "n": 3127,
+          "rate": 0.001599
+        },
+        "malicious": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 3127,
+          "rate": 0.0
+        }
+      }
+    },
+    "by_source_year": {
+      "asf|2022": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.021549,
+            0.039022
+          ],
+          "groups": 3,
+          "k": 52,
+          "n": 1717,
+          "rate": 0.030285
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.00233,
+            0.008736
+          ],
+          "groups": 3,
+          "k": 9,
+          "n": 1717,
+          "rate": 0.005242
+        }
+      },
+      "asf|2023": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.063006,
+            0.087861
+          ],
+          "groups": 3,
+          "k": 130,
+          "n": 1730,
+          "rate": 0.075145
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.008092,
+            0.019075
+          ],
+          "groups": 3,
+          "k": 23,
+          "n": 1730,
+          "rate": 0.013295
+        }
+      },
+      "asf|2024": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.018038,
+            0.034632
+          ],
+          "groups": 3,
+          "k": 36,
+          "n": 1386,
+          "rate": 0.025974
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.001443,
+            0.007937
+          ],
+          "groups": 3,
+          "k": 6,
+          "n": 1386,
+          "rate": 0.004329
+        }
+      },
+      "asf|2025": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.023213,
+            0.044568
+          ],
+          "groups": 3,
+          "k": 36,
+          "n": 1077,
+          "rate": 0.033426
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0065
+          ],
+          "groups": 3,
+          "k": 3,
+          "n": 1077,
+          "rate": 0.002786
+        }
+      },
+      "asf|2026": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 3,
+          "k": 0,
+          "n": 882,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 3,
+          "k": 0,
+          "n": 882,
+          "rate": 0.0
+        }
+      },
+      "gnu|2022": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 685,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 685,
+          "rate": 0.0
+        }
+      },
+      "gnu|2023": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.001372,
+            0.013717
+          ],
+          "groups": 2,
+          "k": 5,
+          "n": 729,
+          "rate": 0.006859
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 729,
+          "rate": 0.0
+        }
+      },
+      "gnu|2024": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 770,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 770,
+          "rate": 0.0
+        }
+      },
+      "gnu|2025": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 673,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 673,
+          "rate": 0.0
+        }
+      },
+      "gnu|2026": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 270,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 2,
+          "k": 0,
+          "n": 270,
+          "rate": 0.0
+        }
+      }
+    },
+    "by_year": {
+      "2022": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.015404,
+            0.027893
+          ],
+          "groups": 5,
+          "k": 52,
+          "n": 2402,
+          "rate": 0.021649
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.001665,
+            0.006255
+          ],
+          "groups": 5,
+          "k": 9,
+          "n": 2402,
+          "rate": 0.003747
+        }
+      },
+      "2023": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.045954,
+            0.063847
+          ],
+          "groups": 5,
+          "k": 135,
+          "n": 2459,
+          "rate": 0.0549
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.005693,
+            0.01342
+          ],
+          "groups": 5,
+          "k": 23,
+          "n": 2459,
+          "rate": 0.009353
+        }
+      },
+      "2024": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.011596,
+            0.022263
+          ],
+          "groups": 5,
+          "k": 36,
+          "n": 2156,
+          "rate": 0.016698
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.000928,
+            0.005102
+          ],
+          "groups": 5,
+          "k": 6,
+          "n": 2156,
+          "rate": 0.002783
+        }
+      },
+      "2025": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.014286,
+            0.027429
+          ],
+          "groups": 5,
+          "k": 36,
+          "n": 1750,
+          "rate": 0.020571
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.004
+          ],
+          "groups": 5,
+          "k": 3,
+          "n": 1750,
+          "rate": 0.001714
+        }
+      },
+      "2026": {
+        "flagged": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 5,
+          "k": 0,
+          "n": 1152,
+          "rate": 0.0
+        },
+        "malicious": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 5,
+          "k": 0,
+          "n": 1152,
+          "rate": 0.0
+        }
+      }
+    },
+    "groups": 25,
+    "n": 9919,
+    "verdict_counts": {
+      "clean": 7213,
+      "insufficient_evidence": 2447,
+      "malicious": 41,
+      "suspicious": 218
+    }
+  },
+  "auth": {
+    "auth_finding_messages": {
+      "mail.auth.dkim_not_aligned": 51,
+      "mail.auth.missing": 3046
+    },
+    "authserv_ids": {
+      "apache.org": 6080,
+      "dkim=none": 11,
+      "mta-outp-cfd-1": 119,
+      "mta-outp-cfd-2": 43,
+      "mta-outp-ksl-1": 83,
+      "mta-outp-ksl-2": 60,
+      "smtp-out1.suse.de": 8,
+      "smtp.soverin.net": 5,
+      "spamproc1-he-de.apache.org": 214,
+      "spamproc1-he-fi.apache.org": 228
+    },
+    "by_source": {
+      "asf": {
+        "arc_seal_present": 717,
+        "authentication_results_present": 6525,
+        "dkim_signature_present": 4502,
+        "more_than_one_authentication_results": 3966,
+        "n": 6792,
+        "received_spf_present": 4449
+      },
+      "gnu": {
+        "arc_seal_present": 411,
+        "authentication_results_present": 348,
+        "dkim_signature_present": 2551,
+        "more_than_one_authentication_results": 305,
+        "n": 3127,
+        "received_spf_present": 3043
+      }
+    },
+    "flagged_with_an_auth_medium_or_high_finding": 0,
+    "method_results": {
+      "dkim": {
+        "absent": 6169,
+        "none": 3,
+        "pass": 664,
+        "pass/pass": 37
+      },
+      "dmarc": {
+        "absent": 6623,
+        "none": 11,
+        "pass": 239
+      },
+      "spf": {
+        "absent": 6634,
+        "pass": 239
+      }
+    },
+    "n": 9919
+  },
+  "bootstrap": {
+    "resamples": 1000,
+    "seed": 0,
+    "unit": "list and year"
+  },
+  "causes": {
+    "finding_share_all_messages": [
+      {
+        "id": "mail.sender.return_path_mismatch",
+        "messages": 4176,
+        "share": 0.421
+      },
+      {
+        "id": "mail.auth.missing",
+        "messages": 3046,
+        "share": 0.3071
+      },
+      {
+        "id": "mail.sender.reply_to_mailing_list",
+        "messages": 2383,
+        "share": 0.2402
+      },
+      {
+        "id": "mail.links.plain_http",
+        "messages": 990,
+        "share": 0.0998
+      },
+      {
+        "id": "mail.intent.urgency",
+        "messages": 449,
+        "share": 0.0453
+      },
+      {
+        "id": "mail.sender.reply_to_mismatch",
+        "messages": 186,
+        "share": 0.0188
+      },
+      {
+        "id": "mail.links.redirect_param",
+        "messages": 63,
+        "share": 0.0064
+      },
+      {
+        "id": "mail.auth.dkim_not_aligned",
+        "messages": 51,
+        "share": 0.0051
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 36,
+        "share": 0.0036
+      },
+      {
+        "id": "mail.links.ip_host",
+        "messages": 28,
+        "share": 0.0028
+      },
+      {
+        "id": "mail.sender.display_name_spoof",
+        "messages": 12,
+        "share": 0.0012
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch",
+        "messages": 8,
+        "share": 0.0008
+      },
+      {
+        "id": "mail.links.shortener",
+        "messages": 4,
+        "share": 0.0004
+      },
+      {
+        "id": "mail.intent.hidden_text",
+        "messages": 4,
+        "share": 0.0004
+      },
+      {
+        "id": "mail.intent.spam_offer",
+        "messages": 4,
+        "share": 0.0004
+      },
+      {
+        "id": "mail.intent.credential_request",
+        "messages": 3,
+        "share": 0.0003
+      },
+      {
+        "id": "mail.links.userinfo",
+        "messages": 3,
+        "share": 0.0003
+      },
+      {
+        "id": "mail.links.script_scheme",
+        "messages": 1,
+        "share": 0.0001
+      },
+      {
+        "id": "mail.links.random_host",
+        "messages": 1,
+        "share": 0.0001
+      },
+      {
+        "id": "mail.links.insecure_login",
+        "messages": 1,
+        "share": 0.0001
+      },
+      {
+        "id": "mail.attachments.dangerous_type",
+        "messages": 1,
+        "share": 0.0001
+      }
+    ],
+    "flagged": 259,
+    "flagging_id_sets": [
+      {
+        "id": "mail.sender.reply_to_mismatch",
+        "messages": 165,
+        "share": 0.6371
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 29,
+        "share": 0.112
+      },
+      {
+        "id": "mail.links.ip_host",
+        "messages": 26,
+        "share": 0.1004
+      },
+      {
+        "id": "mail.sender.display_name_spoof+mail.sender.reply_to_mismatch",
+        "messages": 9,
+        "share": 0.0347
+      },
+      {
+        "id": "mail.links.text_href_mismatch+mail.sender.reply_to_mismatch",
+        "messages": 4,
+        "share": 0.0154
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch+mail.sender.reply_to_mismatch",
+        "messages": 4,
+        "share": 0.0154
+      },
+      {
+        "id": "mail.intent.spam_offer",
+        "messages": 4,
+        "share": 0.0154
+      },
+      {
+        "id": "mail.intent.credential_request",
+        "messages": 3,
+        "share": 0.0116
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch+mail.links.text_href_mismatch+mail.sender.reply_to_mismatch",
+        "messages": 3,
+        "share": 0.0116
+      },
+      {
+        "id": "mail.sender.display_name_spoof",
+        "messages": 3,
+        "share": 0.0116
+      },
+      {
+        "id": "weak_combination_of_low_findings",
+        "messages": 2,
+        "share": 0.0077
+      },
+      {
+        "id": "mail.links.userinfo",
+        "messages": 2,
+        "share": 0.0077
+      },
+      {
+        "id": "mail.links.script_scheme",
+        "messages": 1,
+        "share": 0.0039
+      },
+      {
+        "id": "mail.links.ip_host+mail.links.userinfo",
+        "messages": 1,
+        "share": 0.0039
+      },
+      {
+        "id": "mail.links.ip_host+mail.sender.reply_to_mismatch",
+        "messages": 1,
+        "share": 0.0039
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch",
+        "messages": 1,
+        "share": 0.0039
+      },
+      {
+        "id": "mail.attachments.dangerous_type",
+        "messages": 1,
+        "share": 0.0039
+      }
+    ],
+    "low_ids_among_weak_combination_flags": [
+      {
+        "id": "mail.sender.return_path_mismatch",
+        "messages": 2,
+        "share": 1.0
+      },
+      {
+        "id": "mail.auth.dkim_not_aligned",
+        "messages": 2,
+        "share": 1.0
+      },
+      {
+        "id": "mail.intent.urgency",
+        "messages": 2,
+        "share": 1.0
+      },
+      {
+        "id": "mail.links.plain_http",
+        "messages": 2,
+        "share": 1.0
+      }
+    ],
+    "malicious_id_sets": [
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 36,
+        "share": 0.878
+      },
+      {
+        "id": "mail.links.userinfo",
+        "messages": 3,
+        "share": 0.0732
+      },
+      {
+        "id": "mail.links.script_scheme",
+        "messages": 1,
+        "share": 0.0244
+      },
+      {
+        "id": "mail.sender.display_name_spoof",
+        "messages": 1,
+        "share": 0.0244
+      }
+    ],
+    "medium_or_high_ids_among_flagged": [
+      {
+        "id": "mail.sender.reply_to_mismatch",
+        "messages": 186,
+        "share": 0.7181
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 36,
+        "share": 0.139
+      },
+      {
+        "id": "mail.links.ip_host",
+        "messages": 28,
+        "share": 0.1081
+      },
+      {
+        "id": "mail.sender.display_name_spoof",
+        "messages": 12,
+        "share": 0.0463
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch",
+        "messages": 8,
+        "share": 0.0309
+      },
+      {
+        "id": "mail.intent.spam_offer",
+        "messages": 4,
+        "share": 0.0154
+      },
+      {
+        "id": "mail.intent.credential_request",
+        "messages": 3,
+        "share": 0.0116
+      },
+      {
+        "id": "mail.links.userinfo",
+        "messages": 3,
+        "share": 0.0116
+      },
+      {
+        "id": "mail.links.script_scheme",
+        "messages": 1,
+        "share": 0.0039
+      },
+      {
+        "id": "mail.attachments.dangerous_type",
+        "messages": 1,
+        "share": 0.0039
+      }
+    ]
+  },
+  "content_only": {
+    "all": {
+      "flagged": {
+        "ci95": [
+          0.006104,
+          0.051839
+        ],
+        "ci95_message": [
+          0.022986,
+          0.029237
+        ],
+        "groups": 25,
+        "k": 257,
+        "n": 9919,
+        "rate": 0.02591
+      },
+      "malicious": {
+        "ci95": [
+          0.000988,
+          0.008316
+        ],
+        "ci95_message": [
+          0.002823,
+          0.005444
+        ],
+        "groups": 25,
+        "k": 41,
+        "n": 9919,
+        "rate": 0.004133
+      }
+    }
+  },
+  "generated_at": "2026-10-24T16:42:23+00:00",
+  "reply_to": {
+    "by_source": {
+      "asf": {
+        "explained_by_list_headers": 2382,
+        "foreign_reply_to": 2568,
+        "still_reply_to_mismatch": 186,
+        "with_list_id_among_still_mismatch": 186
+      },
+      "gnu": {
+        "explained_by_list_headers": 1,
+        "foreign_reply_to": 1,
+        "still_reply_to_mismatch": 0,
+        "with_list_id_among_still_mismatch": 0
+      }
+    },
+    "foreign_reply_to": 2569,
+    "messages": 9919,
+    "with_list_id": 9919,
+    "with_reply_to_header": 5553
+  },
+  "schema_version": 1,
+  "split": "heldout"
+}

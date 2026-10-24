@@ -10,16 +10,13 @@ running the Kestrix functions on those inputs. Output goes to
 show it offline. ``tests/test_landing_samples.py`` re-runs the offline generators and fails if
 the committed JSON drifts from what the code produces.
 
-The detect sample needs the pinned Elasticsearch at ``KESTRIX_ES_URL`` and the webcheck sample
-starts a throwaway HTTP server on 127.0.0.1; both fail loudly instead of writing invented data.
+The webcheck sample starts a throwaway HTTP server on 127.0.0.1 and fails loudly instead of
+writing invented data.
 """
 
 from __future__ import annotations
 
-import hashlib
-import io
 import json
-import os
 import sys
 import threading
 from email.message import EmailMessage
@@ -27,16 +24,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from kestrix.bitcoin.address import Bech32Encoding, _bech32_polymod, _hrp_expand, parse_address
-from kestrix.bitcoin.migration import plan_for
-from kestrix.bitcoin.models import AddressType, ChainActivity
-from kestrix.bitcoin.risk import assess
-from kestrix.core.safe_load import iter_jsonl
-from kestrix.detect import cases
-from kestrix.detect.engine import Elasticsearch
-from kestrix.detect.workflow import run as run_detect
-from kestrix.forensics.analysis import analyze_file
-from kestrix.forensics.url import analyze_url
 from kestrix.mail.analyze import analyze as analyze_mail
 from kestrix.webcheck.scan import scan as scan_site
 
@@ -118,196 +105,6 @@ def email_sample() -> dict[str, Any]:
     }
 
 
-# --- File ----------------------------------------------------------------------------------
-
-FILE_NAME = "quarterly-report.pdf"
-
-
-def build_disguised_program() -> bytes:
-    """A tiny PE header followed by 48 KiB of deterministic random-looking bytes (like a packed payload)."""
-    header = bytearray(512)
-    header[0:2] = b"MZ"
-    header[0x3C:0x40] = (0x80).to_bytes(4, "little")  # e_lfanew -> PE signature
-    header[0x80:0x84] = b"PE\x00\x00"
-    header[0x4E:0x76] = b"This program cannot be run in DOS mode.\r"[:40]
-    padding = b"".join(hashlib.sha256(b"kestrix-landing-%d" % i).digest() for i in range(48 * 1024 // 32))
-    return bytes(header) + padding
-
-
-def file_sample() -> dict[str, Any]:
-    data = build_disguised_program()
-    report = analyze_file(io.BytesIO(data), FILE_NAME)
-    entropy = report.entropy
-    return {
-        "provenance": PROVENANCE,
-        "filename": report.filename,
-        "size": report.size,
-        "first_bytes_hex": data[:16].hex(" "),
-        "first_bytes_ascii": "".join(chr(b) if 32 <= b < 127 else "." for b in data[:16]),
-        "sha256": report.hashes.sha256,
-        "file_type": report.file_type.model_dump(),
-        "entropy": {
-            "overall": entropy.overall,
-            "block_size": entropy.block_size,
-            "block_count": entropy.block_count,
-            "high_entropy_threshold": entropy.high_entropy_threshold,
-            "high_entropy_bytes": entropy.high_entropy_bytes,
-            "high_entropy_region_count": entropy.high_entropy_region_count,
-            "points": [round(p.entropy, 3) for p in entropy.points],
-        },
-        "printable_ratio": report.printable_ratio,
-        "findings": [f.model_dump() for f in report.findings],
-    }
-
-
-# --- URL -----------------------------------------------------------------------------------
-
-URL = "http://northbank.example@203.0.113.9/login"
-
-
-def url_sample() -> dict[str, Any]:
-    report = analyze_url(URL)
-    return {
-        "provenance": PROVENANCE,
-        "url": report.url,
-        "host": report.host,
-        "registrable_domain": report.registrable_domain,
-        "score": report.score,
-        "level": report.level,
-        "score_note": report.score_note,
-        "findings": [f.model_dump() for f in report.findings],
-    }
-
-
-# --- Bitcoin -------------------------------------------------------------------------------
-
-_BECH32 = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
-_B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-# The secp256k1 generator point: a valid public key that belongs to no real wallet's savings.
-SYNTHETIC_PUBKEY = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
-
-
-def _synthetic_program(label: str, size: int) -> bytes:
-    return hashlib.sha256(f"kestrix-landing-{label}".encode()).digest()[:size]
-
-
-def _bech32_address(version: int, program: bytes) -> str:
-    acc = bits = 0
-    data = [version]
-    for byte in program:
-        acc, bits = (acc << 8) | byte, bits + 8
-        while bits >= 5:
-            bits -= 5
-            data.append((acc >> bits) & 31)
-    if bits:
-        data.append((acc << (5 - bits)) & 31)
-    const = Bech32Encoding.BECH32.value if version == 0 else Bech32Encoding.BECH32M.value
-    polymod = _bech32_polymod([*_hrp_expand("bc"), *data, 0, 0, 0, 0, 0, 0]) ^ const
-    checksum = [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
-    return "bc1" + "".join(_BECH32[d] for d in data + checksum)
-
-
-def _base58check(payload: bytes) -> str:
-    data = payload + hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
-    number, out = int.from_bytes(data, "big"), ""
-    while number:
-        number, rem = divmod(number, 58)
-        out = _B58[rem] + out
-    return "1" * (len(data) - len(data.lstrip(b"\0"))) + out
-
-
-def bitcoin_sample() -> dict[str, Any]:
-    p2pkh = _base58check(b"\x00" + _synthetic_program("p2pkh", 20))
-    # (label, address, synthetic spend history or None for an offline-only assessment)
-    inputs: list[tuple[str, str, ChainActivity | None]] = [
-        ("Early raw public key", SYNTHETIC_PUBKEY, None),
-        ("Taproot savings", _bech32_address(1, _synthetic_program("p2tr", 32)), None),
-        (
-            "Reused legacy address",
-            p2pkh,
-            ChainActivity(chain="mainnet", funded_outputs=3, spent_outputs=2, balance_sats=150_000),
-        ),
-        ("Fresh SegWit address", _bech32_address(0, _synthetic_program("p2wpkh", 20)), None),
-    ]
-    cards = []
-    for label, address, activity in inputs:
-        item = assess(parse_address(address), activity)
-        cards.append(
-            {
-                "label": label,
-                "synthetic_history": activity.model_dump() if activity else None,
-                "assessment": item.model_dump(mode="json"),
-            }
-        )
-    plans = {t.value: plan_for(t).model_dump(mode="json") for t in (AddressType.P2PK, AddressType.P2TR)}
-    return {
-        "provenance": PROVENANCE,
-        "history_note": (
-            "Offline assessment. The reused address is given a synthetic spend history (no chain lookup) "
-            "to show how a spend changes the result."
-        ),
-        "cards": cards,
-        "plans": {k: {"summary": v["summary"], "urgency": v["urgency"], "steps": v["steps"]} for k, v in plans.items()},
-    }
-
-
-# --- Detection repair (needs the pinned engine) --------------------------------------------
-
-DETECT_CASE = "c01-mapping-drift-commandline"
-
-
-def detect_sample(es_url: str) -> dict[str, Any]:
-    case_inputs = cases.inputs(DETECT_CASE)
-    es = Elasticsearch(es_url, timeout=5)
-    try:
-        version = es.version()  # raises Rejected when the engine is down: fail loudly, never invent counts
-        report = run_detect(case_inputs, es)
-    finally:
-        es.close()
-    if report["outcome"] == "engine_unavailable":
-        raise SystemExit(f"Elasticsearch at {es_url} is unavailable; refusing to write a detect sample")
-    manifest = cases.manifest(DETECT_CASE)
-    selected = next(c for c in report["candidates"] if c["candidate"]["proposal_id"] == report["selected"])
-    assert case_inputs.validation_path is not None
-    events = []
-    for _, row in iter_jsonl(case_inputs.validation_path):
-        process = row["data"]["process"]
-        events.append(
-            {
-                "event_id": row["event_id"],
-                "label": row["label"],
-                "executable": process["executable"].rsplit("\\", 1)[-1],
-                "command_line": process.get("command_line"),
-            }
-        )
-    original = report["original"]["validation"]
-    repaired = selected["validation"]
-    healthy = report["healthy_reference"]["validation"]
-    return {
-        "provenance": (
-            f"Real Kestrix output: bundled synthetic case {DETECT_CASE}, replayed on Elasticsearch {version}."
-        ),
-        "case_id": DETECT_CASE,
-        "case_title": manifest["title"],
-        "rule_title": report["rule"]["title"],
-        "engine_version": version,
-        "outcome": report["outcome"],
-        "fault": manifest["fault"]["detail"],
-        "coverage": report["coverage"],
-        "hypotheses": report["hypotheses"],
-        "patch": selected["candidate"]["patch"],
-        "diff": report["diff"],
-        "events": events,
-        "healthy": {
-            "query": healthy["query"],
-            "counts": healthy["counts"],
-            "matched": healthy["matched_event_ids"],
-        },
-        "before": {"query": original["query"], "counts": original["counts"], "matched": original["matched_event_ids"]},
-        "after": {"query": repaired["query"], "counts": repaired["counts"], "matched": repaired["matched_event_ids"]},
-    }
-
-
 # --- Web check (throwaway local demo site) -------------------------------------------------
 
 DEMO_PAGE = (
@@ -372,7 +169,7 @@ def webcheck_sample() -> dict[str, Any]:
     }
 
 
-OFFLINE = {"email": email_sample, "file": file_sample, "url": url_sample, "bitcoin": bitcoin_sample}
+OFFLINE = {"email": email_sample}
 
 
 def dump(data: dict[str, Any]) -> str:
@@ -382,7 +179,6 @@ def dump(data: dict[str, Any]) -> str:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     samples = {name: build() for name, build in OFFLINE.items()}
-    samples["detect"] = detect_sample(os.environ.get("KESTRIX_ES_URL", "http://127.0.0.1:9200"))
     samples["webcheck"] = webcheck_sample()
     for name, data in samples.items():
         (OUT / f"{name}.json").write_text(dump(data))

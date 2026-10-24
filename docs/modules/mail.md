@@ -95,7 +95,7 @@ Comments in parentheses and quoted strings are handled. `ARC` results are not ju
 
 | `id` | Severity | Raised when |
 | --- | --- | --- |
-| `mail.sender.reply_to_mismatch` | medium | A `Reply-To` address is in another organization than `From` and is not the message's own mailing list (next row). |
+| `mail.sender.reply_to_mismatch` | medium (low on list mail) | A `Reply-To` address is in another organization than `From` and is not the message's own mailing list (next row). Severity is `low` when the message has list headers and every such `Reply-To` is at a free-mail provider (Gmail, Outlook, Hotmail, Live, Yahoo, iCloud, Proton, QQ, 163, 126, Mykolab): on a list that is a participant's own setting. |
 | `mail.sender.reply_to_mailing_list` | info | The message has a `List-Id`, `List-Post` or `List-Unsubscribe` header and a foreign `Reply-To` is in the same organization as a domain named there (the list identifier, a `mailto:` address or a URL), as when a list sets `Reply-To` to itself. It explains the `Reply-To` and adds nothing to the verdict. List headers are easy to forge, so they only explain a `Reply-To` that points at the list's own domain; `Precedence: list` or `bulk` alone names no domain and explains nothing. |
 | `mail.sender.return_path_mismatch` | low | `Return-Path` is in another organization than `From`. Mailing lists and email service providers do this routinely. |
 | `mail.sender.display_name_spoof` | high; medium when a domain appears among other words | The display name contains an email address or a domain outside the From organization. A bare word counts as a domain only with a common or two-letter top-level domain, so `invoice.pdf` does not. It is high when the display name holds an address or is nothing but the domain (`PayPal.com`), and medium when the domain is one word among others (`PayPal.com Billing`), which genuine newsletters also do. |
@@ -128,7 +128,7 @@ The table is a curated subset of the Unicode confusables list, not all of it, so
 
 ## Links
 
-Links come from HTML `<a href>` anchors (with their visible text) and from `http://` and `https://` URLs written in plain-text parts. They are checked as text only. Each reason is reported once per host, and at most 50 link findings are reported.
+Links come from HTML `<a href>` anchors (with their visible text) and from `http://` and `https://` URLs written in plain-text parts. They are checked as text only. Each reason is reported once per host, and at most 50 link findings are reported. A link through a URL-rewriting security gateway (Microsoft Defender Safe Links `*.safelinks.protection.outlook.com`, Proofpoint `urldefense.com` and `urldefense.proofpoint.com`, Mimecast `protect-<region>.mimecast.com` and `*.mimecastprotect.com`, Barracuda `linkprotect.cudasvc.com`, Cisco `secure-web.cisco.com`) is judged by the address it wraps, the first query value that is an `http(s)://` URL. If none can be read, the visible text is not compared for that link, because the real destination is unknown.
 
 | `id` | Severity | Raised when |
 | --- | --- | --- |
@@ -137,7 +137,7 @@ Links come from HTML `<a href>` anchors (with their visible text) and from `http
 | `mail.links.sender_domain_mismatch` | medium | The visible text shows the sender's own domain, but the link goes to another site that does not look like click tracking. |
 | `mail.links.userinfo` | high | The URL has text before `@`, as in `https://bank.com@evil.example`, which opens `evil.example`. |
 | `mail.links.script_scheme` | high | The href uses `javascript:`, `data:` or `vbscript:`, also when split by spaces, tabs or control characters. |
-| `mail.links.ip_host` | medium | The host is an IP address, including numeric forms such as `3232235777`. |
+| `mail.links.ip_host` | medium (info for private addresses) | The host is an IP address, including numeric forms such as `3232235777`. Severity is `info` when the address is not globally routable (private, loopback, link-local, documentation range): phishing kits use public addresses. |
 | `mail.links.punycode_host` | medium | A host label is internationalized (`xn--`), written either way. |
 | `mail.links.shortener` | low | The host is on a fixed list of URL shorteners such as `bit.ly`. |
 | `mail.links.redirect_param` | low | A query parameter's value is another `http(s)://` or `//` URL. |

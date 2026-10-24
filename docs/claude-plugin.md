@@ -426,7 +426,7 @@ directories older than 14 days are removed at the next session start.
   that commits what it changed in the same command; files over 1 MiB; anything before the plugin was loaded.
 - **Per file.** Analysis is per file, with taint tracked within one function. There is no whole-program or
   cross-file analysis: a value that passes through another function or module is not followed.
-- **Rules.** 73 rules in all: 28 Python, 15 JS/TS, 12 web-file, 11 secret, 2 dependency, 5 agent-config rules. They cover Python and JS/TS code, HTML, Vue, Svelte and CSS files, secrets in any text file, Claude Code and MCP
+- **Rules.** 100 rules in all: 30 Python, 16 JS/TS, 12 web-file, 24 infrastructure, 11 secret, 2 dependency, 5 agent-config rules. They cover Python and JS/TS code, HTML, Vue, Svelte and CSS files, GitHub Actions workflows, Dockerfiles, shell scripts, Terraform and Kubernetes manifests, secrets in any text file, Claude Code and MCP
   configuration, and dependency lockfiles after `kestrix-scan db update`. The per-family numbers are checked against the registry by
   `tests/integrations/test_claude_plugin_repo.py`.
 - **No findings is not proof of security.**

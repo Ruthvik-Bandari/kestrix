@@ -5,12 +5,38 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Round 3, the Bandit gap (tuning numbers, not a held-out result).** On the tuning data Bandit detects 233 of 3,778
+  in-scope Python pairs and Kestrix 184; 102 pairs are Bandit-only. Two new Python rules close 9 of them: `py.xml.stdlib_parse`
+  (stdlib XML `fromstring`/`parseString` of a non-literal in a file that handles network data, CWE-776, low) and
+  `py.xss.autoescape_off` (Jinja2 `Environment` with no `autoescape` that loads template files or sits in a web file,
+  CWE-79, low). Python detection 4.87% to 5.11% (+9 pairs, +0.24 points, interval +0.06 to +0.57), alerts +2.4%. Tried
+  and left out (they fail the keep rule): tar `extract` on parameters, stdlib XML in any file or `parse()` of files,
+  `autoescape=False`. Bandit's `mark_safe` tests (B308, B703, B704) are the largest part of the gap and were measured
+  in round 1 (+31% alerts). Speed unchanged (40.3 and 41.8 files per second, baseline and final). Numbers: `docs/benchmarks/cvefixes.md`.
+- **`js.dom.xss_sink.jquery`: the jQuery `.html(x)` form of `js.dom.xss_sink` is its own rule id** (default on), so
+  `rules.disable = ["js.dom.xss_sink.jquery"]` switches it off. Findings of that form change rule id: baselines
+  written earlier need `--write-baseline` again for them; `kestrix: ignore[js.dom.xss_sink]` and disabling
+  `js.dom.xss_sink` still cover it. The registry grows from 73 to 76 rules.
 - **Install guard: typosquat warning.** A requested PyPI, npm, crates.io or Packagist package that is not popular but
   is a near-miss of a popular one (swapped, dropped, doubled or neighbouring-key letters, look-alike characters,
   removed separators, `python-`/`-js` affixes) and has no advisory now gets a non-blocking warning that names the
   likely package; known malware is still denied. Offline, from the bundled `popular_names.json` (top 5,000 names per
   ecosystem, refreshed by hand with `scripts/refresh_popular_names.py`); `install-allow` in `[tool.kestrix]` lists
   names it never flags. Measurements and limits: `docs/modules/code.md`.
+- **Phase 3 of the language roadmap: CI and infrastructure files (24 new rules, 97 in all; false-alarm rates and tool agreement, no CVE-fix benchmark exists for these).**
+  - New files read: GitHub Actions workflows and `action.yml`, `Dockerfile`/`Dockerfile.*`/`*.Dockerfile`/`Containerfile`, `.sh`/`.bash`, `.tf` and
+    Kubernetes manifests, with a bounded stdlib YAML subset reader (`yaml_lite.py`, no PyYAML), a Terraform line scanner and a shell line scanner;
+    nothing is run or evaluated. Suppress with `# kestrix: ignore[id] reason`. `.terraform` directories are skipped; the Claude Code hook scans the
+    new names and suffixes.
+  - New rules: `gha.pr_target.checkout_head` (CWE-829), `gha.injection.untrusted_context` (CWE-78, CWE-94 in github-script),
+    `gha.action.unpinned` (CWE-829, low; `actions/*` and `github/*` are not reported), `gha.permissions.write_all` and
+    `gha.permissions.missing` (CWE-250), `gha.secrets.echoed` (CWE-532), `docker.user.root` (CWE-250), `docker.add.remote_url` and
+    `docker.run.pipe_to_shell` (CWE-494), `docker.from.latest` (CWE-1357), `docker.env.secret` (CWE-798, value never printed),
+    `sh.pipe_to_shell` (CWE-494), `sh.eval.variable` (CWE-78), `sh.rm_rf.unguarded_variable` (CWE-73), `sh.chmod.world_writable` (CWE-732),
+    `tf.s3.public_access` (CWE-732), `tf.sg.open_admin_port` (CWE-284), `tf.storage.unencrypted` (CWE-311), `k8s.pod.privileged`,
+    `k8s.pod.privilege_escalation`, `k8s.pod.run_as_root` and `k8s.pod.no_run_as_nonroot` (CWE-250), `k8s.pod.host_path` and
+    `k8s.pod.host_namespace` (CWE-668).
+  - Measurements (`docs/modules/code.md`, "Infrastructure and CI"): on 16,157 CI and infrastructure files of 1,090 public repositories (plus 61 Terraform and Kubernetes projects), false alarms per KLOC were, for example, 4.5 for `gha.action.unpinned`, 0.05 for `gha.pr_target.checkout_head`, 0.03 for `gha.injection.untrusted_context`, 10.3 for `docker.user.root`, 0.10 for `sh.pipe_to_shell`; against zizmor, hadolint and checkov the file-level agreement is 94% to 100% of the tool's files where the checks mean the same thing (for example 815 of checkov's 849 no-`USER` Dockerfiles, 3 of 3 privileged pods, 15 of zizmor's 16 files with attacker-controlled template injection). Scan speed is unchanged on a mixed repository and 12.9% slower on an IaC-only corpus. Development numbers, no held-out run.
 - **Phase 1 of the language roadmap: the web stack (13 new rules, 73 in all; tuning numbers, not a held-out result).**
   - New files read: `.vue`, `.svelte`, `.html`, `.htm`, `.css`, `.scss` and `next.config.*`, with a bounded stdlib tag
     scanner (`html_tokens.py`, `web_rules.py`). `<script>` blocks of Vue, Svelte and HTML files go through the `js.*` rules

@@ -1,0 +1,187 @@
+{
+  "flagged_medium_high_ids_by_list": {
+    "asf|dev-airflow|mail.links.text_href_mismatch": 7,
+    "asf|dev-airflow|mail.sender.display_name_spoof": 7,
+    "asf|dev-spark|mail.links.ip_host": 9,
+    "asf|dev-spark|mail.links.sender_domain_mismatch": 5,
+    "asf|dev-spark|mail.links.text_href_mismatch": 124,
+    "asf|user-spark|mail.links.ip_host": 27,
+    "asf|user-spark|mail.links.text_href_mismatch": 14,
+    "asf|user-spark|mail.sender.reply_to_mismatch": 11,
+    "gnu|emacs-devel|mail.links.punycode_host": 6
+  },
+  "flagged_messages": {
+    "asf": 212,
+    "gnu": 29
+  },
+  "generated_at": "2026-10-24T00:08:39+00:00",
+  "min_shape_count": 5,
+  "schema_version": 1,
+  "shapes": {
+    "asf": [
+      {
+        "id": "mail.sender.return_path_mismatch",
+        "messages": 96,
+        "severity": "low",
+        "shape": "from domain gmail.com return-path domain apache.org"
+      },
+      {
+        "id": "mail.sender.return_path_mismatch",
+        "messages": 94,
+        "severity": "low",
+        "shape": "from domain <d> return-path domain apache.org"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 56,
+        "severity": "high",
+        "shape": "text shows <d> link goes to <d>"
+      },
+      {
+        "id": "mail.intent.urgency",
+        "messages": 39,
+        "severity": "low",
+        "shape": ""
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 37,
+        "severity": "high",
+        "shape": "text shows apache.org link goes to <d>"
+      },
+      {
+        "id": "mail.links.ip_host",
+        "messages": 37,
+        "severity": "medium",
+        "shape": "host <ip-private>"
+      },
+      {
+        "id": "mail.links.plain_http",
+        "messages": 25,
+        "severity": "low",
+        "shape": "<w> <w> <w> <w> <w> <w> <w>"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 18,
+        "severity": "high",
+        "shape": "text shows github.com link goes to <d>"
+      },
+      {
+        "id": "mail.links.redirect_param",
+        "messages": 16,
+        "severity": "low",
+        "shape": "host outlook.com redirects to <d>"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 15,
+        "severity": "high",
+        "shape": "text shows <d> link goes to outlook.com"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 11,
+        "severity": "high",
+        "shape": "text shows google.com link goes to <d>"
+      },
+      {
+        "id": "mail.links.redirect_param",
+        "messages": 11,
+        "severity": "low",
+        "shape": "host <d> redirects to <d>"
+      },
+      {
+        "id": "mail.auth.dkim_not_aligned",
+        "messages": 10,
+        "severity": "low",
+        "shape": "dkim <d> from domain <d>"
+      },
+      {
+        "id": "mail.sender.display_name_spoof",
+        "messages": 7,
+        "severity": "medium",
+        "shape": "display name names <d> actual from domain apache.org"
+      },
+      {
+        "id": "mail.sender.reply_to_mismatch",
+        "messages": 7,
+        "severity": "medium",
+        "shape": "from domain <d> reply-to domain protonmail.com"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 6,
+        "severity": "high",
+        "shape": "text shows outlook.com link goes to <d>"
+      },
+      {
+        "id": "mail.links.text_href_mismatch",
+        "messages": 6,
+        "severity": "high",
+        "shape": "text shows outlook.com link goes to apache.org"
+      },
+      {
+        "id": "mail.links.sender_domain_mismatch",
+        "messages": 6,
+        "severity": "medium",
+        "shape": "text shows apache.org link goes to <d>/<p>"
+      }
+    ],
+    "gnu": [
+      {
+        "id": "mail.links.punycode_host",
+        "messages": 6,
+        "severity": "medium",
+        "shape": "host <d> displayed as <d>"
+      },
+      {
+        "id": "mail.attachments.dangerous_type",
+        "messages": 5,
+        "severity": "medium",
+        "shape": ""
+      }
+    ]
+  },
+  "split": "dev",
+  "suppressed": {
+    "asf|mail.auth.dkim_fail": 3,
+    "asf|mail.auth.dkim_not_aligned": 2,
+    "asf|mail.auth.no_dmarc_with_failure": 3,
+    "asf|mail.intent.credential_request": 3,
+    "asf|mail.links.ip_host": 5,
+    "asf|mail.links.redirect_param": 12,
+    "asf|mail.links.sender_domain_mismatch": 1,
+    "asf|mail.links.sender_domain_redirect": 1,
+    "asf|mail.links.shortener": 1,
+    "asf|mail.links.text_href_mismatch": 10,
+    "asf|mail.sender.display_name_spoof": 2,
+    "asf|mail.sender.reply_to_mismatch": 5,
+    "asf|mail.sender.return_path_mismatch": 2,
+    "gnu|mail.auth.dmarc_fail": 4,
+    "gnu|mail.auth.spf_softfail": 4,
+    "gnu|mail.intent.credential_request": 3,
+    "gnu|mail.intent.urgency": 1,
+    "gnu|mail.links.ip_host": 3,
+    "gnu|mail.links.plain_http": 3,
+    "gnu|mail.links.userinfo": 2,
+    "gnu|mail.lookalike.mixed_script": 3,
+    "gnu|mail.sender.reply_to_mismatch": 6
+  },
+  "text_href_mismatch_link_classes": {
+    "other-host no-wrapped-target diff-label text-other href-other from-d": 9,
+    "other-host no-wrapped-target diff-label text-other href-other from-gmail.com": 5,
+    "other-host no-wrapped-target diff-label text-public href-other from-d": 33,
+    "other-host no-wrapped-target diff-label text-public href-other from-gmail.com": 31,
+    "rewriter-host no-wrapped-target diff-label text-other href-other from-d": 16,
+    "rewriter-host no-wrapped-target diff-label text-other href-other from-gmail.com": 19,
+    "rewriter-host no-wrapped-target diff-label text-public href-other from-d": 13,
+    "rewriter-host no-wrapped-target diff-label text-public href-other from-gmail.com": 11,
+    "rewriter-host wrapped-target-matches-text diff-label text-other href-other from-gmail.com": 10,
+    "rewriter-host wrapped-target-matches-text diff-label text-other href-public from-d": 5,
+    "rewriter-host wrapped-target-matches-text diff-label text-other href-public from-gmail.com": 9,
+    "rewriter-host wrapped-target-matches-text diff-label text-public href-public from-d": 5,
+    "rewriter-host wrapped-target-matches-text diff-label text-public href-public from-gmail.com": 7
+  },
+  "text_href_mismatch_messages": 145
+}

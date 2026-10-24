@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (73 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (100 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -34,6 +34,8 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["py.cookie.insecure", "medium", "CWE-614", "Cookie set without the Secure or HttpOnly flag"],
   ["py.trust_boundary.session", "low", "CWE-501", "Request data stored in the session without validation"],
   ["py.archive.extract", "medium", "CWE-22", "Tar archive extracted without a member filter"],
+  ["py.xml.stdlib_parse", "low", "CWE-776", "Standard-library XML parser given a string, in a file that handles network data"],
+  ["py.xss.autoescape_off", "low", "CWE-79", "Jinja2 Environment created without autoescape"],
   ["config.claude.hook_remote_exec", "critical", "CWE-494", "Claude Code hook runs a script downloaded at run time"],
   ["config.claude.permissions_bypass", "high", "CWE-250", "Project settings skip Claude Code permission prompts"],
   ["config.mcp.unpinned_launcher", "medium", "CWE-829", "MCP server launched from a package without a pinned version"],
@@ -55,6 +57,7 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["js.exec.eval", "high", "CWE-95", "eval, new Function or a string timer with code that is not a literal"],
   ["js.child_process.shell", "high", "CWE-78", "child_process command built from strings and run through a shell"],
   ["js.dom.xss_sink", "high", "CWE-79", "HTML sink given a value that is not a literal"],
+  ["js.dom.xss_sink.jquery", "high", "CWE-79", "jQuery .html() given a value that is not a literal"],
   ["js.sql.string_built", "high", "CWE-89", "SQL text built with a template literal or concatenation"],
   ["js.tls.reject_unauthorized", "high", "CWE-295", "TLS certificate verification disabled"],
   ["js.crypto.weak_hash", "medium", "CWE-328", "MD5 or SHA-1 hash"],
@@ -79,4 +82,28 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["css.import.http", "low", "CWE-319", "CSS @import or url() over http:"],
   ["css.expression.legacy", "low", "CWE-79", "CSS expression() (Internet Explorer 7 and older)"],
   ["next.images.wildcard_host", "low", "CWE-918", "next.config images.remotePatterns allows hostname '**'"],
+  ["gha.pr_target.checkout_head", "high", "CWE-829", "pull_request_target or workflow_run workflow that checks out the pull request's head"],
+  ["gha.injection.untrusted_context", "high", "CWE-78", "Untrusted ${{ github.event.* }} value written into a run: script"],
+  ["gha.action.unpinned", "low", "CWE-829", "Third-party action not pinned to a full commit SHA"],
+  ["gha.permissions.write_all", "medium", "CWE-250", "Workflow or job with permissions: write-all"],
+  ["gha.permissions.missing", "low", "CWE-250", "Workflow that uses secrets and sets no permissions"],
+  ["gha.secrets.echoed", "medium", "CWE-532", "Secret written to the job log with echo or printf"],
+  ["docker.user.root", "low", "CWE-250", "Dockerfile whose final stage runs as root"],
+  ["docker.add.remote_url", "medium", "CWE-494", "ADD of a remote URL without a checksum"],
+  ["docker.run.pipe_to_shell", "medium", "CWE-494", "RUN that pipes curl or wget into a shell"],
+  ["docker.from.latest", "low", "CWE-1357", "Base image with the latest tag, or no tag and no digest"],
+  ["docker.env.secret", "medium", "CWE-798", "ENV or ARG with a credential-like name and a literal value"],
+  ["sh.pipe_to_shell", "medium", "CWE-494", "curl or wget piped into a shell or interpreter"],
+  ["sh.eval.variable", "medium", "CWE-78", "eval of text that contains a variable"],
+  ["sh.rm_rf.unguarded_variable", "medium", "CWE-73", "rm -rf of a path that is only a variable, with no guard"],
+  ["sh.chmod.world_writable", "low", "CWE-732", "chmod to a world-writable mode"],
+  ["tf.s3.public_access", "medium", "CWE-732", "S3 bucket with a public ACL or a public access block turned off"],
+  ["tf.sg.open_admin_port", "high", "CWE-284", "Security group open to the internet on an admin or database port"],
+  ["tf.storage.unencrypted", "medium", "CWE-311", "Storage resource with encryption explicitly turned off"],
+  ["k8s.pod.privileged", "medium", "CWE-250", "Kubernetes container with privileged: true"],
+  ["k8s.pod.host_path", "medium", "CWE-668", "Kubernetes pod with a hostPath volume"],
+  ["k8s.pod.privilege_escalation", "medium", "CWE-250", "Kubernetes container with allowPrivilegeEscalation: true"],
+  ["k8s.pod.run_as_root", "medium", "CWE-250", "Kubernetes pod or container that is set to run as root"],
+  ["k8s.pod.no_run_as_nonroot", "low", "CWE-250", "Kubernetes container that does not require a non-root user"],
+  ["k8s.pod.host_namespace", "medium", "CWE-668", "Kubernetes pod that shares the node's network, PID or IPC namespace"],
 ];

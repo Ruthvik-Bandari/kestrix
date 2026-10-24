@@ -231,6 +231,22 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cwe.mitre.org/data/definitions/22.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `py.xml.stdlib_parse`
+
+- CWE: [CWE-776](https://cwe.mitre.org/data/definitions/776.html)
+- Documentation: <https://docs.python.org/3/library/xml.html#xml-vulnerabilities>
+- Documentation: <https://pypi.org/project/defusedxml/>
+- Documentation: <https://cwe.mitre.org/data/definitions/776.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `py.xss.autoescape_off`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#autoescaping>
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#jinja2.select_autoescape>
+- Documentation: <https://jinja.palletsprojects.com/en/stable/api/#jinja2.FileSystemLoader>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `config.claude.hook_remote_exec`
 
 - CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
@@ -378,6 +394,14 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Document/write>
 - Documentation: <https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html>
 - Documentation: <https://api.jquery.com/html/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `js.dom.xss_sink.jquery`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://api.jquery.com/html/>
+- Documentation: <https://api.jquery.com/text/>
+- Documentation: <https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
 ## `js.sql.string_built`
@@ -562,4 +586,172 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
 - Documentation: <https://nextjs.org/docs/app/api-reference/components/image#remotepatterns>
 - Documentation: <https://nextjs.org/docs/app/api-reference/components/image#domains>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.pr_target.checkout_head`
+
+- CWE: [CWE-829](https://cwe.mitre.org/data/definitions/829.html)
+- Documentation: <https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/>
+- Documentation: <https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request_target>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.injection.untrusted_context`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#understanding-the-risk-of-script-injections>
+- Documentation: <https://securitylab.github.com/resources/github-actions-untrusted-input/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.action.unpinned`
+
+- CWE: [CWE-829](https://cwe.mitre.org/data/definitions/829.html)
+- Documentation: <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions>
+- Documentation: <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsuses>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.permissions.write_all`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token>
+- Documentation: <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-secrets>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.permissions.missing`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token>
+- Documentation: <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#setting-the-permissions-of-the-github_token-for-your-repository>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `gha.secrets.echoed`
+
+- CWE: [CWE-532](https://cwe.mitre.org/data/definitions/532.html)
+- Documentation: <https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions>
+- Documentation: <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#masking-a-value-in-a-log>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `docker.user.root`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://docs.docker.com/build/building/best-practices/#user>
+- Documentation: <https://docs.docker.com/reference/dockerfile/#user>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `docker.add.remote_url`
+
+- CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
+- Documentation: <https://docs.docker.com/reference/dockerfile/#add>
+- Documentation: <https://docs.docker.com/build/building/best-practices/#add-or-copy>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `docker.run.pipe_to_shell`
+
+- CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
+- Documentation: <https://docs.docker.com/build/building/best-practices/#pipes>
+- Documentation: <https://docs.docker.com/reference/dockerfile/#run>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `docker.from.latest`
+
+- CWE: [CWE-1357](https://cwe.mitre.org/data/definitions/1357.html)
+- Documentation: <https://docs.docker.com/build/building/best-practices/#pin-base-image-versions>
+- Documentation: <https://docs.docker.com/reference/dockerfile/#from>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `docker.env.secret`
+
+- CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)
+- Documentation: <https://docs.docker.com/build/building/secrets/>
+- Documentation: <https://docs.docker.com/reference/build-checks/secrets-used-in-arg-or-env/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sh.pipe_to_shell`
+
+- CWE: [CWE-494](https://cwe.mitre.org/data/definitions/494.html)
+- Documentation: <https://www.gnu.org/software/bash/manual/html_node/Pipelines.html>
+- Documentation: <https://cwe.mitre.org/data/definitions/494.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sh.eval.variable`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://pubs.opengroup.org/onlinepubs/9699919799/utilities/eval.html>
+- Documentation: <https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-eval>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sh.rm_rf.unguarded_variable`
+
+- CWE: [CWE-73](https://cwe.mitre.org/data/definitions/73.html)
+- Documentation: <https://pubs.opengroup.org/onlinepubs/9699919799/utilities/rm.html>
+- Documentation: <https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sh.chmod.world_writable`
+
+- CWE: [CWE-732](https://cwe.mitre.org/data/definitions/732.html)
+- Documentation: <https://pubs.opengroup.org/onlinepubs/9699919799/utilities/chmod.html>
+- Documentation: <https://cwe.mitre.org/data/definitions/732.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `tf.s3.public_access`
+
+- CWE: [CWE-732](https://cwe.mitre.org/data/definitions/732.html)
+- Documentation: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block>
+- Documentation: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `tf.sg.open_admin_port`
+
+- CWE: [CWE-284](https://cwe.mitre.org/data/definitions/284.html)
+- Documentation: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group>
+- Documentation: <https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `tf.storage.unencrypted`
+
+- CWE: [CWE-311](https://cwe.mitre.org/data/definitions/311.html)
+- Documentation: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_volume>
+- Documentation: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.privileged`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.host_path`
+
+- CWE: [CWE-668](https://cwe.mitre.org/data/definitions/668.html)
+- Documentation: <https://kubernetes.io/docs/concepts/storage/volumes/#hostpath>
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.privilege_escalation`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.run_as_root`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.no_run_as_nonroot`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `k8s.pod.host_namespace`
+
+- CWE: [CWE-668](https://cwe.mitre.org/data/definitions/668.html)
+- Documentation: <https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline>
+- Documentation: <https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

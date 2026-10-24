@@ -108,6 +108,7 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 # Email benchmark: seeded synthetic-message generator (not security), positional metric helpers.
 "src/kestrixmailbench/*.py" = ["PLR0917"]
 "src/kestrixmailbench/synthetic.py" = ["S311", "PLR0917"]
+"src/kestrixmailbench/modern_synth.py" = ["S311", "PLR0917"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -120,12 +121,16 @@ modules = [
     "kestrix_scan.agent_config",
     "kestrix_scan.analyze",
     "kestrix_scan.cli",
+    "kestrix_scan.ci_rules",
     "kestrix_scan.config",
     "kestrix_scan.deps",
+    "kestrix_scan.docker_rules",
     "kestrix_scan.ecoversions",
     "kestrix_scan.errors",
     "kestrix_scan.hook",
     "kestrix_scan.html_tokens",
+    "kestrix_scan.iac",
+    "kestrix_scan.infra_rules",
     "kestrix_scan.init",
     "kestrix_scan.install_guard",
     "kestrix_scan.js_index",
@@ -142,11 +147,13 @@ modules = [
     "kestrix_scan.registry",
     "kestrix_scan.sarif",
     "kestrix_scan.secrets",
+    "kestrix_scan.shell_rules",
     "kestrix_scan.skill",
     "kestrix_scan.taint",
     "kestrix_scan.versions",
     "kestrix_scan.walk",
     "kestrix_scan.web_rules",
+    "kestrix_scan.yaml_lite",
 ]
 strict = true
 packages = ["kestrix", "kestrixbench", "bench", "kestrixvul", "kestrixmailbench", "kestrixcodebench", "kestrixlinkfilebench"]

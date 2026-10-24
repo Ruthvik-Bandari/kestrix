@@ -1,0 +1,1765 @@
+{
+  "_note": "Aggregates only (counts and rates, no file contents). rules: final run of the shipped rules (hpc/iac_measure.py, label final). agreement and tool_*: hadolint and checkov from run dev4, zizmor from run dev5; both ran before two shell-rule refinements (quoted mentions in sh.pipe_to_shell, single-quoted eval text) that touch no compared rule. Corpora: main = 1,090 public repositories from the codebench pair files (default branch files, fetched 2026-10-23), extra = 61 Terraform and Kubernetes projects, fixtures = 8 deliberately vulnerable or test-data repositories (detection sanity only).",
+  "tools": {
+    "zizmor": "1.5.1 (MIT, auditor persona)",
+    "hadolint": "2.15.1 (GPL-3.0, external program only)",
+    "checkov": "3.3.30 (Apache-2.0)"
+  },
+  "main": {
+    "name": "main",
+    "repos_with_files": 1090,
+    "files_by_kind": {
+      "workflow": 6917,
+      "shell": 6359,
+      "dockerfile": 1337,
+      "kubernetes": 1235,
+      "terraform": 309
+    },
+    "kloc_by_kind": {
+      "workflow": 987.6,
+      "shell": 571.2,
+      "dockerfile": 86.1,
+      "kubernetes": 135.0,
+      "terraform": 31.6
+    },
+    "skips": {
+      "kubernetes:too_large": 1,
+      "workflow:too_complex": 2
+    },
+    "files_with_findings": 3720,
+    "files_scanned": 16157,
+    "scan_seconds": 195.73,
+    "files_per_second": 82.5,
+    "rules": {
+      "gha.pr_target.checkout_head": {
+        "findings": 53,
+        "files": 37,
+        "repos": 26,
+        "per_kloc": 0.054,
+        "kloc": 987.6,
+        "severity": "high"
+      },
+      "gha.injection.untrusted_context": {
+        "findings": 28,
+        "files": 20,
+        "repos": 11,
+        "per_kloc": 0.028,
+        "kloc": 987.6,
+        "severity": "high"
+      },
+      "gha.action.unpinned": {
+        "findings": 4476,
+        "files": 1892,
+        "repos": 515,
+        "per_kloc": 4.532,
+        "kloc": 987.6,
+        "severity": "low"
+      },
+      "gha.permissions.write_all": {
+        "findings": 4,
+        "files": 4,
+        "repos": 3,
+        "per_kloc": 0.004,
+        "kloc": 987.6,
+        "severity": "medium"
+      },
+      "gha.permissions.missing": {
+        "findings": 734,
+        "files": 734,
+        "repos": 291,
+        "per_kloc": 0.743,
+        "kloc": 987.6,
+        "severity": "low"
+      },
+      "gha.secrets.echoed": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 987.6,
+        "severity": "medium"
+      },
+      "docker.user.root": {
+        "findings": 890,
+        "files": 890,
+        "repos": 268,
+        "per_kloc": 10.331,
+        "kloc": 86.1,
+        "severity": "low"
+      },
+      "docker.add.remote_url": {
+        "findings": 29,
+        "files": 21,
+        "repos": 12,
+        "per_kloc": 0.337,
+        "kloc": 86.1,
+        "severity": "medium"
+      },
+      "docker.run.pipe_to_shell": {
+        "findings": 97,
+        "files": 81,
+        "repos": 56,
+        "per_kloc": 1.126,
+        "kloc": 86.1,
+        "severity": "medium"
+      },
+      "docker.from.latest": {
+        "findings": 186,
+        "files": 163,
+        "repos": 59,
+        "per_kloc": 2.159,
+        "kloc": 86.1,
+        "severity": "low"
+      },
+      "docker.env.secret": {
+        "findings": 14,
+        "files": 13,
+        "repos": 6,
+        "per_kloc": 0.163,
+        "kloc": 86.1,
+        "severity": "medium"
+      },
+      "sh.pipe_to_shell": {
+        "findings": 163,
+        "files": 135,
+        "repos": 76,
+        "per_kloc": 0.099,
+        "kloc": 1644.9,
+        "severity": "medium"
+      },
+      "sh.eval.variable": {
+        "findings": 300,
+        "files": 99,
+        "repos": 52,
+        "per_kloc": 0.182,
+        "kloc": 1644.9,
+        "severity": "medium"
+      },
+      "sh.rm_rf.unguarded_variable": {
+        "findings": 158,
+        "files": 122,
+        "repos": 65,
+        "per_kloc": 0.096,
+        "kloc": 1644.9,
+        "severity": "medium"
+      },
+      "sh.chmod.world_writable": {
+        "findings": 141,
+        "files": 83,
+        "repos": 43,
+        "per_kloc": 0.086,
+        "kloc": 1644.9,
+        "severity": "low"
+      },
+      "tf.s3.public_access": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 31.6,
+        "severity": "medium"
+      },
+      "tf.sg.open_admin_port": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 31.6,
+        "severity": "high"
+      },
+      "tf.storage.unencrypted": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 31.6,
+        "severity": "medium"
+      },
+      "k8s.pod.privileged": {
+        "findings": 3,
+        "files": 3,
+        "repos": 3,
+        "per_kloc": 0.022,
+        "kloc": 135.0,
+        "severity": "medium"
+      },
+      "k8s.pod.host_path": {
+        "findings": 56,
+        "files": 24,
+        "repos": 10,
+        "per_kloc": 0.415,
+        "kloc": 135.0,
+        "severity": "medium"
+      },
+      "k8s.pod.privilege_escalation": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 135.0,
+        "severity": "medium"
+      },
+      "k8s.pod.run_as_root": {
+        "findings": 3,
+        "files": 3,
+        "repos": 2,
+        "per_kloc": 0.022,
+        "kloc": 135.0,
+        "severity": "medium"
+      },
+      "k8s.pod.no_run_as_nonroot": {
+        "findings": 160,
+        "files": 129,
+        "repos": 31,
+        "per_kloc": 1.185,
+        "kloc": 135.0,
+        "severity": "low"
+      },
+      "k8s.pod.host_namespace": {
+        "findings": 12,
+        "files": 8,
+        "repos": 4,
+        "per_kloc": 0.089,
+        "kloc": 135.0,
+        "severity": "medium"
+      }
+    },
+    "agreement": [
+      {
+        "label": "final user root",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "DL3002"
+        ],
+        "kestrix_findings": 890,
+        "tool_findings": 66,
+        "kestrix_files": 890,
+        "tool_files": 54,
+        "both_files": 41,
+        "kestrix_findings_matched_by_tool": 39
+      },
+      {
+        "label": "latest or untagged base",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "DL3007",
+          "DL3006"
+        ],
+        "kestrix_findings": 186,
+        "tool_findings": 203,
+        "kestrix_files": 163,
+        "tool_files": 171,
+        "both_files": 160,
+        "kestrix_findings_matched_by_tool": 182
+      },
+      {
+        "label": "final user root (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_3",
+          "CKV_DOCKER_8"
+        ],
+        "kestrix_findings": 890,
+        "tool_findings": 849,
+        "kestrix_files": 890,
+        "tool_files": 849,
+        "both_files": 815,
+        "kestrix_findings_matched_by_tool": 813
+      },
+      {
+        "label": "latest tag (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_7"
+        ],
+        "kestrix_findings": 186,
+        "tool_findings": 280,
+        "kestrix_files": 163,
+        "tool_files": 280,
+        "both_files": 155,
+        "kestrix_findings_matched_by_tool": 154
+      },
+      {
+        "label": "privileged pod",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privileged"
+        ],
+        "tool_checks": [
+          "CKV_K8S_16"
+        ],
+        "kestrix_findings": 3,
+        "tool_findings": 3,
+        "kestrix_files": 3,
+        "tool_files": 3,
+        "both_files": 3,
+        "kestrix_findings_matched_by_tool": 3
+      },
+      {
+        "label": "privilege escalation",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privilege_escalation"
+        ],
+        "tool_checks": [
+          "CKV_K8S_20"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 132,
+        "kestrix_files": 0,
+        "tool_files": 117,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "host namespace",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_namespace"
+        ],
+        "tool_checks": [
+          "CKV_K8S_19",
+          "CKV_K8S_17",
+          "CKV_K8S_18"
+        ],
+        "kestrix_findings": 12,
+        "tool_findings": 11,
+        "kestrix_files": 8,
+        "tool_files": 8,
+        "both_files": 6,
+        "kestrix_findings_matched_by_tool": 9
+      },
+      {
+        "label": "run as root",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.run_as_root",
+          "k8s.pod.no_run_as_nonroot"
+        ],
+        "tool_checks": [
+          "CKV_K8S_6",
+          "CKV_K8S_23",
+          "CKV_K8S_40"
+        ],
+        "kestrix_findings": 163,
+        "tool_findings": 271,
+        "kestrix_files": 131,
+        "tool_files": 124,
+        "both_files": 113,
+        "kestrix_findings_matched_by_tool": 138
+      },
+      {
+        "label": "hostPath",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_path"
+        ],
+        "tool_checks": [
+          "CKV_K8S_27"
+        ],
+        "kestrix_findings": 56,
+        "tool_findings": 6,
+        "kestrix_files": 24,
+        "tool_files": 6,
+        "both_files": 6,
+        "kestrix_findings_matched_by_tool": 30
+      },
+      {
+        "label": "open admin port",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.sg.open_admin_port"
+        ],
+        "tool_checks": [
+          "CKV_AWS_24",
+          "CKV_AWS_25",
+          "CKV_AWS_260",
+          "CKV_AWS_277"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 2,
+        "kestrix_files": 0,
+        "tool_files": 2,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "public bucket",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.s3.public_access"
+        ],
+        "tool_checks": [
+          "CKV_AWS_20",
+          "CKV_AWS_57",
+          "CKV_AWS_53",
+          "CKV_AWS_54",
+          "CKV_AWS_55",
+          "CKV_AWS_56"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 0,
+        "kestrix_files": 0,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "unencrypted storage",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.storage.unencrypted"
+        ],
+        "tool_checks": [
+          "CKV_AWS_3",
+          "CKV_AWS_16",
+          "CKV_AWS_8",
+          "CKV_AWS_17"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 0,
+        "kestrix_files": 0,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "template injection (all zizmor findings)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 28,
+        "tool_findings": 5068,
+        "kestrix_files": 20,
+        "tool_files": 1057,
+        "both_files": 15,
+        "kestrix_findings_matched_by_tool": 7
+      },
+      {
+        "label": "template injection (zizmor findings on github.event.* and head_ref)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 28,
+        "tool_findings": 22,
+        "kestrix_files": 20,
+        "tool_files": 16,
+        "both_files": 15,
+        "kestrix_findings_matched_by_tool": 7
+      },
+      {
+        "label": "unpinned third-party actions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.action.unpinned"
+        ],
+        "tool_checks": [
+          "unpinned-uses"
+        ],
+        "kestrix_findings": 4476,
+        "tool_findings": 3743,
+        "kestrix_files": 1892,
+        "tool_files": 1506,
+        "both_files": 1483,
+        "kestrix_findings_matched_by_tool": 3689
+      },
+      {
+        "label": "dangerous triggers",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.pr_target.checkout_head"
+        ],
+        "tool_checks": [
+          "dangerous-triggers"
+        ],
+        "kestrix_findings": 53,
+        "tool_findings": 335,
+        "kestrix_files": 37,
+        "tool_files": 334,
+        "both_files": 28,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "workflow permissions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.permissions.write_all",
+          "gha.permissions.missing"
+        ],
+        "tool_checks": [
+          "excessive-permissions"
+        ],
+        "kestrix_findings": 738,
+        "tool_findings": 7296,
+        "kestrix_files": 738,
+        "tool_files": 3366,
+        "both_files": 623,
+        "kestrix_findings_matched_by_tool": 587
+      }
+    ],
+    "tool_totals": {
+      "zizmor": 33622,
+      "hadolint": 7720,
+      "checkov": 5850
+    },
+    "tool_findings": {
+      "zizmor": {
+        "unpinned-uses": 13514,
+        "excessive-permissions": 7296,
+        "artipacked": 6058,
+        "template-injection": 5068,
+        "cache-poisoning": 722,
+        "dangerous-triggers": 335,
+        "secrets-inherit": 244,
+        "self-hosted-runner": 164,
+        "github-env": 140,
+        "use-trusted-publishing": 44,
+        "bot-conditions": 12,
+        "overprovisioned-secrets": 11,
+        "unredacted-secrets": 8,
+        "insecure-commands": 6
+      },
+      "hadolint": {
+        "DL3059": 1475,
+        "DL3008": 756,
+        "DL3066": 498,
+        "DL3003": 457,
+        "DL3042": 441,
+        "DL3013": 430,
+        "DL4006": 409,
+        "DL3015": 359,
+        "DL3018": 281,
+        "DL3009": 258,
+        "DL3045": 223,
+        "DL3020": 167,
+        "DL3047": 167,
+        "DL3025": 155,
+        "SC2086": 135,
+        "DL3027": 126,
+        "DL3007": 117,
+        "DL3006": 86,
+        "DL3016": 83,
+        "DL3064": 81,
+        "SC2046": 75,
+        "DL3033": 68,
+        "DL3002": 66,
+        "DL3041": 56,
+        "DL3061": 55
+      },
+      "checkov": {
+        "CKV_DOCKER_2": 1142,
+        "CKV_DOCKER_3": 815,
+        "CKV_DOCKER_7": 280,
+        "CKV_K8S_21": 252,
+        "CKV_DOCKER_4": 188,
+        "CKV_K8S_28": 148,
+        "CKV_K8S_43": 148,
+        "CKV_K8S_31": 146,
+        "CKV_K8S_37": 144,
+        "CKV_K8S_38": 143,
+        "CKV_K8S_22": 142,
+        "CKV_K8S_40": 142,
+        "CKV_K8S_20": 132,
+        "CKV_K8S_23": 129,
+        "CKV_K8S_30": 128,
+        "CKV_K8S_29": 127,
+        "CKV_K8S_11": 114,
+        "CKV_K8S_8": 108,
+        "CKV_K8S_13": 105,
+        "CKV_K8S_15": 100,
+        "CKV_K8S_9": 97,
+        "CKV_K8S_10": 95,
+        "CKV_K8S_12": 92,
+        "CKV_DOCKER_9": 87,
+        "CKV_TF_1": 60
+      }
+    }
+  },
+  "extra": {
+    "name": "extra",
+    "repos_with_files": 61,
+    "files_by_kind": {
+      "workflow": 656,
+      "terraform": 2469,
+      "kubernetes": 3678,
+      "shell": 608,
+      "dockerfile": 123
+    },
+    "kloc_by_kind": {
+      "workflow": 78.5,
+      "terraform": 221.8,
+      "kubernetes": 854.7,
+      "shell": 45.5,
+      "dockerfile": 6.5
+    },
+    "skips": {
+      "kubernetes:too_complex": 1,
+      "kubernetes:too_large": 29
+    },
+    "files_with_findings": 877,
+    "files_scanned": 7534,
+    "scan_seconds": 69.26,
+    "files_per_second": 108.8,
+    "rules": {
+      "gha.pr_target.checkout_head": {
+        "findings": 21,
+        "files": 9,
+        "repos": 1,
+        "per_kloc": 0.268,
+        "kloc": 78.5,
+        "severity": "high"
+      },
+      "gha.injection.untrusted_context": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 78.5,
+        "severity": "high"
+      },
+      "gha.action.unpinned": {
+        "findings": 416,
+        "files": 167,
+        "repos": 41,
+        "per_kloc": 5.302,
+        "kloc": 78.5,
+        "severity": "low"
+      },
+      "gha.permissions.write_all": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 78.5,
+        "severity": "medium"
+      },
+      "gha.permissions.missing": {
+        "findings": 39,
+        "files": 39,
+        "repos": 31,
+        "per_kloc": 0.497,
+        "kloc": 78.5,
+        "severity": "low"
+      },
+      "gha.secrets.echoed": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 78.5,
+        "severity": "medium"
+      },
+      "docker.user.root": {
+        "findings": 79,
+        "files": 79,
+        "repos": 21,
+        "per_kloc": 12.161,
+        "kloc": 6.5,
+        "severity": "low"
+      },
+      "docker.add.remote_url": {
+        "findings": 20,
+        "files": 2,
+        "repos": 1,
+        "per_kloc": 3.079,
+        "kloc": 6.5,
+        "severity": "medium"
+      },
+      "docker.run.pipe_to_shell": {
+        "findings": 1,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 0.154,
+        "kloc": 6.5,
+        "severity": "medium"
+      },
+      "docker.from.latest": {
+        "findings": 30,
+        "files": 28,
+        "repos": 9,
+        "per_kloc": 4.618,
+        "kloc": 6.5,
+        "severity": "low"
+      },
+      "docker.env.secret": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 6.5,
+        "severity": "medium"
+      },
+      "sh.pipe_to_shell": {
+        "findings": 5,
+        "files": 5,
+        "repos": 5,
+        "per_kloc": 0.038,
+        "kloc": 130.4,
+        "severity": "medium"
+      },
+      "sh.eval.variable": {
+        "findings": 17,
+        "files": 11,
+        "repos": 8,
+        "per_kloc": 0.13,
+        "kloc": 130.4,
+        "severity": "medium"
+      },
+      "sh.rm_rf.unguarded_variable": {
+        "findings": 24,
+        "files": 18,
+        "repos": 12,
+        "per_kloc": 0.184,
+        "kloc": 130.4,
+        "severity": "medium"
+      },
+      "sh.chmod.world_writable": {
+        "findings": 8,
+        "files": 6,
+        "repos": 5,
+        "per_kloc": 0.061,
+        "kloc": 130.4,
+        "severity": "low"
+      },
+      "tf.s3.public_access": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 221.8,
+        "severity": "medium"
+      },
+      "tf.sg.open_admin_port": {
+        "findings": 2,
+        "files": 2,
+        "repos": 1,
+        "per_kloc": 0.009,
+        "kloc": 221.8,
+        "severity": "high"
+      },
+      "tf.storage.unencrypted": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 221.8,
+        "severity": "medium"
+      },
+      "k8s.pod.privileged": {
+        "findings": 25,
+        "files": 25,
+        "repos": 9,
+        "per_kloc": 0.029,
+        "kloc": 854.7,
+        "severity": "medium"
+      },
+      "k8s.pod.host_path": {
+        "findings": 91,
+        "files": 30,
+        "repos": 11,
+        "per_kloc": 0.106,
+        "kloc": 854.7,
+        "severity": "medium"
+      },
+      "k8s.pod.privilege_escalation": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 854.7,
+        "severity": "medium"
+      },
+      "k8s.pod.run_as_root": {
+        "findings": 11,
+        "files": 8,
+        "repos": 5,
+        "per_kloc": 0.013,
+        "kloc": 854.7,
+        "severity": "medium"
+      },
+      "k8s.pod.no_run_as_nonroot": {
+        "findings": 666,
+        "files": 562,
+        "repos": 26,
+        "per_kloc": 0.779,
+        "kloc": 854.7,
+        "severity": "low"
+      },
+      "k8s.pod.host_namespace": {
+        "findings": 39,
+        "files": 26,
+        "repos": 11,
+        "per_kloc": 0.046,
+        "kloc": 854.7,
+        "severity": "medium"
+      }
+    },
+    "agreement": [
+      {
+        "label": "final user root",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "DL3002"
+        ],
+        "kestrix_findings": 79,
+        "tool_findings": 4,
+        "kestrix_files": 79,
+        "tool_files": 1,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "latest or untagged base",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "DL3007",
+          "DL3006"
+        ],
+        "kestrix_findings": 30,
+        "tool_findings": 33,
+        "kestrix_files": 28,
+        "tool_files": 31,
+        "both_files": 28,
+        "kestrix_findings_matched_by_tool": 30
+      },
+      {
+        "label": "final user root (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_3",
+          "CKV_DOCKER_8"
+        ],
+        "kestrix_findings": 79,
+        "tool_findings": 81,
+        "kestrix_files": 79,
+        "tool_files": 81,
+        "both_files": 71,
+        "kestrix_findings_matched_by_tool": 71
+      },
+      {
+        "label": "latest tag (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_7"
+        ],
+        "kestrix_findings": 30,
+        "tool_findings": 46,
+        "kestrix_files": 28,
+        "tool_files": 46,
+        "both_files": 28,
+        "kestrix_findings_matched_by_tool": 28
+      },
+      {
+        "label": "privileged pod",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privileged"
+        ],
+        "tool_checks": [
+          "CKV_K8S_16"
+        ],
+        "kestrix_findings": 25,
+        "tool_findings": 24,
+        "kestrix_files": 25,
+        "tool_files": 24,
+        "both_files": 24,
+        "kestrix_findings_matched_by_tool": 24
+      },
+      {
+        "label": "privilege escalation",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privilege_escalation"
+        ],
+        "tool_checks": [
+          "CKV_K8S_20"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 567,
+        "kestrix_files": 0,
+        "tool_files": 521,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "host namespace",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_namespace"
+        ],
+        "tool_checks": [
+          "CKV_K8S_19",
+          "CKV_K8S_17",
+          "CKV_K8S_18"
+        ],
+        "kestrix_findings": 39,
+        "tool_findings": 37,
+        "kestrix_files": 26,
+        "tool_files": 24,
+        "both_files": 24,
+        "kestrix_findings_matched_by_tool": 37
+      },
+      {
+        "label": "run as root",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.run_as_root",
+          "k8s.pod.no_run_as_nonroot"
+        ],
+        "tool_checks": [
+          "CKV_K8S_6",
+          "CKV_K8S_23",
+          "CKV_K8S_40"
+        ],
+        "kestrix_findings": 677,
+        "tool_findings": 1261,
+        "kestrix_files": 568,
+        "tool_files": 598,
+        "both_files": 516,
+        "kestrix_findings_matched_by_tool": 605
+      },
+      {
+        "label": "hostPath",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_path"
+        ],
+        "tool_checks": [
+          "CKV_K8S_27"
+        ],
+        "kestrix_findings": 91,
+        "tool_findings": 5,
+        "kestrix_files": 30,
+        "tool_files": 5,
+        "both_files": 5,
+        "kestrix_findings_matched_by_tool": 21
+      },
+      {
+        "label": "open admin port",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.sg.open_admin_port"
+        ],
+        "tool_checks": [
+          "CKV_AWS_24",
+          "CKV_AWS_25",
+          "CKV_AWS_260",
+          "CKV_AWS_277"
+        ],
+        "kestrix_findings": 2,
+        "tool_findings": 6,
+        "kestrix_files": 2,
+        "tool_files": 5,
+        "both_files": 2,
+        "kestrix_findings_matched_by_tool": 2
+      },
+      {
+        "label": "public bucket",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.s3.public_access"
+        ],
+        "tool_checks": [
+          "CKV_AWS_20",
+          "CKV_AWS_57",
+          "CKV_AWS_53",
+          "CKV_AWS_54",
+          "CKV_AWS_55",
+          "CKV_AWS_56"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 4,
+        "kestrix_files": 0,
+        "tool_files": 1,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "unencrypted storage",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.storage.unencrypted"
+        ],
+        "tool_checks": [
+          "CKV_AWS_3",
+          "CKV_AWS_16",
+          "CKV_AWS_8",
+          "CKV_AWS_17"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 43,
+        "kestrix_files": 0,
+        "tool_files": 15,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "template injection (all zizmor findings)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 1741,
+        "kestrix_files": 0,
+        "tool_files": 201,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "template injection (zizmor findings on github.event.* and head_ref)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 0,
+        "kestrix_files": 0,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "unpinned third-party actions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.action.unpinned"
+        ],
+        "tool_checks": [
+          "unpinned-uses"
+        ],
+        "kestrix_findings": 416,
+        "tool_findings": 378,
+        "kestrix_files": 167,
+        "tool_files": 131,
+        "both_files": 131,
+        "kestrix_findings_matched_by_tool": 377
+      },
+      {
+        "label": "dangerous triggers",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.pr_target.checkout_head"
+        ],
+        "tool_checks": [
+          "dangerous-triggers"
+        ],
+        "kestrix_findings": 21,
+        "tool_findings": 70,
+        "kestrix_files": 9,
+        "tool_files": 70,
+        "both_files": 9,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "workflow permissions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.permissions.write_all",
+          "gha.permissions.missing"
+        ],
+        "tool_checks": [
+          "excessive-permissions"
+        ],
+        "kestrix_findings": 39,
+        "tool_findings": 669,
+        "kestrix_files": 39,
+        "tool_files": 322,
+        "both_files": 39,
+        "kestrix_findings_matched_by_tool": 39
+      }
+    ],
+    "tool_totals": {
+      "zizmor": 3804,
+      "hadolint": 384,
+      "checkov": 14808
+    },
+    "tool_findings": {
+      "zizmor": {
+        "template-injection": 1741,
+        "excessive-permissions": 669,
+        "unpinned-uses": 636,
+        "artipacked": 442,
+        "secrets-inherit": 135,
+        "cache-poisoning": 96,
+        "dangerous-triggers": 70,
+        "github-env": 15
+      },
+      "hadolint": {
+        "DL3059": 44,
+        "DL3018": 33,
+        "DL3008": 26,
+        "DL4006": 26,
+        "DL3020": 23,
+        "DL3066": 21,
+        "DL3007": 21,
+        "DL3045": 15,
+        "DL3003": 15,
+        "DL3006": 12,
+        "DL3015": 12,
+        "DL3009": 11,
+        "DL3062": 11,
+        "SC2046": 11,
+        "DL3027": 11,
+        "SC2086": 8,
+        "DL3041": 8,
+        "DL3013": 7,
+        "DL3042": 7,
+        "DL3025": 6,
+        "DL4001": 5,
+        "DL3022": 4,
+        "DL3047": 4,
+        "DL3033": 4,
+        "DL3002": 4
+      },
+      "checkov": {
+        "CKV_K8S_21": 1109,
+        "CKV_K8S_38": 686,
+        "CKV_K8S_40": 665,
+        "CKV_K8S_43": 647,
+        "CKV_K8S_29": 631,
+        "CKV_K8S_31": 628,
+        "CKV_K8S_11": 602,
+        "CKV_K8S_13": 600,
+        "CKV_K8S_23": 594,
+        "CKV_K8S_22": 586,
+        "CKV_TF_1": 576,
+        "CKV_K8S_28": 571,
+        "CKV_K8S_20": 567,
+        "CKV_K8S_37": 565,
+        "CKV_K8S_30": 541,
+        "CKV_K8S_8": 530,
+        "CKV_K8S_9": 525,
+        "CKV_K8S_12": 523,
+        "CKV_K8S_10": 508,
+        "CKV_K8S_15": 409,
+        "CKV_K8S_14": 252,
+        "CKV_AWS_356": 205,
+        "CKV_AWS_111": 129,
+        "CKV_AWS_394": 113,
+        "CKV_DOCKER_2": 111
+      }
+    }
+  },
+  "fixtures": {
+    "name": "fixtures",
+    "repos_with_files": 8,
+    "files_by_kind": {
+      "shell": 53,
+      "workflow": 106,
+      "dockerfile": 36,
+      "kubernetes": 24,
+      "terraform": 53
+    },
+    "kloc_by_kind": {
+      "shell": 1.2,
+      "workflow": 5.2,
+      "dockerfile": 0.7,
+      "kubernetes": 1.2,
+      "terraform": 3.3
+    },
+    "skips": {},
+    "files_with_findings": 103,
+    "files_scanned": 272,
+    "scan_seconds": 3.43,
+    "files_per_second": 79.4,
+    "rules": {
+      "gha.pr_target.checkout_head": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 5.2,
+        "severity": "high"
+      },
+      "gha.injection.untrusted_context": {
+        "findings": 4,
+        "files": 4,
+        "repos": 1,
+        "per_kloc": 0.767,
+        "kloc": 5.2,
+        "severity": "high"
+      },
+      "gha.action.unpinned": {
+        "findings": 48,
+        "files": 40,
+        "repos": 6,
+        "per_kloc": 9.204,
+        "kloc": 5.2,
+        "severity": "low"
+      },
+      "gha.permissions.write_all": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 5.2,
+        "severity": "medium"
+      },
+      "gha.permissions.missing": {
+        "findings": 16,
+        "files": 16,
+        "repos": 4,
+        "per_kloc": 3.068,
+        "kloc": 5.2,
+        "severity": "low"
+      },
+      "gha.secrets.echoed": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 5.2,
+        "severity": "medium"
+      },
+      "docker.user.root": {
+        "findings": 35,
+        "files": 35,
+        "repos": 7,
+        "per_kloc": 50.946,
+        "kloc": 0.7,
+        "severity": "low"
+      },
+      "docker.add.remote_url": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 0.7,
+        "severity": "medium"
+      },
+      "docker.run.pipe_to_shell": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 0.7,
+        "severity": "medium"
+      },
+      "docker.from.latest": {
+        "findings": 8,
+        "files": 7,
+        "repos": 3,
+        "per_kloc": 11.645,
+        "kloc": 0.7,
+        "severity": "low"
+      },
+      "docker.env.secret": {
+        "findings": 1,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 1.456,
+        "kloc": 0.7,
+        "severity": "medium"
+      },
+      "sh.pipe_to_shell": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 7.1,
+        "severity": "medium"
+      },
+      "sh.eval.variable": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 7.1,
+        "severity": "medium"
+      },
+      "sh.rm_rf.unguarded_variable": {
+        "findings": 1,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 0.14,
+        "kloc": 7.1,
+        "severity": "medium"
+      },
+      "sh.chmod.world_writable": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 7.1,
+        "severity": "low"
+      },
+      "tf.s3.public_access": {
+        "findings": 0,
+        "files": 0,
+        "repos": 0,
+        "per_kloc": 0.0,
+        "kloc": 3.3,
+        "severity": "medium"
+      },
+      "tf.sg.open_admin_port": {
+        "findings": 1,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 0.302,
+        "kloc": 3.3,
+        "severity": "high"
+      },
+      "tf.storage.unencrypted": {
+        "findings": 2,
+        "files": 2,
+        "repos": 1,
+        "per_kloc": 0.604,
+        "kloc": 3.3,
+        "severity": "medium"
+      },
+      "k8s.pod.privileged": {
+        "findings": 6,
+        "files": 4,
+        "repos": 1,
+        "per_kloc": 5.072,
+        "kloc": 1.2,
+        "severity": "medium"
+      },
+      "k8s.pod.host_path": {
+        "findings": 41,
+        "files": 6,
+        "repos": 1,
+        "per_kloc": 34.658,
+        "kloc": 1.2,
+        "severity": "medium"
+      },
+      "k8s.pod.privilege_escalation": {
+        "findings": 1,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 0.845,
+        "kloc": 1.2,
+        "severity": "medium"
+      },
+      "k8s.pod.run_as_root": {
+        "findings": 2,
+        "files": 1,
+        "repos": 1,
+        "per_kloc": 1.691,
+        "kloc": 1.2,
+        "severity": "medium"
+      },
+      "k8s.pod.no_run_as_nonroot": {
+        "findings": 15,
+        "files": 14,
+        "repos": 1,
+        "per_kloc": 12.68,
+        "kloc": 1.2,
+        "severity": "low"
+      },
+      "k8s.pod.host_namespace": {
+        "findings": 7,
+        "files": 4,
+        "repos": 1,
+        "per_kloc": 5.917,
+        "kloc": 1.2,
+        "severity": "medium"
+      }
+    },
+    "agreement": [
+      {
+        "label": "final user root",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "DL3002"
+        ],
+        "kestrix_findings": 35,
+        "tool_findings": 0,
+        "kestrix_files": 35,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "latest or untagged base",
+        "tool": "hadolint",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "DL3007",
+          "DL3006"
+        ],
+        "kestrix_findings": 8,
+        "tool_findings": 8,
+        "kestrix_files": 7,
+        "tool_files": 7,
+        "both_files": 7,
+        "kestrix_findings_matched_by_tool": 8
+      },
+      {
+        "label": "final user root (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.user.root"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_3",
+          "CKV_DOCKER_8"
+        ],
+        "kestrix_findings": 35,
+        "tool_findings": 30,
+        "kestrix_files": 35,
+        "tool_files": 30,
+        "both_files": 30,
+        "kestrix_findings_matched_by_tool": 30
+      },
+      {
+        "label": "latest tag (checkov)",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "docker.from.latest"
+        ],
+        "tool_checks": [
+          "CKV_DOCKER_7"
+        ],
+        "kestrix_findings": 8,
+        "tool_findings": 6,
+        "kestrix_files": 7,
+        "tool_files": 6,
+        "both_files": 6,
+        "kestrix_findings_matched_by_tool": 6
+      },
+      {
+        "label": "privileged pod",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privileged"
+        ],
+        "tool_checks": [
+          "CKV_K8S_16"
+        ],
+        "kestrix_findings": 6,
+        "tool_findings": 4,
+        "kestrix_files": 4,
+        "tool_files": 4,
+        "both_files": 4,
+        "kestrix_findings_matched_by_tool": 6
+      },
+      {
+        "label": "privilege escalation",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.privilege_escalation"
+        ],
+        "tool_checks": [
+          "CKV_K8S_20"
+        ],
+        "kestrix_findings": 1,
+        "tool_findings": 14,
+        "kestrix_files": 1,
+        "tool_files": 14,
+        "both_files": 1,
+        "kestrix_findings_matched_by_tool": 1
+      },
+      {
+        "label": "host namespace",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_namespace"
+        ],
+        "tool_checks": [
+          "CKV_K8S_19",
+          "CKV_K8S_17",
+          "CKV_K8S_18"
+        ],
+        "kestrix_findings": 7,
+        "tool_findings": 7,
+        "kestrix_files": 4,
+        "tool_files": 4,
+        "both_files": 4,
+        "kestrix_findings_matched_by_tool": 7
+      },
+      {
+        "label": "run as root",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.run_as_root",
+          "k8s.pod.no_run_as_nonroot"
+        ],
+        "tool_checks": [
+          "CKV_K8S_6",
+          "CKV_K8S_23",
+          "CKV_K8S_40"
+        ],
+        "kestrix_findings": 17,
+        "tool_findings": 29,
+        "kestrix_files": 15,
+        "tool_files": 15,
+        "both_files": 14,
+        "kestrix_findings_matched_by_tool": 16
+      },
+      {
+        "label": "hostPath",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "k8s.pod.host_path"
+        ],
+        "tool_checks": [
+          "CKV_K8S_27"
+        ],
+        "kestrix_findings": 41,
+        "tool_findings": 3,
+        "kestrix_files": 6,
+        "tool_files": 3,
+        "both_files": 3,
+        "kestrix_findings_matched_by_tool": 16
+      },
+      {
+        "label": "open admin port",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.sg.open_admin_port"
+        ],
+        "tool_checks": [
+          "CKV_AWS_24",
+          "CKV_AWS_25",
+          "CKV_AWS_260",
+          "CKV_AWS_277"
+        ],
+        "kestrix_findings": 1,
+        "tool_findings": 2,
+        "kestrix_files": 1,
+        "tool_files": 1,
+        "both_files": 1,
+        "kestrix_findings_matched_by_tool": 1
+      },
+      {
+        "label": "public bucket",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.s3.public_access"
+        ],
+        "tool_checks": [
+          "CKV_AWS_20",
+          "CKV_AWS_57",
+          "CKV_AWS_53",
+          "CKV_AWS_54",
+          "CKV_AWS_55",
+          "CKV_AWS_56"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 0,
+        "kestrix_files": 0,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "unencrypted storage",
+        "tool": "checkov",
+        "kestrix_rules": [
+          "tf.storage.unencrypted"
+        ],
+        "tool_checks": [
+          "CKV_AWS_3",
+          "CKV_AWS_16",
+          "CKV_AWS_8",
+          "CKV_AWS_17"
+        ],
+        "kestrix_findings": 2,
+        "tool_findings": 5,
+        "kestrix_files": 2,
+        "tool_files": 2,
+        "both_files": 1,
+        "kestrix_findings_matched_by_tool": 1
+      },
+      {
+        "label": "template injection (all zizmor findings)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 4,
+        "tool_findings": 9,
+        "kestrix_files": 4,
+        "tool_files": 4,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "template injection (zizmor findings on github.event.* and head_ref)",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.injection.untrusted_context"
+        ],
+        "tool_checks": [
+          "template-injection"
+        ],
+        "kestrix_findings": 4,
+        "tool_findings": 0,
+        "kestrix_files": 4,
+        "tool_files": 0,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "unpinned third-party actions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.action.unpinned"
+        ],
+        "tool_checks": [
+          "unpinned-uses"
+        ],
+        "kestrix_findings": 48,
+        "tool_findings": 42,
+        "kestrix_files": 40,
+        "tool_files": 36,
+        "both_files": 35,
+        "kestrix_findings_matched_by_tool": 40
+      },
+      {
+        "label": "dangerous triggers",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.pr_target.checkout_head"
+        ],
+        "tool_checks": [
+          "dangerous-triggers"
+        ],
+        "kestrix_findings": 0,
+        "tool_findings": 6,
+        "kestrix_files": 0,
+        "tool_files": 6,
+        "both_files": 0,
+        "kestrix_findings_matched_by_tool": 0
+      },
+      {
+        "label": "workflow permissions",
+        "tool": "zizmor",
+        "kestrix_rules": [
+          "gha.permissions.write_all",
+          "gha.permissions.missing"
+        ],
+        "tool_checks": [
+          "excessive-permissions"
+        ],
+        "kestrix_findings": 16,
+        "tool_findings": 110,
+        "kestrix_files": 16,
+        "tool_files": 54,
+        "both_files": 16,
+        "kestrix_findings_matched_by_tool": 16
+      }
+    ],
+    "tool_totals": {
+      "zizmor": 374,
+      "hadolint": 107,
+      "checkov": 841
+    },
+    "tool_findings": {
+      "zizmor": {
+        "unpinned-uses": 144,
+        "excessive-permissions": 110,
+        "artipacked": 82,
+        "self-hosted-runner": 17,
+        "template-injection": 9,
+        "dangerous-triggers": 6,
+        "secrets-inherit": 2,
+        "use-trusted-publishing": 2,
+        "cache-poisoning": 1,
+        "overprovisioned-secrets": 1
+      },
+      "hadolint": {
+        "DL3048": 15,
+        "DL3013": 11,
+        "DL3018": 10,
+        "DL3042": 9,
+        "DL3008": 7,
+        "DL3059": 7,
+        "DL3007": 6,
+        "DL3015": 4,
+        "DL3003": 4,
+        "DL3047": 4,
+        "DL3027": 4,
+        "DL4006": 3,
+        "DL3010": 3,
+        "DL3009": 3,
+        "DL3006": 2,
+        "DL3019": 2,
+        "DL3064": 2,
+        "SC2006": 2,
+        "SC2086": 2,
+        "DL3004": 1,
+        "DL3014": 1,
+        "DL4001": 1,
+        "DL3045": 1,
+        "DL1000": 1,
+        "SC3014": 1
+      },
+      "checkov": {
+        "CKV_DOCKER_2": 31,
+        "CKV_DOCKER_3": 30,
+        "CKV_K8S_21": 21,
+        "CKV_K8S_20": 14,
+        "CKV_K8S_28": 14,
+        "CKV_K8S_43": 14,
+        "CKV_K8S_14": 14,
+        "CKV_K8S_37": 14,
+        "CKV_K8S_22": 14,
+        "CKV_K8S_23": 14,
+        "CKV_K8S_40": 14,
+        "CKV_K8S_31": 14,
+        "CKV_K8S_38": 14,
+        "CKV_K8S_29": 13,
+        "CKV2_K8S_6": 12,
+        "CKV_K8S_30": 10,
+        "CKV_K8S_8": 10,
+        "CKV_K8S_9": 10,
+        "CKV_AWS_96": 9,
+        "CKV_AWS_325": 9,
+        "CKV_AWS_326": 9,
+        "CKV_AWS_313": 9,
+        "CKV_AWS_327": 9,
+        "CKV_AWS_162": 9,
+        "CKV_AWS_324": 9
+      }
+    }
+  }
+}
