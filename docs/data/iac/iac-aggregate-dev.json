@@ -1,5 +1,5 @@
 {
-  "_note": "Aggregates only (counts and rates, no file contents). rules: final run of the shipped rules (hpc/iac_measure.py, label final). agreement and tool_*: hadolint and checkov from run dev4, zizmor from run dev5; both ran before two shell-rule refinements (quoted mentions in sh.pipe_to_shell, single-quoted eval text) that touch no compared rule. Corpora: main = 1,090 public repositories from the codebench pair files (default branch files, fetched 2026-10-23), extra = 61 Terraform and Kubernetes projects, fixtures = 8 deliberately vulnerable or test-data repositories (detection sanity only).",
+  "_note": "Aggregates only (counts and rates, no file contents). rules: final run of the shipped rules (research/hpc/iac/iac_measure.py, label final). agreement and tool_*: hadolint and checkov from run dev4, zizmor from run dev5; both ran before two shell-rule refinements (quoted mentions in sh.pipe_to_shell, single-quoted eval text) that touch no compared rule. Corpora: main = 1,090 public repositories from the codebench pair files (default branch files, fetched 2026-10-23), extra = 61 Terraform and Kubernetes projects, fixtures = 8 deliberately vulnerable or test-data repositories (detection sanity only).",
   "tools": {
     "zizmor": "1.5.1 (MIT, auditor persona)",
     "hadolint": "2.15.1 (GPL-3.0, external program only)",

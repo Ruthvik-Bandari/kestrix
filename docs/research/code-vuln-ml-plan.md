@@ -110,8 +110,8 @@ So the `kestrix[ml]` extra downloads a pinned Hugging Face revision and checks i
 ## Training (slice C6)
 
 Code: `src/kestrixvul/train.py` and `src/kestrixvul/evaluate.py` (research only, not in the wheel; torch is
-imported lazily). Jobs: `hpc/vul_smoke.sbatch`, `hpc/vul_train_teacher.sbatch`, `hpc/vul_train_student.sbatch`,
-`hpc/vul_eval.sbatch`. Logs go to `/scratch/$USER/kestrix/vul/logs/`, runs to `/scratch/$USER/kestrix/vul/runs/<run-id>/`.
+imported lazily). Jobs: `research/hpc/vul/vul_smoke.sbatch`, `research/hpc/vul/vul_train_teacher.sbatch`, `research/hpc/vul/vul_train_student.sbatch`,
+`research/hpc/vul/vul_eval.sbatch`. Logs go to `/scratch/$USER/kestrix/vul/logs/`, runs to `/scratch/$USER/kestrix/vul/runs/<run-id>/`.
 Status, 2026-10-20: code and tests written, smoke job submitted; no full run yet, so no results.
 
 **Data.** `work/split-v2.jsonl` (falling back to `work/split.jsonl`; the job fails with a clear message if neither
@@ -183,16 +183,16 @@ Apache-2.0 by the Hugging Face license tag and the model card, checked 2026-10-2
 Commands, from the login node in `~/kestrix` after syncing the code:
 
 ```bash
-ssh explorer-xfer 'cd ~/kestrix && setsid nohup bash -l hpc/fetch_vul_student_model.sh \
+ssh explorer-xfer 'cd ~/kestrix && setsid nohup bash -l research/hpc/vul/fetch_vul_student_model.sh \
   > /scratch/$USER/kestrix/vul/logs/fetch-student-model.log 2>&1 < /dev/null &'   # once
-sbatch hpc/vul_smoke.sbatch                          # 20 min: teacher, student (if fetched), dev eval
-sbatch --array=1-3 hpc/vul_train_teacher.sbatch      # seeds 1-3 -> runs/teacher-seed<S>-<array job>
-sbatch hpc/vul_train_student.sbatch --teacher-run teacher-seed1-<J> --teacher-run teacher-seed2-<J> \
+sbatch research/hpc/vul/vul_smoke.sbatch                          # 20 min: teacher, student (if fetched), dev eval
+sbatch --array=1-3 research/hpc/vul/vul_train_teacher.sbatch      # seeds 1-3 -> runs/teacher-seed<S>-<array job>
+sbatch research/hpc/vul/vul_train_student.sbatch --teacher-run teacher-seed1-<J> --teacher-run teacher-seed2-<J> \
   --teacher-run teacher-seed3-<J>                    # -> runs/student-seed1-<job>
-sbatch hpc/vul_eval.sbatch --name dev-c6 --zero-shot --teacher-run teacher-seed1-<J> \
+sbatch research/hpc/vul/vul_eval.sbatch --name dev-c6 --zero-shot --teacher-run teacher-seed1-<J> \
   --teacher-run teacher-seed2-<J> --teacher-run teacher-seed3-<J> --student-run student-seed1-<K>
 # once, after the model version is chosen on dev:
-sbatch hpc/vul_eval.sbatch --split test --locked --name test-c6 --teacher-run <best> --student-run <student>
+sbatch research/hpc/vul/vul_eval.sbatch --split test --locked --name test-c6 --teacher-run <best> --student-run <student>
 ```
 
 ## Expectations
@@ -240,7 +240,7 @@ this test set is now spent.
 ## Round 2 (2026-10-23/24): generalization to unseen projects
 
 Code: `src/kestrixvul/round2.py` (data, split, ship rule), `train.py` (repo weights, paired contrast), `evaluate.py`
-(`--split test2 --locked`, `--ensemble`); jobs `hpc/vul2_*.sbatch`. Code on the cluster in
+(`--split test2 --locked`, `--ensemble`); jobs `research/hpc/vul/vul2_*.sbatch`. Code on the cluster in
 `/scratch/$USER/kestrix/vul2-code` (the home quota was full; SHA `ad3bad7+11983a32`), data in `/scratch/$USER/kestrix/vul2`.
 Reports: [`vul-eval-test2-r2.json`](reports/vul-eval-test2-r2.json), [`vul-ship-decision-r2.json`](reports/vul-ship-decision-r2.json),
 [`vul-r2-ablation-validation.json`](reports/vul-r2-ablation-validation.json).

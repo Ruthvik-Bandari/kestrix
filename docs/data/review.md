@@ -7,7 +7,7 @@ candidate before it counts as a positive in the benchmark (plan section 11).
 
 ## Files
 
-`hpc/review_split.sbatch` writes these on the cluster, under `/scratch/$USER/kestrix/data/review/`.
+`research/hpc/detect/review_split.sbatch` writes these on the cluster, under `/scratch/$USER/kestrix/data/review/`.
 The directory has mode 0700 and the files 0600.
 
 | File | Content |
@@ -87,7 +87,7 @@ On 2026-10-16 the owner approved AI-assisted labeling for these candidates. OTRF
 ## Checking progress
 
 ```bash
-ssh explorer 'cd ~/kestrix && sbatch hpc/review_split.sbatch'
+ssh explorer 'cd ~/kestrix && sbatch research/hpc/detect/review_split.sbatch'
 ```
 
 The job validates `labels.csv`. `reports/review-status.json` then holds:
@@ -126,10 +126,10 @@ Results are in [`vul/audit.json`](vul/audit.json) and [`vul/README.md`](vul/READ
    the CWEs, the function before and after the fix, and their diff, with the packet's SHA-256. They are
    written to `audit/packets.jsonl` on the cluster (0600) and copied to a private folder outside the
    repository (0700). Packets are batched for the reviewers.
-3. **Two reviewers.** `hpc/vul_audit.sbatch` (one H200, 8 h at most) runs two open-weight Apache-2.0
+3. **Two reviewers.** `research/hpc/vul/vul_audit.sbatch` (one H200, 8 h at most) runs two open-weight Apache-2.0
    models on the cluster, each from the same written criteria (`src/kestrixvul/prompts/vul_audit_reviewer.txt`):
    `ai-a` is Qwen2.5-Coder-32B-Instruct and `ai-b` is IBM Granite-34B-Code-Instruct-8k, both at pinned
-   revisions (`hpc/fetch_vul_audit_models.sh`), bf16, greedy decoding. Each gives
+   revisions (`research/hpc/vul/fetch_vul_audit_models.sh`), bf16, greedy decoding. Each gives
    - `vulnerable`, `not_vulnerable` or `unclear` for the before-function and the stated advisory;
    - `fixes`, `does_not_fix` or `unclear` for the after-function;
    - a one-line reason.

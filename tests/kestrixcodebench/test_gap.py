@@ -49,7 +49,9 @@ def test_gap_counts_pairs_only_the_other_tool_detects(scanned):
 
 
 def test_derive_drops_the_named_rules(tmp_path):
-    spec = importlib.util.spec_from_file_location("derive", Path(__file__).parents[2] / "hpc" / "codebench_derive.py")
+    spec = importlib.util.spec_from_file_location(
+        "derive", Path(__file__).parents[2] / "research/hpc/codebench/codebench_derive.py"
+    )
     assert spec and spec.loader
     derive = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(derive)

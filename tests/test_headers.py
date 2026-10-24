@@ -13,8 +13,8 @@ PATTERNS = [
     "research/*.py",
     "packages/*.py",
     "packages/*.toml",
-    "hpc/*.sh",
-    "hpc/*.sbatch",
+    "research/*.sh",
+    "research/*.sbatch",
     "frontend/src/*.ts",
     "frontend/src/*.tsx",
 ]

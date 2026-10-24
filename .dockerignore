@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Allowlist: the build context holds only what the Dockerfile copies. Everything else
-# (.git, data/, docs/, hpc/, tests/, scripts/, src/kestrixbench, .venv, secrets, .env files,
+# (.git, data/, docs/, research/, tests/, scripts/, src/kestrixbench, .venv, secrets, .env files,
 # caches and scratch output) never reaches the Docker daemon or a remote builder.
 *
 

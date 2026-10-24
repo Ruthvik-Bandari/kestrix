@@ -82,9 +82,9 @@ browser sweep 390 page loads with no overflow, console errors or CSP violations.
 | `uv run pytest` | 551 passed (engine up) |
 | `uv run ruff check`, `ruff format --check`, `mypy` | clean (55 source files) |
 | `uv run python scripts/webcheck_conformance.py` | 8/8 endpoints as expected |
-| `ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/fetch_engine.sh'` | Elasticsearch 8.19.3 tarball, SHA-512 verified |
-| `sbatch hpc/qc.sbatch` (job 11105891) | COMPLETED, 0 problems |
-| `sbatch hpc/replay.sbatch` (job 11105959) | COMPLETED, 997 rules, 0 engine errors |
+| `ssh explorer-xfer 'cd ~/kestrix && bash -l research/hpc/detect/fetch_engine.sh'` | Elasticsearch 8.19.3 tarball, SHA-512 verified |
+| `sbatch research/hpc/detect/qc.sbatch` (job 11105891) | COMPLETED, 0 problems |
+| `sbatch research/hpc/detect/replay.sbatch` (job 11105959) | COMPLETED, 997 rules, 0 engine errors |
 
 ## Facts learned about the cluster
 

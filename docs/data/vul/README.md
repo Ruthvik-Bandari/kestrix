@@ -22,23 +22,23 @@ each month; everything is rebuildable from the pins.
 
 | Step | Where | Job | Time | Peak memory |
 | --- | --- | --- | --- | --- |
-| `hpc/vul_acquire.sh` | transfer node | n/a | about 20 min, 19.2 GB | n/a |
-| `hpc/vul_qc.sbatch` (dump load + report) | `short` | 11243417 | 32 min | 28 GB (load) |
-| `hpc/vul_qc.sbatch` (report, load cached) | `short` | 11247714 | 10 min | under 19 GB |
-| `hpc/vul_build.sbatch candidates` | `short` | 11252456 | 21 min | 0.8 GB |
+| `research/hpc/vul/vul_acquire.sh` | transfer node | n/a | about 20 min, 19.2 GB | n/a |
+| `research/hpc/vul/vul_qc.sbatch` (dump load + report) | `short` | 11243417 | 32 min | 28 GB (load) |
+| `research/hpc/vul/vul_qc.sbatch` (report, load cached) | `short` | 11247714 | 10 min | under 19 GB |
+| `research/hpc/vul/vul_build.sbatch candidates` | `short` | 11252456 | 21 min | 0.8 GB |
 | `licenses-fetch` | owner's machine, `gh api repos/{owner}/{repo}` | n/a | about 10 min | n/a |
-| `hpc/vul_build.sbatch split` | `short` | 11252667 | 3 s | under 10 MB |
+| `research/hpc/vul/vul_build.sbatch split` | `short` | 11252667 | 3 s | under 10 MB |
 
 To reproduce (the license step runs where `gh` is signed in; the token never reaches the cluster):
 
 ```bash
-ssh explorer-xfer 'cd ~/kestrix && bash -l hpc/vul_acquire.sh'
-ssh explorer 'cd ~/kestrix && sbatch hpc/vul_qc.sbatch'                 # then:
-ssh explorer 'cd ~/kestrix && sbatch hpc/vul_build.sbatch candidates'
+ssh explorer-xfer 'cd ~/kestrix && bash -l research/hpc/vul/vul_acquire.sh'
+ssh explorer 'cd ~/kestrix && sbatch research/hpc/vul/vul_qc.sbatch'                 # then:
+ssh explorer 'cd ~/kestrix && sbatch research/hpc/vul/vul_build.sbatch candidates'
 scp explorer:/scratch/$USER/kestrix/vul/licenses/repos.txt .
 uv run python -m kestrixvul licenses-fetch --repos repos.txt --out fetched.csv
 scp fetched.csv explorer:/scratch/$USER/kestrix/vul/licenses/fetched.csv
-ssh explorer 'cd ~/kestrix && sbatch hpc/vul_build.sbatch split'
+ssh explorer 'cd ~/kestrix && sbatch research/hpc/vul/vul_build.sbatch split'
 ```
 
 The SHA-256 of every archive is pinned in `src/kestrixvul/sources.py` and re-verified before each QC run.
@@ -159,7 +159,7 @@ pass, before training. Two known weaknesses:
 ## Extension, 2026-10-20: GHSA fix commits, negatives, label audit
 
 Code: `src/kestrixvul/ghsa_mine.py`, `functions.py`, `negatives.py`, `extend.py`, `audit.py`,
-`audit_llm.py`; jobs `hpc/vul_mine.sh` (transfer node), `hpc/vul_extend.sbatch`, `hpc/vul_audit.sbatch`
+`audit_llm.py`; jobs `research/hpc/vul/vul_mine.sh` (transfer node), `research/hpc/vul/vul_extend.sbatch`, `research/hpc/vul/vul_audit.sbatch`
 (H200). Logs: `/scratch/$USER/kestrix/vul/logs/`.
 
 **The frozen test split does not change.** `split-extend` recomputes the v1 test ids and their content

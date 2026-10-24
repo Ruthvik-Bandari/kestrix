@@ -61,7 +61,7 @@ Corrected on 2026-10-15 (Slurm job 11105891). OTRF reuses 37 archive names under
 
 ## Replay on the pinned engine (Slurm job 11105959, 2026-10-15)
 
-`python -m kestrixbench replay` (`hpc/replay.sbatch`) ran Elasticsearch 8.19.3 on a compute node. It loaded one disposable index with 137 SigmaHQ regression events and 1,540 OTRF process-creation events, reduced to the v1 fields. Every supported rule was then replayed against that index. `replay-positives.json` lists, for each rule, its own regression matches, SigmaHQ's declared match count, any other regression events it matched, and its OTRF candidate events and dataset paths. It holds no field values.
+`python -m kestrixbench replay` (`research/hpc/detect/replay.sbatch`) ran Elasticsearch 8.19.3 on a compute node. It loaded one disposable index with 137 SigmaHQ regression events and 1,540 OTRF process-creation events, reduced to the v1 fields. Every supported rule was then replayed against that index. `replay-positives.json` lists, for each rule, its own regression matches, SigmaHQ's declared match count, any other regression events it matched, and its OTRF candidate events and dataset paths. It holds no field values.
 
 - **997 rules replayed, 0 engine errors.**
 - **Fidelity: 83 of 83 rules match exactly the number of events SigmaHQ declares (`match_count`).** Single-rule regression folders are the only ones with an unambiguous declared count. Two regression files hold 3 recorded events each but declare one match, and the replay found exactly one for each. The extra events are context, not missed detections.
@@ -114,7 +114,7 @@ To reach 60 roots with two variants, the remaining options are:
 
 ## Impairment variants from the split preview (Slurm job 11108295, 2026-10-15)
 
-`python -m kestrixbench variants` (`hpc/variants.sbatch`) injected faults into every root in the preview split. It verified each one on the pinned engine. The aggregate report is `variants.json`; the case folders hold raw events and stay private on the cluster.
+`python -m kestrixbench variants` (`research/hpc/detect/variants.sbatch`) injected faults into every root in the preview split. It verified each one on the pinned engine. The aggregate report is `variants.json`; the case folders hold raw events and stay private on the cluster.
 
 - **153 cases from 61 roots, with no root left without a variant.** By fault:
   - logic: 61;

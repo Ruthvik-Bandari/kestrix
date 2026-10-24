@@ -8,7 +8,7 @@ need a person; the tooling cannot satisfy them.
 | License record for each data source | Done | repo | `sources.md`; license file hashes in each acquisition manifest |
 | Data handling and model guardrails policy | Done (draft) | repo | `policy.md`; review and adopt |
 | Explorer general and scratch policies read | Done | repo | [General policies](https://rc.northeastern.edu/research-computing-policies/general-policies/), [Scratch policy](https://rc.northeastern.edu/research-computing-policies/scratch-space-policy/): Slurm only, research or coursework use, no account sharing, monthly scratch purge |
-| Slurm account for this project | Done | Ruthvik | Jobs charge `aai6610.202610` (`#SBATCH --account` in every `hpc/*.sbatch`); confirm the faculty sponsor is aware of this use |
+| Slurm account for this project | Done | Ruthvik | Jobs charge `aai6610.202610` (`#SBATCH --account` in every `research/hpc/*/*.sbatch`); confirm the faculty sponsor is aware of this use |
 | Persistent `/work` storage | To request | Ruthvik and PI | Scratch is purged monthly; the frozen benchmark and checkpoints need `/work` (PI request) |
 | Human-subjects review for practitioner trials | To confirm | Ruthvik | Timed practitioner trials (plan section 13) may need IRB review or an exemption determination before recruiting anyone |
 | Written lab plan for Atomic Red Team runs | Not started | Ruthvik | Only needed before executing tests; reading definitions needs none |

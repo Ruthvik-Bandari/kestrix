@@ -1,6 +1,6 @@
 # Link and file checker accuracy benchmark
 
-This page records how well the `kestrix.forensics` URL checker and file checker do on public data, where they fail, and what one round of rule changes bought. It is research tooling: the package is [`src/kestrixlinkfilebench/`](../../src/kestrixlinkfilebench/) (not in the published wheel; it follows the [email benchmark](mail-benchmark.md) and imports its shared helpers), the jobs are `hpc/linkfile_*`, and the aggregate outputs are in [`docs/data/linkfile/`](../data/linkfile/README.md).
+This page records how well the `kestrix.forensics` URL checker and file checker do on public data, where they fail, and what one round of rule changes bought. It is research tooling: the package is [`src/kestrixlinkfilebench/`](../../src/kestrixlinkfilebench/) (not in the published wheel; it follows the [email benchmark](mail-benchmark.md) and imports its shared helpers), the jobs are `research/hpc/linkfile/linkfile_*`, and the aggregate outputs are in [`docs/data/linkfile/`](../data/linkfile/README.md).
 
 **Status (2026-10-23).** The first sections (up to round 1) are **development-split** numbers; the one-time locked test of 2026-10-22 is reported under *Locked test*. Round 2 (below it) was measured on the development splits, and its real-URL test split was evaluated once on 2026-10-23. The module page [`forensics.md`](../modules/forensics.md) still says the checks are not verdicts; nothing here changes that.
 
@@ -33,14 +33,14 @@ This page records how well the `kestrix.forensics` URL checker and file checker 
 
 ## Method
 
-1. **Acquire** (`hpc/linkfile_acquire.sh`, transfer node, standard library only). Reuses the email benchmark's download, size/SHA-256 and manifest code.
+1. **Acquire** (`research/hpc/linkfile/linkfile_acquire.sh`, transfer node, standard library only). Reuses the email benchmark's download, size/SHA-256 and manifest code.
 2. **Build** (Slurm, CPU). *Links:* PhiUSIIL labels inverted (tested), Majestic domains chosen by seeded hash (`kestrixlinkfile-v1`) and turned into host roots, URLs the analyzer rejects dropped (none were), exact duplicates (same lower-cased scheme, host, path, query) and near duplicates (same host without `www.`, same path, query ignored) collapsed, any near-duplicate key that carries both labels dropped from both. PhiUSIIL lost 5,821 phishing and 43 benign URLs; Majestic lost 1,730. *Files:* every zip member hashed, content duplicates across threads kept once, members over 50 MiB dropped.
 3. **Split before any tuning** ([`link-split-manifest.json`](../data/linkfile/link-split-manifest.json), [`file-split-manifest.json`](../data/linkfile/file-split-manifest.json)). Links are grouped by registered domain, estimated offline (last two labels, three under a country code with a common second level; coarser than the Public Suffix List, which only keeps more together); group names are hashed, so no host is stored with the features. Files are grouped by Govdocs thread. Groups go to dev or test within each (source, label) stratum by seeded hash until about 30% is in test. Dev: 180,739 links (142,071 groups), 13,416 files (13 Govdocs threads plus 30 synthetic groups). Test: 77,462 links, 7,177 files. Synthetic variants 0-19 of each family are dev, 20-29 test.
 4. **Features** (Slurm arrays, 16 and 20 tasks). `analyze_url` and `analyze_file` run offline per item; only finding ids and severities, the URL level and score, URL shape counts (length, path, query, scheme, host dots/hyphens/digits, TLD), the detected file type, extension, size and entropy are stored. No URL, host, file name or content. Each shard report records the code version; the locked test refuses to run when dev and test features come from different rules. Pillow 12.2.0 was installed beside the code (not in the shared environment), so photo-metadata findings are included.
 5. **Metrics.** Links: share of phishing at or above each level (`low`, `medium`, `high`), benign false alarms per cohort, precision at the corpus class mix (not real-world precision). Files: the *alarm* of a file is the highest severity among its **security** findings; photo-metadata findings (`gps_location`, `identifying_metadata`) are privacy findings and `executable_file`, `empty_file`, `expected_high_entropy` are context, both reported separately. Intervals are the email benchmark's 95% percentile bootstrap that resamples whole groups (1,000 resamples); cohorts under 8 groups show a message-level binomial interval marked `msg`.
 6. **Leakage controls (links).** See below.
 7. **Error analysis and round 1.** Aggregate probes (`probe.py`) count curated tags per cohort on the cluster; the rules were changed one at a time, each measured alone on the full dev split, then the kept set together.
-8. **Locked test.** `hpc/linkfile_locked.sh` (not run).
+8. **Locked test.** `research/hpc/linkfile/linkfile_locked.sh` (not run).
 
 ## Dev results: the shipped rules (baseline)
 
@@ -219,12 +219,12 @@ What changed in the rules: `hosting_platform_subdomain` still appears on every p
 ## Reproducing
 
 ```bash
-ssh explorer-xfer 'mkdir -p /scratch/$USER/kestrix/linkfilebench/logs && cd ~/kestrix-linkfile && nohup bash -l hpc/linkfile_acquire.sh > /scratch/$USER/kestrix/linkfilebench/logs/acquire.log 2>&1 &'
-bash hpc/linkfile_sync.sh                  # laptop: code to ~/kestrix-linkfile (writes LINKFILEBENCH_SHA)
-ssh explorer 'cd ~/kestrix-linkfile && bash hpc/linkfile_chain.sh full'   # build, dev features, dev metrics
+ssh explorer-xfer 'mkdir -p /scratch/$USER/kestrix/linkfilebench/logs && cd ~/kestrix-linkfile && nohup bash -l research/hpc/linkfile/linkfile_acquire.sh > /scratch/$USER/kestrix/linkfilebench/logs/acquire.log 2>&1 &'
+bash research/hpc/linkfile/linkfile_sync.sh                  # laptop: code to ~/kestrix-linkfile (writes LINKFILEBENCH_SHA)
+ssh explorer 'cd ~/kestrix-linkfile && bash research/hpc/linkfile/linkfile_chain.sh full'   # build, dev features, dev metrics
 ```
 
-The locked test, once the owner approves, is `ssh explorer 'cd ~/kestrix-linkfile-rounds/final && bash hpc/linkfile_locked.sh --name linkfile-v1'` (add `--dry-run` to print the submissions first).
+The locked test, once the owner approves, is `ssh explorer 'cd ~/kestrix-linkfile-rounds/final && bash research/hpc/linkfile/linkfile_locked.sh --name linkfile-v1'` (add `--dry-run` to print the submissions first).
 
 ## Locked test (2026-10-22)
 

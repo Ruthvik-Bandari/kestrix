@@ -153,7 +153,7 @@ def test_history_script_pins_the_same_commit():
 
     from kestrixbench.sources import by_name
 
-    script = (Path(__file__).resolve().parents[2] / "hpc/fetch_history.sh").read_text()
+    script = (Path(__file__).resolve().parents[2] / "research/hpc/detect/fetch_history.sh").read_text()
     assert f"PINNED={by_name('sigma').commit}" in script
 
 

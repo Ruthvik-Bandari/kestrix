@@ -21,7 +21,7 @@ This guide puts Kestrix hosted mode ([hosted.md](hosted.md), [ADR 0004](adr/0004
 | Piece | What it does |
 | --- | --- |
 | `Dockerfile` | Three stages: Node builds the dashboard, uv builds the wheel and a venv with only the locked runtime dependencies (no dev or gpu groups, no `ai` or `exif` extras), then a `python:3.12-slim` final stage. Every base image is pinned by digest. The wheel is built with `uv build --offline` by the pinned uv binary's own `uv_build` backend, so no build backend is downloaded. |
-| `.dockerignore` | An allowlist: only `pyproject.toml`, `uv.lock`, `README.md`, `LICENSE`, `NOTICE`, `src/kestrix/` and `frontend/` reach the build. `src/kestrixbench`, `data/`, `docs/`, `hpc/`, `tests/`, `.git` and any `.env` files never do. |
+| `.dockerignore` | An allowlist: only `pyproject.toml`, `uv.lock`, `README.md`, `LICENSE`, `NOTICE`, `src/kestrix/` and `frontend/` reach the build. `src/kestrixbench`, `data/`, `docs/`, `research/`, `tests/`, `.git` and any `.env` files never do. |
 | `fly.toml` | One machine, a 1 GB volume at `/data` for the SQLite file, HTTPS forced at Fly's edge, and a health check on `/api/health`. |
 | CI job `container` | Builds the image (never pushes it), checks that it runs as uid 10001 on a read-only root filesystem and answers `/api/health` in hosted mode, and runs `scripts/deploy_preflight.py --dry-run` inside it. |
 | CI job `security` | `kestrix-scan` on Kestrix's own code (blocking), `pip-audit` of the packages the image ships and `npm audit --omit=dev` (both blocking), and audits of the development tools (report only). |

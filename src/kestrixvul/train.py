@@ -93,8 +93,8 @@ def manifest_path(root: Path) -> Path:
         if path.is_file():
             return path
     raise DataError(
-        f"no split manifest under {root / 'work'}: expected split-v2.jsonl (hpc/vul_extend.sbatch split) "
-        "or split.jsonl (hpc/vul_build.sbatch split)"
+        f"no split manifest under {root / 'work'}: expected split-v2.jsonl (research/hpc/vul/vul_extend.sbatch split) "
+        "or split.jsonl (research/hpc/vul/vul_build.sbatch split)"
     )
 
 
@@ -116,7 +116,7 @@ def read_records(root: Path, splits: tuple[str, ...]) -> list[dict[str, Any]]:
 def negatives_path(root: Path) -> Path:
     path = root / "work" / "negatives.jsonl"
     if not path.is_file():
-        raise DataError(f"{path} is missing (kestrixvul negatives, run by hpc/vul_extend.sbatch split)")
+        raise DataError(f"{path} is missing (kestrixvul negatives, run by research/hpc/vul/vul_extend.sbatch split)")
     return path
 
 

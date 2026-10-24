@@ -10,7 +10,7 @@
    sampled: they are locked test inputs, which an AI assistant session must not receive. Each
    packet (``audit/packets.jsonl``, 0600) holds the advisory text, the CWEs, the function before and
    after the fix and their diff, plus its SHA-256.
-2. ``audit-review`` (``hpc/vul_audit.sbatch``, one H200): two open-weight Apache-2.0 models
+2. ``audit-review`` (``research/hpc/vul/vul_audit.sbatch``, one H200): two open-weight Apache-2.0 models
    (``audit_llm.py``: ``ai-a`` Qwen2.5-Coder-32B-Instruct, ``ai-b`` Granite-34B-Code-Instruct) judge each packet:
    ``vulnerable`` / ``not_vulnerable`` / ``unclear`` for the before-function and the stated
    advisory, ``fixes`` / ``does_not_fix`` / ``unclear`` for the after-function, and a one-line

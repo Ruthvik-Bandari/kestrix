@@ -108,7 +108,7 @@ def test_fetch_script_pins_the_same_model():
 
     from kestrixbench.b2 import MODEL_REPO, MODEL_REVISION
 
-    script = (Path(__file__).resolve().parents[2] / "hpc/fetch_model.sh").read_text()
+    script = (Path(__file__).resolve().parents[2] / "research/hpc/detect/fetch_model.sh").read_text()
     assert f"REPO={MODEL_REPO}\n" in script and f"REV={MODEL_REVISION}\n" in script
-    sbatch = (Path(__file__).resolve().parents[2] / "hpc/b2.sbatch").read_text()
+    sbatch = (Path(__file__).resolve().parents[2] / "research/hpc/detect/b2.sbatch").read_text()
     assert f"{MODEL_REPO.split('/')[1]}@{MODEL_REVISION}" in sbatch

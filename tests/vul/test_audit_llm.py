@@ -61,6 +61,6 @@ def test_review_all_resumes_and_finds_disputes(tmp_path: Path):
 
 
 def test_fetch_script_pins_the_same_revisions():
-    script = (Path(__file__).parents[2] / "hpc" / "fetch_vul_audit_models.sh").read_text()
+    script = (Path(__file__).parents[2] / "research/hpc/vul/fetch_vul_audit_models.sh").read_text()
     pinned = set(re.findall(r'"([\w./-]+)@([0-9a-f]{40})"', script))
     assert pinned == {(r.repo, r.revision) for r in REVIEWERS}

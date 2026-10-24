@@ -166,6 +166,6 @@ def test_new_run_dir_refuses_to_overwrite_a_run(vul_root):
 
 
 def test_student_revision_matches_the_fetch_script():
-    script = (ROOT / "hpc" / "fetch_vul_student_model.sh").read_text()
+    script = (ROOT / "research/hpc/vul/fetch_vul_student_model.sh").read_text()
     assert f"{train.STUDENT_REPO}@{train.STUDENT_REVISION}" in script
-    assert f"Qwen2.5-Coder-7B-Instruct@{train.TEACHER_REVISION}" in (ROOT / "hpc" / "m1.sbatch").read_text()
+    assert f"Qwen2.5-Coder-7B-Instruct@{train.TEACHER_REVISION}" in (ROOT / "research/hpc/detect/m1.sbatch").read_text()

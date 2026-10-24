@@ -14,7 +14,7 @@ file, then re-run `python -m kestrixbench acquire` and `qc`.
 
 | Model | Pinned revision | License | Use |
 | --- | --- | --- | --- |
-| [Qwen/Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | `c03e6d358207e414f1eca0bb1891e29f1db0e242` | Apache-2.0 | B2, the unmodified baseline, and the base for M1 LoRA. Only weights, config and tokenizer are fetched (`hpc/fetch_model.sh`); it is loaded with `trust_remote_code=False`. |
+| [Qwen/Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | `c03e6d358207e414f1eca0bb1891e29f1db0e242` | Apache-2.0 | B2, the unmodified baseline, and the base for M1 LoRA. Only weights, config and tokenizer are fetched (`research/hpc/detect/fetch_model.sh`); it is loaded with `trust_remote_code=False`. |
 
 ## Recorded per acquisition
 

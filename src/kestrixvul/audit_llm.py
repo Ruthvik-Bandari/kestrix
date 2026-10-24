@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""The label-audit reviewers: two open-weight Apache-2.0 code models on one H200 (``hpc/vul_audit.sbatch``).
+"""The label-audit reviewers: two open-weight Apache-2.0 code models on one H200 (``research/hpc/vul/vul_audit.sbatch``).
 
 * ``ai-a``: Qwen2.5-Coder-32B-Instruct; ``ai-b``: IBM Granite-34B-Code-Instruct-8k. Each judges every
   packet of ``audit/packets.jsonl`` independently from the same written criteria
@@ -13,7 +13,7 @@ Packets are cut to each model's context (Granite has 8k tokens): advisory, befor
 share of the budget and a ``[truncated]`` marker. Replies are parsed as one JSON object; anything else
 becomes ``unclear`` with the reason ``unparseable reply``. Reviews are appended to
 ``<folder>/reviews/{a,b,adj}-<model>.jsonl`` (0600), so a rerun resumes. Models load offline from
-``/scratch/$USER/kestrix/models/<name>@<revision>`` (``hpc/fetch_vul_audit_models.sh``), never with
+``/scratch/$USER/kestrix/models/<name>@<revision>`` (``research/hpc/vul/fetch_vul_audit_models.sh``), never with
 ``trust_remote_code``. Record content is untrusted data: the models only classify it.
 """
 
@@ -152,7 +152,7 @@ def disputed(a: Path, b: Path) -> dict[str, list[dict[str, Any]]]:
 def model_dir(models: Path, reviewer: Reviewer) -> Path:
     path = models / f"{reviewer.slug}@{reviewer.revision}"
     if not (path / "MANIFEST.sha256").exists():
-        raise FileNotFoundError(f"{path} is not downloaded (run hpc/fetch_vul_audit_models.sh)")
+        raise FileNotFoundError(f"{path} is not downloaded (run research/hpc/vul/fetch_vul_audit_models.sh)")
     return path
 
 

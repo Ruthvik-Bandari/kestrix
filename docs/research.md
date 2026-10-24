@@ -6,17 +6,17 @@ This runbook covers the detection-repair research track from plan sections 11 to
 
 | # | Step | Command / job | Output |
 | --- | --- | --- | --- |
-| 1 | Fetch pinned sources | `hpc/acquire.sh` (transfer node) | `manifests/*.json` |
-| 2 | Quality checks | `hpc/qc.sbatch` | `reports/qc-*.json` |
-| 3 | Replay every supported rule | `hpc/fetch_engine.sh`, `hpc/replay.sbatch` | `reports/replay-positives.json` |
+| 1 | Fetch pinned sources | `research/hpc/detect/acquire.sh` (transfer node) | `manifests/*.json` |
+| 2 | Quality checks | `research/hpc/detect/qc.sbatch` | `reports/qc-*.json` |
+| 3 | Replay every supported rule | `research/hpc/detect/fetch_engine.sh`, `research/hpc/detect/replay.sbatch` | `reports/replay-positives.json` |
 | 4 | Review OTRF candidates (owner) | `review-next` / `review-label` ([`data/review.md`](data/review.md)) | `review/labels.csv` (private) |
-| 4b | Natural faults: mine and verify SigmaHQ history | `hpc/fetch_history.sh`, then `hpc/natural.sbatch` | `reports/natural-mining.json`, `reports/natural-verified.json`; verified rules become extra roots for step 5 |
-| 5 | Split preview, then freeze | `hpc/review_split.sbatch`, then `split --freeze` | `benchmark/split-manifest.json` |
-| 6 | Impairment variants and natural cases | `hpc/variants.sbatch` | `benchmark/cases/` (private), `reports/variants.json`, `reports/natural-cases.json` |
-| 7 | Baselines B0, B1 | `hpc/evaluate.sbatch b0`, `hpc/evaluate.sbatch b1` | `reports/eval-b0.json`, `reports/eval-b1.json` |
-| 8 | Baseline B2 | `hpc/fetch_model.sh`, `bash hpc/setup_env.sh gpu`, `hpc/b2.sbatch` | `reports/eval-b2.json` |
-| 9 | M1 data and training | `hpc/sft.sbatch`, `hpc/m1.sbatch --max-steps 5` (smoke), then `hpc/m1.sbatch --train-seed {1,2,3}` | `sft/*.jsonl`, `models/m1-seed*`, `reports/m1-*-training.json` |
-| 10 | M1 evaluation | `hpc/m1_eval.sbatch m1-seed1` | `reports/eval-m1.json` |
+| 4b | Natural faults: mine and verify SigmaHQ history | `research/hpc/detect/fetch_history.sh`, then `research/hpc/detect/natural.sbatch` | `reports/natural-mining.json`, `reports/natural-verified.json`; verified rules become extra roots for step 5 |
+| 5 | Split preview, then freeze | `research/hpc/detect/review_split.sbatch`, then `split --freeze` | `benchmark/split-manifest.json` |
+| 6 | Impairment variants and natural cases | `research/hpc/detect/variants.sbatch` | `benchmark/cases/` (private), `reports/variants.json`, `reports/natural-cases.json` |
+| 7 | Baselines B0, B1 | `research/hpc/detect/evaluate.sbatch b0`, `research/hpc/detect/evaluate.sbatch b1` | `reports/eval-b0.json`, `reports/eval-b1.json` |
+| 8 | Baseline B2 | `research/hpc/detect/fetch_model.sh`, `bash research/hpc/common/setup_env.sh gpu`, `research/hpc/detect/b2.sbatch` | `reports/eval-b2.json` |
+| 9 | M1 data and training | `research/hpc/detect/sft.sbatch`, `research/hpc/detect/m1.sbatch --max-steps 5` (smoke), then `research/hpc/detect/m1.sbatch --train-seed {1,2,3}` | `sft/*.jsonl`, `models/m1-seed*`, `reports/m1-*-training.json` |
+| 10 | M1 evaluation | `research/hpc/detect/m1_eval.sbatch m1-seed1` | `reports/eval-m1.json` |
 | 11 | Paired comparison | `compare --systems b0 b1 b2 m1` | `reports/comparison.{json,md}` |
 | 12 | Locked test, once | Re-run 7, 8 and 10 for the chosen system and its baselines with `--locked`, then `compare --locked` | `reports/*-locked.*` |
 

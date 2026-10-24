@@ -64,7 +64,7 @@ def _b2(cases_root: Path) -> System:
 
     snapshot = os.environ.get("KESTRIX_B2_SNAPSHOT")
     if not snapshot:
-        raise ValueError("set KESTRIX_B2_SNAPSHOT to the local model snapshot (hpc/fetch_model.sh)")
+        raise ValueError("set KESTRIX_B2_SNAPSHOT to the local model snapshot (research/hpc/detect/fetch_model.sh)")
     propose = generator(load(Path(snapshot)), SYSTEM_STATS)
     return lambda inputs, es: b0_run(inputs, es, generator=propose)
 

@@ -70,7 +70,7 @@ All comparisons are paired, and the intervals come from a root-resampling bootst
 
 Follow [`docs/research.md`](research.md), steps 9 to 11. The commands are:
 
-- `hpc/sft.sbatch`;
-- `hpc/m1.sbatch --max-steps 5`, then `hpc/m1.sbatch --train-seed N`;
-- `hpc/m1_eval.sbatch m1-seedN`;
+- `research/hpc/detect/sft.sbatch`;
+- `research/hpc/detect/m1.sbatch --max-steps 5`, then `research/hpc/detect/m1.sbatch --train-seed N`;
+- `research/hpc/detect/m1_eval.sbatch m1-seedN`;
 - `compare --systems b0 b1 b2 m1-seed1 m1-seed2 m1-seed3`.

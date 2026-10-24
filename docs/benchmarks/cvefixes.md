@@ -1,6 +1,6 @@
 # Kestrix code scanner on CVE-fix commits (CVEfixes and GitHub Advisory Database)
 
-This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `hpc/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
+This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
 
 Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm.
 
@@ -163,16 +163,16 @@ One core, every dev file (39,420 files: before, after and unchanged), all eight 
 ## Reproducing and the locked test
 
 ```bash
-bash hpc/codebench_sync.sh                       # code to ~/kestrix-codebench (never ~/kestrix), records CODEBENCH_SHA
-ssh explorer 'cd ~/kestrix-codebench && sbatch hpc/codebench_build.sbatch'
-ssh explorer 'cd ~/kestrix-codebench && sbatch --export=ALL,TOOL=kestrix,RUN=base hpc/codebench_scan.sbatch'   # also bandit, eslint
-ssh explorer 'cd ~/kestrix-codebench && bash hpc/codebench_round.sh LABEL'      # scan + dev metrics + paired compare
+bash research/hpc/codebench/codebench_sync.sh                       # code to ~/kestrix-codebench (never ~/kestrix), records CODEBENCH_SHA
+ssh explorer 'cd ~/kestrix-codebench && sbatch research/hpc/codebench/codebench_build.sbatch'
+ssh explorer 'cd ~/kestrix-codebench && sbatch --export=ALL,TOOL=kestrix,RUN=base research/hpc/codebench/codebench_scan.sbatch'   # also bandit, eslint
+ssh explorer 'cd ~/kestrix-codebench && bash research/hpc/codebench/codebench_round.sh LABEL'      # scan + dev metrics + paired compare
 ```
 
 The locked test scans the test half with all three tools and writes `reports/codebench-locked-<name>.json`. It claims the lock first and runs once per scanner version; freeze the code before running it:
 
 ```bash
-ssh explorer 'cd ~/kestrix-codebench && sbatch hpc/codebench_locked.sbatch --name codebench-v1 --tool-run kestrix=r1-final --tool-run bandit=base --tool-run eslint=base'
+ssh explorer 'cd ~/kestrix-codebench && sbatch research/hpc/codebench/codebench_locked.sbatch --name codebench-v1 --tool-run kestrix=r1-final --tool-run bandit=base --tool-run eslint=base'
 ```
 
 ## What is not claimed
@@ -310,7 +310,7 @@ Round 2 is a small gain: 23 more detected pairs of 8,806 in scope, for 159 more 
 Not run. It claims `reports/LOCKED_EVAL_TEST2.json` in `/scratch/$USER/kestrix/codebench2/` (exclusive create; a second run is refused), scans test2 with kestrix round 2 (the code tree the job runs from), kestrix round 1 (`kestrix@r1`), Bandit and ESLint security, and writes `reports/codebench-locked-test2-v1.json` with the paired round-2-against-round-1 change and the never-scanned-repository subset:
 
 ```bash
-ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codebench2-locked KESTRIX_CODEBENCH=/scratch/$USER/kestrix/codebench2 sbatch --export=ALL hpc/codebench2_locked.sbatch --name test2-v1 --kestrix-tree r1=$HOME/kestrix-codebench2-r1'
+ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codebench2-locked KESTRIX_CODEBENCH=/scratch/$USER/kestrix/codebench2 sbatch --export=ALL research/hpc/codebench/codebench2_locked.sbatch --name test2-v1 --kestrix-tree r1=$HOME/kestrix-codebench2-r1'
 ```
 
 ### What round 2 does not claim
@@ -355,7 +355,7 @@ What test2 shows:
 Phase 1 of the [language roadmap](../research/language-roadmap.md) adds web-file rules (HTML, Vue, Svelte, CSS,
 `next.config`), Angular's `bypassSecurityTrust*`, and request sources for Next.js, Fastify, Koa and NestJS. **Every
 number below is a tuning number.** All earlier held-out sets are spent (round-1 test, test2), the rules were written
-and kept with these files in view, and there is no fresh set yet: `hpc/codebench_heldout_future.sh` builds a `test3`
+and kept with these files in view, and there is no fresh set yet: `research/hpc/codebench/codebench_heldout_future.sh` builds a `test3`
 from advisories published after 2026-10-22 once they exist (see the end of this section). Aggregates:
 [`docs/data/codebench/`](../data/codebench/README.md).
 
@@ -366,7 +366,7 @@ from advisories published after 2026-10-22 once they exist (see the end of this 
   keep rule, and one repository bootstrap. The baseline is the scanner of the commit the phase started from (`w-base`,
   which reproduces the round-2 numbers: JS/TS detection 6.72%, 0.689 alerts per KLOC). Each change was measured
   **leave-one-out**: the final scanner against the final scanner with only that change switched off (a copy of the
-  tree with one constant or condition edited, `hpc/codebench_web_variants.py`), which is the change's marginal effect in
+  tree with one constant or condition edited, `research/hpc/codebench/codebench_web_variants.py`), which is the change's marginal effect in
   the final scanner (round 2 measured each change alone against the baseline; these changes touch separate sources and
   sinks, so the marginal and the stand-alone effect are close, but they are not the same measurement).
 - **Web files** are in a benchmark root of their own (`--only-language web`, job 11322685), so the ids and the split of
@@ -457,7 +457,7 @@ web benchmark (about 28 KLOC) scans in seconds. Pathological inputs (tag, brace 
 
 ### test3: a fresh held-out set
 
-`hpc/codebench_heldout_future.sh` runs the test2 pipeline against a fresh clone of the GitHub Advisory Database and keeps
+`research/hpc/codebench/codebench_heldout_future.sh` runs the test2 pipeline against a fresh clone of the GitHub Advisory Database and keeps
 only advisories published after a cutoff (`--published-after`, default 2026-10-22), minus everything the benchmark has
 touched, in a root of its own (`/scratch/$USER/kestrix/codebench3`): `clone` (transfer node), `select`, `fetch`
 (transfer node), `build`, and `eval`, which only prints the one-time `locked-test2` command. Run it once enough
@@ -503,7 +503,7 @@ access, `ssl` unverified contexts) are already rules, and none of their Bandit t
 ### Changes, each measured alone
 
 Each new rule has its own rule id, so each was measured as the final scan with the other new rules' findings removed
-(`hpc/codebench_derive.py`), against `r3-t0` (the scanner at the commit this round started from, scanned on the tuning
+(`research/hpc/codebench/codebench_derive.py`), against `r3-t0` (the scanner at the commit this round started from, scanned on the tuning
 data). The baseline is 0.293 Python alerts per KLOC (about 2,170 alerts). The keep rule is unchanged: detection up, and
 the paired change in alerts within noise or under 2% of the baseline.
 
@@ -577,7 +577,7 @@ taint analysis. Aggregates: [`docs/data/codebench/`](../data/codebench/README.md
   files labelled PHP (job 11332692, 16 minutes). **The advisory-database miner fetches Python, JavaScript and TypeScript only, so
   there are no advisory PHP pairs and no unchanged PHP files** (the benchmark has no "unchanged" column; false alarms are counted
   on the fixed files and on the clean corpora below).
-- **Filters and split:** the benchmark's own (`hpc/codebench_php_build.sbatch`, job `--only-language php`): 8,039 changed files read,
+- **Filters and split:** the benchmark's own (`research/hpc/codebench/codebench_php_build.sbatch`, job `--only-language php`): 8,039 changed files read,
   no test, vendored, bundled, minified or generated files, no duplicates (see `php-manifest.json`). **Dev: 5,274 pairs from 529
   projects, 1,764 CVEs, 3,464 pairs in scope, 3,304 KLOC of fixed files. Held-out: 1,456 pairs from 210 projects, 510 CVEs, 1,121 in
   scope.** The split is the seeded hash of connected components of repositories, CVEs and file contents, so no project, CVE or file
@@ -591,7 +591,7 @@ taint analysis. Aggregates: [`docs/data/codebench/`](../data/codebench/README.md
   [`dataset-licenses.md`](../research/dataset-licenses.md). Psalm needs about 4 s per file, Kestrix about 0.03 s.
 - Rounds (all on dev only): `p1`/`p2` showed that about 13% of files hit a recursion error (a variable assigned from itself, such as
   `$x = $x . 'a'`) and were reported as not analyzable; `p3` fixed it and measured the changes below; `p4`/`p5` are the narrowed scanner (`p4` is the frozen tree of
-  the held-out run, `p5` the shipped tree without the three removed rules). Jobs (account `aai6610.202610`, partition `short`): dump 11332692; baseline scan `p1` 11346621; Psalm dev scan 11346773; final scan `p5` 11350856; speed 11350619; held-out 11350678; scripts `hpc/codebench_php_*`.
+  the held-out run, `p5` the shipped tree without the three removed rules). Jobs (account `aai6610.202610`, partition `short`): dump 11332692; baseline scan `p1` 11346621; Psalm dev scan 11346773; final scan `p5` 11350856; speed 11350619; held-out 11350678; scripts `research/hpc/codebench/codebench_php_*`.
 
 ### Tuning on dev: the untainted "built" findings
 
