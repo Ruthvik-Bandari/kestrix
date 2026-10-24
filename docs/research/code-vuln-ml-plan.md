@@ -236,3 +236,108 @@ time in four to seven at these thresholds, and near chance at telling a bug from
 findings. The next round, if any, must improve generalization to unseen projects (project-disjoint early stopping
 and threshold selection, more diverse training repositories, seed ensembling), judged on a new held-out set, since
 this test set is now spent.
+
+## Round 2 (2026-10-23/24): generalization to unseen projects
+
+Code: `src/kestrixvul/round2.py` (data, split, ship rule), `train.py` (repo weights, paired contrast), `evaluate.py`
+(`--split test2 --locked`, `--ensemble`); jobs `hpc/vul2_*.sbatch`. Code on the cluster in
+`/scratch/$USER/kestrix/vul2-code` (the home quota was full; SHA `ad3bad7+11983a32`), data in `/scratch/$USER/kestrix/vul2`.
+Reports: [`vul-eval-test2-r2.json`](reports/vul-eval-test2-r2.json), [`vul-ship-decision-r2.json`](reports/vul-ship-decision-r2.json),
+[`vul-r2-ablation-validation.json`](reports/vul-r2-ablation-validation.json).
+
+### Decision rule (written into `reports/TEST2_FROZEN.json` and the `round2.py` docstring before any training)
+
+Ship the round-2 ranker as an optional "worth a look" ranker only if on test-v2 (full view) its PR-AUC 95%
+repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of bag-of-words, AND its
+pair accuracy is at least 0.25. Pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or
+above and the patched version below the validation-chosen threshold (`correct` in the C6 reports: 0.322 dev, 0.147 test,
+0.071 extension; the C6 table above labels it "vulnerable scores higher", which is the separate threshold-free
+`vulnerable_scores_higher`, reported here as "higher"). Variant choice on validation, also fixed beforehand: highest
+validation PR-AUC plus pair-higher, ties to the simpler variant.
+
+### New held-out set (test-v2)
+
+Source: the 2026-10-22 GHSA refresh (codebench2 mine: 1,330 advisories, 1,412 fix commits in 576 repositories the C6 pool
+did not hold). Same extraction, PrimeVul rules and deduplication as C6 (against every C6 pool function). A group joins
+test-v2 only if it shares no repository and no advisory/CVE id with any C6 record, dropped candidate or mine target.
+Advisory text for the labels carries no linked NVD descriptions (not in the databases for 2026 CVEs), so the NVD-name rule
+is weaker than in C6.
+
+| Stage | Count |
+| --- | --- |
+| Labelled candidates (functions) before dedup | 520 |
+| Kept after dedup against the C6 pool | 320 |
+| Dropped: group shares a node with C6 | 246 |
+| Tier A (new project, advisory on or after 2024-10-01) | 47 records, 36 projects, 37 advisories (py 17, js 10, ts 20) |
+| Tier B (new project, older advisory) | 27 records, 27 projects |
+| Tier A+B | 74 records, 63 projects |
+| Threshold (set before counting) | 100 records and 50 projects |
+
+Too few new projects exist: neither A (47 / 36) nor A+B (74 / 63) is meaningful. Fallback, as briefed: `test2` is a
+seeded, project-disjoint 50% carve-out of the C6 dev groups (376 vulnerable records, 137 projects; py 318, js 42, ts 16;
+157 are SVEN pairs; 18,032 negatives). **Bias, stated plainly:** C6 dev was used to pick the C6 teacher, its checkpoint
+and its threshold, so this set favors the C6 teacher; no round-2 model trained on it or was selected on it. Tier A is kept
+apart as `test2_fresh` (47 records, 906 negatives): truly new projects but too small to decide anything alone. Tier B is
+unused. Both were frozen (`TEST2_FROZEN.json`, manifest in `reports/test2-manifest.json`) before any training.
+
+### Method and per-change validation
+
+Training pool: all C6 records (train, dev, test, test_extension; the C6 test is spent) minus test-v2, regrouped by
+repository and advisory ids; a seeded 15% of groups is the project-disjoint validation split (612 records, 266 projects),
+the rest trains (3,170 records, 1,434 projects, against 1,561 and 942 in C6). Early stopping, checkpoint choice and
+thresholds use validation only. Seed 1, one H200 job (11328167), 4 h 14 min:
+
+| Variant | Val PR-AUC | Val pair-higher |
+| --- | --- | --- |
+| v0 C6 recipe on the new split | 0.440 | 0.589 |
+| v1 + repository balance (weight n^-0.5) | 0.442 | 0.592 |
+| **v2 + paired contrast** (logistic loss on vulnerable over patched, weight 1, pairs share a micro-batch) | 0.425 | **0.769** |
+| v3 both | 0.424 | 0.737 |
+
+Repository balance moved nothing beyond the 0.01 noise floor, so it was not adopted. Paired contrast raised pair-higher
+by 0.18 for a 0.016 PR-AUC loss; v2 had the best sum (1.194) and was chosen. Final: three seeds of v2 (job 11337533, 3 h
+49 min; val PR-AUC 0.425, 0.433, 0.435) and a UniXcoder student distilled from their mean logit (val PR-AUC 0.402). The
+ensemble is the mean logit of the three seeds. Validation numbers use 5 negatives per vulnerable record and are not
+comparable with the full-prevalence tables below.
+
+### Results on test-v2 (one evaluation, job 11346541, 1 h 13 min, claim `LOCKED_EVAL_TEST2.json`)
+
+PR-AUC with 95% repository-bootstrap intervals; "pair" is `correct` at the validation-chosen threshold, "higher" the
+threshold-free share. Thresholds come from validation; the C6 teacher's validation threshold is contaminated (it trained
+on most validation records), so read its pair figures with care.
+
+| System | test2 (376 vuln, 18,781 fns, base 0.020) | pair / higher | test2_fresh (47, base 0.047) | pair / higher |
+| --- | --- | --- | --- | --- |
+| Rules | 0.114 [0.050, 0.262] | 0.190 / 0.595 | 0.067 [0.041, 0.122] | 0.021 / 0.511 |
+| Bag of words | 0.195 [0.125, 0.334] | 0.059 / 0.614 | 0.166 [0.114, 0.275] | 0.021 / 0.340 |
+| Zero-shot 7B | 0.244 [0.141, 0.404] | 0.099 / 0.611 | 0.142 [0.091, 0.260] | 0.064 / 0.415 |
+| C6 teacher (biased in its favor on test2) | 0.354 [0.251, 0.512] | 0.271 / 0.704 | 0.209 [0.121, 0.404] | 0.128 / 0.564 |
+| Round-2 seeds 1 / 2 / 3 | 0.359 / 0.352 / 0.364 | 0.338 / 0.330 / 0.330 | 0.273 / 0.278 / 0.266 | 0.255 / 0.255 / 0.234 |
+| Student | 0.342 [0.211, 0.536] | 0.290 / 0.732 | 0.234 [0.160, 0.345] | 0.043 / 0.553 |
+| **Ensemble (3 seeds)** | **0.380 [0.263, 0.556]** | **0.338** / 0.808 | **0.309 [0.188, 0.498]** | **0.234** / 0.883 |
+
+### Decision: not shipped
+
+On test2 the ensemble's interval clears the rules (lower bound 0.263 against the rules' upper 0.262, by a hair) but
+overlaps bag-of-words (0.263 against 0.334), so the first condition fails. Pair accuracy passes on test2 (0.338) but
+misses on the fresh set (0.234). The rule says not shipped, and it is not.
+
+What did change:
+
+- **The pair failure is addressed.** Pair-correct rose from 0.271 (C6 teacher) to 0.338 on test2 and from 0.128 to 0.234
+  on the fresh set; pair-higher from 0.70 to 0.81 and from 0.56 to 0.88. This is the one improvement that held on both
+  sets and on validation, and it came from the paired-contrast loss.
+- **Ranking quality barely moved.** Ensemble PR-AUC beats the C6 teacher by 0.026 (test2) and 0.100 (fresh) with
+  heavily overlapping intervals; the ensemble beats its best single seed by about 0.016. Nothing here is a significant
+  PR-AUC gain, and the fresh set (47 records) cannot settle it.
+- **Caveats.** The held-out is a dev carve-out (Python and SVEN heavy), favoring the C6 teacher, and the baselines' own
+  thresholds were set on validation; the fresh set is tiny; only one recipe was ablated, with one seed per variant, so
+  the 0.01 noise floor is an assumption; pre-cutoff advisories may sit in the base model's pre-training; the bag of
+  words baseline is strong on this carve-out, which is mostly short SVEN-style functions.
+- **Not tried (would exceed the budget or the data):** a larger genuinely-new test set (needs another GHSA refresh in
+  a few months), repository balance combined with larger neg ratios, and distillation with the pair loss in the
+  student. GPU time: smoke 11327915 (6 min), ablation 4.24 h, final 3.81 h, evaluation 1.21 h: about 9.4 H200 hours in
+  4 jobs.
+- **Archive.** The home quota is full, so the keep-set (reports, test-v2 files, split, adapters, student, scores) is
+  staged at `/scratch/$USER/kestrix/vul2-archive-20261024/vul2-keep.tar.gz` and still needs a durable copy before the
+  scratch purge on 2026-11-03.

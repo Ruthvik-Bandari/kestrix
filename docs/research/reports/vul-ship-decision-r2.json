@@ -1,0 +1,144 @@
+{
+ "test2": {
+  "ensemble": {
+   "bow_pr_auc_ci95": [
+    0.12536358865195152,
+    0.33416950386331973
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": true,
+   "pair_correct": 0.3378016085790885,
+   "pair_min": 0.25,
+   "pair_ok": true,
+   "pr_auc": 0.38006467300890684,
+   "pr_auc_ci95": [
+    0.26321900196482406,
+    0.5555928415691861
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.04985105885513815,
+    0.26174264785334156
+   ],
+   "ship": false,
+   "system": "ensemble"
+  },
+  "student:r2-student-11337533": {
+   "bow_pr_auc_ci95": [
+    0.12536358865195152,
+    0.33416950386331973
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": false,
+   "pair_correct": 0.289544235924933,
+   "pair_min": 0.25,
+   "pair_ok": true,
+   "pr_auc": 0.341830256447516,
+   "pr_auc_ci95": [
+    0.21076491085601234,
+    0.5360021699015307
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.04985105885513815,
+    0.26174264785334156
+   ],
+   "ship": false,
+   "system": "student:r2-student-11337533"
+  },
+  "teacher:r2-seed1-11337533": {
+   "bow_pr_auc_ci95": [
+    0.12536358865195152,
+    0.33416950386331973
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": false,
+   "pair_correct": 0.3378016085790885,
+   "pair_min": 0.25,
+   "pair_ok": true,
+   "pr_auc": 0.35921455888394044,
+   "pr_auc_ci95": [
+    0.23837950422120296,
+    0.5461364141133932
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.04985105885513815,
+    0.26174264785334156
+   ],
+   "ship": false,
+   "system": "teacher:r2-seed1-11337533"
+  }
+ },
+ "test2_fresh": {
+  "ensemble": {
+   "bow_pr_auc_ci95": [
+    0.11404312293775162,
+    0.2746277221486476
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": true,
+   "pair_correct": 0.23404255319148937,
+   "pair_min": 0.25,
+   "pair_ok": false,
+   "pr_auc": 0.30909975595152633,
+   "pr_auc_ci95": [
+    0.18840797446836,
+    0.4975026377051311
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.040845325319465,
+    0.12194004108996537
+   ],
+   "ship": false,
+   "system": "ensemble"
+  },
+  "student:r2-student-11337533": {
+   "bow_pr_auc_ci95": [
+    0.11404312293775162,
+    0.2746277221486476
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": true,
+   "pair_correct": 0.0425531914893617,
+   "pair_min": 0.25,
+   "pair_ok": false,
+   "pr_auc": 0.2335546095509265,
+   "pr_auc_ci95": [
+    0.16015678138869432,
+    0.34523972913101925
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.040845325319465,
+    0.12194004108996537
+   ],
+   "ship": false,
+   "system": "student:r2-student-11337533"
+  },
+  "teacher:r2-seed1-11337533": {
+   "bow_pr_auc_ci95": [
+    0.11404312293775162,
+    0.2746277221486476
+   ],
+   "ci_above_bow": false,
+   "ci_above_rules": true,
+   "pair_correct": 0.2553191489361702,
+   "pair_min": 0.25,
+   "pair_ok": true,
+   "pr_auc": 0.27274941456216756,
+   "pr_auc_ci95": [
+    0.16224330965059208,
+    0.4546485025163511
+   ],
+   "rule": "Ship the round-2 ranker as an optional 'worth a look' ranker only if, on test-v2 (full view): (1) its PR-AUC 95% repository-bootstrap interval lies entirely above the intervals of the kestrix-scan rules and of the bag-of-words baseline (non-overlapping), AND (2) its pair accuracy is at least 0.25, where pair accuracy is the share of vulnerable/patched pairs with the vulnerable version at or above and the patched version below the validation-chosen threshold ('correct' in the C6 reports: 0.322 dev, 0.147 test, 0.071 extension for the C6 teacher). Otherwise it is not shipped.",
+   "rules_pr_auc_ci95": [
+    0.040845325319465,
+    0.12194004108996537
+   ],
+   "ship": false,
+   "system": "teacher:r2-seed1-11337533"
+  }
+ }
+}
