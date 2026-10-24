@@ -155,7 +155,8 @@ def _html(body: str, extra: str = "") -> bytes:
     ).encode()
 
 
-def test_variants_fix_what_they_claim_and_restore_the_module() -> None:
+def test_variants_match_the_shipped_rules_and_restore_the_module() -> None:
+    """P1, P3 and P6 are now in ``kestrix.mail``: the bench variants agree with the unpatched analyzer."""
     from kestrix.mail import analyze
     from kestrixmailbench import modern_proposals as mp
 
@@ -163,17 +164,21 @@ def test_variants_fix_what_they_claim_and_restore_the_module() -> None:
         '<a href="https://eur01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdocs.partner.com%2Fx">'
         "docs.partner.com</a>"
     )
-    assert analyze(wrapped).verdict == "malicious"  # text names a site, link goes to the gateway
-    assert mp.analyze_variant(wrapped, "p1_unwrap_rewriters") == "insufficient_evidence"
     local = _html('<a href="http://192.168.1.5/status">status</a>')
-    assert analyze(local).verdict == "suspicious"
-    assert mp.analyze_variant(local, "p3_private_ip") != "suspicious"
     public = _html('<a href="http://8.8.8.8/status">status</a>')
-    assert mp.analyze_variant(public, "p3_private_ip") == "suspicious"
     lst = _html("hello", "List-Id: <dev.proj.example>\nReply-To: someone@gmail.com\n")
-    assert analyze(lst).verdict == "suspicious"
-    assert mp.analyze_variant(lst, "p6_list_freemail_reply") != "suspicious"
-    assert mp.analyze_variant(wrapped, "base") == "malicious"
+    assert analyze(wrapped).verdict == "insufficient_evidence"
+    assert analyze(local).verdict != "suspicious"
+    assert analyze(public).verdict == "suspicious"
+    assert analyze(lst).verdict != "suspicious"
+    for raw, name in [
+        (wrapped, "p1_unwrap_rewriters"),
+        (local, "p3_private_ip"),
+        (public, "p3_private_ip"),
+        (lst, "p6_list_freemail_reply"),
+        (wrapped, "base"),
+    ]:
+        assert mp.analyze_variant(raw, name) == analyze(raw).verdict
     assert mp.analyze_module.analyze_links.__module__ == "kestrix.mail.analyzers"  # patches were removed
 
 
