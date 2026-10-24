@@ -81,8 +81,8 @@ line-length = 120
 target-version = "py310"
 # First-party sources of both workspace packages, for import sorting.
 src = ["src", "packages/kestrix-scan/src"]
-# Deliberately vulnerable benchmark cases (bench/cases) and the plugin demo project are test data, not project code.
-extend-exclude = ["bench/cases", "docs/demo/sample-project"]
+# Deliberately vulnerable benchmark cases (research/scanbench/cases) and the plugin demo project are test data, not project code.
+extend-exclude = ["research/scanbench/cases", "docs/demo/sample-project"]
 
 [tool.ruff.format]
 # Prose examples in docs/ are written for readers; `ruff format` would reflow their code blocks.
@@ -160,9 +160,7 @@ modules = [
     "kestrix_scan.yaml_lite",
 ]
 strict = true
-packages = ["kestrix", "kestrixbench", "bench", "kestrixvul", "kestrixmailbench", "kestrixcodebench", "kestrixlinkfilebench"]
-# The deliberately vulnerable benchmark cases are data for the scanners, not project code.
-exclude = ["^bench/cases/"]
+packages = ["kestrix", "kestrixbench", "kestrixscanbench", "kestrixvul", "kestrixmailbench", "kestrixcodebench", "kestrixlinkfilebench"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]

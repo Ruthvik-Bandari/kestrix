@@ -48,6 +48,6 @@ mlruns/
 .worktrees/
 
 # Benchmark downloads, tool environments and raw reports (third-party licences; never commit)
-bench/.cache/
+research/scanbench/.cache/
 bench-results/
 .gstack/

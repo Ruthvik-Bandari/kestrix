@@ -5,8 +5,9 @@
 import json
 
 import pytest
-from bench import mapping, run, sg_regex
-from bench.scoring import Counts, ExpectedResultsError, Finding, case_of, parse_expected, score
+
+from kestrixscanbench import mapping, run, sg_regex
+from kestrixscanbench.scoring import Counts, ExpectedResultsError, Finding, case_of, parse_expected, score
 
 EXPECTED = """\
 # test name, category, real vulnerability, cwe

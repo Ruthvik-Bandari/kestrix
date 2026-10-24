@@ -13,7 +13,7 @@ Unit: a *pair* is one changed file of a CVE fix, before and after. Ground truth 
 * **any finding near the change**: a before-file finding of any family near the changed lines, over all pairs (family
   agnostic, so it also covers CVEs with no mapped CWE);
 * **alerts**: findings that map to a family (``families.py``); the rest (assert statements, import checks, style rules)
-  are lint-level findings that the existing ``bench/`` scoring also ignores and are reported separately;
+  are lint-level findings that the existing ``kestrixscanbench`` scoring also ignores and are reported separately;
 * **false alarms**: alerts on after-files and on unchanged files, per KLOC. Approximate on purpose: a fixed file may
   still hold another weakness, and an unchanged file may be vulnerable;
 * **precision**: true detections over true detections plus alerts on after-files and unchanged files (a proxy that

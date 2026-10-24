@@ -198,7 +198,7 @@ def security_guidance_categories(rule_name: str) -> frozenset[str]:
 
 
 def markdown_tables() -> str:
-    """The mapping tables as Markdown, for the scorecard (``python -m bench.run mapping``)."""
+    """The mapping tables as Markdown, for the scorecard (``python -m kestrixscanbench.run mapping``)."""
     lines = ["| CWE | Category |", "| --- | --- |"]
     lines += [f"| CWE-{cwe} | `{cat}` |" for cwe, cat in sorted(CWE_CATEGORY.items())]
     lines += ["", "| Kestrix rule | Category |", "| --- | --- |"]

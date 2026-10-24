@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 HOST="${1:-explorer-01}"
 DIR="${2:-kestrix-codebench}"
-FILES=(src packages/kestrix-scan/src bench/__init__.py bench/mapping.py hpc)
+FILES=(src packages/kestrix-scan/src hpc)
 COPYFILE_DISABLE=1 tar --no-xattrs -czf - --exclude '__pycache__' --exclude '.DS_Store' "${FILES[@]}" |
   ssh "$HOST" "mkdir -p $DIR && cd $DIR && rm -rf src packages bench hpc && tar -xzf -"
 SHA="$(git rev-parse --short HEAD)+$(find "${FILES[@]}" -type f -not -path '*/__pycache__/*' -not -name .DS_Store | LC_ALL=C sort | xargs shasum | shasum | cut -c1-8)"

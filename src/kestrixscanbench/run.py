@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Benchmark kestrix-scan, Bandit, Semgrep CE and the security-guidance regex layer.
 
-``uv run python -m bench.run [--suite benchmarkpython|owned|heldout|all] [--tools LIST] [--cache DIR] [--out DIR]
-[--publish DIR]`` and ``uv run python -m bench.run --print-mapping``.
+``uv run python -m kestrixscanbench.run [--suite benchmarkpython|owned|heldout|all] [--tools LIST] [--cache DIR] [--out DIR]
+[--publish DIR]`` and ``uv run python -m kestrixscanbench.run --print-mapping``.
 
-Everything third-party is downloaded into the cache (default ``bench/.cache/``, git-ignored), never into the repo:
+Everything third-party is downloaded into the cache (default ``research/scanbench/.cache/``, git-ignored), never into the repo:
 
 - OWASP BenchmarkPython (GPL-3.0) at a pinned commit, by a shallow ``git fetch`` of that commit;
 - Bandit and Semgrep CE at pinned versions, into their own virtual environment made with ``uv``;
@@ -16,7 +16,7 @@ Everything third-party is downloaded into the cache (default ``bench/.cache/``, 
 ``DIR/<suite>.json`` and ``<out>/<suite>.public.md`` restricted to the tools in ``PUBLISHABLE``: Semgrep's numbers
 stay out of committed results (see the scorecard).
 Results hold only test-case names, categories, CWEs, booleans, counts, rates, versions and timings. Published results
-also carry ``bench/history.json``: earlier Kestrix results for the suite and the disclosure that later rule changes
+also carry ``research/scanbench/history.json``: earlier Kestrix results for the suite and the disclosure that later rule changes
 were informed by the BenchmarkPython gap analysis.
 """
 
@@ -42,11 +42,12 @@ from . import tools
 from .mapping import CATEGORIES, markdown_tables
 from .scoring import Case, Scorecard, case_of, parse_expected, score
 
-REPO = Path(__file__).resolve().parents[1]
-DEFAULT_CACHE = REPO / "bench" / ".cache"
-OWNED_CASES = REPO / "bench" / "cases"
+REPO = Path(__file__).resolve().parents[2]
+DATA = REPO / "research" / "scanbench"  # owned cases and history; downloads go to its git-ignored .cache
+DEFAULT_CACHE = DATA / ".cache"
+OWNED_CASES = DATA / "cases"
 HELDOUT_CASES = OWNED_CASES / "heldout"  # written before the gap-analysis rule changes were measured
-HISTORY = REPO / "bench" / "history.json"  # earlier published Kestrix results and the tuning disclosure
+HISTORY = DATA / "history.json"  # earlier published Kestrix results and the tuning disclosure
 
 BENCHMARK_PYTHON = {
     "repository": "https://github.com/OWASP-Benchmark/BenchmarkPython",
@@ -172,13 +173,21 @@ def benchmark_python_suite(cache: Path) -> Suite:
 
 def owned_suite() -> Suite:
     cases = parse_expected((OWNED_CASES / "expected.csv").read_text(encoding="utf-8"))
-    source = {"path": "bench/cases", "license": "Apache-2.0", "expected": "bench/cases/expected.csv"}
+    source = {
+        "path": "research/scanbench/cases",
+        "license": "Apache-2.0",
+        "expected": "research/scanbench/cases/expected.csv",
+    }
     return Suite("owned", OWNED_CASES, cases, source)
 
 
 def heldout_suite() -> Suite:
     cases = parse_expected((HELDOUT_CASES / "expected.csv").read_text(encoding="utf-8"))
-    source = {"path": "bench/cases/heldout", "license": "Apache-2.0", "expected": "bench/cases/heldout/expected.csv"}
+    source = {
+        "path": "research/scanbench/cases/heldout",
+        "license": "Apache-2.0",
+        "expected": "research/scanbench/cases/heldout/expected.csv",
+    }
     return Suite("heldout", HELDOUT_CASES, cases, source)
 
 
@@ -340,7 +349,7 @@ def run_suite(suite: Suite, selected: list[str], cache: Path) -> dict[str, Any]:
         "cases": len(suite.cases),
         "cases_per_category": dict(sorted(per_cat.items())),
         "modes": {
-            "category": "primary: findings map to categories through bench/mapping.py",
+            "category": "primary: findings map to categories through src/kestrixscanbench/mapping.py",
             "strict_cwe": "BenchmarkUtils rule: a reported CWE must equal the case CWE; null if the tool reports none",
         },
         "environment": environment,
@@ -372,7 +381,7 @@ def publishable(result: dict[str, Any], history: dict[str, Any] | None = None) -
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m bench.run", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog="python -m kestrixscanbench.run", description=__doc__.split("\n\n")[0])
     parser.add_argument("--suite", choices=["benchmarkpython", "owned", "heldout", "all"], default="all")
     parser.add_argument("--tools", default=",".join(ALL_TOOLS), help=f"comma-separated subset of {ALL_TOOLS}")
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)

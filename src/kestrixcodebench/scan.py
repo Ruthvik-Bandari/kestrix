@@ -6,7 +6,7 @@ A shard directory holds ``b/``, ``a/`` and ``u/`` (before, after and unchanged f
 report path tells the file kind and id. Each tool runs with the shard as its working directory, with its own defaults:
 
 * **kestrix**: ``python -m kestrix_scan scan . --no-config --fail-on none --format json`` from the checked-out code;
-* **bandit**: ``bandit -r . -f json --exit-zero`` (every test, every severity and confidence), the pin of ``bench/``;
+* **bandit**: ``bandit -r . -f json --exit-zero`` (every test, every severity and confidence), the pin of ``kestrixscanbench``;
 * **eslint**: ESLint with ``eslint-plugin-security`` (all its rules at the plugin's ``recommended`` setting), parsing
   JavaScript and TypeScript with typescript-eslint's parser. It runs on Node from the cluster module, offline.
 

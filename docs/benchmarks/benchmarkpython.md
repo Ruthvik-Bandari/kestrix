@@ -5,16 +5,16 @@ three test suites:
 
 - [OWASP BenchmarkPython](https://github.com/OWASP-Benchmark/BenchmarkPython) v0.1, a public suite of 1,230 labelled
   Python test cases;
-- the Kestrix cases in [`bench/cases`](../../bench/cases), 87 labelled cases written for this project;
-- the held-out Kestrix cases in [`bench/cases/heldout`](../../bench/cases/heldout), 44 vulnerable/safe pairs (88 cases)
+- the Kestrix cases in [`research/scanbench/cases`](../../research/scanbench/cases), 87 labelled cases written for this project;
+- the held-out Kestrix cases in [`research/scanbench/cases/heldout`](../../research/scanbench/cases/heldout), 44 vulnerable/safe pairs (88 cases)
   written before the latest rule changes were measured.
 
 Semgrep CE was also run. Its numbers are not published here; see [Semgrep](#semgrep) for why.
 
 The machine-readable results are [benchmarkpython.json](benchmarkpython.json), [owned.json](owned.json) and
 [heldout.json](heldout.json). Each one carries the earlier Kestrix results for its suite (`history`) and the
-disclosure below (`disclosure`), from [`bench/history.json`](../../bench/history.json). The harness is
-[`bench/run.py`](../../bench/run.py).
+disclosure below (`disclosure`), from [`research/scanbench/history.json`](../../research/scanbench/history.json). The harness is
+[`src/kestrixscanbench/run.py`](../../src/kestrixscanbench/run.py).
 
 **Run:** 2026-10-20, Apple M4 Pro (12 cores), macOS 27.0.1, Python 3.12.13, Kestrix commit `0de3fb4` (`kestrix-scan`
 0.1.0, scanner committed).
@@ -280,12 +280,12 @@ details. Items that were **not** addressed:
 ### Suites
 
 **BenchmarkPython** is fetched by a shallow `git fetch` of commit `f1291485808b66e20ddb6b01b10dc71b3df8c8ba`
-(`main` on 2026-05-19, v0.1) into the git-ignored `bench/.cache/`. Its `expectedresults-0.1.csv` gives each test
+(`main` on 2026-05-19, v0.1) into the git-ignored `research/scanbench/.cache/`. Its `expectedresults-0.1.csv` gives each test
 case's category, CWE and whether it is a real vulnerability. Every tool scans `testcode/`, the 1,230
 `BenchmarkTestNNNNN.py` files; the helper modules are not scanned.
 
-**The Kestrix cases** are in [`bench/cases`](../../bench/cases), labelled in
-[`bench/cases/expected.csv`](../../bench/cases/expected.csv) in the same format. They have two parts:
+**The Kestrix cases** are in [`research/scanbench/cases`](../../research/scanbench/cases), labelled in
+[`research/scanbench/cases/expected.csv`](../../research/scanbench/cases/expected.csv) in the same format. They have two parts:
 
 - **71 Python files.** These are vulnerable/safe pairs per rule family, written in the style of AI-generated Flask,
   FastAPI and agent code. They include taint and sanitizer cases (`shlex.quote`, `secure_filename`, resolve-and-contain
@@ -294,7 +294,7 @@ case's category, CWE and whether it is a real vulnerability. Every tool scans `t
 - **16 Claude Code and MCP configuration cases.** These are `.claude/settings.json`, plugin `hooks/hooks.json` and
   `.mcp.json` files. Every URL in them uses the reserved `.invalid` domain.
 
-**The held-out Kestrix cases** are in [`bench/cases/heldout`](../../bench/cases/heldout), labelled in their own
+**The held-out Kestrix cases** are in [`research/scanbench/cases/heldout`](../../research/scanbench/cases/heldout), labelled in their own
 `expected.csv`. They are 44 vulnerable/safe pairs, written from scratch from the category-level gap list and the
 CWE and library documentation before the rule changes were measured (commit `ce7e3d3`), and measured once with the
 unchanged scanner. They are scanned as their own suite; the owned suite counts only findings in its own cases, so the
@@ -306,10 +306,10 @@ held-out files in its directory do not affect it.
 | --- | --- | --- |
 | kestrix-scan | 0.1.0 at the commit above | `python -m kestrix_scan scan . --no-config --fail-on none --format json` from the project environment |
 | Bandit | 1.9.4 | `bandit -r . -f json --exit-zero`: every test, every severity and confidence |
-| security-guidance regex layer | plugin 2.0.14, [`claude-plugins-official@a0b04d9`](https://github.com/anthropics/claude-plugins-official/tree/a0b04d9ddccaabe1976645f68b0eda50f74e7022/plugins/security-guidance) | `hooks/patterns.py`, checked against a pinned SHA-256, applied by [`bench/sg_regex.py`](../../bench/sg_regex.py) to each file's full content, as the plugin's hook checks a `Write` |
+| security-guidance regex layer | plugin 2.0.14, [`claude-plugins-official@a0b04d9`](https://github.com/anthropics/claude-plugins-official/tree/a0b04d9ddccaabe1976645f68b0eda50f74e7022/plugins/security-guidance) | `hooks/patterns.py`, checked against a pinned SHA-256, applied by [`src/kestrixscanbench/sg_regex.py`](../../src/kestrixscanbench/sg_regex.py) to each file's full content, as the plugin's hook checks a `Write` |
 | Semgrep CE | 1.178.0 | `semgrep scan --config p-python.yml --metrics=off` on a saved copy of the `p/python` ruleset (not published) |
 
-Bandit and Semgrep are installed into their own virtual environment in `bench/.cache/tools`, never into the project.
+Bandit and Semgrep are installed into their own virtual environment in `research/scanbench/.cache/tools`, never into the project.
 Every tool scans with its default settings, and every finding counts, whatever its severity or confidence. Only the
 security-guidance plugin's pattern warnings are measured; its LLM reviews are out of scope.
 
@@ -339,7 +339,7 @@ Two matching modes are reported:
 
 ### Mapping tables
 
-These tables are in [`bench/mapping.py`](../../bench/mapping.py); `uv run python -m bench.run --print-mapping`
+These tables are in [`src/kestrixscanbench/mapping.py`](../../src/kestrixscanbench/mapping.py); `uv run python -m kestrixscanbench.run --print-mapping`
 prints them.
 
 - **Kestrix:** mapped by rule id.
@@ -451,10 +451,10 @@ Semgrep, or use a ruleset whose license allows it.
 
 ## Licensing of this benchmark
 
-- **BenchmarkPython (GPL-3.0) is never committed.** The harness downloads it into the git-ignored `bench/.cache/`.
+- **BenchmarkPython (GPL-3.0) is never committed.** The harness downloads it into the git-ignored `research/scanbench/.cache/`.
 - **The committed results hold only data.** They contain test-case names, categories, CWEs, booleans, counts,
   rates, versions and timings, and no code from the benchmark.
-- **Raw tool reports stay local.** They quote benchmark code, so they stay in `bench/.cache/` and are not uploaded
+- **Raw tool reports stay local.** They quote benchmark code, so they stay in `research/scanbench/.cache/` and are not uploaded
   by CI.
 - **The security-guidance patterns are downloaded at run time.** They are Apache-2.0 and are not copied into this
   repository.
@@ -464,14 +464,14 @@ Semgrep, or use a ruleset whose license allows it.
 
 ```bash
 uv sync --all-extras
-uv run python -m bench.run --suite all --tools kestrix,bandit,security-guidance --publish docs/benchmarks
+uv run python -m kestrixscanbench.run --suite all --tools kestrix,bandit,security-guidance --publish docs/benchmarks
 ```
 
 `--suite all` runs BenchmarkPython, the owned cases and the held-out cases; `--suite heldout` runs only the held-out
 cases. The first run needs network access, `git` and `uv`. It fetches BenchmarkPython and builds the tool environment
-(Python 3.12). Later runs reuse `bench/.cache/`. Results go to `bench/.cache/results/` (`<suite>.json` and a
+(Python 3.12). Later runs reuse `research/scanbench/.cache/`. Results go to `research/scanbench/.cache/results/` (`<suite>.json` and a
 Markdown table). `--publish DIR` also writes the publishable JSON to `DIR`, with the suite's `history` and the
-`disclosure` from `bench/history.json`. Add a run to the history by hand when its results replace the published
+`disclosure` from `research/scanbench/history.json`. Add a run to the history by hand when its results replace the published
 ones.
 
 The [`bench.yml`](../../.github/workflows/bench.yml) workflow runs the harness weekly and on demand, and uploads the

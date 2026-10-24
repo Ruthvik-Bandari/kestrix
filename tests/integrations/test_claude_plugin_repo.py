@@ -324,7 +324,7 @@ def test_readme_privacy_coverage_and_does_it_help_say_what_they_must() -> None:
 def test_benchmark_pages_ship_without_links_into_the_private_repository() -> None:
     scorecard, report = _text("benchmarks/scorecard.md"), _text("benchmarks/plugin-ab.md")
     assert "Disclosure: this round of rule changes was informed by the benchmark" in scorecard
-    assert "[bench/run.py]" not in scorecard and "](../../" not in scorecard + report
+    assert "[src/kestrixscanbench/run.py]" not in scorecard and "](../../" not in scorecard + report
     assert "**Status: not yet run. No effectiveness numbers are claimed.**" in report
     assert "<!-- results:start -->" in report and "Not yet run." in report
 

@@ -3,9 +3,9 @@
   "generated_by": "Kestrix by Ruthvik Bandari",
   "suite": "heldout",
   "source": {
-    "path": "bench/cases/heldout",
+    "path": "research/scanbench/cases/heldout",
     "license": "Apache-2.0",
-    "expected": "bench/cases/heldout/expected.csv"
+    "expected": "research/scanbench/cases/heldout/expected.csv"
   },
   "cases": 88,
   "cases_per_category": {
@@ -67,7 +67,7 @@
     }
   },
   "modes": {
-    "category": "primary: findings map to categories through bench/mapping.py",
+    "category": "primary: findings map to categories through src/kestrixscanbench/mapping.py",
     "strict_cwe": "BenchmarkUtils rule: a reported CWE must equal the case CWE; null if the tool reports none"
   },
   "environment": {

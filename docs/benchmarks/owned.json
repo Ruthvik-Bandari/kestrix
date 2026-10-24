@@ -3,9 +3,9 @@
   "generated_by": "Kestrix by Ruthvik Bandari",
   "suite": "owned",
   "source": {
-    "path": "bench/cases",
+    "path": "research/scanbench/cases",
     "license": "Apache-2.0",
-    "expected": "bench/cases/expected.csv"
+    "expected": "research/scanbench/cases/expected.csv"
   },
   "cases": 87,
   "cases_per_category": {
@@ -79,7 +79,7 @@
     }
   },
   "modes": {
-    "category": "primary: findings map to categories through bench/mapping.py",
+    "category": "primary: findings map to categories through src/kestrixscanbench/mapping.py",
     "strict_cwe": "BenchmarkUtils rule: a reported CWE must equal the case CWE; null if the tool reports none"
   },
   "environment": {

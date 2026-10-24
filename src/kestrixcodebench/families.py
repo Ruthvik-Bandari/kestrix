@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """CWE families: how a CVE's CWE and each tool's findings are put on one scale.
 
-The families are the categories of ``bench/mapping.py`` (the existing benchmark's CWE table, so "command injection" means
+The families are the categories of ``src/kestrixscanbench/mapping.py`` (the existing benchmark's CWE table, so "command injection" means
 the same thing in both benchmarks) plus five that matter for JavaScript or that eslint-plugin-security reports. A CVE
 pair is *in scope* when at least one of its CWEs maps to a family; the other CVEs (CWE-20, memory safety, access
 control, information exposure and so on) count only in the any-finding-near-the-change rate.
 
-Kestrix and Bandit map exactly as in ``bench/mapping.py`` (rule table first, then the CWE the finding reports);
+Kestrix and Bandit map exactly as in ``src/kestrixscanbench/mapping.py`` (rule table first, then the CWE the finding reports);
 eslint-plugin-security reports no CWE, so its rules are mapped here by the weakness each rule's documentation names.
 The tables are facts about each tool's rules; no rule text is copied.
 """
@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
-from bench.mapping import BANDIT_OVERRIDES, CWE_CATEGORY, KESTRIX_BY_CWE, KESTRIX_PREFIXES, KESTRIX_RULES
+from kestrixscanbench.mapping import BANDIT_OVERRIDES, CWE_CATEGORY, KESTRIX_BY_CWE, KESTRIX_PREFIXES, KESTRIX_RULES
 
 EXTRA_CWE_FAMILY: dict[int, str] = {
     1321: "protopollution",
