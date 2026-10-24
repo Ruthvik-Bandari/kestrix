@@ -15,3 +15,14 @@ Produced by `python -m kestrixmailbench` on the Explorer cluster; method, result
 | `mail-learn-content.json`, `mail-learn-content_noera.json` | Cross-validated learned-versus-baseline tables for the two sets the write-up discusses. The other six reports stay on the cluster (`reports/mail-learn-*.json`) |
 
 The locked test has not been run; when it does, `reports/mail-locked-<name>.json` and `reports/LOCKED_EVAL.json` are added here.
+
+Modern normal mail (section "Modern normal mail (2022-2026)" of the research page; mailing-list months, aggregates only):
+
+| File | What it is |
+| --- | --- |
+| `modern-build.json` | Messages read, dropped (duplicates, per-month cap) and kept per list and year; the list-level dev/held-out split with hashes of each split's ids |
+| `modern-dev.json` | Dev metrics for the current rules: flagged and malicious rates by source, list, year and source-year with group-bootstrap intervals, finding frequencies and flagging id sets, the auth-header analysis, the Reply-To exemption counts, the synthetic cohort |
+| `modern-diag.json` | Dev-only structural shapes of the evidence behind the false alarms (hosts and addresses reduced to placeholders; shapes under 5 suppressed), per-list flagging ids, text/href mismatch link classes |
+| `modern-variants.json` | Dev verdict rates of each proposed rule change on the modern dev lists and the old dev corpora |
+| `modern-heldout.json`, `modern-locked-eval.json` | The one-time held-out measurement of the current rules and its claim file |
+

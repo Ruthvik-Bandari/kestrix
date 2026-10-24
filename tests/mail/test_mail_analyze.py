@@ -286,9 +286,9 @@ def test_punycode_link() -> None:
 @pytest.mark.parametrize(
     ("href", "finding_id", "severity"),
     [
-        ("https://192.168.10.5/x", "mail.links.ip_host", "medium"),
+        ("https://192.168.10.5/x", "mail.links.ip_host", "info"),  # private
         ("http://3232235777/x", "mail.links.ip_host", "medium"),
-        ("https://[2001:db8::1]/x", "mail.links.ip_host", "medium"),
+        ("https://[2001:db8::1]/x", "mail.links.ip_host", "info"),  # documentation range: not global
         ("https://bit.ly/abc", "mail.links.shortener", "low"),
         ("https://example.com/r?next=https%3A%2F%2Fevil.example%2F", "mail.links.redirect_param", "low"),
         ("http://example.com/account/login", "mail.links.insecure_login", "low"),

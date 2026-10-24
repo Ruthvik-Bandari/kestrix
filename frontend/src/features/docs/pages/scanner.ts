@@ -37,6 +37,11 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     prefixes: ["sql."],
     intro: "Run on `.sql` files: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`.",
   },
+  {
+    heading: "CI and infrastructure (gha.*, docker.*, sh.*, tf.*, k8s.*)",
+    prefixes: ["gha.", "docker.", "sh.", "tf.", "k8s."],
+    intro: "Run on GitHub Actions workflows and `action.yml`, Dockerfiles and Containerfiles, `.sh` and `.bash` scripts (and `run:` blocks and `RUN` lines), `.tf` files and Kubernetes manifests, read with a bounded YAML subset reader and line scanners. Nothing is run or planned; only literal values are judged. Suppress with `# kestrix: ignore[id] reason`.",
+  },
   { heading: "Secrets (secret.*)", prefixes: ["secret."], intro: "Run on every text file. Findings show only the kind of secret and its first four characters, never the value." },
   {
     heading: "Claude Code and MCP configuration (config.*)",

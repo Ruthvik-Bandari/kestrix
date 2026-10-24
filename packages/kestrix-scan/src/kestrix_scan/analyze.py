@@ -10,6 +10,7 @@ findings whose fingerprint is in the baseline.
 JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
 HTML, Vue, Svelte and Angular templates take ``<!-- kestrix: ignore[...] reason -->``; CSS takes ``/* ... */``.
 PHP files take ``//``, ``#`` and ``/* ... */`` comments (Blade also ``{{-- kestrix: ignore[...] reason --}}``); SQL files take ``-- ...``.
+GitHub Actions, Dockerfile, shell, Terraform and Kubernetes files (``iac.py``) take ``# kestrix: ignore[...] reason``.
 A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
 
 Suppression: ``# kestrix: ignore[rule-id] reason`` (or ``// kestrix: ignore[...] reason``) on the
@@ -25,7 +26,7 @@ import re
 import subprocess
 import tempfile
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -33,6 +34,7 @@ from . import deps
 from .agent_config import check_config, config_kind
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
+from .iac import check_iac, iac_kind
 from .js_rules import JS_SUFFIXES, check_js
 from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, SkipReason, count, fingerprint, ordered
 from .php_rules import PHP_SUFFIXES, check_php
@@ -52,7 +54,7 @@ _SUPPRESSION = re.compile(r"(?:#|//|/\*|<!--|--)\s*kestrix:\s*ignore\[([^\]\n]*)
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
-_CONFIG_SECRET_RULES = frozenset({"config.mcp.secret_inline", "config.claude.env_leak"})
+_CONFIG_SECRET_RULES = frozenset({"config.mcp.secret_inline", "config.claude.env_leak", "docker.env.secret"})
 
 
 def scan(
@@ -195,9 +197,15 @@ def _language_hits(text: str, candidate: Candidate) -> list[Hit] | SkipReason | 
         return check_php(text, candidate.rel)
     if lowered in SQL_SUFFIXES:
         return check_sql(text, candidate.rel)
-    if config_kind(candidate.rel) is not None:
-        return check_config(text, candidate.rel)
-    return None
+    checker = _structured_checker(candidate.rel, text)
+    return checker(text, candidate.rel) if checker is not None else None
+
+
+def _structured_checker(rel: str, text: str) -> Callable[[str, str], list[Hit] | SkipReason] | None:
+    """The checker for a CI, infrastructure or Claude Code configuration file, chosen by its path, else None."""
+    if iac_kind(rel, text) is not None:
+        return check_iac
+    return check_config if config_kind(rel) is not None else None
 
 
 def _finding(item: Hit, rel: str) -> Finding:

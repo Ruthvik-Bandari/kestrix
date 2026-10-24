@@ -1,6 +1,6 @@
 ---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, gha.*, docker.*, sh.*, tf.*, k8s.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
 ---
 
 # Fixing Kestrix findings, rule by rule
@@ -2190,4 +2190,752 @@ After:
 
 ```sql
 CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
+```
+
+## CI and infrastructure rules (GitHub Actions, Dockerfile, shell, Terraform, Kubernetes)
+
+These rules read `.github/workflows/*.yml` and `action.yml`, `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and `Containerfile`, `.sh` and `.bash` scripts (and the `run:` blocks and `RUN` lines above), `.tf` files and Kubernetes manifests. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` on the line or the line above (inside the script for a `run:` block).
+
+### `gha.pr_target.checkout_head`: pull_request_target or workflow_run workflow that checks out the pull request's head
+
+CWE-829 · default severity high · confidence medium
+
+**Why:** A pull_request_target or workflow_run workflow runs from the base repository with its secrets and a token that can write. Checking out the pull request's head (a fork's code) in such a workflow and then building, testing or running anything from it hands that code the secrets and the token.
+
+**Fix:** Run untrusted code in a pull_request workflow, which has no secrets and a read-only token. If a privileged workflow must act on a pull request, check out only the base branch, never run the head's code, and pass results between two workflows as an artifact that the privileged one only reads as data.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: pull_request_target
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: make test
+```
+
+After:
+
+```yaml
+on: pull_request
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make test
+```
+
+### `gha.injection.untrusted_context`: Untrusted ${{ github.event.* }} value written into a run: script
+
+CWE-78 · default severity high · confidence high
+
+**Why:** GitHub replaces ${{ ... }} in a run: script before the shell starts, so a pull request title, branch name, issue body or commit message containing shell syntax becomes part of the command. In an actions/github-script script: the same text becomes JavaScript (CWE-94).
+
+**Fix:** Pass the value through an environment variable and read it as a shell variable: env: TITLE: ${{ github.event.pull_request.title }} and then "$TITLE" in run:. For github-script, read it from process.env or context.payload instead of writing it into the script.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: pull_request
+permissions: {}
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.event.pull_request.title }}"
+```
+
+After:
+
+```yaml
+on: pull_request
+permissions: {}
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$TITLE"
+```
+
+### `gha.action.unpinned`: Third-party action not pinned to a full commit SHA
+
+CWE-829 · default severity low · confidence high
+
+**Why:** A tag or branch such as @v3 or @main can be moved by the action's owner, or by whoever takes over their account, so the next run executes different code with the workflow's secrets. Only a full 40-character commit SHA is immutable. Actions owned by actions/ and github/ are not reported.
+
+**Fix:** Pin the action to the commit SHA of the release you reviewed and keep the tag in a comment: uses: owner/action@<40-character sha> # v3.1.0. Dependabot can update pinned SHAs.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: push
+permissions: {}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@v2
+```
+
+After:
+
+```yaml
+on: push
+permissions: {}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2
+```
+
+### `gha.permissions.write_all`: Workflow or job with permissions: write-all
+
+CWE-250 · default severity medium · confidence high
+
+**Why:** permissions: write-all gives the job's GITHUB_TOKEN write access to contents, packages, issues, pull requests and every other scope. A compromised step or action can then rewrite the repository.
+
+**Fix:** List only the scopes the job needs, for example permissions: { contents: read }, and add write scopes on the one job that needs them.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: push
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make
+```
+
+After:
+
+```yaml
+on: push
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make
+```
+
+### `gha.permissions.missing`: Workflow that uses secrets and sets no permissions
+
+CWE-250 · default severity low · confidence low
+
+**Why:** Without a permissions: key the GITHUB_TOKEN gets the repository's default, which is read and write for repositories and organizations that kept the old default. A workflow that handles secrets deserves a token limited to what it uses. Reported only when the workflow references a secret other than GITHUB_TOKEN and neither the top level nor every job sets permissions.
+
+**Fix:** Add a top-level permissions: contents: read and widen it per job where a job needs more.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: push
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./deploy.sh
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+```
+
+After:
+
+```yaml
+on: push
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./deploy.sh
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+```
+
+### `gha.secrets.echoed`: Secret written to the job log with echo or printf
+
+CWE-532 · default severity medium · confidence medium
+
+**Why:** echo "${{ secrets.NAME }}" prints the secret to a log that anyone with read access to the repository can open. GitHub masks the exact value, but a transformed copy (base64, a substring, split across lines) is not masked.
+
+**Fix:** Do not print secrets. Pass one to the command that needs it through env: or a file with restricted permissions, and add ::add-mask:: for any derived value.
+
+Before (`.github/workflows/ci.yml`):
+
+```yaml
+on: push
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "key is ${{ secrets.API_KEY }}"
+```
+
+After:
+
+```yaml
+on: push
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: ./use-key.sh
+```
+
+### `docker.user.root`: Dockerfile whose final stage runs as root
+
+CWE-250 · default severity low · confidence medium
+
+**Why:** With no USER instruction (or USER root or 0) the container's main process runs as root. A bug in the application then gives an attacker root inside the container, which makes escaping it, writing to mounted volumes or reaching the network much easier. Images named nonroot, rootless or unprivileged, bitnami images and FROM scratch are not reported.
+
+**Fix:** Create an unprivileged user and switch to it before the entrypoint: RUN useradd --system --uid 10001 app, then USER 10001:10001.
+
+Before (`Dockerfile`):
+
+```dockerfile
+FROM python:3.12-slim@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+COPY . /app
+CMD ["python", "/app/main.py"]
+```
+
+After:
+
+```dockerfile
+FROM python:3.12-slim@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+COPY . /app
+RUN useradd --system --uid 10001 app
+USER 10001:10001
+CMD ["python", "/app/main.py"]
+```
+
+### `docker.add.remote_url`: ADD of a remote URL without a checksum
+
+CWE-494 · default severity medium · confidence high
+
+**Why:** ADD http(s)://... downloads whatever the server returns at build time and keeps no record of what it was, so a changed or hijacked file ends up in the image unnoticed.
+
+**Fix:** Download with curl or wget in a RUN step and verify a SHA-256 checksum, or use ADD --checksum=sha256:<digest> <url> <dest>.
+
+Before (`Dockerfile`):
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+ADD https://example.com/tool.tar.gz /opt/
+USER 10001
+```
+
+After:
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+ADD --checksum=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1 https://example.com/tool.tar.gz /opt/
+USER 10001
+```
+
+### `docker.run.pipe_to_shell`: RUN that pipes curl or wget into a shell
+
+CWE-494 · default severity medium · confidence high
+
+**Why:** curl ... | sh runs a script the moment it is downloaded, with no chance to check it. A compromised or changed server, or a connection that is not verified, runs attacker code during the build and in every image built from it.
+
+**Fix:** Download the file, verify a pinned SHA-256 checksum (sha256sum -c), and only then run it. Prefer the distribution's package manager.
+
+Before (`Dockerfile`):
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+RUN curl -fsSL https://example.com/install.sh | sh
+USER 10001
+```
+
+After:
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+RUN curl -fsSL -o /tmp/install.sh https://example.com/install.sh \
+ && echo "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1  /tmp/install.sh" | sha256sum -c - \
+ && sh /tmp/install.sh
+USER 10001
+```
+
+### `docker.from.latest`: Base image with the latest tag, or no tag and no digest
+
+CWE-1357 · default severity low · confidence high
+
+**Why:** FROM image:latest (or FROM image) follows whatever the registry publishes next, so a rebuild can change the operating system, libraries and behavior without any change in the repository, and a poisoned tag reaches the next build.
+
+**Fix:** Pin a version tag, and for production a digest: FROM python:3.12-slim@sha256:<digest>.
+
+Before (`Dockerfile`):
+
+```dockerfile
+FROM ubuntu:latest
+USER 10001
+```
+
+After:
+
+```dockerfile
+FROM ubuntu:24.04@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+USER 10001
+```
+
+### `docker.env.secret`: ENV or ARG with a credential-like name and a literal value
+
+CWE-798 · default severity medium · confidence medium
+
+**Why:** A value set with ENV or ARG is stored in the image's layers and history, where anyone who can pull the image can read it (docker history, docker inspect). The value is never shown in the finding.
+
+**Fix:** Do not bake credentials into the image. Pass them at run time (environment variable, mounted file, orchestrator secret) or use a BuildKit secret mount: RUN --mount=type=secret,id=token ...
+
+Before (`Dockerfile`):
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+ENV DB_PASSWORD=hunter2hunter2
+USER 10001
+```
+
+After:
+
+```dockerfile
+FROM alpine:3.20@sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+ENV DB_PASSWORD_FILE=/run/secrets/db_password
+USER 10001
+```
+
+### `sh.pipe_to_shell`: curl or wget piped into a shell or interpreter
+
+CWE-494 · default severity medium · confidence high
+
+**Why:** Piping a download into sh or bash runs it before anyone can read it, and a partial download can run a truncated command. A compromised server or a mistaken URL runs attacker code with the script's privileges.
+
+**Fix:** Download to a file, verify a pinned checksum or signature, read it, then run it. Prefer the package manager.
+
+Before (`install.sh`):
+
+```bash
+#!/bin/sh
+curl -fsSL https://example.com/install.sh | sh
+```
+
+After:
+
+```bash
+#!/bin/sh
+curl -fsSL -o install.sh https://example.com/install.sh
+echo "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1  install.sh" | sha256sum -c -
+sh install.sh
+```
+
+### `sh.eval.variable`: eval of text that contains a variable
+
+CWE-78 · default severity medium · confidence medium
+
+**Why:** eval parses its argument as shell code, so any shell syntax in the variable (; $( ) backticks) runs. If the value comes from the caller, the environment, a file or the network, that is command injection. eval "$(tool init)" with a fixed command is not reported.
+
+**Fix:** Avoid eval. Use arrays and "${cmd[@]}", a case statement over known values, or declare -n and printf %q to build a safe command.
+
+Before (`run.sh`):
+
+```bash
+#!/bin/bash
+cmd="$1"
+eval "$cmd"
+```
+
+After:
+
+```bash
+#!/bin/bash
+case "$1" in
+  start) systemctl start app ;;
+  stop) systemctl stop app ;;
+  *) exit 2 ;;
+esac
+```
+
+### `sh.rm_rf.unguarded_variable`: rm -rf of a path that is only a variable, with no guard
+
+CWE-73 · default severity medium · confidence medium
+
+**Why:** When the variable is empty or unset, rm -rf $DIR expands to rm -rf with no path (a no-op) but rm -rf "$DIR/" and rm -rf $DIR/* expand to / and /*, which delete the machine. Scripts that build the variable from user input or a failed command have done this in the wild.
+
+**Fix:** Guard the expansion so the script stops when it is empty: rm -rf "${DIR:?}/" or rm -rf -- "${DIR:?}"/*, or test it first with [ -n "$DIR" ] and set -u.
+
+Before (`clean.sh`):
+
+```bash
+#!/bin/bash
+rm -rf "$BUILD_DIR/"
+```
+
+After:
+
+```bash
+#!/bin/bash
+rm -rf "${BUILD_DIR:?}/"
+```
+
+### `sh.chmod.world_writable`: chmod to a world-writable mode
+
+CWE-732 · default severity low · confidence high
+
+**Why:** A file or directory that every user can write lets any local account (or a compromised service) replace a script, binary or configuration file that a more privileged process later reads or runs.
+
+**Fix:** Grant only what is needed: 755 or 750 for programs and directories, 644 or 640 for data, 1777 only for a shared sticky directory such as /tmp, and a group when several accounts must write.
+
+Before (`setup.sh`):
+
+```bash
+#!/bin/bash
+chmod -R 777 /var/app
+```
+
+After:
+
+```bash
+#!/bin/bash
+chmod -R 750 /var/app
+```
+
+### `tf.s3.public_access`: S3 bucket with a public ACL or a public access block turned off
+
+CWE-732 · default severity medium · confidence high
+
+**Why:** A public-read, public-read-write or authenticated-read ACL, or block_public_acls, block_public_policy, ignore_public_acls or restrict_public_buckets set to false, lets anyone (or any AWS account holder) read or change the bucket's objects. Public buckets are a leading cause of data leaks.
+
+**Fix:** Use acl = "private" and set all four flags of aws_s3_bucket_public_access_block to true. Serve public files through CloudFront with an origin access control.
+
+Before (`main.tf`):
+
+```hcl
+resource "aws_s3_bucket" "site" {
+  bucket = "example-site"
+  acl    = "public-read"
+}
+```
+
+After:
+
+```hcl
+resource "aws_s3_bucket" "site" {
+  bucket = "example-site"
+  acl    = "private"
+}
+```
+
+### `tf.sg.open_admin_port`: Security group open to the internet on an admin or database port
+
+CWE-284 · default severity high · confidence high
+
+**Why:** An ingress rule from 0.0.0.0/0 or ::/0 on SSH (22), RDP (3389), PostgreSQL (5432), MySQL (3306), Redis (6379) or MongoDB (27017), or on all ports, exposes a login or database service to every scanner on the internet. Only literal ports are judged; a variable is not resolved.
+
+**Fix:** Allow the port only from your own addresses (an office or VPN CIDR, a bastion's security group) or remove the rule and use SSM Session Manager or a private network.
+
+Before (`network.tf`):
+
+```hcl
+resource "aws_security_group" "ssh" {
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+
+After:
+
+```hcl
+resource "aws_security_group" "ssh" {
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["203.0.113.0/24"]
+  }
+}
+```
+
+### `tf.storage.unencrypted`: Storage resource with encryption explicitly turned off
+
+CWE-311 · default severity medium · confidence high
+
+**Why:** encrypted = false or storage_encrypted = false leaves the volume, database or cluster unencrypted at rest, so a copied snapshot or a recycled disk exposes the data. Only an explicit false is reported; an omitted flag is not.
+
+**Fix:** Set encrypted = true (and a kms_key_id where you manage the key), or storage_encrypted = true for RDS and Aurora.
+
+Before (`db.tf`):
+
+```hcl
+resource "aws_db_instance" "main" {
+  storage_encrypted = false
+}
+```
+
+After:
+
+```hcl
+resource "aws_db_instance" "main" {
+  storage_encrypted = true
+}
+```
+
+### `k8s.pod.privileged`: Kubernetes container with privileged: true
+
+CWE-250 · default severity medium · confidence high
+
+**Why:** A privileged container has all of the node's capabilities and access to its devices, so code running in it can usually take over the node and every other pod on it.
+
+**Fix:** Remove privileged: true. Add only the specific capability the workload needs under securityContext.capabilities.add, and drop ALL others.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        privileged: true
+        runAsNonRoot: true
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+```
+
+### `k8s.pod.host_path`: Kubernetes pod with a hostPath volume
+
+CWE-668 · default severity medium · confidence medium
+
+**Why:** A hostPath volume mounts part of the node's filesystem into the pod. Mounting /, /var/run/docker.sock, /etc or the kubelet directory lets the pod read node secrets or start containers on the node. Node agents sometimes need it.
+
+**Fix:** Use an emptyDir, a PersistentVolumeClaim or a ConfigMap/Secret volume. If a hostPath is unavoidable, mount the narrowest path read-only.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+  volumes:
+    - name: data
+      hostPath:
+        path: /var/data
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+  volumes:
+    - name: data
+      emptyDir: {}
+```
+
+### `k8s.pod.privilege_escalation`: Kubernetes container with allowPrivilegeEscalation: true
+
+CWE-250 · default severity medium · confidence high
+
+**Why:** allowPrivilegeEscalation: true lets a process gain more privileges than its parent (setuid binaries, file capabilities), which turns a code-execution bug in the container into root in it.
+
+**Fix:** Set allowPrivilegeEscalation: false in the container's securityContext.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: true
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+```
+
+### `k8s.pod.run_as_root`: Kubernetes pod or container that is set to run as root
+
+CWE-250 · default severity medium · confidence high
+
+**Why:** runAsUser: 0 or runAsNonRoot: false makes the container's process root inside the container, so a bug in the application starts from the strongest position in it and a container escape starts from root.
+
+**Fix:** Set runAsNonRoot: true and a non-zero runAsUser in the securityContext, and build the image to run as that user.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsUser: 0
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+```
+
+### `k8s.pod.no_run_as_nonroot`: Kubernetes container that does not require a non-root user
+
+CWE-250 · default severity low · confidence low
+
+**Why:** Without runAsNonRoot: true or a non-zero runAsUser, the container runs as whatever user the image says, which is root for many images. It is reported at low severity and low confidence because the image may already use a non-root user, which this scan cannot see.
+
+**Fix:** Set runAsNonRoot: true and runAsUser to a non-zero id in the pod or container securityContext.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+```
+
+### `k8s.pod.host_namespace`: Kubernetes pod that shares the node's network, PID or IPC namespace
+
+CWE-668 · default severity medium · confidence high
+
+**Why:** hostNetwork: true puts the pod on the node's network (it can reach node-local services and sniff traffic); hostPID: true lets it see and signal every process on the node; hostIPC: true shares the node's shared memory. Each removes an isolation boundary.
+
+**Fix:** Remove hostNetwork, hostPID and hostIPC. Expose the pod through a Service, and use a dedicated node agent for node-level work.
+
+Before (`deploy.yaml`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
+  hostNetwork: true
+```
+
+After:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: registry.example/app:1.2.3
+      securityContext:
+        runAsNonRoot: true
 ```

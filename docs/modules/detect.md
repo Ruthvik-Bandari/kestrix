@@ -427,7 +427,7 @@ Measured on a small, partly synthetic benchmark of faults injected into public S
 
 ## Research roadmap (not yet implemented)
 
-Only B0 ships in this release. The later stages come from sections 12 and 13 of the [engineering plan](../CyberGuard_Engineering_Plan.md). They are research work planned for university HPC, and none of them exists in this package.
+Only B0 ships in this release. The later stages come from sections 12 and 13 of the [engineering plan](../history/cyberguard-engineering-plan.md). They are research work planned for university HPC, and none of them exists in this package.
 
 | Stage | Method | Condition to proceed (from the plan) |
 | --- | --- | --- |

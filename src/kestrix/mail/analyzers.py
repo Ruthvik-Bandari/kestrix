@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from urllib.parse import SplitResult, parse_qsl, urlsplit
 
 from .models import MAX_EVIDENCE_CHARS, Analyzer, Finding, Severity
@@ -34,6 +34,11 @@ _SECOND_LEVEL = _words(
 _COMMON_TLDS = _words(
     "com net org edu gov mil int info biz io co app dev ai me tv xyz top online site shop store tech cloud "
     "email live link click club page bank pro"
+)
+# Free-mail providers, for the list-mail Reply-To downgrade (mail.sender.reply_to_mismatch).
+FREEMAIL_DOMAINS = _words(
+    "gmail.com googlemail.com outlook.com hotmail.com live.com yahoo.com icloud.com protonmail.com proton.me "
+    "qq.com 163.com 126.com mykolab.com"
 )
 _SHORTENERS = _words(
     "bit.ly tinyurl.com t.co goo.gl ow.ly is.gd buff.ly rebrand.ly cutt.ly shorturl.at tiny.cc rb.gy t.ly "
@@ -345,10 +350,12 @@ def analyze_sender(msg: ParsedMessage, protected_domains: frozenset[str] = froze
         )
         other = [domain for domain in other if domain not in expected]
     if other:
+        # On list mail, a Reply-To at a free-mail provider is a participant's own setting: low, not medium.
+        own_setting = bool(listed) and all(org_domain(domain) in FREEMAIL_DOMAINS for domain in other)
         findings.append(
             _finding(
                 "mail.sender.reply_to_mismatch",
-                "medium",
+                "low" if own_setting else "medium",
                 "Replies go to a different domain than the sender",
                 "Reply-To sends your answer to another organization than the one in From. Fraud that asks for "
                 "a reply, such as invoice or payroll changes, relies on this.",
@@ -530,6 +537,42 @@ def _web_scheme(href: str) -> str | None:
         return None
 
 
+def _is_rewriter(host: str) -> bool:
+    """True for the hosts of URL-rewriting security gateways that replace a link with their own address.
+
+    Kept small and anchored to the vendors' registrable domains (never the regional ``eurNN.``/``namNN.``
+    prefixes alone): Microsoft Defender Safe Links (``*.safelinks.protection.outlook.com``), Proofpoint URL
+    Defense (``urldefense.com``, ``urldefense.proofpoint.com``), Mimecast URL Protect
+    (``protect-<region>.mimecast.com``, ``*.mimecastprotect.com``), Barracuda Link Protection
+    (``linkprotect.cudasvc.com``) and Cisco Secure Email (``secure-web.cisco.com``). Only these were seen
+    rewriting links in the benchmark's modern list mail; other vendors are not guessed at.
+    """
+    if host.endswith((".safelinks.protection.outlook.com", ".mimecastprotect.com")):
+        return True
+    if host in {"urldefense.com", "urldefense.proofpoint.com", "linkprotect.cudasvc.com", "secure-web.cisco.com"}:
+        return True
+    return host.endswith(".mimecast.com") and host.rsplit(".mimecast.com", 1)[0].startswith("protect-")
+
+
+def _unwrap_rewriter(link: Link) -> Link:
+    """A rewritten link is judged by the address it wraps (first query value that is an http(s) URL).
+
+    The visible text is kept for the comparison only when that address can be read: otherwise the real
+    destination is unknown and no text/destination mismatch can be claimed, so the text is dropped.
+    """
+    try:
+        parts = urlsplit(link.href.strip())
+        host = normalize_domain(parts.hostname or "")[0]
+    except ValueError:
+        return link
+    if not host or not _is_rewriter(host):
+        return link
+    for _, value in parse_qsl(parts.query)[:50]:
+        if value.lower().startswith(("http://", "https://")):
+            return replace(link, href=value)
+    return replace(link, text="")
+
+
 def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, Finding]]:
     compact = _WHITESPACE_AND_CONTROLS.sub("", link.href).lower()
     scheme = next((scheme for scheme in _SCRIPT_SCHEMES if compact.startswith(scheme)), None)
@@ -548,6 +591,7 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
                 ),
             )
         ]
+    link = _unwrap_rewriter(link)
     try:
         parts = urlsplit(link.href.strip())
         hostname = parts.hostname
@@ -602,7 +646,7 @@ def _link_findings(link: Link, from_domain: str | None) -> list[tuple[str, str, 
     if _is_ip(host):
         hit(
             "mail.links.ip_host",
-            "medium",
+            "info" if _is_unroutable_ip(host) else "medium",
             "Link points to a raw IP address",
             "Legitimate organizations link to their domain names. Raw addresses are common in phishing kits.",
             f"host {host}",
@@ -670,6 +714,14 @@ def _shown_host(link: Link) -> str | None:
     text = link.text.strip().lower()
     explicit = "://" in text or text.startswith("www.")
     return _looks_like_domain(match.group(1), explicit=explicit)
+
+
+def _is_unroutable_ip(host: str) -> bool:
+    """A private, loopback or link-local address: it cannot be reached from outside, unlike a phishing kit's."""
+    try:
+        return not ipaddress.ip_address(host.strip("[]")).is_global
+    except ValueError:
+        return False
 
 
 def _is_ip(host: str) -> bool:

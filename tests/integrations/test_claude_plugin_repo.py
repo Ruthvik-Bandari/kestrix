@@ -230,6 +230,7 @@ def _registry_counts() -> dict[str, int]:
     for rule in registry_rules():
         family = rule.id.split(".")[0]
         family = "web" if family in {"vue", "svelte", "web", "html", "css", "next"} else family
+        family = "iac" if family in {"gha", "docker", "sh", "tf", "k8s"} else family
         counts[family] = counts.get(family, 0) + 1
     return counts
 
@@ -239,7 +240,7 @@ def test_readme_rule_counts_match_the_registry() -> None:
     total = sum(counts.values())
     readme = _text("README.md")
     stated = re.search(
-        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) web-file, (\d+) PHP, (\d+) SQL-file, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
+        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) web-file, (\d+) PHP, (\d+) SQL-file, (\d+) infrastructure, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
         readme,
     )
     assert stated, "README.md must state the rule count per family"
@@ -250,6 +251,7 @@ def test_readme_rule_counts_match_the_registry() -> None:
         counts["web"],
         counts["php"],
         counts["sql"],
+        counts["iac"],
         counts["secret"],
         counts["dep"],
         counts["config"],
@@ -272,7 +274,7 @@ def test_other_docs_state_the_same_rule_counts() -> None:
         assert {int(a or b) for a, b in found} == {counts[family]}, family
     doc = (REPO / "docs/claude-plugin.md").read_text(encoding="utf-8")
     assert (
-        f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['web']} web-file, {counts['php']} PHP, {counts['sql']} SQL-file, {counts['secret']} secret,"
+        f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['web']} web-file, {counts['php']} PHP, {counts['sql']} SQL-file, {counts['iac']} infrastructure, {counts['secret']} secret,"
         in doc
     )
     assert f"{counts['dep']} dependency, {counts['config']} agent-config rules" in doc

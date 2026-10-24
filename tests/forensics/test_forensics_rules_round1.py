@@ -131,6 +131,29 @@ def test_new_host_signals_stay_quiet(url: str) -> None:
     assert not {f.id for f in analyze_url(url).findings} & {"hosting_platform_subdomain", "digits_in_subdomain"}
 
 
-def test_a_platform_page_alone_is_only_a_low_signal() -> None:
+def test_a_platform_page_alone_is_shown_but_not_counted() -> None:
     report = analyze_url("https://someone.weebly.com/")
-    assert report.level == "low" and report.score == 10
+    assert report.level == "none" and report.score == 0
+    (finding,) = report.findings
+    assert finding.id == "hosting_platform_subdomain" and finding.severity == "info"
+    assert "Alone it is not counted" in finding.explanation
+
+
+@pytest.mark.parametrize(
+    ("url", "score"),
+    [
+        ("https://a1b2c3.weebly.com/", 15),  # digits in the subdomain
+        ("http://someone.weebly.com/", 20),  # not https
+        ("https://someone.weebly.com/login", 15),  # a phishing keyword
+        ("https://paypal-help.github.io/", 35),  # a brand in the subdomain
+    ],
+)
+def test_a_platform_page_counts_next_to_another_sign(url: str, score: int) -> None:
+    report = analyze_url(url)
+    platform = next(f for f in report.findings if f.id == "hosting_platform_subdomain")
+    assert platform.severity == "low" and report.score == score
+
+
+def test_long_url_starts_at_200_characters() -> None:
+    assert "long_url" not in {f.id for f in analyze_url("https://example.com/" + "a" * 150).findings}
+    assert "long_url" in {f.id for f in analyze_url("https://example.com/" + "a" * 200).findings}

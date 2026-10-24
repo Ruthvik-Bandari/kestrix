@@ -113,6 +113,9 @@ SOURCE_SUFFIXES = frozenset(
         ".conf",
         ".env",
         ".sh",
+        ".bash",
+        ".tf",
+        ".dockerfile",
     ]
 )
 NOT_SOURCE_NAMES = frozenset(
@@ -554,7 +557,14 @@ def source_like(rel: str) -> bool:
     name = rel.rsplit("/", 1)[-1]
     if name in NOT_SOURCE_NAMES:
         return False
-    return os.path.splitext(name)[1].lower() in SOURCE_SUFFIXES or name == ".env" or name.startswith(".env.")
+    lower = name.lower()
+    return (
+        os.path.splitext(name)[1].lower() in SOURCE_SUFFIXES
+        or name == ".env"
+        or name.startswith(".env.")
+        or lower in ("dockerfile", "containerfile")
+        or lower.startswith(("dockerfile.", "containerfile."))
+    )
 
 
 def changed_by_command(

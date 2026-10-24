@@ -1,0 +1,77 @@
+{
+  "cluster_idx": {
+    "blocks": 886601,
+    "bytes": 104520381,
+    "sha256": "5be2d43599aa978d252433007bf7843aae4d241584500e7d1cd1ccff71fe33fb"
+  },
+  "crawl": "CC-MAIN-2026-43",
+  "generated_at": "2026-10-23T10:45:52+00:00",
+  "parameters": {
+    "blocks_per_domain": 2,
+    "candidate_domains": 12000,
+    "filter": "HTTP status 200 and an HTML MIME type",
+    "majestic_rank_limit": 100000,
+    "platform_blocks": 150,
+    "target_domains": 5000,
+    "urls_per_domain": 10,
+    "urls_per_platform_host": 2
+  },
+  "platforms": {
+    "blogspot.com": {
+      "blocks_fetched": 150,
+      "blocks_in_range": 7110,
+      "hosts": 4067,
+      "share_of_index_blocks": 0.008019,
+      "urls": 6710
+    },
+    "github.io": {
+      "blocks_fetched": 150,
+      "blocks_in_range": 173,
+      "hosts": 31027,
+      "share_of_index_blocks": 0.000195,
+      "urls": 42120
+    },
+    "netlify.app": {
+      "blocks_fetched": 84,
+      "blocks_in_range": 84,
+      "hosts": 21016,
+      "share_of_index_blocks": 9.5e-05,
+      "urls": 29508
+    },
+    "pages.dev": {
+      "blocks_fetched": 1,
+      "blocks_in_range": 1,
+      "hosts": 0,
+      "share_of_index_blocks": 1e-06,
+      "urls": 0
+    },
+    "vercel.app": {
+      "blocks_fetched": 41,
+      "blocks_in_range": 41,
+      "hosts": 11107,
+      "share_of_index_blocks": 4.6e-05,
+      "urls": 13586
+    },
+    "wordpress.com": {
+      "blocks_fetched": 2,
+      "blocks_in_range": 2,
+      "hosts": 0,
+      "share_of_index_blocks": 2e-06,
+      "urls": 0
+    }
+  },
+  "requests": {
+    "blocks_fetched": 10297,
+    "domain_fetch_failed": 2,
+    "domains_tried": 7900
+  },
+  "schema_version": 1,
+  "seed": "kestrixlinkfile-v1",
+  "terms_sha256": "d438ca60a1e7d63687a7b3cc25155ac9bc667513ce493caf2cb6ebee822342c4",
+  "terms_url": "https://commoncrawl.org/terms-of-use",
+  "top_domain": {
+    "domains_with_urls": 5000,
+    "urls": 45438
+  },
+  "urls_sha256": "78ff933bdeb26b2384fca8739bf2b45486fd944bda1f2a5bd235857e7aec1f7b"
+}

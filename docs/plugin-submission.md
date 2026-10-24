@@ -265,7 +265,7 @@ the PyPI project's source links return 404 to others.
 **Pitch.** Kestrix is an offline, deterministic security layer for the code Claude writes. After every edit, a hook
 runs the local `kestrix-scan` scanner and hands Claude only the findings that edit introduced, each with a CWE and a
 concrete fix, and asks Claude to repair them before moving on. It needs no account and sends nothing anywhere: the hooks open
-no network connections, which a test checks. Its 91 rules (Python, JavaScript and TypeScript, HTML, Vue, Svelte and CSS files, PHP, Blade and SQL files, hard-coded secrets,
+no network connections, which a test checks. Its 115 rules (Python, JavaScript and TypeScript, HTML, Vue, Svelte and CSS files, PHP, Blade and SQL files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets,
 Claude Code and MCP configuration, dependency lockfiles) are Apache-2.0, so you can read, audit and ship them. It is
 designed to run alongside Anthropic's model-based `security-guidance` plugin and `/security-review`, not to replace
 them: rules miss things a model can reason about, and a clean scan means no rule fired, not that the code is secure.

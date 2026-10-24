@@ -101,6 +101,7 @@ def mailbox_router(service: MailboxService) -> APIRouter:
         result = service.start(
             provider, redirect_uri_for(request, provider), acknowledged=body.acknowledge_network, binding=binding
         )
+        # kestrix: ignore[py.cookie.insecure] local mode only, served over plain http on 127.0.0.1; Secure would drop it
         response.set_cookie(BINDING_COOKIE, binding, max_age=FLOW_TTL_S, httponly=True, samesite="strict", path=PREFIX)
         return result
 

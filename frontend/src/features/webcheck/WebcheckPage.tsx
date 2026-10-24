@@ -48,7 +48,6 @@ export const NOTICE = NOTICE_PAGE;
 /** The hosted service makes the request, not the user's computer (ADR 0004). */
 export const HOSTED_NOTICE_PAGE = `${AUTHORIZED} Kestrix's server, not your computer, sends one GET request (plus redirects) and one TLS handshake to the site. Public addresses only.`;
 export const HOSTED_NOTICE_SITE = `${AUTHORIZED} Kestrix's server, not your computer, sends ${SITE_SENDS} Public addresses only.`;
-export const HOSTED_NOTICE = HOSTED_NOTICE_PAGE;
 
 export function noticeFor(scope: WebScope, hosted: boolean): string {
   if (hosted) return scope === "site" ? HOSTED_NOTICE_SITE : HOSTED_NOTICE_PAGE;

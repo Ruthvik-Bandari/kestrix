@@ -72,6 +72,7 @@ __all__ = ["assign", "check_disjoint", "read_split", "run_split"]
 UNITS = {
     "link": "group = registered domain (offline approximation, coarser than the Public Suffix List)",
     "file": "group = Govdocs1 zip thread",
+    "realurl": "group = sampled Majestic domain (top_domain) or full host (user-content platform pages)",
 }
 
 

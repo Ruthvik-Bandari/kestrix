@@ -201,6 +201,12 @@ def test_secure_code_review_covers_every_rule() -> None:
     assert web_ids <= set(re.findall(r"`((?:vue|svelte|html|css|web|next)\.[a-z_.]+)`", text))
     php_ids = {rule.id for rule in RULES.values() if rule.language in ("php", "sql")}
     assert php_ids <= set(re.findall(r"`((?:php|sql)\.[a-z_.]+)`", text))
+    iac_ids = {
+        r.id
+        for r in RULES.values()
+        if r.language in {"github-actions", "dockerfile", "shell", "terraform", "kubernetes"}
+    }
+    assert iac_ids <= set(re.findall(r"`((?:gha|docker|sh|tf|k8s)\.[a-z0-9_.]+)`", text))
     assert "`secret.*`" in text
     assert "fixing-security-findings" in text
 
@@ -251,7 +257,7 @@ def generator() -> ModuleType:
 def test_fix_playbook_matches_the_registry(generator: ModuleType) -> None:
     text = FILES["skills/fixing-security-findings/SKILL.md"].decode()
     assert text == generator.render(), "run: uv run python scripts/build_claude_fix_playbook.py"
-    assert re.findall(r"^### `([a-z_.]+)`", text, re.M) == list(RULES)
+    assert re.findall(r"^### `([a-z0-9_.]+)`", text, re.M) == list(RULES)
     for rule in RULES.values():
         assert rule.fix in text and rule.why in text and rule.cwe in text
 
@@ -362,3 +368,23 @@ def test_fix_playbook_refuses_a_rule_without_an_example(generator: ModuleType, m
     monkeypatch.delitem(generator.EXAMPLES, "py.exec.eval")
     with pytest.raises(SystemExit, match=r"missing \['py.exec.eval'\]"):
         generator.render()
+
+
+@pytest.mark.parametrize(
+    "rule_id",
+    [
+        r.id
+        for r in RULES.values()
+        if r.language in {"github-actions", "dockerfile", "shell", "terraform", "kubernetes"}
+    ],
+)
+def test_fix_playbook_iac_examples_fire_before_and_not_after(
+    generator: ModuleType, rule_id: str, tmp_path: Path
+) -> None:
+    name, _, before, after = generator.IAC_EXAMPLES[rule_id]
+    candidate = Candidate(path=tmp_path / Path(name).name, rel=name)
+    before_findings, _, _, before_skip = scan_text(generator._iac_text(before), candidate)
+    after_findings, _, _, after_skip = scan_text(generator._iac_text(after), candidate)
+    assert before_skip is None and after_skip is None
+    assert rule_id in {finding.rule_id for finding in before_findings}
+    assert after_findings == []

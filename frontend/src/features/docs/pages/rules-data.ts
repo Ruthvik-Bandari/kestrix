@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (91 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (115 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -82,6 +82,30 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["css.import.http", "low", "CWE-319", "CSS @import or url() over http:"],
   ["css.expression.legacy", "low", "CWE-79", "CSS expression() (Internet Explorer 7 and older)"],
   ["next.images.wildcard_host", "low", "CWE-918", "next.config images.remotePatterns allows hostname '**'"],
+  ["gha.pr_target.checkout_head", "high", "CWE-829", "pull_request_target or workflow_run workflow that checks out the pull request's head"],
+  ["gha.injection.untrusted_context", "high", "CWE-78", "Untrusted ${{ github.event.* }} value written into a run: script"],
+  ["gha.action.unpinned", "low", "CWE-829", "Third-party action not pinned to a full commit SHA"],
+  ["gha.permissions.write_all", "medium", "CWE-250", "Workflow or job with permissions: write-all"],
+  ["gha.permissions.missing", "low", "CWE-250", "Workflow that uses secrets and sets no permissions"],
+  ["gha.secrets.echoed", "medium", "CWE-532", "Secret written to the job log with echo or printf"],
+  ["docker.user.root", "low", "CWE-250", "Dockerfile whose final stage runs as root"],
+  ["docker.add.remote_url", "medium", "CWE-494", "ADD of a remote URL without a checksum"],
+  ["docker.run.pipe_to_shell", "medium", "CWE-494", "RUN that pipes curl or wget into a shell"],
+  ["docker.from.latest", "low", "CWE-1357", "Base image with the latest tag, or no tag and no digest"],
+  ["docker.env.secret", "medium", "CWE-798", "ENV or ARG with a credential-like name and a literal value"],
+  ["sh.pipe_to_shell", "medium", "CWE-494", "curl or wget piped into a shell or interpreter"],
+  ["sh.eval.variable", "medium", "CWE-78", "eval of text that contains a variable"],
+  ["sh.rm_rf.unguarded_variable", "medium", "CWE-73", "rm -rf of a path that is only a variable, with no guard"],
+  ["sh.chmod.world_writable", "low", "CWE-732", "chmod to a world-writable mode"],
+  ["tf.s3.public_access", "medium", "CWE-732", "S3 bucket with a public ACL or a public access block turned off"],
+  ["tf.sg.open_admin_port", "high", "CWE-284", "Security group open to the internet on an admin or database port"],
+  ["tf.storage.unencrypted", "medium", "CWE-311", "Storage resource with encryption explicitly turned off"],
+  ["k8s.pod.privileged", "medium", "CWE-250", "Kubernetes container with privileged: true"],
+  ["k8s.pod.host_path", "medium", "CWE-668", "Kubernetes pod with a hostPath volume"],
+  ["k8s.pod.privilege_escalation", "medium", "CWE-250", "Kubernetes container with allowPrivilegeEscalation: true"],
+  ["k8s.pod.run_as_root", "medium", "CWE-250", "Kubernetes pod or container that is set to run as root"],
+  ["k8s.pod.no_run_as_nonroot", "low", "CWE-250", "Kubernetes container that does not require a non-root user"],
+  ["k8s.pod.host_namespace", "medium", "CWE-668", "Kubernetes pod that shares the node's network, PID or IPC namespace"],
   ["php.exec.command", "high", "CWE-78", "Command run with a value built from request data (or with a non-literal)"],
   ["php.include.dynamic", "high", "CWE-98", "include or require of a path built from request data"],
   ["php.sql.injection", "high", "CWE-89", "SQL text built from request data (or by concatenation or interpolation)"],

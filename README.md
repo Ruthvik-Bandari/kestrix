@@ -404,7 +404,7 @@ flowchart LR
   end
 
   subgraph scanner["kestrix-scan (zero dependencies)"]
-    rules["91 rules: Python, JS/TS, web files, PHP, SQL,<br/>secrets, agent config"]
+    rules["115 rules: Python, JS/TS, web files, PHP, SQL,<br/>CI and infrastructure, secrets, agent config"]
     taint["Source → sink traces"]
     osv[("Local OSV<br/>vulnerability index")]
   end
@@ -443,7 +443,7 @@ flowchart LR
 | Claude Code → kestrix-scan | The files Claude edits, scanned locally; only new findings go back to Claude as context. |
 
 The design decisions are recorded in [docs/adr](docs/adr). The research plan behind detection repair is in
-[docs/CyberGuard_Engineering_Plan.md](docs/CyberGuard_Engineering_Plan.md).
+[docs/history/cyberguard-engineering-plan.md](docs/history/cyberguard-engineering-plan.md).
 
 ## Development
 
@@ -462,7 +462,7 @@ npm run build                           # writes the bundle into src/kestrix/ser
 The repository is a uv workspace: the `kestrix` workbench at the root and `kestrix-scan` in
 `packages/kestrix-scan/`. Releases are described in [docs/release.md](docs/release.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
-this project is in [docs/claude](docs/claude).
+this project is in [.claude/workflow.md](.claude/workflow.md).
 
 ## Roadmap
 

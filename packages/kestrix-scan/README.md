@@ -1,6 +1,6 @@
 # kestrix-scan
 
-**Local security checks for Python, JavaScript and TypeScript code, HTML, Vue, Svelte and CSS files, hard-coded secrets and dependencies.**
+**Local security checks for Python, JavaScript and TypeScript code, HTML, Vue, Svelte and CSS files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies.**
 `kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
 randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
@@ -243,7 +243,7 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 91 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 115 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, Jinja2 environments without autoescape, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
@@ -260,7 +260,12 @@ handlers, `target="_blank"` without `noopener`, forms and subresources over `htt
 `js.*` rules), PHP and Blade (12 `php.*` rules for `.php`, `.phtml` and `.blade.php`: request values from `$_GET`, `$_POST`, `$_REQUEST`,
 `$_COOKIE`, `php://input` and Laravel/Symfony request objects reaching commands, `include`, SQL, `echo`, `unserialize`, URLs and file paths inside one
 function, `eval`/`assert`/`create_function`, `preg_replace` `/e`, `extract($_REQUEST)`, `md5`/`sha1` of passwords and Blade `{!! !!}`), SQL files
-(3 `sql.*` rules for `.sql`: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`), Claude Code and MCP configuration
+(3 `sql.*` rules for `.sql`: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`), CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
+workflows, Dockerfiles, `.sh` and `.bash` scripts, Terraform and Kubernetes manifests: `pull_request_target` checking out the PR head,
+`${{ github.event.* }}` in `run:`, unpinned third-party actions, `permissions: write-all`, running as root, `ADD` of a URL,
+`curl | sh`, `latest` images, secrets in `ENV`/`ARG`, `eval` and `rm -rf` of variables, `chmod 777`, public S3 buckets, admin
+ports open to the internet, unencrypted storage, and privileged or host-mounted pods; read with a bounded YAML subset reader,
+nothing is run), Claude Code and MCP configuration
 (5 `config.*` rules: hooks that run downloaded scripts, permission bypasses, unpinned `npx -y`/`uvx` servers and
 literal credentials), secrets in any text file (11 `secret.*` rules: AWS, GitHub, Slack, Stripe, Google, Anthropic
 and OpenAI-style keys, private keys, JWTs and high-entropy credentials), and dependencies in lockfiles (2 `dep.*`

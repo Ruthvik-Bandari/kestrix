@@ -20,10 +20,6 @@ export function setMode(mode: Mode): void {
   current = mode;
 }
 
-export function getMode(): Mode {
-  return current;
-}
-
 export function isHosted(): boolean {
   return current === "hosted";
 }

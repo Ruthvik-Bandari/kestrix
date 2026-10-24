@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""Structural validator for the CyberGuard Claude Code starter pack.
+"""Structural validator for the Kestrix Claude Code setup (.claude/).
 
-Checks structure and template invariants only: the 16 cg-* skill directories and
+Checks structure and template invariants only: the kx-* skill directories and
 their frontmatter, read-only reviewer agents, path-scoped rules, settings.json and
-its hook reference, and the docs/claude files. It does NOT emulate Claude's
+its hook reference, and the workflow docs. It does NOT emulate Claude's
 runtime: passing here does not prove that skills trigger, that permissions are
 enforced, or that the hook runs inside a real Claude Code session.
 
@@ -24,24 +24,17 @@ ROOT = Path(__file__).resolve().parent.parent
 CLAUDE = ROOT / ".claude"
 
 SKILLS = [
-    "cg-repo-audit",
-    "cg-plan-slice",
-    "cg-schema-contract",
-    "cg-telemetry-ingest",
-    "cg-sigma-adapter",
-    "cg-replay-harness",
-    "cg-repair-baselines",
-    "cg-benchmark-design",
-    "cg-model-training",
-    "cg-evaluate",
-    "cg-connector",
-    "cg-platform-integration",
-    "cg-security-review",
-    "cg-release-review",
-    "cg-documentation",
-    "cg-skill-audit",
+    "kx-repo-audit",
+    "kx-schema-contract",
+    "kx-sigma-adapter",
+    "kx-replay-harness",
+    "kx-repair-baselines",
+    "kx-benchmark-design",
+    "kx-platform-integration",
+    "kx-security-review",
+    "kx-documentation",
+    "kx-skill-audit",
 ]
-EXPLICIT_ONLY = {"cg-model-training", "cg-evaluate", "cg-release-review"}
 SKILL_SECTIONS = ["Expected inputs", "Steps", "Output evidence", "Failure conditions"]
 AGENTS = ["architecture-reviewer", "detection-semantics-reviewer", "ml-evaluation-reviewer", "appsec-reviewer"]
 ALLOWED_AGENT_TOOLS = {"Read", "Glob", "Grep"}
@@ -50,11 +43,8 @@ REQUIRED_DENY = ["**/.env", "**/.env.*", "**/*.pem", "data/raw/**", "data/locked
 DOCS = [
     "CLAUDE.md",
     "docs/handoff.md",
-    "docs/claude/workflow.md",
-    "docs/claude/first_prompts.md",
-    "docs/claude/skill_validation_cases.md",
-    "docs/claude/INSTALL.md",
-    "docs/claude/gitignore_additions.txt",
+    ".claude/workflow.md",
+    ".claude/skill_validation_cases.md",
     ".claude/hooks/test_protect_paths.py",
 ]
 
@@ -94,7 +84,10 @@ def frontmatter(path: Path) -> tuple[dict, str] | None:
 def check_skills() -> None:
     skill_root = CLAUDE / "skills"
     present = sorted(p.name for p in skill_root.iterdir() if p.is_dir()) if skill_root.is_dir() else []
-    check(set(SKILLS) <= set(present), f"all 16 skill directories present ({len(set(SKILLS) & set(present))}/16)")
+    check(
+        set(SKILLS) <= set(present),
+        f"all {len(SKILLS)} skill directories present ({len(set(SKILLS) & set(present))}/{len(SKILLS)})",
+    )
     extra = sorted(set(present) - set(SKILLS))
     check(not extra, f"no unexpected skill directories {extra if extra else ''}".rstrip())
     for name in SKILLS:
@@ -110,10 +103,7 @@ def check_skills() -> None:
         check(isinstance(desc, str) and len(desc) >= 40, f"{name}: description non-empty and specific")
         check("allowed-tools" not in fm, f"{name}: no allowed-tools widening access")
         dmi = str(fm.get("disable-model-invocation", "")).lower()
-        if name in EXPLICIT_ONLY:
-            check(dmi == "true", f"{name}: disable-model-invocation is true (explicit only)")
-        else:
-            check(dmi in ("", "false"), f"{name}: model invocation not disabled")
+        check(dmi in ("", "false"), f"{name}: model invocation not disabled")
         missing = [s for s in SKILL_SECTIONS if not re.search(rf"^##\s+{re.escape(s)}", body, re.M)]
         check(
             not missing,
@@ -196,18 +186,11 @@ def check_docs() -> None:
     if claude_md.is_file():
         n = len(claude_md.read_text(encoding="utf-8").splitlines())
         check(n < 80, f"CLAUDE.md is concise ({n} lines < 80)")
-    cases = ROOT / "docs/claude/skill_validation_cases.md"
+    cases = ROOT / ".claude/skill_validation_cases.md"
     if cases.is_file():
         text = cases.read_text(encoding="utf-8")
         missing = [s for s in SKILLS if f"## {s}" not in text]
         check(not missing, f"skill_validation_cases.md covers all skills {missing if missing else ''}".rstrip())
-    gi_add = ROOT / "docs/claude/gitignore_additions.txt"
-    gi = ROOT / ".gitignore"
-    if gi_add.is_file() and gi.is_file():
-        want = [ln.strip() for ln in gi_add.read_text().splitlines() if ln.strip() and not ln.startswith("#")]
-        have = {ln.strip() for ln in gi.read_text().splitlines()}
-        missing = [w for w in want if w not in have]
-        check(not missing, f".gitignore contains gitignore_additions.txt lines {missing if missing else ''}".rstrip())
 
 
 def main() -> int:

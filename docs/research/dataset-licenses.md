@@ -103,8 +103,23 @@ The link and file accuracy benchmark ([`linkfile-benchmark.md`](linkfile-benchma
 | PhiUSIIL Phishing URL dataset (UCI 967) | CC BY 4.0 | <https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset> | eval | **Attribution required**: Prasad, A. & Chandra, S. (2024), doi:10.1016/j.cose.2023.103545. Label 1 is legitimate and 0 is phishing. Classes were collected differently (see the leakage section). URLs only, text, never visited. |
 | Majestic Million | CC BY 3.0 | <https://majestic.com/reports/majestic-million> | eval | **Attribution required.** Only domains, used as host-root URLs. |
 | Govdocs1, 20 seeded zip threads | "Freely redistributable" per Digital Corpora, no formal license | <https://digitalcorpora.org/corpora/file-corpora/files/> | eval | Cite Garfinkel, Farrell, Roussev & Dinolt (2009), DFRWS. Verbatim government web files that can include malware; read as bytes only, never opened; stay on the cluster. |
+| Common Crawl URL index (crawl `CC-MAIN-2026-43`) | Common Crawl Terms of Use (last updated 2024-03-07): a limited, non-exclusive license to use the service; the crawled content stays under its owners' own terms; no unlawful use, no use that violates others' rights, no collecting of personal information for use apart from the content | <https://commoncrawl.org/terms-of-use> | eval | Only the text of index lines (URL, status, MIME type) is read, through range requests of the public `cluster.idx` and `cdx-*.gz` files; no page is fetched and no URL is visited. The sampled URLs stay on the cluster; only aggregate counts, rates and finding ids are published. Terms page saved with its SHA-256 in `raw/commoncrawl/<crawl>/manifest.json`. Not legal advice. |
 | Synthetic files | Generated here (Apache-2.0) | `src/kestrixlinkfilebench/synth.py` | eval only | No real malware. Reported separately, never pooled. |
 | OpenPhish, URLhaus | Terms forbid this use | | not used | |
 | PhishTank | Terms conflict (archived 2006 personal-use text, registration, no automated access without permission) | <https://phishtank.org/terms.php> | not used | Skipped; PhiUSIIL's URLs derive from it and carry PhiUSIIL's license. |
 | MalwareBazaar, VirusShare, SOREL, UNSAFE-DOCS | Live malware | | not used | Never downloaded. |
+
+## Modern mailing-list mail (`kestrixmailbench.modern`)
+
+The "Modern normal mail (2022-2026)" section of [`mail-benchmark.md`](mail-benchmark.md) measures false alarms of `kestrix.mail` on public mailing-list archives. Eval only, no model is trained. Checked 2026-10-23; not legal advice.
+
+| Source | Terms found | URL | Tier | Notes |
+| --- | --- | --- | --- | --- |
+| Apache Software Foundation list archives via the Pony Mail API (`lists.apache.org/api/mbox.lua`) | No license on the archive. ASF privacy policy: list mail is public, third parties may collect it; reuse is not addressed. `lists.apache.org` has no `robots.txt`; `mail-archives.apache.org` forbids bots (not used). | <https://lists.apache.org/> | eval | Eight lists (kafka, spark, flink, airflow, arrow), 3 months a year 2022-2026, 120 requests about 3 s apart from the transfer node. Message text keeps each author's copyright. Raw mbox under `/scratch/$USER/kestrix/mailmodern/` only (0700/0600); aggregates only in git; no body, address or subject is printed. **Owner to confirm the ASF route.** |
+| GNU project list archive (`lists.gnu.org/archive/mbox/LIST/YYYY-MM`) | No license stated. `robots.txt`: `Crawl-delay: 10`, archive not disallowed. | <https://lists.gnu.org/archive/> | eval | Seven lists (emacs-devel, help-gnu-emacs, guile-devel, guile-user, coreutils, grub-devel, bug-bash), 105 requests 11 s apart. Same storage and reporting rules. |
+| Python `mail.python.org` (Mailman 3 export) | `robots.txt` disallows `/*/export/` | | **not used** | |
+| Fedora, `lists.fedoraproject.org` | Export strips the headers; `robots.txt` blocks ClaudeBot | | **not used** | |
+| Linux kernel `lore.kernel.org` | `robots.txt` blocks the listed crawlers | | **not used** | |
+| IETF `mailarchive.ietf.org` | `robots.txt` disallows `/arch/export/` | | **not used** | |
+| Synthetic modern newsletters and notices | Generated here (Apache-2.0) | `src/kestrixmailbench/modern_synth.py` | eval only | `.example` senders only; reported separately, never pooled with real mail. |
 

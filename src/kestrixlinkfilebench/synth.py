@@ -12,6 +12,7 @@ Govdocs. Each family has ``VARIANTS`` files; the first ``DEV_VARIANTS`` go to de
 
 from __future__ import annotations
 
+import base64
 import io
 import random
 import struct
@@ -135,13 +136,95 @@ def svg_doc(rng: random.Random, script: bool) -> bytes:
     return f'<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">{body}</svg>\n'.encode()
 
 
-def html_doc(rng: random.Random, obfuscated: bool) -> bytes:
-    if obfuscated:
-        payload = _random_bytes(rng, 60).hex()
-        script = f'eval(atob("{payload}"));document.write(unescape("%3C"))'
-    else:
+def cfb_file(rng: random.Random, macro: bool, stream_name: str = "WordDocument", padding: int = 6) -> bytes:
+    """A minimal compound file (the legacy Office container): header, one FAT sector, the directory and filler.
+
+    With ``macro`` the directory holds the ``Macros`` and ``VBA`` storages and a ``_VBA_PROJECT`` stream, which is what
+    a legacy document with a VBA project looks like to a directory reader. Sector 0 is the FAT, sectors 1 and 2 hold
+    the directory (five entries do not fit in one), the rest is filler text so the file is not tiny.
+    """
+    free, end, fat_sector = 0xFFFFFFFF, 0xFFFFFFFE, 0xFFFFFFFD
+
+    def entry(name: str, kind: int, child: int = free, size: int = 0) -> bytes:
+        raw = name.encode("utf-16-le")
+        body = bytearray(128)
+        body[: len(raw)] = raw
+        struct.pack_into("<HBB", body, 64, len(raw) + 2, kind, 1)
+        struct.pack_into("<III", body, 68, free, free, child)
+        struct.pack_into("<IQ", body, 116, end if size == 0 else 3, size)
+        return bytes(body)
+
+    entries = [entry("Root Entry", 5, child=1), entry(stream_name, 2, size=512)]
+    if macro:
+        entries += [entry("Macros", 1, child=3), entry("VBA", 1, child=4), entry("_VBA_PROJECT", 2, size=64)]
+    entries += [bytes(128)] * (8 - len(entries))
+    header = bytearray(512)
+    header[:8] = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    struct.pack_into("<HHHHH", header, 0x18, 0x3E, 3, 0xFFFE, 9, 6)
+    struct.pack_into("<IIIIII", header, 0x2C, 1, 1, 0, 4096, end, 0)
+    struct.pack_into("<II", header, 0x44, end, 0)
+    struct.pack_into("<109I", header, 0x4C, 0, *([free] * 108))
+    fat = [fat_sector, 2, end, end, *([free] * 124)]
+    filler = b"".join(_words(rng, 60).ljust(512, b" ")[:512] for _ in range(padding))
+    return bytes(header) + struct.pack("<128I", *fat) + b"".join(entries) + filler
+
+
+_BLOB_STYLES = ("atob", "hex", "xescape", "uescape", "fromcharcode", "datascript")
+
+
+def html_doc(rng: random.Random, obfuscated: bool, style: str = "atob") -> bytes:
+    """A small web page. ``style`` picks one obfuscation shape (see ``_BLOB_STYLES``); benign pages carry none."""
+    if not obfuscated:
         script = "document.getElementById('x').textContent = 'hello';"
-    return f"<!doctype html><html><body><p id='x'></p><script>{script}</script></body></html>\n".encode()
+        return f"<!doctype html><html><body><p id='x'></p><script>{script}</script></body></html>\n".encode()
+    blob = _random_bytes(rng, 300)
+    if style == "atob":
+        script = f'eval(atob("{base64.b64encode(blob).decode()}"));'
+    elif style == "hex":
+        script = f'var h="{blob.hex()}";document.write(unescape(h.replace(/(..)/g,"%$1")));'
+    elif style == "xescape":
+        script = 'eval("' + "".join(f"\\x{b:02x}" for b in blob[:90]) + '");'
+    elif style == "uescape":
+        script = (
+            'document.write(unescape("'
+            + "".join(f"%u{blob[i] * 256 + blob[i + 1]:04x}" for i in range(0, 100, 2))
+            + '"));'
+        )
+    elif style == "fromcharcode":
+        script = f"eval(String.fromCharCode({','.join(str(b) for b in blob[:60])}));"
+    else:
+        return (
+            b'<html><body><script src="data:text/javascript;base64,'
+            + base64.b64encode(blob[:120])
+            + b'"></script></body></html>\n'
+        )
+    return f"<!doctype html><html><body><script>{script}</script></body></html>\n".encode()
+
+
+def html_form_redirect(rng: random.Random) -> bytes:
+    """A page that posts a form to another site on its own and also redirects there (two weak signals together)."""
+    return (
+        b'<html><head><meta http-equiv="refresh" content="0; url=https://example.invalid/login"></head>'
+        b'<body onload="document.forms[0].submit()"><form action="https://example.invalid/post" method="post">'
+        b'<input name="t" value="x"></form><script>document.forms[0].submit();</script></body></html>\n'
+    )
+
+
+def html_with_inline_image(rng: random.Random) -> bytes:
+    """A legitimate page: a large inline base64 image, an analytics-style document.write and a relative refresh."""
+    image = base64.b64encode(_random_bytes(rng, 1500)).decode()
+    return (
+        '<html><head><meta http-equiv="refresh" content="300; url=/next.html"></head><body>'
+        f'<img src="data:image/png;base64,{image}"><script>document.write("<p>visit counter</p>");</script></body></html>\n'
+    ).encode()
+
+
+def plain_js(rng: random.Random) -> bytes:
+    return b"(function(w){var n=0;w.count=function(){return ++n;};})(window);\n// " + _words(rng, 6) + b"\n"
+
+
+def eval_encoded_js(rng: random.Random) -> bytes:
+    return b'var p="' + _random_bytes(rng, 40).hex().encode() + b'";eval(unescape(p));\n'
 
 
 def script_text(rng: random.Random, kind: str) -> bytes:
@@ -255,9 +338,37 @@ FAMILIES: tuple[Family, ...] = (
     Family(
         "html_obfuscated",
         MALICIOUS,
-        (),
-        lambda r, i: (f"secure_{_n(i)}.html", html_doc(r, True)),
-        "no rule: HTML with script is ordinary; reported as a known gap",
+        ("obfuscated_html",),
+        lambda r, i: (f"secure_{_n(i)}.html", html_doc(r, True, _BLOB_STYLES[i % len(_BLOB_STYLES)])),
+        "minified or generated pages can look the same",
+    ),
+    Family(
+        "html_form_redirect",
+        MALICIOUS,
+        ("obfuscated_html",),
+        lambda r, i: (f"verify_{_n(i)}.htm", html_form_redirect(r)),
+        "a redirect page and an auto-submitted form together; some single sign-on pages do the same",
+    ),
+    Family(
+        "macro_doc_legacy",
+        MALICIOUS,
+        ("macro_office_file",),
+        lambda r, i: (f"invoice_{_n(i)}.doc", cfb_file(r, True)),
+        "legitimate macro-enabled legacy documents look identical",
+    ),
+    Family(
+        "macro_xls_legacy",
+        MALICIOUS,
+        ("macro_office_file",),
+        lambda r, i: (f"sheet_{_n(i)}.xls", cfb_file(r, True, "Workbook")),
+        "legitimate macro-enabled legacy workbooks look identical",
+    ),
+    Family(
+        "wsh_js",
+        MALICIOUS,
+        ("runnable_script_file",),
+        lambda r, i: (f"update_{_n(i)}.js", script_text(r, "js") if i % 2 else eval_encoded_js(r)),
+        "Windows Script Host style .js",
     ),
     Family("ctrl_clean_docx", BENIGN_CONTROL, (), lambda r, i: (f"memo_{_n(i)}.docx", office_zip(r, "word", False))),
     Family("ctrl_clean_xlsx", BENIGN_CONTROL, (), lambda r, i: (f"budget_{_n(i)}.xlsx", office_zip(r, "xl", False))),
@@ -265,6 +376,17 @@ FAMILIES: tuple[Family, ...] = (
     Family("ctrl_clean_pdf", BENIGN_CONTROL, (), lambda r, i: (f"paper_{_n(i)}.pdf", pdf_doc(r))),
     Family("ctrl_clean_svg", BENIGN_CONTROL, (), lambda r, i: (f"icon_{_n(i)}.svg", svg_doc(r, False))),
     Family("ctrl_clean_html", BENIGN_CONTROL, (), lambda r, i: (f"page_{_n(i)}.html", html_doc(r, False))),
+    Family("ctrl_clean_doc_legacy", BENIGN_CONTROL, (), lambda r, i: (f"memo_{_n(i)}.doc", cfb_file(r, False))),
+    Family(
+        "ctrl_clean_xls_legacy",
+        BENIGN_CONTROL,
+        (),
+        lambda r, i: (f"budget_{_n(i)}.xls", cfb_file(r, False, "Workbook")),
+    ),
+    Family(
+        "ctrl_html_inline_image", BENIGN_CONTROL, (), lambda r, i: (f"page_{_n(i)}.html", html_with_inline_image(r))
+    ),
+    Family("ctrl_clean_js", BENIGN_CONTROL, (), lambda r, i: (f"site_{_n(i)}.js", plain_js(r))),
     Family("ctrl_clean_png", BENIGN_CONTROL, (), lambda r, i: (f"image_{_n(i)}.png", png_image(r))),
     Family("ctrl_clean_jpg", BENIGN_CONTROL, (), lambda r, i: (f"photo_{_n(i)}.jpg", jpeg_image(r))),
     Family("ctrl_clean_txt", BENIGN_CONTROL, (), lambda r, i: (f"readme_{_n(i)}.txt", _words(r, 50))),

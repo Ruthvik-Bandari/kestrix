@@ -56,6 +56,12 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Changed
 
+- **Email check: three false-alarm fixes from the modern-mail benchmark** (`docs/research/mail-benchmark.md`, dev
+  lists only). A link through a URL-rewriting gateway (Outlook Safe Links, Proofpoint URL Defense, Mimecast, Barracuda, Cisco) is judged
+  by the address it wraps, and its visible text is not compared when none can be read; `mail.links.ip_host` is `info`
+  for private, loopback and link-local addresses (public ones stay medium); `mail.sender.reply_to_mismatch` is `low`
+  on list mail when every `Reply-To` is at a free-mail provider.
+
 - **Hosted sign-in uses JWT access tokens and rotating refresh tokens** ([ADR 0007](docs/adr/0007-jwt-access-and-rotating-refresh-tokens.md)).
   The `__Host-kx_session` cookie is gone. A 15-minute HS256 access token (`__Host-kx_at`, PyJWT, `kid`-based key
   rotation) and an opaque refresh token (`__Host-kx_rt`, `SameSite=Strict`, stored only as a keyed hash) replace it.
@@ -241,7 +247,7 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
 
 ### Added
 
-- **Detection repair** (`kestrix detect`), the deterministic B0 baseline from the [engineering plan](docs/CyberGuard_Engineering_Plan.md):
+- **Detection repair** (`kestrix detect`), the deterministic B0 baseline from the [engineering plan](docs/history/cyberguard-engineering-plan.md):
   - parser for a bounded single-event Sigma subset (Windows `process_creation`, exact/`contains`/`startswith`/`endswith`, value lists, `and`/`or`/`not`), with a reason code for every rejection;
   - environment field mappings and conversion with the pySigma Lucene backend;
   - replay on Elasticsearch 8.19.3 pinned by image digest, with a disposable index per run, count verification and full pagination;

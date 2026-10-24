@@ -6,7 +6,7 @@
 
 ## Context
 
-The CyberGuard Detection Repair plan (`docs/CyberGuard_Engineering_Plan.md`, v2.0) proposed extending
+The CyberGuard Detection Repair plan (`docs/history/cyberguard-engineering-plan.md`, v2.0) proposed extending
 the upstream `tanishka-bandari/cyberguard` Spring Boot and Next.js incident app with a Python analysis core.
 A repository audit confirmed that baseline builds and passes its tests. On 14 October 2026 the project owner
 changed direction:
@@ -47,7 +47,7 @@ changed direction:
 
 - Plan items that depend on the multi-user backend are deferred, not dropped: FR07 (approval and
   export), FR10 (incident linkage), durable jobs and migrations.
-- The plan's Claude starter pack (`.claude/`, `docs/claude/`) is kept as the development workflow.
+- The plan's Claude setup (`.claude/`) is kept as the development workflow.
   Its CyberGuard wording is historical context for the detection-repair module.
 - The plan's performance budgets now apply to a laptop-local run. Replay of each bundled case takes about
   0.2 s on the pinned engine, measured on an Apple Silicon laptop.

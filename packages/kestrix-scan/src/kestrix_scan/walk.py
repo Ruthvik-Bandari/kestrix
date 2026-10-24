@@ -50,6 +50,7 @@ SKIP_DIRS = frozenset(
         ".svelte-kit",
         ".output",
         ".angular",
+        ".terraform",
     }
 )
 _GIT_TIMEOUT_S = 10
