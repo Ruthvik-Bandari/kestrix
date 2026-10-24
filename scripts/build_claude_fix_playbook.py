@@ -821,6 +821,14 @@ def render() -> str:
     ]
     parts += [_web_section(rule) for rule in RULES.values() if rule.language == "web"]
     parts += [
+        "## CI and infrastructure rules (GitHub Actions, Dockerfile, shell, Terraform, Kubernetes)\n",
+        "These rules read `.github/workflows/*.yml` and `action.yml`, `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and "
+        "`Containerfile`, `.sh` and `.bash` scripts (and the `run:` blocks and `RUN` lines above), `.tf` files and Kubernetes "
+        "manifests. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` on the line or the "
+        "line above (inside the script for a `run:` block).\n",
+    ]
+    parts += [_iac_section(rule) for rule in RULES.values() if rule.language in IAC_LANGUAGES]
+    parts += [
         "## PHP rules (PHP, PHTML and Blade templates)\n",
         "These rules read `.php`, `.phtml` and `.blade.php` files. A request value ($_GET, $_POST, $_REQUEST, $_COOKIE, "
         "php://input, a Laravel or Symfony request object) that reaches a sink inside one function gives a finding "
@@ -834,14 +842,6 @@ def render() -> str:
         "`-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.\n",
     ]
     parts += [_web_section(rule) for rule in RULES.values() if rule.language == "sql"]
-    parts += [
-        "## CI and infrastructure rules (GitHub Actions, Dockerfile, shell, Terraform, Kubernetes)\n",
-        "These rules read `.github/workflows/*.yml` and `action.yml`, `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and "
-        "`Containerfile`, `.sh` and `.bash` scripts (and the `run:` blocks and `RUN` lines above), `.tf` files and Kubernetes "
-        "manifests. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` on the line or the "
-        "line above (inside the script for a `run:` block).\n",
-    ]
-    parts += [_iac_section(rule) for rule in RULES.values() if rule.language in IAC_LANGUAGES]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

@@ -1858,340 +1858,6 @@ After:
 module.exports = { images: { remotePatterns: [{ protocol: 'https', hostname: 'images.example.com' }] } };
 ```
 
-## PHP rules (PHP, PHTML and Blade templates)
-
-These rules read `.php`, `.phtml` and `.blade.php` files. A request value ($_GET, $_POST, $_REQUEST, $_COOKIE, php://input, a Laravel or Symfony request object) that reaches a sink inside one function gives a finding with a trace. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` (or `#`) on the line or the line above, and a Blade comment (double curly braces around `-- kestrix: ignore[<rule-id>] <reason> --`) in Blade.
-
-### `php.exec.command`: Command run with a value built from request data (or with a non-literal)
-
-CWE-78 · default severity high · confidence medium
-
-**Why:** system(), exec(), shell_exec(), passthru(), popen(), proc_open(), pcntl_exec() and a backtick command pass their string to a shell, so a request value in it can add ';', '&&' or '$(...)' and run other commands. The finding is high when $_GET, $_POST, $_REQUEST, $_COOKIE, php://input or a request object reaches the call inside one function (with a trace), and medium with low confidence when the command is only built by concatenation or interpolation from a value that is not a literal. A value that went through escapeshellarg(), escapeshellcmd(), a numeric cast or a hash is not reported, and neither is proc_open() with an argument array.
-
-**Fix:** Avoid the shell: call the program with fixed arguments, use a PHP function for the job (mkdir, copy, ZipArchive), or pass proc_open() an argument array. When a shell is unavoidable, wrap each value in escapeshellarg() and validate it against an allowlist first.
-
-Before (`ping.php`):
-
-```php
-<?php
-system('ping -c 1 ' . $_GET['host']);
-```
-
-After:
-
-```php
-<?php
-system('ping -c 1 ' . escapeshellarg($_GET['host']));
-```
-
-### `php.include.dynamic`: include or require of a path built from request data
-
-CWE-98 · default severity high · confidence medium
-
-**Why:** include and require run the file they name as PHP. If a request value chooses the path, an attacker can load a file of their choosing: a local file such as an uploaded image or a log that holds injected PHP, or, when allow_url_include is on, a remote script. A value that went through basename() or a numeric cast is not reported.
-
-**Fix:** Map a request value to a file with an allowlist (an array of page names to paths) and include only the mapped path. Never pass a request value, even with a suffix added, to include or require.
-
-Before (`index.php`):
-
-```php
-<?php
-include $_GET['page'] . '.php';
-```
-
-After:
-
-```php
-<?php
-$pages = ['home' => 'home.php', 'about' => 'about.php'];
-$page = $_GET['page'] ?? 'home';
-include $pages[$page] ?? $pages['home'];
-```
-
-### `php.sql.injection`: SQL text built from request data (or by concatenation or interpolation)
-
-CWE-89 · default severity high · confidence medium
-
-**Why:** mysqli_query(), pg_query() and the other query functions, ->query(), ->exec(), ->prepare(), WordPress's $wpdb->query() and get_*() methods, Laravel's DB::raw(), DB::select() and whereRaw()/selectRaw()/orderByRaw() run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when a request value reaches the call inside one function (with a trace) and medium with low confidence when the text is only built by concatenation or interpolation from a value that is not a literal. Values that went through mysqli_real_escape_string(), addslashes(), ->quote(), esc_sql(), a numeric cast or a hash are not reported, and a $wpdb->prepare() call is not text built by the caller.
-
-**Fix:** Use placeholders and pass the values separately: $pdo->prepare('SELECT * FROM users WHERE id = ?') then ->execute([$id]), mysqli_stmt_bind_param(), $wpdb->prepare('... WHERE id = %d', $id), or Laravel's where('id', $id) and whereRaw('id = ?', [$id]). Names of tables and columns cannot be bound, so check them against an allowlist.
-
-Before (`user.php`):
-
-```php
-<?php
-$r = mysqli_query($link, "SELECT * FROM users WHERE id = " . $_GET['id']);
-```
-
-After:
-
-```php
-<?php
-$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
-$stmt->execute([$_GET['id']]);
-```
-
-### `php.xss.echo`: echo or print of request data without escaping
-
-CWE-79 · default severity high · confidence medium
-
-**Why:** echo, print, <?= ?>, printf() and die() write their argument into the response. A request value in it, such as $_GET['q'] or $_SERVER['PHP_SELF'], becomes markup the browser runs as script (reflected cross-site scripting). A value that went through htmlspecialchars(), htmlentities(), esc_html(), esc_attr(), e(), strip_tags(), json_encode() or a numeric cast is not reported.
-
-**Fix:** Escape for the context where the value lands: htmlspecialchars($value, ENT_QUOTES, 'UTF-8') for HTML text and attributes (esc_html()/esc_attr() in WordPress, Blade's escaped echo, Twig's autoescaping), and a JSON or URL encoder inside script blocks and URLs. For $_SERVER['PHP_SELF'] in a form action, use an empty action or htmlspecialchars().
-
-Before (`hello.php`):
-
-```php
-<?php
-echo 'Hello ' . $_GET['name'];
-```
-
-After:
-
-```php
-<?php
-echo 'Hello ' . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8');
-```
-
-### `php.deserialize.unserialize`: unserialize() of request data
-
-CWE-502 · default severity high · confidence medium
-
-**Why:** unserialize() rebuilds PHP objects from text, and an object's magic methods (__wakeup, __destruct, __toString) run on the way. With request data as the input, an attacker can chain the classes the application already loads into file writes, requests or code execution (PHP object injection). Passing ['allowed_classes' => false] is not reported.
-
-**Fix:** Exchange data as JSON (json_decode) instead. If unserialize() is unavoidable, pass ['allowed_classes' => false] or a short list of classes, and sign the data (hash_hmac) and check the signature before reading it.
-
-Before (`prefs.php`):
-
-```php
-<?php
-$prefs = unserialize($_COOKIE['prefs']);
-```
-
-After:
-
-```php
-<?php
-$prefs = json_decode($_COOKIE['prefs'], true);
-```
-
-### `php.ssrf.request`: Server-side request to a URL built from request data
-
-CWE-918 · default severity high · confidence medium
-
-**Why:** curl_init(), curl_setopt(CURLOPT_URL), get_headers(), fsockopen(), wp_remote_get() and friends, and file_get_contents(), fopen(), readfile() and file() when the whole location comes from the request, make the server fetch what the request names. An attacker can point it at internal services, cloud metadata addresses or local files (file://).
-
-**Fix:** Fetch only URLs you build from a fixed scheme and host plus an encoded value, or check the parsed host against an allowlist (and resolve it to a public address) before the request. Turn off redirects, restrict CURLOPT_PROTOCOLS to HTTP(S), and in WordPress use wp_safe_remote_get().
-
-Before (`feed.php`):
-
-```php
-<?php
-$ch = curl_init($_GET['url']);
-```
-
-After:
-
-```php
-<?php
-$ch = curl_init('https://api.example.com/feed?q=' . urlencode($_GET['q']));
-```
-
-### `php.path.traversal`: File path built from request data
-
-CWE-22 · default severity high · confidence medium
-
-**Why:** fopen(), file_get_contents(), readfile(), file(), file_put_contents(), unlink(), rename(), mkdir(), scandir(), move_uploaded_file() and similar functions use the path they are given. A request value containing '../' (or the name of an uploaded file) reaches outside the intended directory and reads, overwrites or deletes other files. A value that went through basename() or a numeric cast is not reported.
-
-**Fix:** Take the base name only (basename()), or map an id to a stored file name. Join it to a fixed directory, resolve with realpath() and check the result starts with the directory's real path before using it. Generate names for uploads yourself.
-
-Before (`download.php`):
-
-```php
-<?php
-$data = file_get_contents('uploads/' . $_GET['file']);
-```
-
-After:
-
-```php
-<?php
-$data = file_get_contents('uploads/' . basename($_GET['file']));
-```
-
-### `php.exec.eval`: eval(), assert() of a string or create_function() with dynamic code
-
-CWE-95 · default severity high · confidence medium
-
-**Why:** eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding is high when a request value reaches the call inside one function, and medium with low confidence when the code is only a value that is not a literal.
-
-**Fix:** Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition).
-
-Before (`calc.php`):
-
-```php
-<?php
-eval($_POST['expr']);
-```
-
-After:
-
-```php
-<?php
-$ops = ['add' => fn($a, $b) => $a + $b];
-$result = $ops[$_POST['op']]($a, $b);
-```
-
-### `php.regex.preg_replace_e`: preg_replace() with the /e modifier
-
-CWE-95 · default severity high · confidence high
-
-**Why:** The /e modifier makes preg_replace() evaluate the replacement as PHP code after substitution, so text matched from the subject is run as code. It was deprecated in PHP 5.5 and removed in PHP 7.0, which makes a match a sign of old code that still carries the hole. The finding is medium when the subject and replacement are literals.
-
-**Fix:** Use preg_replace_callback() with a closure that builds the replacement, and drop the /e modifier.
-
-Before (`title.php`):
-
-```php
-<?php
-$out = preg_replace('/(\w+)/e', 'ucfirst("$1")', $text);
-```
-
-After:
-
-```php
-<?php
-$out = preg_replace_callback('/(\w+)/', fn($m) => ucfirst($m[1]), $text);
-```
-
-### `php.extract.request`: extract() of request data
-
-CWE-621 · default severity high · confidence medium
-
-**Why:** extract() creates a local variable for every key of the array it is given. With $_GET, $_POST, $_REQUEST, $_COOKIE or a request array, an attacker chooses variable names and so can overwrite variables the code relies on, such as $is_admin or a file path, which opens the way to bypassed checks and file inclusion. EXTR_PREFIX_ALL is not reported.
-
-**Fix:** Read the keys you need one by one ($name = $_POST['name'] ?? ''), or pass EXTR_PREFIX_ALL with a prefix so the new names cannot collide with your own.
-
-Before (`form.php`):
-
-```php
-<?php
-extract($_POST);
-```
-
-After:
-
-```php
-<?php
-$name = $_POST['name'] ?? '';
-```
-
-### `php.crypto.weak_password_hash`: md5() or sha1() of a password
-
-CWE-916 · default severity medium · confidence medium
-
-**Why:** md5() and sha1() are fast general-purpose hashes: an attacker who gets the stored values tries billions of guesses a second on a GPU. The finding fires when the argument names a password ($password, $_POST['pass'], $user_pwd and the like).
-
-**Fix:** Hash passwords with password_hash($password, PASSWORD_DEFAULT) (or PASSWORD_ARGON2ID) and check them with password_verify(); rehash on login with password_needs_rehash().
-
-Before (`register.php`):
-
-```php
-<?php
-$hash = md5($password);
-```
-
-After:
-
-```php
-<?php
-$hash = password_hash($password, PASSWORD_DEFAULT);
-```
-
-### `php.blade.unescaped`: Blade {!! !!} of a value that is not a literal
-
-CWE-79 · default severity medium · confidence low
-
-**Why:** Blade's {!! !!} prints a value without HTML escaping, where the default double-brace echo escapes it. If the value holds user input, markup in it runs as script. Calls to Laravel helpers that return safe markup (csrf_field(), route(), json_encode(), e() ...) are not reported. The finding has the rule's severity and high confidence when the expression reads the request ($request, request(), old()), and low severity and confidence otherwise.
-
-**Fix:** Use Blade's escaped echo (the value inside double curly braces), which escapes. Keep {!! !!} for markup your own code built, and sanitize user-supplied HTML with a purifier (for example HTMLPurifier) before printing it.
-
-Before (`profile.blade.php`):
-
-```blade
-<div>{!! $request->input('bio') !!}</div>
-```
-
-After:
-
-```blade
-<div>{!! e($request->input('bio')) !!}</div>
-```
-
-## SQL file rules
-
-These rules read `.sql` files. Suppress a confirmed false positive with `-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.
-
-### `sql.grant.all`: GRANT ALL in a SQL file
-
-CWE-250 · default severity medium · confidence high
-
-**Why:** GRANT ALL [PRIVILEGES] gives an account every privilege on its target, including the ability to change schema, delete data and, on *.*, administer the server. An application account that is compromised then has all of it. The finding is high for GRANT ALL ON *.* or TO PUBLIC, medium for a whole database, schema or ALL TABLES, and low for a single object.
-
-**Fix:** Grant the privileges the application needs (SELECT, INSERT, UPDATE, DELETE) on the specific tables or schema, and keep a separate owner or migration account for DDL.
-
-Before (`init.sql`):
-
-```sql
-GRANT ALL PRIVILEGES ON *.* TO 'app'@'%';
-```
-
-After:
-
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON shop.* TO 'app'@'%';
-```
-
-### `sql.credentials.plaintext`: Plaintext account password in a SQL file
-
-CWE-798 · default severity high · confidence medium
-
-**Why:** CREATE USER ... IDENTIFIED BY 'secret', CREATE ROLE ... PASSWORD 'secret', ALTER USER ... PASSWORD 'secret' and SET PASSWORD = 'secret' store a literal password in a file that lives in version control and is copied around. Values that look like placeholders (<...>, ${...}, %s) and already hashed values (md5..., SCRAM-SHA-256$..., IDENTIFIED BY PASSWORD '*hash') are not reported.
-
-**Fix:** Keep the password out of the file: create the account from a deployment script that reads it from a secret store or an environment variable, or supply it at run time (psql -v and :'password'). Rotate any password that was committed.
-
-Before (`roles.sql`):
-
-```sql
-CREATE ROLE app LOGIN PASSWORD 'hunter2';
-```
-
-After:
-
-```sql
-CREATE ROLE app LOGIN PASSWORD :'app_password';
-```
-
-### `sql.function.security_definer_path`: PostgreSQL SECURITY DEFINER function without a fixed search_path
-
-CWE-427 · default severity medium · confidence medium
-
-**Why:** A SECURITY DEFINER function runs with its owner's privileges. Without SET search_path, names it uses are resolved through the caller's search_path, so a caller can create a table, function or operator of the same name in a schema searched first and make the function run it with the owner's rights.
-
-**Fix:** Add SET search_path = pg_catalog, public (or just the schemas the function needs, with pg_temp last) to the function definition, and schema-qualify the objects it uses.
-
-Before (`functions.sql`):
-
-```sql
-CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
-```
-
-After:
-
-```sql
-CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
-```
-
 ## CI and infrastructure rules (GitHub Actions, Dockerfile, shell, Terraform, Kubernetes)
 
 These rules read `.github/workflows/*.yml` and `action.yml`, `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and `Containerfile`, `.sh` and `.bash` scripts (and the `run:` blocks and `RUN` lines above), `.tf` files and Kubernetes manifests. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` on the line or the line above (inside the script for a `run:` block).
@@ -2938,4 +2604,338 @@ spec:
       image: registry.example/app:1.2.3
       securityContext:
         runAsNonRoot: true
+```
+
+## PHP rules (PHP, PHTML and Blade templates)
+
+These rules read `.php`, `.phtml` and `.blade.php` files. A request value ($_GET, $_POST, $_REQUEST, $_COOKIE, php://input, a Laravel or Symfony request object) that reaches a sink inside one function gives a finding with a trace. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` (or `#`) on the line or the line above, and a Blade comment (double curly braces around `-- kestrix: ignore[<rule-id>] <reason> --`) in Blade.
+
+### `php.exec.command`: Command run with a value built from request data (or with a non-literal)
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** system(), exec(), shell_exec(), passthru(), popen(), proc_open(), pcntl_exec() and a backtick command pass their string to a shell, so a request value in it can add ';', '&&' or '$(...)' and run other commands. The finding is high when $_GET, $_POST, $_REQUEST, $_COOKIE, php://input or a request object reaches the call inside one function (with a trace), and medium with low confidence when the command is only built by concatenation or interpolation from a value that is not a literal. A value that went through escapeshellarg(), escapeshellcmd(), a numeric cast or a hash is not reported, and neither is proc_open() with an argument array.
+
+**Fix:** Avoid the shell: call the program with fixed arguments, use a PHP function for the job (mkdir, copy, ZipArchive), or pass proc_open() an argument array. When a shell is unavoidable, wrap each value in escapeshellarg() and validate it against an allowlist first.
+
+Before (`ping.php`):
+
+```php
+<?php
+system('ping -c 1 ' . $_GET['host']);
+```
+
+After:
+
+```php
+<?php
+system('ping -c 1 ' . escapeshellarg($_GET['host']));
+```
+
+### `php.include.dynamic`: include or require of a path built from request data
+
+CWE-98 · default severity high · confidence medium
+
+**Why:** include and require run the file they name as PHP. If a request value chooses the path, an attacker can load a file of their choosing: a local file such as an uploaded image or a log that holds injected PHP, or, when allow_url_include is on, a remote script. A value that went through basename() or a numeric cast is not reported.
+
+**Fix:** Map a request value to a file with an allowlist (an array of page names to paths) and include only the mapped path. Never pass a request value, even with a suffix added, to include or require.
+
+Before (`index.php`):
+
+```php
+<?php
+include $_GET['page'] . '.php';
+```
+
+After:
+
+```php
+<?php
+$pages = ['home' => 'home.php', 'about' => 'about.php'];
+$page = $_GET['page'] ?? 'home';
+include $pages[$page] ?? $pages['home'];
+```
+
+### `php.sql.injection`: SQL text built from request data (or by concatenation or interpolation)
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** mysqli_query(), pg_query() and the other query functions, ->query(), ->exec(), ->prepare(), WordPress's $wpdb->query() and get_*() methods, Laravel's DB::raw(), DB::select() and whereRaw()/selectRaw()/orderByRaw() run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when a request value reaches the call inside one function (with a trace) and medium with low confidence when the text is only built by concatenation or interpolation from a value that is not a literal. Values that went through mysqli_real_escape_string(), addslashes(), ->quote(), esc_sql(), a numeric cast or a hash are not reported, and a $wpdb->prepare() call is not text built by the caller.
+
+**Fix:** Use placeholders and pass the values separately: $pdo->prepare('SELECT * FROM users WHERE id = ?') then ->execute([$id]), mysqli_stmt_bind_param(), $wpdb->prepare('... WHERE id = %d', $id), or Laravel's where('id', $id) and whereRaw('id = ?', [$id]). Names of tables and columns cannot be bound, so check them against an allowlist.
+
+Before (`user.php`):
+
+```php
+<?php
+$r = mysqli_query($link, "SELECT * FROM users WHERE id = " . $_GET['id']);
+```
+
+After:
+
+```php
+<?php
+$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
+$stmt->execute([$_GET['id']]);
+```
+
+### `php.xss.echo`: echo or print of request data without escaping
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** echo, print, <?= ?>, printf() and die() write their argument into the response. A request value in it, such as $_GET['q'] or $_SERVER['PHP_SELF'], becomes markup the browser runs as script (reflected cross-site scripting). A value that went through htmlspecialchars(), htmlentities(), esc_html(), esc_attr(), e(), strip_tags(), json_encode() or a numeric cast is not reported.
+
+**Fix:** Escape for the context where the value lands: htmlspecialchars($value, ENT_QUOTES, 'UTF-8') for HTML text and attributes (esc_html()/esc_attr() in WordPress, Blade's escaped echo, Twig's autoescaping), and a JSON or URL encoder inside script blocks and URLs. For $_SERVER['PHP_SELF'] in a form action, use an empty action or htmlspecialchars().
+
+Before (`hello.php`):
+
+```php
+<?php
+echo 'Hello ' . $_GET['name'];
+```
+
+After:
+
+```php
+<?php
+echo 'Hello ' . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8');
+```
+
+### `php.deserialize.unserialize`: unserialize() of request data
+
+CWE-502 · default severity high · confidence medium
+
+**Why:** unserialize() rebuilds PHP objects from text, and an object's magic methods (__wakeup, __destruct, __toString) run on the way. With request data as the input, an attacker can chain the classes the application already loads into file writes, requests or code execution (PHP object injection). Passing ['allowed_classes' => false] is not reported.
+
+**Fix:** Exchange data as JSON (json_decode) instead. If unserialize() is unavoidable, pass ['allowed_classes' => false] or a short list of classes, and sign the data (hash_hmac) and check the signature before reading it.
+
+Before (`prefs.php`):
+
+```php
+<?php
+$prefs = unserialize($_COOKIE['prefs']);
+```
+
+After:
+
+```php
+<?php
+$prefs = json_decode($_COOKIE['prefs'], true);
+```
+
+### `php.ssrf.request`: Server-side request to a URL built from request data
+
+CWE-918 · default severity high · confidence medium
+
+**Why:** curl_init(), curl_setopt(CURLOPT_URL), get_headers(), fsockopen(), wp_remote_get() and friends, and file_get_contents(), fopen(), readfile() and file() when the whole location comes from the request, make the server fetch what the request names. An attacker can point it at internal services, cloud metadata addresses or local files (file://).
+
+**Fix:** Fetch only URLs you build from a fixed scheme and host plus an encoded value, or check the parsed host against an allowlist (and resolve it to a public address) before the request. Turn off redirects, restrict CURLOPT_PROTOCOLS to HTTP(S), and in WordPress use wp_safe_remote_get().
+
+Before (`feed.php`):
+
+```php
+<?php
+$ch = curl_init($_GET['url']);
+```
+
+After:
+
+```php
+<?php
+$ch = curl_init('https://api.example.com/feed?q=' . urlencode($_GET['q']));
+```
+
+### `php.path.traversal`: File path built from request data
+
+CWE-22 · default severity high · confidence medium
+
+**Why:** fopen(), file_get_contents(), readfile(), file(), file_put_contents(), unlink(), rename(), mkdir(), scandir(), move_uploaded_file() and similar functions use the path they are given. A request value containing '../' (or the name of an uploaded file) reaches outside the intended directory and reads, overwrites or deletes other files. A value that went through basename() or a numeric cast is not reported.
+
+**Fix:** Take the base name only (basename()), or map an id to a stored file name. Join it to a fixed directory, resolve with realpath() and check the result starts with the directory's real path before using it. Generate names for uploads yourself.
+
+Before (`download.php`):
+
+```php
+<?php
+$data = file_get_contents('uploads/' . $_GET['file']);
+```
+
+After:
+
+```php
+<?php
+$data = file_get_contents('uploads/' . basename($_GET['file']));
+```
+
+### `php.exec.eval`: eval(), assert() of a string or create_function() with dynamic code
+
+CWE-95 · default severity high · confidence medium
+
+**Why:** eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding is high when a request value reaches the call inside one function, and medium with low confidence when the code is only a value that is not a literal.
+
+**Fix:** Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition).
+
+Before (`calc.php`):
+
+```php
+<?php
+eval($_POST['expr']);
+```
+
+After:
+
+```php
+<?php
+$ops = ['add' => fn($a, $b) => $a + $b];
+$result = $ops[$_POST['op']]($a, $b);
+```
+
+### `php.regex.preg_replace_e`: preg_replace() with the /e modifier
+
+CWE-95 · default severity high · confidence high
+
+**Why:** The /e modifier makes preg_replace() evaluate the replacement as PHP code after substitution, so text matched from the subject is run as code. It was deprecated in PHP 5.5 and removed in PHP 7.0, which makes a match a sign of old code that still carries the hole. The finding is medium when the subject and replacement are literals.
+
+**Fix:** Use preg_replace_callback() with a closure that builds the replacement, and drop the /e modifier.
+
+Before (`title.php`):
+
+```php
+<?php
+$out = preg_replace('/(\w+)/e', 'ucfirst("$1")', $text);
+```
+
+After:
+
+```php
+<?php
+$out = preg_replace_callback('/(\w+)/', fn($m) => ucfirst($m[1]), $text);
+```
+
+### `php.extract.request`: extract() of request data
+
+CWE-621 · default severity high · confidence medium
+
+**Why:** extract() creates a local variable for every key of the array it is given. With $_GET, $_POST, $_REQUEST, $_COOKIE or a request array, an attacker chooses variable names and so can overwrite variables the code relies on, such as $is_admin or a file path, which opens the way to bypassed checks and file inclusion. EXTR_PREFIX_ALL is not reported.
+
+**Fix:** Read the keys you need one by one ($name = $_POST['name'] ?? ''), or pass EXTR_PREFIX_ALL with a prefix so the new names cannot collide with your own.
+
+Before (`form.php`):
+
+```php
+<?php
+extract($_POST);
+```
+
+After:
+
+```php
+<?php
+$name = $_POST['name'] ?? '';
+```
+
+### `php.crypto.weak_password_hash`: md5() or sha1() of a password
+
+CWE-916 · default severity medium · confidence medium
+
+**Why:** md5() and sha1() are fast general-purpose hashes: an attacker who gets the stored values tries billions of guesses a second on a GPU. The finding fires when the argument names a password ($password, $_POST['pass'], $user_pwd and the like).
+
+**Fix:** Hash passwords with password_hash($password, PASSWORD_DEFAULT) (or PASSWORD_ARGON2ID) and check them with password_verify(); rehash on login with password_needs_rehash().
+
+Before (`register.php`):
+
+```php
+<?php
+$hash = md5($password);
+```
+
+After:
+
+```php
+<?php
+$hash = password_hash($password, PASSWORD_DEFAULT);
+```
+
+### `php.blade.unescaped`: Blade {!! !!} of a value that is not a literal
+
+CWE-79 · default severity medium · confidence low
+
+**Why:** Blade's {!! !!} prints a value without HTML escaping, where the default double-brace echo escapes it. If the value holds user input, markup in it runs as script. Calls to Laravel helpers that return safe markup (csrf_field(), route(), json_encode(), e() ...) are not reported. The finding has the rule's severity and high confidence when the expression reads the request ($request, request(), old()), and low severity and confidence otherwise.
+
+**Fix:** Use Blade's escaped echo (the value inside double curly braces), which escapes. Keep {!! !!} for markup your own code built, and sanitize user-supplied HTML with a purifier (for example HTMLPurifier) before printing it.
+
+Before (`profile.blade.php`):
+
+```blade
+<div>{!! $request->input('bio') !!}</div>
+```
+
+After:
+
+```blade
+<div>{!! e($request->input('bio')) !!}</div>
+```
+
+## SQL file rules
+
+These rules read `.sql` files. Suppress a confirmed false positive with `-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.
+
+### `sql.grant.all`: GRANT ALL in a SQL file
+
+CWE-250 · default severity medium · confidence high
+
+**Why:** GRANT ALL [PRIVILEGES] gives an account every privilege on its target, including the ability to change schema, delete data and, on *.*, administer the server. An application account that is compromised then has all of it. The finding is high for GRANT ALL ON *.* or TO PUBLIC, medium for a whole database, schema or ALL TABLES, and low for a single object.
+
+**Fix:** Grant the privileges the application needs (SELECT, INSERT, UPDATE, DELETE) on the specific tables or schema, and keep a separate owner or migration account for DDL.
+
+Before (`init.sql`):
+
+```sql
+GRANT ALL PRIVILEGES ON *.* TO 'app'@'%';
+```
+
+After:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON shop.* TO 'app'@'%';
+```
+
+### `sql.credentials.plaintext`: Plaintext account password in a SQL file
+
+CWE-798 · default severity high · confidence medium
+
+**Why:** CREATE USER ... IDENTIFIED BY 'secret', CREATE ROLE ... PASSWORD 'secret', ALTER USER ... PASSWORD 'secret' and SET PASSWORD = 'secret' store a literal password in a file that lives in version control and is copied around. Values that look like placeholders (<...>, ${...}, %s) and already hashed values (md5..., SCRAM-SHA-256$..., IDENTIFIED BY PASSWORD '*hash') are not reported.
+
+**Fix:** Keep the password out of the file: create the account from a deployment script that reads it from a secret store or an environment variable, or supply it at run time (psql -v and :'password'). Rotate any password that was committed.
+
+Before (`roles.sql`):
+
+```sql
+CREATE ROLE app LOGIN PASSWORD 'hunter2';
+```
+
+After:
+
+```sql
+CREATE ROLE app LOGIN PASSWORD :'app_password';
+```
+
+### `sql.function.security_definer_path`: PostgreSQL SECURITY DEFINER function without a fixed search_path
+
+CWE-427 · default severity medium · confidence medium
+
+**Why:** A SECURITY DEFINER function runs with its owner's privileges. Without SET search_path, names it uses are resolved through the caller's search_path, so a caller can create a table, function or operator of the same name in a schema searched first and make the function run it with the owner's rights.
+
+**Fix:** Add SET search_path = pg_catalog, public (or just the schemas the function needs, with pg_temp last) to the function definition, and schema-qualify the objects it uses.
+
+Before (`functions.sql`):
+
+```sql
+CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
+```
+
+After:
+
+```sql
+CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
 ```
