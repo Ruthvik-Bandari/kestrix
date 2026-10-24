@@ -1,0 +1,18 @@
+#!/bin/bash -l
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
+#SBATCH --job-name=kestrix-cbphp-locked
+#SBATCH --account=aai6610.202610
+#SBATCH --partition=short
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+#SBATCH --time=24:00:00
+#SBATCH --output=/scratch/%u/kestrix/codebench-php/logs/%x-%j.out
+# THE ONE-TIME HELD-OUT RUN of the PHP benchmark. Claims reports/LOCKED_EVAL.json (exclusive create; a second run is
+# refused), scans the test split with kestrix-scan and Psalm and writes reports/codebench-locked-php-v1.json. The claim
+# file docs/data/codebench/php-heldout-claim.json was committed before this ran.
+#   sbatch --export=ALL,KESTRIX_CODE=/scratch/$USER/kestrix/php/code4 hpc/codebench_php_locked.sbatch
+set -euo pipefail
+export KESTRIX_CODEBENCH="${KESTRIX_CODEBENCH:-/scratch/$USER/kestrix/codebench-php}"
+source "${KESTRIX_CODE:?set KESTRIX_CODE}/hpc/codebench_env.sh"
+cb locked locked-test --root "$CB" --name php-v1 --tools kestrix,psalm --tool-run kestrix=p4 --tool-run psalm=psalm1

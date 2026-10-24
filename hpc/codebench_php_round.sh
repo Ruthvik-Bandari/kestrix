@@ -15,8 +15,12 @@ common=(--account=aai6610.202610 --partition=short --export=ALL)
 sb() { local out; for _ in 1 2 3 4 5 6; do if out=$(sbatch "$@" 2>/dev/null); then echo "$out"; return 0; fi; sleep 10; done; return 1; }
 scan=$(sb --parsable "${common[@]}" --output="$LOGS/%x-%A_%a.out" --export=ALL,TOOL=kestrix,RUN="$LABEL",SPLIT=dev "$KESTRIX_CODE/hpc/codebench_scan.sbatch")
 run="source $KESTRIX_CODE/hpc/codebench_env.sh; "
+# PSALM_RUN (default none): also score the Psalm scan of that run name next to kestrix
+tools=kestrix
+runs="--tool-run kestrix=$LABEL"
+if [ -n "${PSALM_RUN:-}" ]; then tools=kestrix,psalm; runs="$runs --tool-run psalm=$PSALM_RUN"; fi
 dev=$(sb --parsable "${common[@]}" --mem=16G --time=01:00:00 --job-name=kx-php-dev --output="$LOGS/%x-%j.out" --dependency=afterok:"$scan" \
-  --wrap="$run cb dev-metrics dev-metrics --root \$CB --label php-$LABEL --tools kestrix --tool-run kestrix=$LABEL")
+  --wrap="$run cb dev-metrics dev-metrics --root \$CB --label php-$LABEL --tools $tools $runs")
 rates=$(sb --parsable "${common[@]}" --mem=8G --time=01:00:00 --job-name=kx-php-rates --output="$LOGS/%x-%j.out" --dependency=afterok:"$scan" \
   --wrap="$run cb rule-rates rule-rates --root \$CB --run $LABEL --split dev --label php-$LABEL")
 ids="$LABEL scan $scan dev-metrics $dev rates $rates"

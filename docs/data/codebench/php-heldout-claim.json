@@ -1,0 +1,43 @@
+{
+  "name": "php-v1",
+  "written_before_the_held_out_run": true,
+  "date": "2026-10-24",
+  "scanner": {
+    "package": "kestrix-scan 0.1.0 (unreleased)",
+    "code_tree": "c03f738+8944d155 (git c03f738 plus a hash of the synced files)",
+    "php_rules": 12,
+    "sql_rules": 3,
+    "frozen": "no scanner change after this file; tuned on dev only"
+  },
+  "comparison_tool": {
+    "name": "Psalm",
+    "version": "6.20.1",
+    "licence": "MIT",
+    "mode": "--taint-analysis, one file at a time"
+  },
+  "data": {
+    "source": "CVEfixes v1.0.8 (CC BY 4.0), PHP file changes of fix commits, filters of the code benchmark",
+    "split": "project-disjoint, seeded hash kestrixcodebench-v1, 30% of groups to test",
+    "test_pairs": 1456,
+    "test_projects": 210,
+    "dev_pairs": 5274,
+    "dev_projects": 529,
+    "unchanged_files": 0
+  },
+  "dev_numbers_for_reference": {
+    "kestrix_detection_percent": 5.25,
+    "kestrix_detection_ci95": [
+      3.02,
+      8.89
+    ],
+    "kestrix_alerts_per_kloc_after": 0.97,
+    "psalm_detection_percent": 2.43,
+    "psalm_alerts_per_kloc_after": 0.81
+  },
+  "claims_to_check": [
+    "Kestrix PHP detection on the test split is at or above Psalm's, with paired bootstrap interval reported.",
+    "Kestrix alerts per KLOC on fixed (after) files stay within the dev interval [0.58, 1.40].",
+    "Reported as measured whatever the outcome; no rule or threshold changes follow this run."
+  ],
+  "metrics": "detection (family match within 3 lines of a changed line), fix-aware, fix-weighted, alerts per KLOC on after-files; 95% percentile bootstrap, 1000 resamples of whole repositories"
+}
