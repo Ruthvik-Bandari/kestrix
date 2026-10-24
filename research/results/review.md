@@ -116,7 +116,7 @@ overwrite an existing manifest. Copy the manifest, which holds ids and hashes on
 
 The C5 vulnerability pool (`research/results/vul/`) is labelled by PrimeVul's rules, not by people. Its labels
 are audited with the procedure above, under the second exception in [`policy.md`](policy.md) section 6.
-Results are in [`vul/audit.json`](vul/audit.json) and [`vul/README.md`](vul/README.md#label-audit).
+Results are in [`vul/README.md`](vul/README.md#label-audit).
 
 1. **Sample.** `python -m kestrixvul audit-sample` (Slurm) draws a seeded random sample of train and dev
    records, stratified by source family (CVEfixes and MoreFixes, SVEN, GHSA), language and label rule:
