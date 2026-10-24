@@ -204,14 +204,14 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `k8s.pod.run_as_root` | Kubernetes manifests | CWE-250 | medium | high | Kubernetes pod or container that is set to run as root |
 | `k8s.pod.no_run_as_nonroot` | Kubernetes manifests | CWE-250 | low | low | Kubernetes container that does not require a non-root user |
 | `k8s.pod.host_namespace` | Kubernetes manifests | CWE-668 | medium | high | Kubernetes pod that shares the node's network, PID or IPC namespace |
-| `php.exec.command` | PHP, Blade | CWE-78 | high | medium | Command run with a value built from request data (or with a non-literal) |
+| `php.exec.command` | PHP, Blade | CWE-78 | high | medium | Command run with a value built from request data |
 | `php.include.dynamic` | PHP, Blade | CWE-98 | high | medium | include or require of a path built from request data |
-| `php.sql.injection` | PHP, Blade | CWE-89 | high | medium | SQL text built from request data (or by concatenation or interpolation) |
+| `php.sql.injection` | PHP, Blade | CWE-89 | high | medium | SQL text built from request data (or built from a value that is not a literal) |
 | `php.xss.echo` | PHP, Blade | CWE-79 | high | medium | echo or print of request data without escaping |
 | `php.deserialize.unserialize` | PHP, Blade | CWE-502 | high | medium | unserialize() of request data |
 | `php.ssrf.request` | PHP, Blade | CWE-918 | high | medium | Server-side request to a URL built from request data |
 | `php.path.traversal` | PHP, Blade | CWE-22 | high | medium | File path built from request data |
-| `php.exec.eval` | PHP, Blade | CWE-95 | high | medium | eval(), assert() of a string or create_function() with dynamic code |
+| `php.exec.eval` | PHP, Blade | CWE-95 | high | medium | eval(), assert() of a string or create_function() with code built from request data |
 | `php.regex.preg_replace_e` | PHP, Blade | CWE-95 | high | high | preg_replace() with the /e modifier |
 | `php.extract.request` | PHP, Blade | CWE-621 | high | medium | extract() of request data |
 | `php.crypto.weak_password_hash` | PHP, Blade | CWE-916 | medium | medium | md5() or sha1() of a password |

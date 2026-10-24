@@ -15,30 +15,14 @@ import sys
 from pathlib import Path
 
 SCAN = "packages/kestrix-scan/src/kestrix_scan"
-BUILT = 'BUILT_TIER = frozenset({"php.sql.injection", "php.exec.eval", "php.exec.command"})'
 # change id -> list of (file, old text, new text)
 VARIANTS: dict[str, list[tuple[str, str, str]]] = {
-    "noBuilt": [(f"{SCAN}/php_rules.py", BUILT, "BUILT_TIER: frozenset[str] = frozenset()")],
-    "noBuiltSql": [(f"{SCAN}/php_rules.py", BUILT, 'BUILT_TIER = frozenset({"php.exec.eval", "php.exec.command"})')],
-    "noBuiltExec": [(f"{SCAN}/php_rules.py", BUILT, 'BUILT_TIER = frozenset({"php.sql.injection", "php.exec.eval"})')],
-    "noFollow": [(f"{SCAN}/php_rules.py", "BUILT_FOLLOW = True", "BUILT_FOLLOW = False")],
-    "noParams": [(f"{SCAN}/php_rules.py", "BUILT_PARAMS = True", "BUILT_PARAMS = False")],
-    "noIdent": [(f"{SCAN}/php_rules.py", "BUILT_IDENTIFIERS = True", "BUILT_IDENTIFIERS = False")],
-    "tightA": [  # bindings followed, parameters and identifier-like names left out
-        (f"{SCAN}/php_rules.py", "BUILT_PARAMS = True", "BUILT_PARAMS = False"),
-        (f"{SCAN}/php_rules.py", "BUILT_IDENTIFIERS = True", "BUILT_IDENTIFIERS = False"),
-    ],
-    "tightB": [  # parameters followed, bindings and identifier-like names left out
-        (f"{SCAN}/php_rules.py", "BUILT_FOLLOW = True", "BUILT_FOLLOW = False"),
-        (f"{SCAN}/php_rules.py", "BUILT_IDENTIFIERS = True", "BUILT_IDENTIFIERS = False"),
-    ],
-    "tightC": [
-        (f"{SCAN}/php_rules.py", "BUILT_FOLLOW = True", "BUILT_FOLLOW = False"),
-        (f"{SCAN}/php_rules.py", "BUILT_PARAMS = True", "BUILT_PARAMS = False"),
-        (f"{SCAN}/php_rules.py", "BUILT_IDENTIFIERS = True", "BUILT_IDENTIFIERS = False"),
-    ],
-    "noBuiltEval": [
-        (f"{SCAN}/php_rules.py", BUILT, 'BUILT_TIER = frozenset({"php.sql.injection", "php.exec.command"})')
+    "noBuiltSql": [
+        (
+            f"{SCAN}/php_rules.py",
+            "if (raw or sql_text) and self._built(lo, hi, tight=True)[0]:",
+            "if False and (raw or sql_text) and self._built(lo, hi, tight=True)[0]:",
+        )
     ],
 }
 

@@ -1477,8 +1477,8 @@ _RULES = (
         "CWE-78",
         "high",
         "medium",
-        "Command run with a value built from request data (or with a non-literal)",
-        "system(), exec(), shell_exec(), passthru(), popen(), proc_open(), pcntl_exec() and a backtick command pass their string to a shell, so a request value in it can add ';', '&&' or '$(...)' and run other commands. The finding is high when $_GET, $_POST, $_REQUEST, $_COOKIE, php://input or a request object reaches the call inside one function (with a trace), and medium with low confidence when the command is only built by concatenation or interpolation from a value that is not a literal. A value that went through escapeshellarg(), escapeshellcmd(), a numeric cast or a hash is not reported, and neither is proc_open() with an argument array.",
+        "Command run with a value built from request data",
+        "system(), exec(), shell_exec(), passthru(), popen(), proc_open(), pcntl_exec() and a backtick command pass their string to a shell, so a request value in it can add ';', '&&' or '$(...)' and run other commands. The finding appears when $_GET, $_POST, $_REQUEST, $_COOKIE, php://input or a request object reaches the call inside one function (with a trace). A value that went through escapeshellarg(), escapeshellcmd(), a numeric cast or a hash is not reported, and neither is proc_open() with an argument array.",
         "Avoid the shell: call the program with fixed arguments, use a PHP function for the job (mkdir, copy, ZipArchive), or pass proc_open() an argument array. When a shell is unavoidable, wrap each value in escapeshellarg() and validate it against an allowlist first.",
         "php",
         sources=(
@@ -1508,8 +1508,8 @@ _RULES = (
         "CWE-89",
         "high",
         "medium",
-        "SQL text built from request data (or by concatenation or interpolation)",
-        "mysqli_query(), pg_query() and the other query functions, ->query(), ->exec(), ->prepare(), WordPress's $wpdb->query() and get_*() methods, Laravel's DB::raw(), DB::select() and whereRaw()/selectRaw()/orderByRaw() run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when a request value reaches the call inside one function (with a trace) and medium with low confidence when the text is only built by concatenation or interpolation from a value that is not a literal. Values that went through mysqli_real_escape_string(), addslashes(), ->quote(), esc_sql(), a numeric cast or a hash are not reported, and a $wpdb->prepare() call is not text built by the caller.",
+        "SQL text built from request data (or built from a value that is not a literal)",
+        "mysqli_query(), pg_query() and the other query functions, ->query(), ->exec(), ->prepare(), WordPress's $wpdb->query() and get_*() methods, Laravel's DB::raw(), DB::select() and whereRaw()/selectRaw()/orderByRaw() run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when a request value reaches the call inside one function (with a trace) and medium with low confidence when the text is only built by concatenation or interpolation from a value that is not a literal in the strict sense: a call result or a variable assigned in the function, not a parameter, a table or column name, or a variable passed alone. Values that went through mysqli_real_escape_string(), addslashes(), ->quote(), esc_sql(), a numeric cast or a hash are not reported, and a $wpdb->prepare() call is not text built by the caller.",
         "Use placeholders and pass the values separately: $pdo->prepare('SELECT * FROM users WHERE id = ?') then ->execute([$id]), mysqli_stmt_bind_param(), $wpdb->prepare('... WHERE id = %d', $id), or Laravel's where('id', $id) and whereRaw('id = ?', [$id]). Names of tables and columns cannot be bound, so check them against an allowlist.",
         "php",
         sources=(
@@ -1587,8 +1587,8 @@ _RULES = (
         "CWE-95",
         "high",
         "medium",
-        "eval(), assert() of a string or create_function() with dynamic code",
-        "eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding is high when a request value reaches the call inside one function, and medium with low confidence when the code is only a value that is not a literal.",
+        "eval(), assert() of a string or create_function() with code built from request data",
+        "eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding appears when a request value reaches the call inside one function; eval of a value that is not a literal is not reported without one (in measurement it fired about 100 times per extra detected pair).",
         "Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition).",
         "php",
         sources=(

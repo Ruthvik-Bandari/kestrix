@@ -40,14 +40,9 @@ from .registry import Hit
 PHP_SUFFIXES = frozenset({".php", ".phtml"})
 MAX_AVERAGE_LINE = 500
 
-# Untainted "built" findings (concatenation or interpolation from a non-literal) per rule; measured in
-# docs/benchmarks/cvefixes.md. A rule absent here reports tainted flows only.
-BUILT_TIER = frozenset({"php.sql.injection", "php.exec.eval", "php.exec.command"})
-
-# How far the built tier looks (each is measured on its own in docs/benchmarks/cvefixes.md).
-BUILT_FOLLOW = True  # follow `$sql` back to the string it was built from
-BUILT_PARAMS = True  # a variable with no assignment in the function (a parameter, a global) is non-literal
-BUILT_IDENTIFIERS = True  # a variable named like a table, column or prefix is non-literal
+# Only SQL reports an untainted "built" finding (concatenation or interpolation from a value that is not a literal),
+# and only from the strict reading of "not a literal" in ``_built(tight=True)``: the wider readings, and the same finding
+# for commands and ``eval``, were measured in docs/benchmarks/cvefixes.md and cost 30 to 100 alerts per extra detected pair.
 _IDENTIFIER_NAME = re.compile(
     r"(?i)table|tbl|prefix|column|field|schema|database|(?:^|_)(?:db|col|cols|order|sort|dir|limit)(?:_|$)"
 )
@@ -369,16 +364,7 @@ class _Checker:
         if (self.toks[lo].kind == PUNCT and self.toks[lo].value == "[") or self.ix.name_at(lo) == "array":
             return  # proc_open() with an argument array runs no shell
         message = f"{word}() runs a command built from request data."
-        if self.flow("php.exec.command", i, [(lo, hi)], SHELL, f"{word}()", message):
-            return
-        if "php.exec.command" in BUILT_TIER and self._built(lo, hi, sink=SHELL)[0]:
-            self.hit(
-                "php.exec.command",
-                i,
-                f"{word}() runs a command built by concatenation or interpolation from a value that is not a literal.",
-                severity="medium",
-                confidence="low",
-            )
+        self.flow("php.exec.command", i, [(lo, hi)], SHELL, f"{word}()", message)
 
     def _backtick(self, i: int, tok: Token) -> None:
         origins = self.ix._interpolated(tok, i)
@@ -386,14 +372,6 @@ class _Checker:
         if origin is not None:
             self.hit(
                 "php.exec.command", i, "A backtick command is built from request data.", origin=origin, sink="backticks"
-            )
-        elif "php.exec.command" in BUILT_TIER and any(self._var_dynamic(name, i, sink=SHELL) for name in tok.vars):
-            self.hit(
-                "php.exec.command",
-                i,
-                "A backtick command interpolates a value that is not a literal.",
-                severity="medium",
-                confidence="low",
             )
 
     def _include(self, i: int, tok: Token) -> None:
@@ -512,64 +490,23 @@ class _Checker:
             )
 
     def _eval(self, i: int, args: list[tuple[int, int]]) -> None:
-        if not args:
-            return
-        lo, hi = args[0]
-        if self.flow("php.exec.eval", i, [(lo, hi)], CODE, "eval()", "eval() runs PHP code built from request data."):
-            return
-        if "php.exec.eval" in BUILT_TIER and not (hi == lo + 1 and self.toks[lo].kind == STR):
-            self.hit(
-                "php.exec.eval",
-                i,
-                "eval() runs PHP code that is not a literal.",
-                severity="medium",
-                confidence="low",
-            )
+        if args:
+            self.flow("php.exec.eval", i, args[:1], CODE, "eval()", "eval() runs PHP code built from request data.")
 
     def _assert(self, i: int, args: list[tuple[int, int]]) -> None:
-        if not args:
-            return
-        lo, hi = args[0]
-        if self.flow(
-            "php.exec.eval",
-            i,
-            [(lo, hi)],
-            CODE,
-            "assert()",
-            "assert() evaluates a string argument as PHP code (before PHP 8), and this one is built from request data.",
-        ):
-            return
-        first = self.toks[lo]
-        built = first.kind == ISTR or (
-            len(self.ix.split(lo, hi, ".")) > 1 and any(t.kind in (STR, ISTR) for t in self.toks[lo:hi])
-        )
-        if built and self._built(lo, hi, sink=CODE)[0]:
-            self.hit(
-                "php.exec.eval",
-                i,
-                "assert() evaluates a string argument as PHP code (before PHP 8), and this one is built from a value that is not a literal.",
-                severity="medium",
-                confidence="low",
-            )
+        if args:
+            message = "assert() evaluates a string argument as PHP code (before PHP 8), and this one is built from request data."
+            self.flow("php.exec.eval", i, args[:1], CODE, "assert()", message)
 
     def _create_function(self, i: int, args: list[tuple[int, int]]) -> None:
-        if self.flow(
+        self.flow(
             "php.exec.eval",
             i,
             args,
             CODE,
             "create_function()",
             "create_function() compiles PHP code built from request data.",
-        ):
-            return
-        if any(not (hi == lo + 1 and self.toks[lo].kind == STR) for lo, hi in args[1:2]):
-            self.hit(
-                "php.exec.eval",
-                i,
-                "create_function() compiles PHP code that is not a literal (it is deprecated since PHP 7.2 and removed in PHP 8).",
-                severity="medium",
-                confidence="low",
-            )
+        )
 
     def _preg_e(self, i: int, word: str, args: list[tuple[int, int]]) -> None:
         if not args:
@@ -628,12 +565,12 @@ class _Checker:
     # ----- SQL
 
     def _sql_arg(self, i: int, sink: str, span: tuple[int, int], *, keyword: bool, raw: bool = False) -> bool:
-        """Report SQL text built from request data, or (built tier) from a value that is not a literal.
+        """Report SQL text built from request data, or from a value that is not a literal (the strict reading).
 
         ``keyword``: only text that reads as SQL counts (``->exec()``, ``->prepare()``, ``DB::select()`` take other things
         too). ``raw``: a fragment such as ``whereRaw("id = $id")``, which has no SQL keyword to look for."""
         lo, hi = span
-        dynamic, text = self._built(lo, hi)
+        text = self._built(lo, hi)[1]
         sql_text = bool(_SQL.search(text))
         if keyword and not sql_text:
             return False
@@ -641,7 +578,7 @@ class _Checker:
         if origin is not None:
             self.hit("php.sql.injection", i, f"{sink} runs SQL built from request data.", origin=origin, sink=sink)
             return True
-        if "php.sql.injection" in BUILT_TIER and dynamic and (raw or sql_text):
+        if (raw or sql_text) and self._built(lo, hi, tight=True)[0]:
             self.hit(
                 "php.sql.injection",
                 i,
@@ -652,20 +589,20 @@ class _Checker:
             return True
         return False
 
-    def _var_dynamic(self, name: str, pos: int, depth: int = 0, sink: str = SQL) -> bool:
-        if name in ("wpdb", "this"):
-            return False
-        if not BUILT_IDENTIFIERS and _IDENTIFIER_NAME.search(name):
+    def _var_dynamic(self, name: str, pos: int, depth: int = 0, *, tight: bool = False) -> bool:
+        if name in ("wpdb", "this") or (tight and _IDENTIFIER_NAME.search(name)):
             return False
         binds = self.ix.effective(name, pos)
         if not binds:
-            return BUILT_PARAMS
-        return any(self._built(b.lo, b.hi, depth + 1, part=True, sink=sink)[0] for b in binds)
+            return not tight  # a parameter or a global: unknown, so only the wide reading counts it
+        return any(self._built(b.lo, b.hi, depth + 1, part=True, tight=tight)[0] for b in binds)
 
-    def _built(self, lo: int, hi: int, depth: int = 0, *, part: bool = False, sink: str = SQL) -> tuple[bool, str]:
+    def _built(self, lo: int, hi: int, depth: int = 0, *, part: bool = False, tight: bool = False) -> tuple[bool, str]:
         """(built from a part that is not a literal, the literal text it is built from).
 
-        ``part``: the span is one operand of a larger string, so a call whose result is unknown counts as non-literal."""
+        ``part``: the span is one operand of a larger string, so a call whose result is unknown counts as non-literal.
+        ``tight``: the strict reading used for findings: a lone variable is not followed to what it was built from,
+        parameters and globals do not count, and neither do names that read as a table, column or prefix."""
         ix = self.ix
         if lo >= hi or depth > 4:
             return False, ""
@@ -674,7 +611,7 @@ class _Checker:
             dynamic = False
             texts: list[str] = []
             for a, b in terms:
-                d, t = self._built(a, b, depth + 1, part=True, sink=sink)
+                d, t = self._built(a, b, depth + 1, part=True, tight=tight)
                 dynamic = dynamic or d
                 texts.append(t)
             return dynamic, " ? ".join(texts)
@@ -683,39 +620,37 @@ class _Checker:
         if tok.kind in (STR, NUM):
             return False, tok.value
         if tok.kind == ISTR:
-            return any(self._var_dynamic(name, lo, depth, sink) for name in tok.vars), tok.value
+            return any(self._var_dynamic(name, lo, depth, tight=tight) for name in tok.vars), tok.value
         if tok.kind == PUNCT and tok.value == "(" and ix.match[lo] > lo:
             close = ix.match[lo]
             if lo + 2 == close and toks[lo + 1].kind == NAME and toks[lo + 1].value.lower() in _SAFE_CASTS:
                 return False, ""
             if close + 1 == hi:
-                return self._built(lo + 1, close, depth + 1, part=part, sink=sink)
-            if toks[lo + 1].kind == NAME and toks[lo + 1].value.lower() in _SAFE_CASTS and close == lo + 2:
-                return False, ""
+                return self._built(lo + 1, close, depth + 1, part=part, tight=tight)
             return part, ""
         if tok.kind == VAR:
             if ix.punct(lo + 1, "[", "->", "?->"):
-                return part and self._var_dynamic(tok.value, lo, depth, sink), ""
-            binds = ix.effective(tok.value, lo) if BUILT_FOLLOW or part else []
+                return part and self._var_dynamic(tok.value, lo, depth, tight=tight), ""
+            binds = ix.effective(tok.value, lo) if part or not tight else []
             if not binds:
-                return self._var_dynamic(tok.value, lo, depth, sink) if part or BUILT_FOLLOW else False, ""
+                return (part or not tight) and self._var_dynamic(tok.value, lo, depth, tight=tight), ""
             dynamic = False
             texts = []
             for bind in reversed(binds):
-                d, t = self._built(bind.lo, bind.hi, depth + 1, part=part, sink=sink)
+                d, t = self._built(bind.lo, bind.hi, depth + 1, part=part, tight=tight)
                 dynamic = dynamic or d
                 texts.append(t)
             return dynamic, " ".join(texts)
         if tok.kind == NAME:
             word = tok.value.lstrip("\\").lower().rsplit("\\", 1)[-1]
             if ix.punct(lo + 1, "(") and ix.match[lo + 1] > 0:
-                if word in CLEAN or (word in CLEARS and sink in CLEARS[word]):
+                if word in CLEAN or (word in CLEARS and SQL in CLEARS[word]):
                     return False, ""
                 if word in ("sprintf", "vsprintf") and ix.match[lo + 1] + 1 == hi:
                     spans = ix.args(lo + 1)
                     if spans:
-                        d, t = self._built(*spans[0], depth + 1, part=part, sink=sink)
-                        rest = any(self._built(a, b, depth + 1, part=True, sink=sink)[0] for a, b in spans[1:])
+                        d, t = self._built(*spans[0], depth + 1, part=part, tight=tight)
+                        rest = any(self._built(a, b, depth + 1, part=True, tight=tight)[0] for a, b in spans[1:])
                         return d or rest, t
                 return part, ""
             return False, ""

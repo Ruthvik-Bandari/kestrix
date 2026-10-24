@@ -162,10 +162,9 @@ def test_command_execution_negatives() -> None:
     assert ids("function exec($x) { return 1; }") == set()
 
 
-def test_command_built_from_a_non_literal_is_reported_at_lower_confidence() -> None:
-    (found,) = hits('function run($file) { system("gzip $file"); }')
-    assert (found.rule_id, found.severity, found.confidence) == ("php.exec.command", "medium", "low")
-    assert ids("function run($file) { system('gzip -h'); }") == set()
+def test_command_built_from_a_non_literal_is_not_reported_without_request_data() -> None:
+    assert ids('function run($file) { system("gzip $file"); }') == set()
+    assert ids("function run($file) { system('gzip ' . $file); }") == set()
 
 
 # ----- php.include.dynamic
@@ -217,10 +216,17 @@ def test_sql_negatives() -> None:
 
 
 def test_sql_built_from_non_literals_without_request_data() -> None:
-    (found,) = hits("function f($db, $table) { return $db->query('SELECT * FROM ' . $table . ' WHERE a = 1'); }")
+    (found,) = hits("$db->query('SELECT * FROM t WHERE a = ' . get_id());")
     assert (found.rule_id, found.severity, found.confidence) == ("php.sql.injection", "medium", "low")
+    assert ids("$name = get_name(); $db->query(\"SELECT * FROM t WHERE n = '$name'\");") == {"php.sql.injection"}
+    assert ids("$q->whereRaw('id = ' . get_id());") == {"php.sql.injection"}
+    # the strict reading leaves out parameters, table and column names, a lone variable and values that are not built
+    assert ids("function f($db, $table) { return $db->query('SELECT * FROM ' . $table . ' WHERE a = 1'); }") == set()
+    assert ids('function f($db, $id) { return $db->query("SELECT * FROM t WHERE id = $id"); }') == set()
     assert ids("function f($db, $sql) { return $db->query($sql); }") == set()
-    assert ids("function f($db) { return $db->exec('make coffee ' . $x); }") == set()  # no SQL keyword: not SQL
+    assert ids('$table = get_table(); $db->query("SELECT * FROM $table");') == set()
+    assert ids("$sql = 'SELECT * FROM t WHERE a = ' . get_id(); $db->query($sql);") == set()
+    assert ids("function f($db) { return $db->exec('make coffee ' . get_x()); }") == set()  # no SQL keyword
 
 
 def test_sql_trace_names_the_source_and_the_sink() -> None:
@@ -359,9 +365,10 @@ def test_eval_assert_and_create_function() -> None:
     assert ids("assert(is_int($x));") == set()
 
 
-def test_eval_of_a_non_literal_is_reported_at_lower_confidence() -> None:
-    (found,) = hits("eval($code);")
-    assert (found.rule_id, found.severity, found.confidence) == ("php.exec.eval", "medium", "low")
+def test_eval_of_a_non_literal_is_not_reported_without_request_data() -> None:
+    assert ids("eval($code);") == set()
+    assert ids('assert("is_int($x)");') == set()
+    assert ids("$f = create_function('$a', $body);") == set()
 
 
 def test_preg_replace_e_modifier() -> None:
