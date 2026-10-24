@@ -477,7 +477,8 @@ help, the stronger baseline ships, and the negative result is published.
 
 The benchmark tooling lives in `src/kestrixbench/`, a research package that is not shipped in the wheel. It fetches the
 pinned public sources (SigmaHQ, OTRF Security-Datasets, Atomic Red Team), records license and hash
-manifests, and writes aggregate QC reports. Related docs:
+manifests, and writes aggregate QC reports. The other research packages sit next to it; cluster jobs are in
+`research/hpc/` and published aggregates in `research/results/`. Related docs:
 
 - [research/results/sources.md](research/results/sources.md): the license record.
 - [research/results/policy.md](research/results/policy.md): the data and model guardrails.

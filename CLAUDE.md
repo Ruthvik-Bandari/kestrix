@@ -16,8 +16,12 @@ Session state: `.claude/handoff.md`. Workflow: `.claude/workflow.md`.
   pytest plugin, Claude Code plugin), a uv workspace member with its own tests (ADR 0006)
 - `src/kestrix/server/` FastAPI app; dashboard bundle built into `server/static/`
 - `src/kestrix/cli.py` entry point; each module has thin `cli.py` and `api.py` adapters
-- `frontend/` React + Vite dashboard source; `tests/` per module; `scripts/` generators
-- Docs: `docs/modules/*.md`, `docs/api.md`, `docs/security-model.md`
+- `frontend/` React + Vite dashboard source; `tests/<module>` per `kestrix` module, `tests/<package>` per other package;
+  `tests/fixtures/` shared test data; `scripts/` generators and checks
+- Research, never in a wheel: `src/kestrixbench`, `kestrixvul`, `kestrixmailbench`, `kestrixcodebench`,
+  `kestrixlinkfilebench`, `kestrixscanbench`; `research/hpc/<track>/` Slurm jobs, `research/results/` published
+  aggregates, `research/scanbench/` scanner benchmark cases, `research/scripts/` measurement tools
+- Docs: `docs/modules/*.md`, `docs/api.md`, `docs/security-model.md`; research write-ups in `docs/research/`
 
 ## Commands
 

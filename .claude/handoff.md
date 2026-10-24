@@ -114,3 +114,19 @@ restricted-scope verification for a public hosted app).
   `docs/CyberGuard_Engineering_Plan.md` to `docs/history/cyberguard-engineering-plan.md`.
 - Renamed: remaining `cg-*` skills to `kx-*`. `scripts/check_claude_pack.py` checks the new set.
 - Added: `docs/README.md` (docs index); `bench-results/` and `.gstack/` in `.gitignore`.
+
+## Repository cleanup phase B 2026-10-24
+
+Branch `chore/cleanup-b`; no behaviour change, both wheels hold the same files as before.
+
+- Moved: `bench/` code to `src/kestrixscanbench` (`python -m kestrixscanbench.run`), its cases and history to
+  `research/scanbench/`; `packaging/claude-plugin-repo` to `packages/kestrix-scan/plugin-repo`; `hpc/` to
+  `research/hpc/<track>/`; `docs/data` and `docs/research/reports` to `research/results/`; `scripts/bitcoin_vectors`
+  to `tests/fixtures/`; `scripts/record_demo.md` to `docs/demo/record.md`; `scripts/bench_hook.py` and
+  `measure_typosquat.py` to `research/scripts/`; this file from `docs/`; `docs/research.md` and `docs/hpc.md` to
+  `docs/research/detect-runbook.md` and `docs/research/hpc.md`.
+- Renamed test folders after their package: `tests/kestrixbench`, `kestrixscanbench`, `kestrixlinkfilebench`,
+  `kestrixmailbench`, `kestrixvul`.
+- Deleted: unreferenced `hpc/freeze.sbatch` and `hpc/sensitivity_setup.sh`; dead `kestrixvul.sources.archive()` and
+  `git_source()`, `ghsa_mine.code_sha256()` and two unused test helpers.
+- Cluster: re-sync before the next job; scripts now live under `research/hpc/<track>/`.

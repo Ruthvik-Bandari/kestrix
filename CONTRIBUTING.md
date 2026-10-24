@@ -33,10 +33,13 @@ Add dependencies with `uv add` (or `uv add --dev`), so `uv.lock` stays the sourc
 | `src/kestrix/bitcoin/` | Address decoding, risk, migration plans, guardian |
 | `src/kestrix/server/` | FastAPI app; the built dashboard goes into `server/static/` |
 | `src/kestrix/cli.py` | The `kestrix` entry point |
+| `packages/kestrix-scan/` | The code scanner and Claude Code plugin; `plugin-repo/` holds the standalone plugin repository's own files |
 | `frontend/` | React dashboard source (Vite) |
-| `tests/` | One folder per module, plus `tests/server/` |
-| `scripts/` | Case generator and the Claude pack validator |
-| `docs/` | Module guides, API, security model, ADRs, research plan |
+| `tests/` | `tests/<module>` per `kestrix` module, `tests/<package>` per research package, shared data in `tests/fixtures/` |
+| `scripts/` | Generators (cases, docs, plugin repository) and checks |
+| `src/kestrix*bench`, `src/kestrixvul` | Research packages, not in the wheel |
+| `research/` | Cluster jobs (`hpc/<track>/`), published aggregates (`results/`), scanner benchmark cases (`scanbench/`), measurement tools (`scripts/`) |
+| `docs/` | Module guides, API, security model, ADRs, research write-ups |
 
 Each module keeps its logic in plain functions. Its `cli.py` and `api.py` are thin adapters over those functions, and business logic lives in neither.
 
