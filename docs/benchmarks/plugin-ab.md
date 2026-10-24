@@ -13,7 +13,7 @@ vulnerable code than the same session without it?
 
 A paired design. The same 13 realistic coding tasks run in two arms: with the plugin loaded and with no plugin
 (`claude plugin eval --ablation with-without`), N runs each (default 5). The tasks are in
-[`evals/ab/`](../../packaging/claude-plugin-repo/evals/ab/), one directory each:
+[`evals/ab/`](../../packages/kestrix-scan/plugin-repo/evals/ab/), one directory each:
 
 | Task | Tempting mistake | Rule the scanner uses |
 | --- | --- | --- |
@@ -59,7 +59,7 @@ python3 scripts/ab_eval.py report evals/results/ab/results.json --scan --out ../
 ```
 
 The estimated cost of a full run and the one-case check to do first are in
-[evals/README.md](../../packaging/claude-plugin-repo/evals/README.md#ab-effectiveness-eval).
+[evals/README.md](../../packages/kestrix-scan/plugin-repo/evals/README.md#ab-effectiveness-eval).
 
 ## Results
 

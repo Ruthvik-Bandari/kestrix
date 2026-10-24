@@ -98,7 +98,7 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "PLR0917"]
 "packages/*/tests/**" = ["S", "PLR0917"]
-"packaging/*/tests/**" = ["S", "PLR0917"]
+"packages/*/plugin-repo/tests/**" = ["S", "PLR0917"]
 "scripts/**" = ["PLR0915", "PLR0917"]
 ".claude/hooks/**" = ["S603", "PLW1510"]  # the hook's own test runs the hook script with a fixed argument list
 "src/kestrix/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter

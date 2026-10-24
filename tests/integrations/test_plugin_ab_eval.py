@@ -15,7 +15,7 @@ import pytest
 from kestrix_scan import scan
 
 REPO = Path(__file__).resolve().parents[2]
-AB = REPO / "packaging" / "claude-plugin-repo" / "evals" / "ab"
+AB = REPO / "packages" / "kestrix-scan" / "plugin-repo" / "evals" / "ab"
 KEY = "k7Hq2VxN9mRt4WzB8cLp3YdF6sJg1AeU"
 PROMPT_KEYS = {"description", "expected_outcome", "tags", "max_turns", "allowed_tools", "runs"}
 GRADER_TYPES = {"regex", "tool_used", "tool_order", "file_exists"}  # none of them calls a model

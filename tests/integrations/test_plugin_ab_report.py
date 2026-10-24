@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-SCRIPT = REPO / "packaging" / "claude-plugin-repo" / "scripts" / "ab_eval.py"
+SCRIPT = REPO / "packages" / "kestrix-scan" / "plugin-repo" / "scripts" / "ab_eval.py"
 VULNERABLE = (
     "import subprocess\n\n\ndef archive_folder(name):\n    subprocess.run(f'tar czf {name}.tgz {name}', shell=True)\n"
 )

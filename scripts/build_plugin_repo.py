@@ -10,7 +10,7 @@ Code plugin at the repository root, exactly as it ships inside the ``kestrix-sca
 
 - ``.claude-plugin/marketplace.json``: a one-plugin marketplace named ``kestrix`` with source ``./``;
 - ``LICENSE``: the Apache-2.0 text of ``packages/kestrix-scan/LICENSE``;
-- everything under ``packaging/claude-plugin-repo/``: README, PRIVACY, SECURITY, CHANGELOG, NOTICE,
+- everything under ``packages/kestrix-scan/plugin-repo/``: README, PRIVACY, SECURITY, CHANGELOG, NOTICE,
   ``.gitignore``, the ``claude plugin eval`` suite in ``evals/`` and the no-network test in ``tests/``.
 
 Three things in ``README.md`` are filled in at build time so they cannot drift: ``{{EXAMPLE}}`` (the
@@ -44,7 +44,7 @@ from kestrix_scan.registry import rules
 from kestrix_scan.skill import walk_files
 
 REPO = Path(__file__).resolve().parents[1]
-EXTRAS = REPO / "packaging" / "claude-plugin-repo"
+EXTRAS = REPO / "packages" / "kestrix-scan" / "plugin-repo"
 LICENSE = REPO / "packages" / "kestrix-scan" / "LICENSE"
 DEFAULT_OUT = REPO / "dist" / "claude-plugin-repo"
 REPO_URL = "https://github.com/Ruthvik-Bandari/kestrix-claude-plugin"

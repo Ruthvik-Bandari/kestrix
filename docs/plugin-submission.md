@@ -42,13 +42,13 @@ tests/test_no_network.py          4.6 KB   stdlib unittest: every hook with sock
 
 The `hooks/` and `skills/` files are the packaged plugin byte for byte (`kestrix_scan.plugin.plugin_files()`).
 `tests/integrations/test_claude_plugin_repo.py` checks that, that two builds are identical, and every checklist rule
-the build enforces. The repository-only files live in `packaging/claude-plugin-repo/`; edit them there, never in
+the build enforces. The repository-only files live in `packages/kestrix-scan/plugin-repo/`; edit them there, never in
 `dist/`.
 
 ## Directory submission form
 
 The portal reads the listing from `plugin.json` and the README, so the values below are already in those files. To
-change one, edit `packaging/claude-plugin-repo/` or the packaged `plugin.json`, rebuild, push and re-validate.
+change one, edit `packages/kestrix-scan/plugin-repo/` or the packaged `plugin.json`, rebuild, push and re-validate.
 
 | Field | Value |
 | --- | --- |
@@ -213,7 +213,7 @@ the PyPI project's source links return 404 to others.
 
    Then check from another account or a private window: `/plugin marketplace add
    Ruthvik-Bandari/kestrix-claude-plugin` and `/plugin install kestrix@kestrix` in a clean Claude Code.
-6. **Run the eval suite** at the default 3 runs and update `packaging/claude-plugin-repo/evals/README.md` with the
+6. **Run the eval suite** at the default 3 runs and update `packages/kestrix-scan/plugin-repo/evals/README.md` with the
    result (24 agent runs; the 1-run pass of the 4 cases cost about $0.50):
 
    ```bash
