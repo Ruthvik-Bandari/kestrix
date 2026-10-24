@@ -1,0 +1,152 @@
+{
+  "code": {
+    "code_trees": "/scratch/bandari.ru/kestrix/forensics2-code/{final,base,m1,m5,m6} (the home quota was full)",
+    "final": "0ca93a7+worktree-c47647f043dc",
+    "shipped": "0ca93a7+main-rules"
+  },
+  "decision_rule": "files: keep a change if its target synthetic family is caught more and Govdocs dev false alarms at medium or higher rise by at most 0.1 point (a low-only change is also reported at low or higher); links: keep a change when the benign false alarms on real URLs (Common Crawl dev sample) fall materially and phishing catch on the PhiUSIIL dev split is reported beside it",
+  "file": {
+    "changes": {
+      "G1_legacy_macro_low": {
+        "decision": "keep at low",
+        "govdocs_low_or_higher_pct": 1.046,
+        "govdocs_medium_or_higher_pct": 0.226,
+        "note": "synthetic legacy-macro families raise the finding at low only"
+      },
+      "G1_legacy_macro_medium": {
+        "decision": "reject",
+        "govdocs_medium_or_higher_files": 133,
+        "govdocs_medium_or_higher_pct": 1.04,
+        "note": "+104 files: 95 .xls, 9 .doc"
+      },
+      "G2_v1_obfuscated_html_decode_chain_short": {
+        "decision": "reject",
+        "govdocs_medium_or_higher_files": 87,
+        "govdocs_medium_or_higher_pct": 0.679,
+        "note": "+58 .html files: document.write(unescape(...)) analytics snippet"
+      },
+      "G2_v2_obfuscated_html": {
+        "decision": "keep",
+        "govdocs_medium_or_higher_pct": 0.226,
+        "html_files_in_dev": 2751
+      },
+      "G3_wsh_js": {
+        "decision": "keep",
+        "govdocs_medium_or_higher_pct": 0.226,
+        "note": "no .js files in the Govdocs dev threads"
+      }
+    },
+    "final": {
+      "benign_control_low_alarms": 20,
+      "benign_control_medium_alarms": 0,
+      "families_fully_caught": 20,
+      "low_or_higher_pct": 1.046,
+      "medium_or_higher_pct": 0.226,
+      "synthetic_caught_medium": 400
+    },
+    "govdocs_dev_files": 12816,
+    "shipped": {
+      "benign_control_files": 320,
+      "benign_control_medium_alarms": 0,
+      "families": 22,
+      "families_fully_caught": 16,
+      "low_or_higher_pct": 0.234,
+      "medium_or_higher_pct": 0.226,
+      "synthetic_caught_medium": 336,
+      "synthetic_malicious": 440
+    }
+  },
+  "link": {
+    "phishing_dev": {
+      "candidates": {
+        "m1_platform_only_if_corroborated": {
+          "low": 76.6,
+          "matched_low": 45.4,
+          "medium": 3.0,
+          "real_platform_low_or_higher_pct": 14.74
+        },
+        "m3_platform_if_generated_label_or_corroborated": {
+          "low": 79.7,
+          "matched_low": 49.8,
+          "medium": 3.0,
+          "real_platform_low_or_higher_pct": 32.65
+        },
+        "m4_platform_info": {
+          "low": 76.6,
+          "matched_low": 45.4,
+          "medium": 2.8
+        },
+        "m5_m1_plus_long_url_200": {
+          "decision": "final",
+          "low": 75.6,
+          "matched_low": 45.4,
+          "medium": 3.0,
+          "real_top_domain_low_or_higher_pct": 15.0
+        },
+        "m6_m1_plus_long_url_info": {
+          "low": 75.4,
+          "medium": 2.9,
+          "real_top_domain_low_or_higher_pct": 13.24
+        }
+      },
+      "shipped": {
+        "low_or_higher_pct": 86.4,
+        "matched_low_or_higher_pct": 75.9,
+        "matched_medium_or_higher_pct": 2.5,
+        "medium_or_higher_pct": 3.0
+      }
+    },
+    "real_urls_dev": {
+      "final": {
+        "all_low_pct": 13.87,
+        "all_medium_pct": 0.18,
+        "platforms_low_pct": 11.32,
+        "top_domain_low_pct": 15.0
+      },
+      "shipped": {
+        "all_low_pct": 52.53,
+        "all_medium_pct": 0.2,
+        "platforms_low_pct": 100.0,
+        "top_domain_low_pct": 31.62
+      }
+    },
+    "real_urls_test_once": {
+      "claim": "realurl-LOCKED_EVAL.json",
+      "final": {
+        "all_low_pct": 13.48,
+        "all_medium_pct": 0.18
+      },
+      "shipped": {
+        "all_low_pct": 52.16,
+        "all_medium_pct": 0.24
+      }
+    }
+  },
+  "slurm": {
+    "file_build": 11322549,
+    "file_dev_metrics_new": "11322571/11322785",
+    "file_dev_metrics_shipped": 11322573,
+    "file_features_new": "11322570/11322784",
+    "file_features_shipped": 11322572,
+    "html_probe": 11322675,
+    "link_dev": {
+      "m1": "11323667/11323668",
+      "m3": "11323669/11323670",
+      "m4": "11323671/11323672",
+      "m5": "11327728/11327730",
+      "m6": "11327733/11327735",
+      "shipped": "11323631/11323649"
+    },
+    "realurl_build": 11327409,
+    "realurl_dev": {
+      "final": "11327884/11327885",
+      "m1": "11327423/11327425",
+      "m3": "11327426/11327428",
+      "m4": "11327432/11327433",
+      "m5": "11327720/11327721",
+      "m6": "11327725/11327726",
+      "shipped": "11327410/11327412"
+    },
+    "realurl_locked": "11327965/11327966/11327969"
+  }
+}

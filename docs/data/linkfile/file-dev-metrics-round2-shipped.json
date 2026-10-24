@@ -1,0 +1,1620 @@
+{
+  "bootstrap": {
+    "resamples": 1000,
+    "seed": 0,
+    "unit": "Govdocs1 thread"
+  },
+  "causes": {
+    "low_only": {
+      "false_alarm_rate": 0.0001,
+      "flagged": 1,
+      "id_type_extension": [
+        {
+          "id": "high_entropy_region | unknown | .eps",
+          "items": 1,
+          "share": 1.0
+        }
+      ],
+      "ids": [
+        {
+          "id": "high_entropy_region",
+          "items": 1,
+          "share": 1.0
+        }
+      ]
+    },
+    "medium_or_higher": {
+      "false_alarm_rate": 0.0023,
+      "flagged": 29,
+      "id_type_extension": [
+        {
+          "id": "extension_mismatch | gzip | .ps",
+          "items": 7,
+          "share": 0.2414
+        },
+        {
+          "id": "high_entropy_file | unknown | .bmp",
+          "items": 5,
+          "share": 0.1724
+        },
+        {
+          "id": "high_entropy_file | unknown | .dwf",
+          "items": 4,
+          "share": 0.1379
+        },
+        {
+          "id": "extension_mismatch | script | .txt",
+          "items": 3,
+          "share": 0.1034
+        },
+        {
+          "id": "extension_mismatch | ole2 | .text",
+          "items": 3,
+          "share": 0.1034
+        },
+        {
+          "id": "extension_mismatch | ole2 | .html",
+          "items": 2,
+          "share": 0.069
+        },
+        {
+          "id": "extension_mismatch | ole2 | .unk",
+          "items": 2,
+          "share": 0.069
+        },
+        {
+          "id": "extension_mismatch | script | .unk",
+          "items": 1,
+          "share": 0.0345
+        },
+        {
+          "id": "extension_mismatch | pdf | .html",
+          "items": 1,
+          "share": 0.0345
+        },
+        {
+          "id": "high_entropy_file | unknown | .text",
+          "items": 1,
+          "share": 0.0345
+        }
+      ],
+      "ids": [
+        {
+          "id": "extension_mismatch",
+          "items": 19,
+          "share": 0.6552
+        },
+        {
+          "id": "high_entropy_file",
+          "items": 10,
+          "share": 0.3448
+        }
+      ]
+    }
+  },
+  "code": [
+    "0ca93a7+main-rules"
+  ],
+  "exif_status_govdocs": {
+    "no_exif": 1114,
+    "not_image": 11511,
+    "ok": 190,
+    "unreadable": 1
+  },
+  "feature_errors": {},
+  "generated_at": "2026-10-23T08:51:23+00:00",
+  "items": 13576,
+  "kind": "file",
+  "metrics": {
+    "by_extension": {
+      "csv": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 418,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 418,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 418,
+          "rate": 0.0
+        },
+        "n": 418
+      },
+      "doc": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 845,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 845,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 845,
+          "rate": 0.0
+        },
+        "n": 845
+      },
+      "gif": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "n": 361
+      },
+      "gz": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 224,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 224,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 224,
+          "rate": 0.0
+        },
+        "n": 224
+      },
+      "html": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2751,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.000321,
+            0.00201
+          ],
+          "ci95_message": [
+            0.0,
+            0.002545
+          ],
+          "groups": 13,
+          "k": 3,
+          "n": 2751,
+          "rate": 0.001091
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.000321,
+            0.00201
+          ],
+          "ci95_message": [
+            0.0,
+            0.002545
+          ],
+          "groups": 13,
+          "k": 3,
+          "n": 2751,
+          "rate": 0.001091
+        },
+        "n": 2751
+      },
+      "jpg": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "n": 1284
+      },
+      "log": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 145,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 145,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 145,
+          "rate": 0.0
+        },
+        "n": 145
+      },
+      "pdf": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2696,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2696,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2696,
+          "rate": 0.0
+        },
+        "n": 2696
+      },
+      "ppt": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 722,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 722,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 722,
+          "rate": 0.0
+        },
+        "n": 722
+      },
+      "ps": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 328,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.008822,
+            0.033118
+          ],
+          "ci95_message": [
+            0.006098,
+            0.039634
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 328,
+          "rate": 0.021341
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.008822,
+            0.033118
+          ],
+          "ci95_message": [
+            0.006098,
+            0.039634
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 328,
+          "rate": 0.021341
+        },
+        "n": 328
+      },
+      "txt": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.007003
+          ],
+          "ci95_message": [
+            0.0,
+            0.008642
+          ],
+          "groups": 13,
+          "k": 3,
+          "n": 810,
+          "rate": 0.003704
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.007003
+          ],
+          "ci95_message": [
+            0.0,
+            0.008642
+          ],
+          "groups": 13,
+          "k": 3,
+          "n": 810,
+          "rate": 0.003704
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.007003
+          ],
+          "ci95_message": [
+            0.0,
+            0.008642
+          ],
+          "groups": 13,
+          "k": 3,
+          "n": 810,
+          "rate": 0.003704
+        },
+        "n": 810
+      },
+      "xls": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 887,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 887,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 887,
+          "rate": 0.0
+        },
+        "n": 887
+      },
+      "xml": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 866,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 866,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 866,
+          "rate": 0.0
+        },
+        "n": 866
+      }
+    },
+    "by_finding_id": {
+      "executable_file": {
+        "category": "context",
+        "govdocs": {
+          "ci95": [
+            0.0,
+            0.000703
+          ],
+          "ci95_message": [
+            7.8e-05,
+            0.000624
+          ],
+          "groups": 13,
+          "k": 4,
+          "n": 12816,
+          "rate": 0.000312
+        }
+      },
+      "expected_high_entropy": {
+        "category": "context",
+        "govdocs": {
+          "ci95": [
+            0.354324,
+            0.501211
+          ],
+          "ci95_message": [
+            0.419394,
+            0.436722
+          ],
+          "groups": 13,
+          "k": 5485,
+          "n": 12816,
+          "rate": 0.427981
+        }
+      },
+      "extension_mismatch": {
+        "category": "security",
+        "govdocs": {
+          "ci95": [
+            0.000855,
+            0.002183
+          ],
+          "ci95_message": [
+            0.000858,
+            0.002185
+          ],
+          "groups": 13,
+          "k": 19,
+          "n": 12816,
+          "rate": 0.001483
+        }
+      },
+      "gps_location": {
+        "category": "privacy",
+        "govdocs": {
+          "ci95": [
+            0.0,
+            0.00141
+          ],
+          "ci95_message": [
+            0.000156,
+            0.000858
+          ],
+          "groups": 13,
+          "k": 6,
+          "n": 12816,
+          "rate": 0.000468
+        }
+      },
+      "high_entropy_file": {
+        "category": "security",
+        "govdocs": {
+          "ci95": [
+            7.8e-05,
+            0.001717
+          ],
+          "ci95_message": [
+            0.000312,
+            0.001326
+          ],
+          "groups": 13,
+          "k": 10,
+          "n": 12816,
+          "rate": 0.00078
+        }
+      },
+      "high_entropy_region": {
+        "category": "security",
+        "govdocs": {
+          "ci95": [
+            0.0,
+            0.000235
+          ],
+          "ci95_message": [
+            0.0,
+            0.000234
+          ],
+          "groups": 13,
+          "k": 1,
+          "n": 12816,
+          "rate": 7.8e-05
+        }
+      },
+      "identifying_metadata": {
+        "category": "privacy",
+        "govdocs": {
+          "ci95": [
+            0.006711,
+            0.02439
+          ],
+          "ci95_message": [
+            0.012797,
+            0.016854
+          ],
+          "groups": 13,
+          "k": 189,
+          "n": 12816,
+          "rate": 0.014747
+        }
+      }
+    },
+    "by_type": {
+      "gif": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 10,
+          "k": 0,
+          "n": 361,
+          "rate": 0.0
+        },
+        "n": 361
+      },
+      "gzip": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 231,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.012495,
+            0.048247
+          ],
+          "ci95_message": [
+            0.008658,
+            0.056277
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 231,
+          "rate": 0.030303
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.012495,
+            0.048247
+          ],
+          "ci95_message": [
+            0.008658,
+            0.056277
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 231,
+          "rate": 0.030303
+        },
+        "n": 231
+      },
+      "jpeg": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 12,
+          "k": 0,
+          "n": 1284,
+          "rate": 0.0
+        },
+        "n": 1284
+      },
+      "ole2": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2461,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.000475,
+            0.006079
+          ],
+          "ci95_message": [
+            0.000813,
+            0.005282
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 2461,
+          "rate": 0.002844
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.000475,
+            0.006079
+          ],
+          "ci95_message": [
+            0.000813,
+            0.005282
+          ],
+          "groups": 13,
+          "k": 7,
+          "n": 2461,
+          "rate": 0.002844
+        },
+        "n": 2461
+      },
+      "pdf": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 2697,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.001227
+          ],
+          "ci95_message": [
+            0.0,
+            0.001112
+          ],
+          "groups": 13,
+          "k": 1,
+          "n": 2697,
+          "rate": 0.000371
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.001227
+          ],
+          "ci95_message": [
+            0.0,
+            0.001112
+          ],
+          "groups": 13,
+          "k": 1,
+          "n": 2697,
+          "rate": 0.000371
+        },
+        "n": 2697
+      },
+      "swf": {
+        "high": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 7,
+          "k": 0,
+          "n": 75,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 7,
+          "k": 0,
+          "n": 75,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": null,
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 7,
+          "k": 0,
+          "n": 75,
+          "rate": 0.0
+        },
+        "n": 75
+      },
+      "text": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 4940,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 4940,
+          "rate": 0.0
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 4940,
+          "rate": 0.0
+        },
+        "n": 4940
+      },
+      "unknown": {
+        "high": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "ci95_message": [
+            0.0,
+            0.0
+          ],
+          "groups": 13,
+          "k": 0,
+          "n": 714,
+          "rate": 0.0
+        },
+        "low_or_higher": {
+          "ci95": [
+            0.001501,
+            0.037705
+          ],
+          "ci95_message": [
+            0.007003,
+            0.02521
+          ],
+          "groups": 13,
+          "k": 11,
+          "n": 714,
+          "rate": 0.015406
+        },
+        "medium_or_higher": {
+          "ci95": [
+            0.001501,
+            0.034087
+          ],
+          "ci95_message": [
+            0.005602,
+            0.02381
+          ],
+          "groups": 13,
+          "k": 10,
+          "n": 714,
+          "rate": 0.014006
+        },
+        "n": 714
+      }
+    },
+    "false_alarm_security": {
+      "high": {
+        "ci95": [
+          0.0,
+          0.000703
+        ],
+        "ci95_message": [
+          7.8e-05,
+          0.000624
+        ],
+        "groups": 13,
+        "k": 4,
+        "n": 12816,
+        "rate": 0.000312
+      },
+      "low_or_higher": {
+        "ci95": [
+          0.001323,
+          0.003431
+        ],
+        "ci95_message": [
+          0.001559,
+          0.003201
+        ],
+        "groups": 13,
+        "k": 30,
+        "n": 12816,
+        "rate": 0.002341
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.001252,
+          0.003279
+        ],
+        "ci95_message": [
+          0.001483,
+          0.003121
+        ],
+        "groups": 13,
+        "k": 29,
+        "n": 12816,
+        "rate": 0.002263
+      }
+    },
+    "false_alarm_security_or_privacy": {
+      "high": {
+        "ci95": [
+          7.8e-05,
+          0.001881
+        ],
+        "ci95_message": [
+          0.000312,
+          0.001326
+        ],
+        "groups": 13,
+        "k": 10,
+        "n": 12816,
+        "rate": 0.00078
+      },
+      "low_or_higher": {
+        "ci95": [
+          0.008947,
+          0.026593
+        ],
+        "ci95_message": [
+          0.015057,
+          0.019429
+        ],
+        "groups": 13,
+        "k": 219,
+        "n": 12816,
+        "rate": 0.017088
+      },
+      "medium_or_higher": {
+        "ci95": [
+          0.001483,
+          0.003991
+        ],
+        "ci95_message": [
+          0.001873,
+          0.003667
+        ],
+        "groups": 13,
+        "k": 35,
+        "n": 12816,
+        "rate": 0.002731
+      }
+    },
+    "groups": 13,
+    "n": 12816
+  },
+  "schema_version": 1,
+  "split": "dev",
+  "split_manifest_sha256": null,
+  "synthetic": {
+    "families": {
+      "bidi_name": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "bidi_control_in_name": 20
+        }
+      },
+      "ctrl_clean_doc_legacy": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_docx": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_exe": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_html": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_jpg": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_js": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {
+          "runnable_script_file": 20
+        }
+      },
+      "ctrl_clean_pdf": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_png": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_sh": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_svg": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_txt": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_xls_legacy": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_xlsx": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_clean_zip": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_html_inline_image": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "ctrl_pdf_with_zip_text": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "benign",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "double_ext_exe": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "double_extension": 20,
+          "high_entropy_file": 20
+        }
+      },
+      "double_ext_scr": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "double_extension": 20
+        }
+      },
+      "elf_named_txt": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "extension_mismatch": 20
+        }
+      },
+      "encrypted_blob": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "high_entropy_file": 20
+        }
+      },
+      "encrypted_zip": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "encrypted_archive": 20
+        }
+      },
+      "html_form_redirect": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "html_obfuscated": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "jpeg_with_pe_appended": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "embedded_executable": 20
+        }
+      },
+      "macro_doc_legacy": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "macro_docm": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "macro_office_file": 20
+        }
+      },
+      "macro_named_docx": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "macro_office_file": 20
+        }
+      },
+      "macro_xls_legacy": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 0,
+        "alarm_medium_or_higher": 0,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {}
+      },
+      "macro_xlsm": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "macro_office_file": 20
+        }
+      },
+      "packed_pe": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "possible_packing": 20
+        }
+      },
+      "pdf_with_pe_appended": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "embedded_executable": 20
+        }
+      },
+      "pe_named_pdf": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "extension_mismatch": 20
+        }
+      },
+      "pe_named_png": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "extension_mismatch": 20
+        }
+      },
+      "script_attachment": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 16,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "runnable_script_file": 20
+        }
+      },
+      "script_named_png": {
+        "alarm_high": 20,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "extension_mismatch": 20
+        }
+      },
+      "svg_script": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 20,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "active_content_svg": 20
+        }
+      },
+      "wsh_js": {
+        "alarm_high": 0,
+        "alarm_low_or_higher": 20,
+        "alarm_medium_or_higher": 0,
+        "label": "malicious",
+        "n": 20,
+        "security_ids_fired": {
+          "runnable_script_file": 20
+        }
+      }
+    },
+    "summary": {
+      "benign_control_alarm_low_or_higher": 20,
+      "benign_control_alarm_medium_or_higher": 0,
+      "benign_control_files": 320,
+      "malicious_caught_medium_or_higher": 336,
+      "malicious_families": 22,
+      "malicious_families_fully_caught_medium_or_higher": 16,
+      "malicious_files": 440
+    }
+  }
+}

@@ -33,6 +33,7 @@ from .models import (
     Severity,
     by_severity,
 )
+from .ole import parse_ole_directory
 
 MIB = 1024 * 1024
 MAX_FILE_BYTES = 50 * MIB
@@ -200,6 +201,7 @@ def analyze_file(stream: BinaryIO, filename: str, max_bytes: int = MAX_FILE_BYTE
         *_name_findings(filename, name),
         *_type_findings(kind, extension, mismatch),
         *_content_findings(kind, extension, scan),
+        *(_ole_findings(stream, scan.size) if kind.id == "ole2" else []),
         *_entropy_findings(kind, entropy, scan.size),
         *(exif_findings(exif) if exif else []),
     ]
@@ -463,7 +465,8 @@ def _content_findings(kind: Kind, extension: str | None, scan: _Scan) -> list[Fi
         *_archive_findings(kind, scan.head),
         *_embedded_findings(kind, scan.head),
         *_svg_findings(kind, scan.head),
-        *_script_name_findings(kind, extension),
+        *_script_name_findings(kind, extension, scan),
+        *_html_findings(kind, extension, scan),
     ]
 
 
@@ -556,23 +559,162 @@ def _svg_findings(kind: Kind, head: bytes) -> list[Finding]:
     ]
 
 
-def _script_name_findings(kind: Kind, extension: str | None) -> list[Finding]:
+# Windows Script Host style JavaScript: objects only WSH or COM provide, or eval of an encoded string.
+_WSH_API = re.compile(
+    r"\b(?:WScript|ActiveXObject|Scripting\.FileSystemObject|Shell\.Application|WSH)\b|GetObject\s*\(", re.IGNORECASE
+)
+_EVAL_ENCODED = re.compile(
+    r"\beval\s*\(\s*(?:atob|unescape|decodeURIComponent|String\.fromCharCode)\s*\(", re.IGNORECASE
+)
+
+
+def _script_text(scan: _Scan) -> str:
+    return _text_sample(scan).decode("latin-1")
+
+
+def _text_sample(scan: _Scan) -> bytes:
+    """The header sample, plus the tail sample when the file is longer than the header sample."""
+    return scan.head if scan.size <= len(scan.head) else scan.head + scan.tail
+
+
+def _wsh_style(text: str) -> bool:
+    return bool(_WSH_API.search(text) or _EVAL_ENCODED.search(text))
+
+
+def _script_name_findings(kind: Kind, extension: str | None, scan: _Scan) -> list[Finding]:
     if kind.id not in {"text", "script"} or extension is None:
         return []
     if extension not in _WINDOWS_SCRIPTS and extension != "js":
         return []
-    advice = (
-        "JavaScript files are also ordinary web content."
-        if extension == "js"
-        else "Run it only if you wrote it or trust the sender."
-    )
+    wsh = extension == "js" and _wsh_style(_script_text(scan))
+    if extension == "js" and not wsh:
+        severity: Severity = "low"
+        advice = (
+            "JavaScript files are also ordinary web content. Nothing in this one is specific to Windows Script "
+            "Host (WScript, ActiveXObject, Shell objects or eval of an encoded string)."
+        )
+    elif wsh:
+        severity = "medium"
+        advice = (
+            "This one uses Windows Script Host objects or runs an encoded string, which is how a .js attachment "
+            "starts a program or downloads a second stage when it is double-clicked."
+        )
+    else:
+        severity = "medium"
+        advice = "Run it only if you wrote it or trust the sender."
     return [
         _finding(
             "runnable_script_file",
-            "low" if extension == "js" else "medium",
+            severity,
             f"Script file (.{extension})",
             f"A .{extension} file is a program in text form that Windows can run when it is opened. Malware is "
             f"often sent as a script because mail filters let it through more easily than an .exe. {advice}",
+        )
+    ]
+
+
+def _ole_findings(stream: BinaryIO, size: int) -> list[Finding]:
+    result = parse_ole_directory(stream, size)
+    if not result.readable:
+        return [
+            _finding(
+                "ole_unreadable",
+                "info",
+                "Legacy Office structure could not be read",
+                f"The file starts like a legacy Office (OLE2) file but its directory could not be read "
+                f"({result.note}), so macros could not be checked. This is no finding either way.",
+            )
+        ]
+    if not result.has_vba:
+        return []
+    return [
+        _finding(
+            "macro_office_file",
+            "low",
+            "Office document contains macros",
+            "The legacy Office file holds a VBA macro project (a VBA storage in its directory). Macros are the most "
+            "common way malicious Office documents run code once the reader clicks 'Enable content'. The old "
+            ".doc, .xls and .ppt formats can hold macros under any name and many legitimate documents and forms "
+            "use them (about 4% of the real legacy Office files measured did), so this is a low signal: check "
+            "where the file came from before enabling macros.",
+        )
+    ]
+
+
+_HTML_EXTENSIONS = _words("html htm xhtml shtml svg")
+_BLOB = re.compile(
+    r"[A-Za-z0-9+/]{300,}={0,2}|\b[0-9a-fA-F]{300,}\b|(?:\\x[0-9a-fA-F]{2}){60,}|(?:%u[0-9a-fA-F]{4}){40,}|(?:%[0-9a-fA-F]{2}){120,}"
+)
+_DECODER = re.compile(
+    r"\b(?:atob|unescape|eval|decodeURIComponent)\s*\(|document\s*\.\s*write\s*\(|\bnew\s+Function\s*\(|\bFunction\s*\(",
+    re.IGNORECASE,
+)
+# A decoder run straight on a long encoded string literal (or a long list of character codes). The short form,
+# document.write(unescape("%3Cscript ...")), is the classic analytics snippet and is common on legitimate pages.
+_DECODE_CHAIN = re.compile(
+    r"\b(?:eval|document\s*\.\s*write|Function)\s*\(\s*(?:"
+    r"(?:atob|unescape|decodeURIComponent)\s*\(\s*[\"'][^\"']{100,}[\"']"
+    r"|String\s*\.\s*fromCharCode\s*\(\s*(?:\d+\s*,\s*){20,})",
+    re.IGNORECASE,
+)
+_AUTO_FORM = re.compile(r"<form\b[^>]*\baction\s*=\s*[\"']?https?://", re.IGNORECASE)
+_AUTO_SUBMIT = re.compile(r"\.submit\s*\(\s*\)", re.IGNORECASE)
+_META_REFRESH = re.compile(r"<meta\b[^>]*http-equiv\s*=\s*[\"']?refresh[^>]*url\s*=\s*[\"']?https?://", re.IGNORECASE)
+_DATA_SCRIPT = re.compile(r"<script\b[^>]*\bsrc\s*=\s*[\"']?(?:data|blob):", re.IGNORECASE)
+
+
+# Inline images and fonts are legitimate base64; only a blob that is not one of them counts.
+_DATA_URI = re.compile(r"data:(?:image|font|audio|video)/[^,;\"')\s]*;base64,[A-Za-z0-9+/=]+", re.IGNORECASE)
+MAX_DECODERS = 200
+BLOB_WINDOW = 700
+
+
+def _blob_near_decoder(text: str) -> bool:
+    """True when a long encoded blob sits within ``BLOB_WINDOW`` characters of a decoder call (inline images excluded)."""
+    plain = _DATA_URI.sub(" ", text)
+    for count, match in enumerate(_DECODER.finditer(plain)):
+        if count >= MAX_DECODERS:
+            break
+        if _BLOB.search(plain, max(0, match.start() - BLOB_WINDOW), match.end() + BLOB_WINDOW):
+            return True
+    return False
+
+
+def html_obfuscation_signals(text: str) -> frozenset[str]:
+    """Names of the obfuscation signals present in an HTML or SVG text (see ``_html_findings`` for the rule)."""
+    signals = set()
+    if _DECODE_CHAIN.search(text):
+        signals.add("decode_chain")
+    if _blob_near_decoder(text):
+        signals.add("encoded_blob")
+    if _AUTO_FORM.search(text) and _AUTO_SUBMIT.search(text):
+        signals.add("auto_submit_form")
+    if _META_REFRESH.search(text):
+        signals.add("meta_refresh_external")
+    if _DATA_SCRIPT.search(text):
+        signals.add("data_script")
+    return frozenset(signals)
+
+
+def _html_findings(kind: Kind, extension: str | None, scan: _Scan) -> list[Finding]:
+    if kind.id not in {"text", "unknown"} or extension not in _HTML_EXTENSIONS:
+        return []
+    signals = html_obfuscation_signals(_script_text(scan))
+    # A decoder fed an encoded string, or an encoded blob next to a decoder, or a script loaded from a data: URL, is
+    # enough; an auto-submitted form or a redirect alone is common on ordinary pages and needs a second signal.
+    strong = signals & {"decode_chain", "encoded_blob", "data_script"}
+    if not strong and len(signals) < 2:
+        return []
+    return [
+        _finding(
+            "obfuscated_html",
+            "medium",
+            "Web page hides its code",
+            f"This page shows signs of deliberately hidden code ({', '.join(sorted(signals))}): encoded text passed to "
+            "eval, atob, unescape or document.write, a script loaded from a data: address, or a form or redirect that "
+            "sends the reader to another site on its own. HTML attachments are used to build a phishing page in the "
+            "browser or to redirect to one, because scanners see only the encoded text. Some legitimate pages are "
+            "minified or generated this way, so check where it came from. Only the first and last 64 KiB were examined.",
         )
     ]
 

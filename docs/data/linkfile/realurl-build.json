@@ -1,0 +1,30 @@
+{
+  "crawl": "CC-MAIN-2026-43",
+  "dropped": {
+    "blogspot.com|platform_cap": 1710,
+    "github.io|platform_cap": 37120,
+    "netlify.app|platform_cap": 24518,
+    "top_domain|duplicate_exact": 2,
+    "vercel.app|platform_cap": 8586
+  },
+  "generated_at": "2026-10-23T13:50:15+00:00",
+  "groups": 19318,
+  "https_share": 0.9209,
+  "kept": {
+    "blogspot.com": 5000,
+    "github.io": 5000,
+    "netlify.app": 5000,
+    "top_domain": 45426,
+    "vercel.app": 5000
+  },
+  "kept_total": 65426,
+  "kind": "realurl",
+  "read": {
+    "blogspot.com": 6710,
+    "github.io": 42120,
+    "netlify.app": 29518,
+    "top_domain": 45428,
+    "vercel.app": 13586
+  },
+  "schema_version": 1
+}

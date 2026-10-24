@@ -46,6 +46,8 @@ FILE_CATEGORY = {
     "embedded_executable": SECURITY,
     "active_content_svg": SECURITY,
     "runnable_script_file": SECURITY,
+    "obfuscated_html": SECURITY,
+    "ole_unreadable": CONTEXT,
     "executable_file": CONTEXT,
     "empty_file": CONTEXT,
     "expected_high_entropy": CONTEXT,

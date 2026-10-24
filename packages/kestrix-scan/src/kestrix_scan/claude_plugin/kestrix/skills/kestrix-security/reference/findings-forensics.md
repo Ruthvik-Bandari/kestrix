@@ -17,11 +17,13 @@ or link is safe.
 | `possible_packing` | medium | A program has random-looking regions. Packers, encrypted payloads, installers and compressed resources all look like this. |
 | `high_entropy_file` | medium | The whole file is at or above 7.2 bits per byte, in a format that does not explain it. |
 | `high_entropy_region` | low | Part of a file looks random, in a format that does not explain it. |
-| `macro_office_file` | high for `.docx`, `.xlsx`, `.pptx` and other macro-free extensions, medium otherwise | An Office Open XML package holds a `vbaProject.bin` macro part (found in the first or last 64 KiB). Legitimate macro-enabled documents look the same. |
+| `macro_office_file` | high for `.docx`, `.xlsx`, `.pptx` and other macro-free extensions, medium otherwise (Office Open XML); low (legacy) | An Office Open XML package holds a `vbaProject.bin` macro part (found in the first or last 64 KiB), or a legacy OLE2 file (`.doc`, `.xls`, `.ppt`) has a VBA storage in its directory (`VBA`, `Macros`, `_VBA_PROJECT`, `_VBA_PROJECT_CUR`). Legitimate macro-enabled documents look the same; about 4% of the legacy Office files measured held a VBA project, so legacy is low. |
 | `encrypted_archive` | medium | A ZIP has the encryption flag set in a local file header, so its contents cannot be inspected. |
 | `embedded_executable` | high | A PDF, image or Office Open XML file holds a Windows program (an `MZ` header whose `e_lfanew` points at `PE\0\0`) after offset 0. |
 | `active_content_svg` | medium | An SVG image holds `<script`, a `javascript:` link or an `onload`-style event handler. |
-| `runnable_script_file` | medium for `.vbs`, `.vbe`, `.jse`, `.wsf`, `.wsh`, `.hta`, `.bat`, `.cmd`, `.ps1`, `.psm1`, `.scf`; low for `.js` | Text content under a script extension that Windows runs on a double click. |
+| `obfuscated_html` | medium | An `.html`, `.htm`, `.xhtml`, `.shtml` or `.svg` file (first and last 64 KiB) shows hidden code: a decoder (`atob`, `unescape`, `eval`, `document.write`, `Function(`) run on a long encoded string or next to a 300-character or longer base64, hex, `\xNN` or `%uNNNN` blob, or a script loaded from a `data:` or `blob:` URL; or two weaker signals together (a form posted to another site by script plus a meta refresh to another site). Inline images are ignored. |
+| `runnable_script_file` | medium for `.vbs`, `.vbe`, `.jse`, `.wsf`, `.wsh`, `.hta`, `.bat`, `.cmd`, `.ps1`, `.psm1`, `.scf`, and for `.js` that uses `WScript`, `ActiveXObject`, `Scripting.FileSystemObject`, `Shell.Application`, `WSH`, `GetObject(` or `eval(` of `atob`, `unescape`, `decodeURIComponent` or `String.fromCharCode`; low for other `.js` | Text content under a script extension that Windows runs on a double click. |
+| `ole_unreadable` | info | The file starts like a legacy Office (OLE2) file but its directory could not be read within the bounds (truncated, looping or damaged), so macros could not be checked. No claim either way. |
 | `gps_location` | high | A photo has GPS tags. Decoded coordinates are shown when complete. |
 | `identifying_metadata` | low | A photo includes `Make`, `Model`, `BodySerialNumber`, `LensSerialNumber`, `CameraOwnerName`, `Artist`, `Software` or `DateTimeOriginal`. |
 
@@ -46,14 +48,14 @@ other `swf`, `sqlite`, `text`, `empty`, `unknown`.
 | `brand_in_subdomain` | high | 25 | A known brand, or a close imitation, appears in a subdomain of a domain that is not the brand's own. |
 | `brand_in_domain` | medium | 20 | A known brand, or a close imitation, appears inside the registered domain name. |
 | `many_subdomains` | medium | 10 | Three or more subdomain levels, not counting `www`. |
-| `hosting_platform_subdomain` | low | 10 | The host is a user subdomain of a free publishing, static-hosting or dynamic-DNS service from a fixed list (`weebly.com`, `github.io`, `duckdns.org` and similar). The service's own root does not count. |
+| `hosting_platform_subdomain` | low, or info without weight when it is the only weighted sign | 10 | The host is a user subdomain of a free publishing, static-hosting or dynamic-DNS service from a fixed list (`weebly.com`, `github.io`, `duckdns.org` and similar). The service's own root does not count. It fires on every page of those services, including legitimate ones, so it is shown as `info` with weight 0 unless another weighted finding is present. |
 | `digits_in_subdomain` | low | 5 | The subdomain labels (not the registered domain) hold three or more digits in total. |
 | `suspicious_tld` | low | 10 | The top-level domain is on a fixed list of endings common in abuse reports, such as `.top`, `.xyz` or `.zip`. |
 | `url_shortener` | medium | 15 | The host is a known link shortener such as `bit.ly`. |
 | `userinfo_in_url` | high | 30 | The URL has text before `@` in the authority, which browsers ignore. |
 | `not_https` | low | 10 | The scheme is `http`. |
 | `unusual_port` | low | 5 | An explicit port other than 80 or 443. |
-| `long_url` | low | 5 | 100 characters or more. |
+| `long_url` | low | 5 | 200 characters or more. |
 | `suspicious_keywords` | low | 5 per word, at most 15 | Words such as `login`, `verify` or `password` appear in the host, path or query. |
 
 A URL without a scheme is accepted (`scheme: null`). Other schemes, empty URLs and invalid hosts are

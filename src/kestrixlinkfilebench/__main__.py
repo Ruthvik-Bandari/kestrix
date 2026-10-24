@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""``python -m kestrixlinkfilebench COMMAND --root DIR [--kind link|file]``: the link and file accuracy benchmark.
+"""``python -m kestrixlinkfilebench COMMAND --root DIR [--kind link|file|realurl]``: the link and file accuracy benchmark.
 
 ``acquire`` (transfer node, standard library only) downloads the datasets into ``ROOT/raw`` and writes
 ``manifests/``. For each kind (``link``, ``file``), working data lives in ``ROOT/<kind>``: ``build`` reads the
@@ -20,7 +20,7 @@ from typing import Any
 
 from .common import KINDS, Layout, LinkFileBenchError, kind_layout
 
-COMMANDS = ("acquire", "build", "split", "features", "dev-metrics", "probe", "locked-test")
+COMMANDS = ("acquire", "acquire-cc", "build", "split", "features", "dev-metrics", "probe", "locked-test")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -30,7 +30,9 @@ def _parser() -> argparse.ArgumentParser:
         "--root", type=Path, required=True, help="benchmark root, for example /scratch/$USER/kestrix/linkfilebench"
     )
     p.add_argument("--raw-root", type=Path, help="build, features: root that holds raw/ (default: --root)")
-    p.add_argument("--kind", choices=KINDS, help="build, split, features, dev-metrics, locked-test: link or file")
+    p.add_argument(
+        "--kind", choices=KINDS, help="build, split, features, dev-metrics, locked-test: link, file or realurl"
+    )
     p.add_argument("--only", action="append", help="acquire: source name (repeatable)")
     p.add_argument("--limit", type=int, help="build: at most this many items per input (smoke runs)")
     p.add_argument("--majestic", type=int, default=30_000, help="build link: Majestic hosts to sample")
@@ -63,12 +65,12 @@ def main(argv: list[str] | None = None) -> int:
 
 def _layout(args: argparse.Namespace) -> tuple[str, Layout]:
     if args.kind is None:
-        raise SystemExit(f"{args.command} needs --kind link|file")
+        raise SystemExit(f"{args.command} needs --kind link|file|realurl")
     return args.kind, kind_layout(args.root, args.kind, args.shards)
 
 
 def _meta(kind: str, layout: Layout) -> list[dict[str, Any]]:
-    if kind == "link":
+    if kind in ("link", "realurl"):
         from .links import read_meta
     else:
         from .files import read_meta
@@ -84,6 +86,12 @@ def _run(args: argparse.Namespace) -> int:
         for source in manifest["sources"]:
             for f in source["files"]:
                 print(f"{source['source']}/{f['filename']}: {f['size']} bytes, sha256 {f['sha256']}")
+        return 0
+    if cmd == "acquire-cc":
+        from .ccindex import acquire_commoncrawl
+
+        manifest = acquire_commoncrawl(Layout(args.root))
+        print({k: manifest[k] for k in ("crawl", "top_domain", "requests")})
         return 0
     kind, layout = _layout(args)
     raw = Layout(args.raw_root or args.root).raw
@@ -113,7 +121,11 @@ def _build_or_split(args: argparse.Namespace, kind: str, layout: Layout, raw: Pa
     from .split import run_split
 
     if args.command == "build":
-        if kind == "link":
+        if kind == "realurl":
+            from .realurls import build_realurls
+
+            report = build_realurls(raw, layout)
+        elif kind == "link":
             from .links import build_links
 
             report = build_links(raw, layout, majestic=args.majestic, limit=args.limit)
@@ -134,7 +146,7 @@ def _features(args: argparse.Namespace, kind: str, layout: Layout, raw: Path) ->
         raise SystemExit("features needs --shard N")
     splits = tuple(args.splits.split(","))
     meta = {m["id"]: m for m in _meta(kind, layout)}
-    if kind == "link":
+    if kind in ("link", "realurl"):
         from .links import run_link_shard
 
         result = run_link_shard(layout, args.shard, meta, read_split(layout), splits)

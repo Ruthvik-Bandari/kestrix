@@ -12,4 +12,6 @@ Produced by `python -m kestrixlinkfilebench` on the Explorer cluster; method, re
 | `linkfile-rules-round1.json` | Headline dev numbers, decision and Slurm job ids of every round-1 change, baseline and final code versions |
 | `link-probe-baseline.json`, `file-probe-baseline.json` | Counts of curated host-shape and hosting-platform tags (links) or content classes (files) per cohort of dev items under the shipped rules (cells under 3 dropped); input to the round-1 decisions |
 
-The locked test has not been run; when it does, `<kind>-locked-<name>.json` and `LOCKED_EVAL.json` are added here.
+The round-1 locked test was run once on 2026-10-22 (`link-locked-linkfile-v1.json`, `file-locked-linkfile-v1.json`).
+
+Round 2 (2026-10-23), see the benchmark page: `linkfile-rules-round2.json` (decisions, candidates, Slurm job ids), `file-dev-metrics-round2.json` and `file-dev-metrics-round2-shipped.json` (new and shipped rules on the round-2 synthetic cases, dev), `commoncrawl-manifest.json` (crawl, terms hash, sampling parameters and counts of the Common Crawl URL sample; the URLs stay on the cluster), `realurl-build.json`, `realurl-split-manifest.json`, `realurl-dev-metrics-round2-shipped.json` and `realurl-dev-metrics-round2.json` (false alarms on real URLs, dev), and the once-only test on real URLs, `realurl-locked-realurl-v1.json` with its claim `realurl-LOCKED_EVAL.json`.
