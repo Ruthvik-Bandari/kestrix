@@ -1,0 +1,20 @@
+{
+  "all_rules_per_kloc": 0.0,
+  "files_scanned": {
+    ".php": 2701
+  },
+  "files_skipped": {
+    ".php:duplicate": 5,
+    ".php:minified": 1,
+    ".php:too_large": 22
+  },
+  "kloc": {
+    ".php": 470.7
+  },
+  "label": "vendor",
+  "roots": [
+    "vendor"
+  ],
+  "rules": {},
+  "schema_version": 1
+}

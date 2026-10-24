@@ -2,6 +2,8 @@
 
 This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `hpc/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
 
+Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm.
+
 The ground truth is approximate. Read [What is not claimed](#what-is-not-claimed) before quoting any rate.
 
 ## Method
@@ -560,3 +562,142 @@ One core, every dev file of the Python/JavaScript/TypeScript benchmark (39,420 f
 - The XML rule reports a risk (entity expansion and size) the Python documentation lists, not an external-entity read;
   its CWE is 776 and its severity low. The Jinja rule is a default that is often right for plain-text templates.
 - Bandit's test ids B404, B403 and B405 are import checks; matching them would add alerts without a weakness at the line.
+
+## Phase 2: PHP and SQL (2026-10-24)
+
+Phase 2 of the [language roadmap](../research/language-roadmap.md) adds PHP (nine `php.*` rules, a bounded tokenizer, request
+sources for plain PHP, Laravel, Symfony, WordPress, CodeIgniter and CakePHP, Blade) and SQL files (three `sql.*` rules). The PHP
+rules were tuned on a development split of a new PHP benchmark and then run **once** on its held-out split next to Psalm's
+taint analysis. Aggregates: [`docs/data/codebench/`](../data/codebench/README.md).
+
+### Data and method
+
+- **Source:** the PHP file changes of the CVEfixes v1.0.8 fix commits (CC BY 4.0). `kestrixvul`'s working database keeps only Python,
+  JavaScript and TypeScript, so `kestrixcodebench php-dump` streamed the same pinned archive once more and kept the 12,464
+  files labelled PHP (job 11332692, 16 minutes). **The advisory-database miner fetches Python, JavaScript and TypeScript only, so
+  there are no advisory PHP pairs and no unchanged PHP files** (the benchmark has no "unchanged" column; false alarms are counted
+  on the fixed files and on the clean corpora below).
+- **Filters and split:** the benchmark's own (`hpc/codebench_php_build.sbatch`, job `--only-language php`): 8,039 changed files read,
+  no test, vendored, bundled, minified or generated files, no duplicates (see `php-manifest.json`). **Dev: 5,274 pairs from 529
+  projects, 1,764 CVEs, 3,464 pairs in scope, 3,304 KLOC of fixed files. Held-out: 1,456 pairs from 210 projects, 510 CVEs, 1,121 in
+  scope.** The split is the seeded hash of connected components of repositories, CVEs and file contents, so no project, CVE or file
+  is on both sides. CWE-98 (file inclusion) was added as the family `fileinclusion`; dev has no pair with that CWE.
+- **Metrics, intervals, keep rule:** as above (detection within 3 lines of a changed line, 95% bootstrap over whole repositories).
+  Kept changes must buy detection at a price near the scanner's usual 11 alerts per extra detected pair.
+- **Comparison tool: Psalm 6.20.1 (MIT)**, `--taint-analysis`, one file at a time (so a before-file and its after-file cannot see
+  each other), with Psalm's taint types mapped to CWEs by what each type documents (`TaintedSql` 89, `TaintedHtml` 79,
+  `TaintedShell` 78, `TaintedInclude` 98, `TaintedFile` 22, `TaintedSSRF` 918, `TaintedUnserialize` 502, `TaintedEval` 95,
+  `TaintedCallable` 94). Installed with Composer on the transfer node, run offline on PHP 8.5.12 (conda-forge); licence recorded in
+  [`dataset-licenses.md`](../research/dataset-licenses.md). Psalm needs about 4 s per file, Kestrix about 0.03 s.
+- Rounds (all on dev only): `p1`/`p2` showed that about 13% of files hit a recursion error (a variable assigned from itself, such as
+  `$x = $x . 'a'`) and were reported as not analyzable; `p3` fixed it and measured the changes below; `p4`/`p5` are the narrowed scanner (`p4` is the frozen tree of
+  the held-out run, `p5` the shipped tree without the three removed rules). Jobs (account `aai6610.202610`, partition `short`): dump 11332692; baseline scan `p1` 11346621; Psalm dev scan 11346773; final scan `p5` 11350856; speed 11350619; held-out 11350678; scripts `hpc/codebench_php_*`.
+
+### Tuning on dev: the untainted "built" findings
+
+Round `p3` also reported SQL, command and `eval` text built from a value that is not a literal (no request data needed), like
+`py.sql.string_built`. Leave-one-out against `p3` (final scanner against itself without one change; paired intervals):
+
+| Change | Detection, points | Alerts per KLOC | Alerts per detected pair | Decision |
+| --- | --- | --- | --- | --- |
+| all untainted built findings (SQL, command, eval) | -3.06 [-6.47, -1.23] (-106 pairs) | -0.941 [-1.260, -0.635] (-3,109) | 29 | split below |
+| built `eval`/`assert`/`create_function` | -0.09 [-0.22, 0.00] (-3) | -0.087 (-289) | 96 | **removed** |
+| built command | -0.23 [-0.48, -0.05] (-8) | -0.078 (-257) | 32 | **removed** |
+| built SQL | -2.74 [-6.17, -0.90] (-95) | -0.776 [-1.099, -0.467] (-2,563) | 27 | narrowed |
+| ... following `$sql` back to its string | -0.84 [-1.19, -0.53] (-29) | -0.460 (-1,519) | 52 | **dropped** |
+| ... counting parameters and globals | -0.81 [-1.21, -0.45] (-28) | -0.422 (-1,393) | 50 | **dropped** |
+| ... counting table, column and prefix names | -0.12 [-0.23, -0.03] (-4) | -0.062 (-204) | 51 | **dropped** |
+| all three dropped (`tightC`) | -1.36 [-1.84, -0.90] (-47) | -0.652 (-2,153) | 46 | = the narrowing |
+
+What stays is the strict reading of SQL text built from a call result or a variable assigned in the function inside a
+concatenation or interpolation (medium severity, low confidence); the text of a lone `$sql` is still followed for the request-data
+finding, only the untainted finding does not follow it. Measured on the final scanner, **built SQL gives +1.59 points of detection (+55 pairs)
+for +0.179 alerts per KLOC (+592), 10.8 alerts per extra pair**: kept.
+
+Rules that were written and tested but are **not shipped** because on dev they had no detection and only alerts: `unserialize()` of request data
+(0 of 34 deserialization pairs, 8 alerts on fixed files), `eval()`/string `assert()`/`create_function()` (0 of 98 code-injection pairs, 4 alerts)
+and `preg_replace` with `/e` (0 of those pairs, 5 alerts). They return when data shows detection.
+
+### The shipped scanner on dev (round `p5`, 5,274 pairs, 3,464 in scope)
+
+| Tool | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Precision % (proxy) | Files per second |
+| --- | --- | --- | --- | --- | --- | --- |
+| kestrix-scan | 5.3 [3.0, 8.9] | 4.2 [2.2, 7.7] | 5.9 [4.4, 7.8] | 0.97 [0.57, 1.40] | 10.8 [5.5, 20.8] | 35.9 |
+| Psalm 6.20.1 taint analysis | 2.4 [1.7, 3.4] | 1.8 [1.2, 2.6] | 3.5 [2.5, 4.8] | 0.81 [0.43, 1.39] | 10.5 [6.5, 18.5] | 0.3 |
+
+Kestrix minus Psalm in detection: +2.8 points [+0.9, +6.5] (paired). Of the 3,464 pairs, both detect 72, only Kestrix 110, only Psalm 12,
+neither 3,270; the union is 5.6%. By family (pairs, Kestrix, Psalm): SQL injection 885: 10.4% and 1.0%; XSS 1,605: 4.9% and 3.8%; command
+injection 104: 3.8% and 5.8%; path traversal 292: 1.4% and 2.1%; SSRF 142: 1.4% and 1.4%; CSRF 480, code injection 98, deserialization 34, redirect 36 and the
+rest: 0% for both. Psalm reads PHP with real type and call information and still finds little in single files; the fix lines of most CVEs are
+not request-to-sink flows inside one function, which is all either tool can see here.
+
+Per rule on the shipped scanner (`codebench-rates-php-final.json`; alerts are on the 3,304 KLOC of fixed files):
+
+| Rule | Detected pairs | Alerts (per KLOC) | Note |
+| --- | --- | --- | --- |
+| `php.sql.injection` | 92 | 789 (0.239) | 8.6 alerts per detected pair |
+| `php.xss.echo` | 79 | 1,930 (0.584) | 24 per detected pair, above the usual 11; it is the XSS rule and gives most of the detection |
+| `php.exec.command` | 4 | 23 (0.007) | |
+| `php.path.traversal` | 4 | 260 (0.079) | 65 per detected pair: weak; kept because requested |
+| `php.ssrf.request` | 2 | 81 (0.025) | 40 per detected pair: weak; kept because requested |
+| `php.include.dynamic` | n/a | 86 (0.026) | **no data**: dev holds no pair with CWE-98, so the benchmark cannot show detection; kept because requested |
+| `php.extract.request` | 0 | 0 | no alerts, no detection |
+| `php.crypto.weak_password_hash` | n/a | 0 family alerts (CWE-916 maps to no family); 160 findings on before-files, 117 on after-files (0.035 per KLOC) | lint-level |
+| `php.blade.unescaped`, `sql.*` | n/a | 0 findings in dev | no Blade or SQL files in the data; unit tests only |
+
+The scanner's overall alerts are 0.97 per KLOC, higher than Python (0.3) and JavaScript (0.7), because XSS and SQL findings on legacy PHP
+that fix commits leave elsewhere in the same file count as alerts here.
+
+### Clean PHP code (no CVE fix touched it)
+
+Findings per KLOC of the shipped scanner on current library and application source (shallow clones on the cluster, counts only; an upper
+bound on false alarms, the findings may be real): WordPress 702 KLOC, 63 findings (0.091 per KLOC: 49 `php.sql.injection`, 10 `php.xss.echo`,
+3 `php.crypto.weak_password_hash`, 1 each `php.include.dynamic` and `php.ssrf.request`); phpMyAdmin 242 KLOC, 6 findings (0.025); laravel/framework
+584 KLOC, 20 findings (0.034: 16 `php.blade.unescaped`, 2 `php.crypto.weak_password_hash`, 2 `php.sql.injection`); the Composer packages that Psalm pulls
+in, 471 KLOC, 0 findings. Nine `.sql` files in phpMyAdmin gave no finding.
+
+### Speed
+
+One core, every dev file of the Python, JavaScript and TypeScript benchmark (39,420 files, the mixed-language repositories of the earlier
+rounds), all eight shards in turn, two repetitions, the scanner of the commit the phase started from (`7106001`) against the final scanner, same job
+(11350619): baseline 39.6 and 42.4 files per second (mean 41.0), final 42.3 and 42.5 (mean 42.4); the findings are identical (8,593 in both). The
+new code costs those files nothing (the limit was 10%): one more suffix test per file. On the PHP benchmark itself the scanner reads 36 to 47 files per
+second; Psalm reads 0.3 to 0.4. Pathological inputs (quote, heredoc, comment, backtick and backslash floods,
+80,000 chained assignments, 400 nested arrays, 200,000 statements) are bounded and tested; a bound is reported as `too_complex`.
+
+### Held-out run (`php-v1`)
+
+Run once on the 1,456-pair test split (1,121 in scope, 210 projects, 711 KLOC of fixed files), after the claim file
+[`php-heldout-claim.json`](../data/codebench/php-heldout-claim.json) was committed and the lock (`LOCKED_EVAL.json`, scanner tree
+`c03f738+8944d155`) was claimed by job 11350678. Scanner frozen; no rule or threshold changed in response.
+
+| Tool | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Precision % (proxy) | Files per second |
+| --- | --- | --- | --- | --- | --- | --- |
+| kestrix-scan | 5.4 [2.8, 10.2] | 4.2 [1.8, 8.5] | 5.9 [3.5, 9.0] | 0.80 [0.52, 1.29] | 23.2 [11.2, 36.8] | 46.9 |
+| Psalm 6.20.1 taint analysis | 3.3 [1.5, 6.7] | 2.9 [1.3, 6.0] | 4.0 [1.9, 6.5] | 0.66 [0.34, 1.14] | 32.8 [11.5, 57.2] | 0.4 |
+
+Kestrix minus Psalm in detection: **+2.1 points [+0.8, +4.5]** (paired bootstrap); both detect 33 pairs, only Kestrix 27, only Psalm 4, neither
+1,057 (union 5.7%). Both claims in the claim file hold: Kestrix detection is above Psalm's, and Kestrix alerts per KLOC (0.80) are inside the dev
+interval [0.57, 1.40]. By family (pairs, Kestrix, Psalm): XSS 538: 9.9% and 6.5%; SQL injection 329: 2.1% and 0.0%; path traversal 50: 0.0% and 4.0%;
+CSRF 209, code injection 39 and deserialization 34: 0% for both. **SQL detection fell from 10.4% on dev to 2.1% here** (7 of 329 pairs): the dev
+figure may lean on a few projects with many SQL fixes (not checked here; the Python benchmark's SQL result did); read the SQL rate as somewhere between 2% and 10%, not 10%. The overall detection (5.4% against 5.3% on dev) did not move because XSS rose.
+
+Per rule on the held-out split (`codebench-rates-php-locked.json`): `php.xss.echo` detects 53 pairs with 243 alerts on fixed files (0.342 per KLOC);
+`php.sql.injection` 7 pairs with 178 alerts (0.250); `php.exec.command` 0 pairs with 20 alerts; `php.path.traversal` 0 with 74; `php.ssrf.request` 0 with 23;
+`php.include.dynamic` 0 with 12. So `php.exec.command`, `php.path.traversal` and `php.ssrf.request`, which had a few detections on dev, had none here.
+The three rules removed after the lock claim (`unserialize`, `eval`/`assert`/`create_function`, `preg_replace` `/e`) produced one finding on the test
+files (an `unserialize` on a before-file, no detection, no alert on fixed files), so removing them does not change any held-out number above.
+The held-out run scanned with the 15-rule tree; the shipped tree has 12 rules.
+
+### What this does not show
+
+- Only CVEfixes: no advisory PHP pairs, no unchanged PHP files; the projects are few (529 on dev, 210 held out), and a handful of them hold many pairs.
+- CSRF (480 pairs), missing authorization, information exposure and the other families that are not request-to-sink flows inside one function
+  are out of reach of both tools; the detection rates are low in absolute terms and describe what a single-function taint pass can see.
+- SQL built by concatenation in other languages: `py.sql.string_built` and `js.sql.string_built` already exist; no change to them was written or measured in this phase.
+- The three SQL rules and `php.blade.unescaped` have no detection data at all (no `.sql` or Blade files in the CVE data); `php.include.dynamic` has
+  alerts and no CWE-98 pairs to score against. They are covered by unit tests and the clean-corpus counts only.
+- Psalm was run on one file at a time, without the project's other files, stubs or config, so it sees less than it would in a project; that is the same
+  view Kestrix has, and the fair comparison for this file-pair benchmark.
+- The three removed rules were removed after the held-out run had started (the lock was already claimed) on dev evidence alone; the held-out numbers
+  describe the scanner with those rules, and their held-out contribution is stated next to them.

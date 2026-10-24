@@ -5,6 +5,26 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Phase 2 of the language roadmap: PHP and SQL (12 rules, 112 in all; measured with a held-out run).**
+  - New files read: `.php`, `.phtml`, `.blade.php` (a bounded stdlib tokenizer, `php_tokens.py`, an index with in-function taint, `php_index.py`,
+    and `php_rules.py`) and `.sql` (`sql_rules.py`). Request sources: `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, request fields of `$_SERVER`,
+    `$_FILES` names, `php://input`, `getallheaders()`, `filter_input()`, Laravel `request()` and request objects, Symfony and PSR-7 request methods,
+    CodeIgniter and CakePHP request calls. Suppress with `//`, `#`, `/* */`, a Blade comment and SQL `--` comments. The Claude plugin hooks scan
+    `.php`, `.phtml` and `.sql`. Composer lockfiles were already checked against OSV (tests pass) and are documented.
+  - Nine `php.*` rules: `php.exec.command` (CWE-78), `php.include.dynamic` (CWE-98), `php.sql.injection` (CWE-89: mysqli, PDO, `pg_query`, Laravel `DB::raw` and
+    `whereRaw`, WordPress `$wpdb`), `php.xss.echo` (CWE-79), `php.ssrf.request` (CWE-918), `php.path.traversal` (CWE-22), `php.extract.request` (CWE-621),
+    `php.crypto.weak_password_hash` (CWE-916), `php.blade.unescaped` (CWE-79). Three `sql.*` rules: `sql.grant.all` (CWE-250),
+    `sql.credentials.plaintext` (CWE-798), `sql.function.security_definer_path` (CWE-427). The registry has 112 rules (the 100 of phase 3 plus these).
+  - Measured on a new PHP benchmark from CVEfixes (dev 5,274 pairs from 529 projects; held-out 1,456 pairs from 210 projects) next to Psalm 6.20.1 (MIT) taint
+    analysis. **Held-out, run once: Kestrix 5.4% [2.8, 10.2] of 1,121 in-scope pairs, Psalm 3.3% [1.5, 6.7], difference +2.1 points [+0.8, +4.5]; 0.80 alerts per KLOC
+    on fixed files.** Dev: 5.3% [3.0, 8.9] and 0.97 per KLOC. SQL-injection detection was 10.4% on dev and 2.1% held-out. On about 2,000 KLOC of current PHP (WordPress,
+    phpMyAdmin, laravel/framework, Composer packages) the rules give 0.0 to 0.09 findings per KLOC. No slowdown on the Python/JavaScript/TypeScript files
+    (41.0 and 42.4 files per second, baseline and final). Numbers and limits: `docs/benchmarks/cvefixes.md`.
+  - Written, tested and measured but **not shipped** (no dev detection, only alerts): `unserialize`, `eval`/`assert`/`create_function` and `preg_replace` `/e`
+    rules. Untainted command and `eval` findings (96 and 32 alerts per extra pair) and wide readings of untainted built SQL (46 to 52 per extra pair) were
+    removed; the kept untainted SQL finding costs 10.8 alerts per extra pair. `php.include.dynamic` (no CWE-98 pairs to score), `php.path.traversal` and `php.ssrf.request`
+    (65 and 40 alerts per detected pair on dev, none detected held-out) are kept because requested and have no or weak evidence; the SQL and Blade rules have no data.
+  - `kestrixcodebench`: `php-dump` (PHP files of the CVEfixes archive), `--only-language php`, the `psalm` scan tool, `php-corpus`, `--tools`, the `fileinclusion` family (CWE-98).
 - **Round 3, the Bandit gap (tuning numbers, not a held-out result).** On the tuning data Bandit detects 233 of 3,778
   in-scope Python pairs and Kestrix 184; 102 pairs are Bandit-only. Two new Python rules close 9 of them: `py.xml.stdlib_parse`
   (stdlib XML `fromstring`/`parseString` of a non-literal in a file that handles network data, CWE-776, low) and

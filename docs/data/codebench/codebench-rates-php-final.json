@@ -1,0 +1,135 @@
+{
+  "files": {
+    "php:after": 5274,
+    "php:before": 5274
+  },
+  "kloc": {
+    "php:after": 3303.6,
+    "php:before": 3281.7
+  },
+  "rules": [
+    {
+      "after": 157,
+      "after_alerts": 0,
+      "before_any": 160,
+      "before_near_change": 31,
+      "clean_alerts_per_kloc": 0.0475,
+      "detected_pairs": 0,
+      "language": "php",
+      "rule": "php.crypto.weak_password_hash",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 23,
+      "after_alerts": 23,
+      "before_any": 28,
+      "before_near_change": 5,
+      "clean_alerts_per_kloc": 0.007,
+      "detected_pairs": 4,
+      "language": "php",
+      "rule": "php.exec.command",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 6,
+      "after_alerts": 0,
+      "before_any": 6,
+      "before_near_change": 3,
+      "clean_alerts_per_kloc": 0.0018,
+      "detected_pairs": 0,
+      "language": "php",
+      "rule": "php.extract.request",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 86,
+      "after_alerts": 86,
+      "before_any": 87,
+      "before_near_change": 12,
+      "clean_alerts_per_kloc": 0.026,
+      "detected_pairs": 0,
+      "language": "php",
+      "rule": "php.include.dynamic",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 260,
+      "after_alerts": 260,
+      "before_any": 259,
+      "before_near_change": 27,
+      "clean_alerts_per_kloc": 0.0787,
+      "detected_pairs": 4,
+      "language": "php",
+      "rule": "php.path.traversal",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 789,
+      "after_alerts": 789,
+      "before_any": 993,
+      "before_near_change": 233,
+      "clean_alerts_per_kloc": 0.2388,
+      "detected_pairs": 92,
+      "language": "php",
+      "rule": "php.sql.injection",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 81,
+      "after_alerts": 81,
+      "before_any": 87,
+      "before_near_change": 17,
+      "clean_alerts_per_kloc": 0.0245,
+      "detected_pairs": 2,
+      "language": "php",
+      "rule": "php.ssrf.request",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 1930,
+      "after_alerts": 1930,
+      "before_any": 2154,
+      "before_near_change": 371,
+      "clean_alerts_per_kloc": 0.5842,
+      "detected_pairs": 79,
+      "language": "php",
+      "rule": "php.xss.echo",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 27,
+      "after_alerts": 27,
+      "before_any": 28,
+      "before_near_change": 6,
+      "clean_alerts_per_kloc": 0.0082,
+      "detected_pairs": 1,
+      "language": "php",
+      "rule": "secret.generic",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 1,
+      "after_alerts": 1,
+      "before_any": 1,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0003,
+      "detected_pairs": 0,
+      "language": "php",
+      "rule": "secret.google_api_key",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    }
+  ],
+  "run": "p5",
+  "schema_version": 1,
+  "split": "dev"
+}

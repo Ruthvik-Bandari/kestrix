@@ -1,0 +1,55 @@
+{
+  "all_rules_per_kloc": 0.0912,
+  "files_scanned": {
+    ".php": 2076
+  },
+  "files_skipped": {
+    ".php:duplicate": 2,
+    ".php:minified": 3
+  },
+  "kloc": {
+    ".php": 702.0
+  },
+  "label": "WordPress",
+  "roots": [
+    "WordPress"
+  ],
+  "rules": {
+    "php.crypto.weak_password_hash": {
+      "by_extension": {
+        ".php": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0043
+    },
+    "php.include.dynamic": {
+      "by_extension": {
+        ".php": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0014
+    },
+    "php.sql.injection": {
+      "by_extension": {
+        ".php": 49
+      },
+      "findings": 49,
+      "per_kloc": 0.0698
+    },
+    "php.ssrf.request": {
+      "by_extension": {
+        ".php": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0014
+    },
+    "php.xss.echo": {
+      "by_extension": {
+        ".php": 10
+      },
+      "findings": 10,
+      "per_kloc": 0.0142
+    }
+  },
+  "schema_version": 1
+}

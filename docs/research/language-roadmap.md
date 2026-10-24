@@ -1,6 +1,6 @@
 # Language and framework roadmap for kestrix-scan
 
-Status: Phase 1 (web stack) implemented 2026-10-23 and measured on tuning data only (see [the Phase 1 section of the CVE-fix benchmark](../benchmarks/cvefixes.md#phase-1-the-web-stack-tuning-numbers-2026-10-23)); its held-out `test3` is not yet run. Phase 3 (infrastructure as code and CI) implemented 2026-10-23 and measured on real files (see the Phase 3 section). Phases 2, 4 and 5 are plans. Nothing is shipped as "measured" until its phase passes the measurement gate below.
+Status: Phase 1 (web stack) implemented 2026-10-23 and measured on tuning data only (see [the Phase 1 section of the CVE-fix benchmark](../benchmarks/cvefixes.md#phase-1-the-web-stack-tuning-numbers-2026-10-23)); its held-out `test3` is not yet run. Phase 3 (infrastructure as code and CI) implemented 2026-10-23 and measured on real files (see the Phase 3 section). Phase 2 (PHP and SQL) implemented 2026-10-24 and measured on a PHP benchmark with a one-time held-out run next to Psalm (see the Phase 2 section). Phases 4 and 5 are plans. Nothing is shipped as "measured" until its phase passes the measurement gate below.
 
 ## Why
 
@@ -47,6 +47,8 @@ about it truthfully.
 | **Node.js servers** (Express, Fastify, Koa, NestJS) | Already partly covered; widen sources/sinks per framework | Continues the round-2 work |
 
 ### Phase 2: PHP and SQL
+
+**Status: shipped in `kestrix-scan` (unreleased), measured with a held-out run.** 9 `php.*` rules (command, include, SQL incl. Laravel and WordPress, echo/XSS, SSRF, file path, `extract`, `md5`/`sha1` of passwords, Blade `{!! !!}`), 3 `sql.*` rules (`GRANT ALL`, plaintext passwords, `SECURITY DEFINER` without `search_path`), a bounded PHP tokenizer, `.php`, `.phtml`, `.blade.php` and `.sql` read by the scanner and the Claude plugin hooks. On the held-out split of a PHP benchmark built from CVEfixes (1,121 in-scope pairs, 210 projects) the PHP rules detect **5.4% [2.8, 10.2]** next to Psalm 6.20.1's taint analysis at 3.3% [1.5, 6.7] (Kestrix minus Psalm +2.1 points [+0.8, +4.5]), at 0.80 alerts per KLOC on fixed files; dev numbers 5.3% and 0.97. No slowdown on the Python/JS/TS files. Written but **not shipped** for lack of dev detection: `unserialize`, `eval`/`assert`/`create_function` and `preg_replace` `/e`. Not done: advisory-database PHP pairs (the miner fetches Python/JS/TS only), the SQL and Blade rules have no detection data (no such files in the CVE data), `display_errors` and the WordPress nonce/capability checks, and the Python and JavaScript/TypeScript SQL-concatenation rules were left as they are (no extension was measured). Details: [PHP and SQL](../benchmarks/cvefixes.md#phase-2-php-and-sql-2026-10-24). Table below is the original plan.
 
 | Target | What the rules look for (examples) |
 | --- | --- |

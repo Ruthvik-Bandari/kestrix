@@ -1,0 +1,42 @@
+{
+  "all_rules_per_kloc": 0.0342,
+  "files_scanned": {
+    ".php": 3144,
+    ".sql": 1
+  },
+  "files_skipped": {
+    ".php:duplicate": 23
+  },
+  "kloc": {
+    ".php": 584.3,
+    ".sql": 0.0
+  },
+  "label": "framework",
+  "roots": [
+    "framework"
+  ],
+  "rules": {
+    "php.blade.unescaped": {
+      "by_extension": {
+        ".php": 16
+      },
+      "findings": 16,
+      "per_kloc": 0.0274
+    },
+    "php.crypto.weak_password_hash": {
+      "by_extension": {
+        ".php": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0034
+    },
+    "php.sql.injection": {
+      "by_extension": {
+        ".php": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0034
+    }
+  },
+  "schema_version": 1
+}

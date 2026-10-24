@@ -1,0 +1,33 @@
+{
+  "all_rules_per_kloc": 0.0247,
+  "files_scanned": {
+    ".php": 1237,
+    ".sql": 9
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".php": 241.8,
+    ".sql": 0.8
+  },
+  "label": "phpmyadmin",
+  "roots": [
+    "phpmyadmin"
+  ],
+  "rules": {
+    "php.sql.injection": {
+      "by_extension": {
+        ".php": 5
+      },
+      "findings": 5,
+      "per_kloc": 0.0206
+    },
+    "php.xss.echo": {
+      "by_extension": {
+        ".php": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0041
+    }
+  },
+  "schema_version": 1
+}

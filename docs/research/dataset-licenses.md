@@ -18,9 +18,11 @@ directory exists. It is not legal advice.
 
 | Dataset | License | URL | Tier | Notes |
 | --- | --- | --- | --- | --- |
-| CVEfixes v1.0.8 | Data CC BY 4.0; collection code MIT | <https://github.com/secureIT-project/CVEfixes>, <https://zenodo.org/records/13118970> | train | Python and JavaScript portions, permissive-repository filter, relabelled (raw function labels about 52% accurate). Attribution required. |
+| CVEfixes v1.0.8 | Data CC BY 4.0; collection code MIT | <https://github.com/secureIT-project/CVEfixes>, <https://zenodo.org/records/13118970> | train | Python and JavaScript portions, permissive-repository filter, relabelled (raw function labels about 52% accurate). Attribution required The code benchmark also uses its PHP file changes (Phase 2 of the language roadmap) for evaluation and rule tuning only, never for training. |
 | MoreFixes v4 | CC BY 4.0 | <https://zenodo.org/records/20776007> | train | Source of the post-cutoff temporal test window. Attribution required. |
 | GitHub Advisory Database | CC BY 4.0 | <https://github.com/github/advisory-database> | train | Reviewed PyPI and npm advisories with fix commits. Attribution required. |
+| Psalm 6.20.1 (`vimeo/psalm`) | MIT (checked in the package's `composer.json`) | <https://github.com/vimeo/psalm> | baseline | PHP taint analysis (`--taint-analysis`), the comparison tool of the PHP benchmark ([`cvefixes.md`](../benchmarks/cvefixes.md#phase-2-php-and-sql-2026-10-24)). Installed with Composer 2.8.12 (MIT) on the transfer node under `/scratch`, run offline on a conda-forge PHP 8.5.12 build (PHP License 3.01); never vendored here. |
+| WordPress, phpMyAdmin, laravel/framework | GPL-2.0-or-later, GPL-2.0-only, MIT | <https://github.com/WordPress/WordPress>, <https://github.com/phpmyadmin/phpmyadmin>, <https://github.com/laravel/framework> | baseline | Current PHP source scanned only to count findings per KLOC of the PHP rules (a false-alarm upper bound). Shallow clones on the cluster; no code, paths or findings text are kept, only counts. |
 | SVEN | MIT | <https://github.com/eth-sri/sven> | dev | About 380 Python vulnerable/patched pairs, after a per-repository license check. |
 | OWASP BenchmarkPython | GPL-3.0 | <https://github.com/OWASP-Benchmark/BenchmarkPython> | eval-only | Downloaded in CI as an external target; never vendored. |
 | PyVul | No license | <https://arxiv.org/html/2509.04260v1> | eval-only | Only after the authors give permission. |
