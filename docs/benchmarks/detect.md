@@ -2,11 +2,11 @@
 
 This page collects every accuracy number that is committed for `kestrix detect`, with the file each one comes from. It adds no new measurement. The shipped system is **B0**, the deterministic generator; B1 (retrieval), B2 (an unmodified 7B model) and M1 (a LoRA fine-tune) are research systems that were compared against it and do not ship ([model card](../model-card.md)).
 
-**What the benchmark is.** A small, partly synthetic set of faults injected into public SigmaHQ process-creation rules, replayed on the pinned Elasticsearch against recorded Windows Sysmon events (SigmaHQ regression data and OTRF captures). It is exploratory. It is not a measurement on your telemetry. Its labels are AI-assisted; the owner waived the human check, and a run without those labels reaches the same ceiling ([dataset card](../data/dataset-card.md)).
+**What the benchmark is.** A small, partly synthetic set of faults injected into public SigmaHQ process-creation rules, replayed on the pinned Elasticsearch against recorded Windows Sysmon events (SigmaHQ regression data and OTRF captures). It is exploratory. It is not a measurement on your telemetry. Its labels are AI-assisted; the owner waived the human check, and a run without those labels reaches the same ceiling ([dataset card](../../research/results/dataset-card.md)).
 
 ## Locked test, run once on 2026-10-18
 
-54 cases from 14 rule roots. Source: [`data/qc/comparison-locked-test.md`](../data/qc/comparison-locked-test.md) and `.json`; weakened-rule counts from the [model card](../model-card.md).
+54 cases from 14 rule roots. Source: [`research/results/qc/comparison-locked-test.md`](../../research/results/qc/comparison-locked-test.md) and `.json`; weakened-rule counts from the [model card](../model-card.md).
 
 | System | Validated success | Of provable cases | Outcome match | Abstained | Wrong change | Weakened rules |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -23,7 +23,7 @@ This page collects every accuracy number that is committed for `kestrix detect`,
 
 ## Development split (44 cases, 12 roots)
 
-Source: [`data/qc/comparison-frozen-development.md`](../data/qc/comparison-frozen-development.md). Best possible validated success is 0.591 (26 of 44).
+Source: [`research/results/qc/comparison-frozen-development.md`](../../research/results/qc/comparison-frozen-development.md). Best possible validated success is 0.591 (26 of 44).
 
 | System | Validated success | Outcome match | Abstained | Weakened rules |
 | --- | --- | --- | --- | --- |
@@ -34,15 +34,15 @@ Source: [`data/qc/comparison-frozen-development.md`](../data/qc/comparison-froze
 
 B0 reached its score on development by weakening 3 rules (the repaired rule also matched benign events). B1 matches B0's validated success with none, which is why B1 is the recommended research baseline. On the locked test B0 weakened none.
 
-The sensitivity run without AI-assisted labels (42 cases, 13 roots; [`data/qc/comparison-sensitivity-development.md`](../data/qc/comparison-sensitivity-development.md)) has a best possible success of 0.476, and every system reaches it.
+The sensitivity run without AI-assisted labels (42 cases, 13 roots; [`research/results/qc/comparison-sensitivity-development.md`](../../research/results/qc/comparison-sensitivity-development.md)) has a best possible success of 0.476, and every system reaches it.
 
 ## Natural faults
 
-Natural faults are maintainer fixes mined from SigmaHQ history. They are the unbiased probe, because the synthetic faults partly mirror B0's own search space. There are few of them (13 cases across the splits; 4 on development). Validated success on them is 0.00 for every system on both the development split and the locked test, so **no claim is made for repairs of real-world rule drift**. Source: [`data/qc/README.md`](../data/qc/README.md), "Corrected results".
+Natural faults are maintainer fixes mined from SigmaHQ history. They are the unbiased probe, because the synthetic faults partly mirror B0's own search space. There are few of them (13 cases across the splits; 4 on development). Validated success on them is 0.00 for every system on both the development split and the locked test, so **no claim is made for repairs of real-world rule drift**. Source: [`research/results/qc/README.md`](../../research/results/qc/README.md), "Corrected results".
 
 ## Rule coverage and replay fidelity
 
-Sources: [`data/qc/README.md`](../data/qc/README.md) (jobs 11086173 and 11105959), `replay-positives.json`.
+Sources: [`research/results/qc/README.md`](../../research/results/qc/README.md) (jobs 11086173 and 11105959), `replay-positives.json`.
 
 - **997 of 1,182 SigmaHQ process-creation rules (84%) are in the supported subset**, and every one converts with the pinned pySigma backend. The other 185 (16%) are rejected with a reason code (`windash` 78, `re` 41, null matching 23, wildcards 21, value-count limits 17, `base64offset` 4, more than 16 alternative maps 1). That is the share of public Sigma rules `kestrix detect` answers `unsupported` for; the rate on your own rules is not measured.
 - **Replay fidelity: 83 of 83 rules match exactly the number of events SigmaHQ declares.** Only single-rule regression folders have an unambiguous declared count, so 83 is the testable set. 997 rules replayed with 0 engine errors.

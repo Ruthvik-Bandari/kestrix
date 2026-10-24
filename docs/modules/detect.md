@@ -423,7 +423,7 @@ Measured on a small, partly synthetic benchmark of faults injected into public S
 - **Natural faults** (maintainer fixes mined from SigmaHQ history; 13 cases, 4 on development): validated success is 0.00 for every system. No claim is made for real-world rule drift.
 - **Rule coverage:** 997 of 1,182 SigmaHQ process-creation rules (84%) are in the supported subset; the other 185 (16%) get `unsupported`. Replay fidelity is 83 of 83 rules matching SigmaHQ's declared match count, with 0 engine errors over 997 replayed rules.
 
-**Not published:** per-case locked-test outcomes, results on production rules or other log sources, analyst acceptance rates or review time saved, and the human check of the AI-assisted labels (waived). Sources: [`data/qc/comparison-locked-test.md`](../data/qc/comparison-locked-test.md), [`data/qc/README.md`](../data/qc/README.md), [dataset card](../data/dataset-card.md).
+**Not published:** per-case locked-test outcomes, results on production rules or other log sources, analyst acceptance rates or review time saved, and the human check of the AI-assisted labels (waived). Sources: [`research/results/qc/comparison-locked-test.md`](../../research/results/qc/comparison-locked-test.md), [`research/results/qc/README.md`](../../research/results/qc/README.md), [dataset card](../../research/results/dataset-card.md).
 
 ## Research roadmap (not yet implemented)
 

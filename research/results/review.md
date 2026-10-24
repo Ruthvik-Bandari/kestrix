@@ -110,11 +110,11 @@ python -m kestrixbench split --freeze --root /scratch/$USER/kestrix/data
 
 It writes `benchmark/split-manifest.json` with each root rule's source SHA-256 and refuses to
 overwrite an existing manifest. Copy the manifest, which holds ids and hashes only, into
-`docs/data/` so the split is versioned with the code.
+`research/results/` so the split is versioned with the code.
 
 ## AI-assisted audit of the code-vulnerability labels
 
-The C5 vulnerability pool (`docs/data/vul/`) is labelled by PrimeVul's rules, not by people. Its labels
+The C5 vulnerability pool (`research/results/vul/`) is labelled by PrimeVul's rules, not by people. Its labels
 are audited with the procedure above, under the second exception in [`policy.md`](policy.md) section 6.
 Results are in [`vul/audit.json`](vul/audit.json) and [`vul/README.md`](vul/README.md#label-audit).
 

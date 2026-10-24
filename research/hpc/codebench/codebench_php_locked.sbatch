@@ -10,7 +10,7 @@
 #SBATCH --output=/scratch/%u/kestrix/codebench-php/logs/%x-%j.out
 # THE ONE-TIME HELD-OUT RUN of the PHP benchmark. Claims reports/LOCKED_EVAL.json (exclusive create; a second run is
 # refused), scans the test split with kestrix-scan and Psalm and writes reports/codebench-locked-php-v1.json. The claim
-# file docs/data/codebench/php-heldout-claim.json was committed before this ran.
+# file research/results/codebench/php-heldout-claim.json was committed before this ran.
 #   sbatch --export=ALL,KESTRIX_CODE=/scratch/$USER/kestrix/php/code4 research/hpc/codebench/codebench_php_locked.sbatch
 set -euo pipefail
 export KESTRIX_CODEBENCH="${KESTRIX_CODEBENCH:-/scratch/$USER/kestrix/codebench-php}"

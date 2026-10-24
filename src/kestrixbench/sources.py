@@ -3,7 +3,7 @@
 """Pinned public data sources for the detection-repair benchmark (plan section 11).
 
 Every source is fixed to an exact commit and carries its license record. Changing a pin is a
-dataset version change: update ``docs/data/sources.md`` and re-run acquisition and QC.
+dataset version change: update ``research/results/sources.md`` and re-run acquisition and QC.
 """
 
 from __future__ import annotations

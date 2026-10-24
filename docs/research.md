@@ -1,6 +1,6 @@
 # Research pipeline: benchmark, baselines and fine-tuning
 
-This runbook covers the detection-repair research track from plan sections 11 to 14, from public data to a locked comparison of B0, B1, B2 and M1. Every step is one `python -m kestrixbench <command>` run inside a Slurm job on Explorer (`docs/hpc.md`). Data lives under `/scratch/$USER/kestrix/data`. Only aggregate reports, which hold ids, counts and hashes, are copied into `docs/data/qc/`.
+This runbook covers the detection-repair research track from plan sections 11 to 14, from public data to a locked comparison of B0, B1, B2 and M1. Every step is one `python -m kestrixbench <command>` run inside a Slurm job on Explorer (`docs/hpc.md`). Data lives under `/scratch/$USER/kestrix/data`. Only aggregate reports, which hold ids, counts and hashes, are copied into `research/results/qc/`.
 
 ## Pipeline
 
@@ -9,7 +9,7 @@ This runbook covers the detection-repair research track from plan sections 11 to
 | 1 | Fetch pinned sources | `research/hpc/detect/acquire.sh` (transfer node) | `manifests/*.json` |
 | 2 | Quality checks | `research/hpc/detect/qc.sbatch` | `reports/qc-*.json` |
 | 3 | Replay every supported rule | `research/hpc/detect/fetch_engine.sh`, `research/hpc/detect/replay.sbatch` | `reports/replay-positives.json` |
-| 4 | Review OTRF candidates (owner) | `review-next` / `review-label` ([`data/review.md`](data/review.md)) | `review/labels.csv` (private) |
+| 4 | Review OTRF candidates (owner) | `review-next` / `review-label` ([`research/results/review.md`](../research/results/review.md)) | `review/labels.csv` (private) |
 | 4b | Natural faults: mine and verify SigmaHQ history | `research/hpc/detect/fetch_history.sh`, then `research/hpc/detect/natural.sbatch` | `reports/natural-mining.json`, `reports/natural-verified.json`; verified rules become extra roots for step 5 |
 | 5 | Split preview, then freeze | `research/hpc/detect/review_split.sbatch`, then `split --freeze` | `benchmark/split-manifest.json` |
 | 6 | Impairment variants and natural cases | `research/hpc/detect/variants.sbatch` | `benchmark/cases/` (private), `reports/variants.json`, `reports/natural-cases.json` |

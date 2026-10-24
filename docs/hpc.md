@@ -84,4 +84,4 @@ H200 nodes; the smoke job ran on a Tesla V100-SXM2-32GB, driver 545.23.08, with 
   that maintenance. Sources are re-fetchable from pins; anything that must survive goes to `/work`.
 - Batch scripts start with `#!/bin/bash -l` so `module` is available.
 
-Policy context: `docs/data/policy.md`, `docs/data/compliance.md`.
+Policy context: `research/results/policy.md`, `research/results/compliance.md`.

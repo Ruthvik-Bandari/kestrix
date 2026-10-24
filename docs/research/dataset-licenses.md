@@ -2,7 +2,7 @@
 
 This manifest lists every dataset named in the [ML plan](code-vuln-ml-plan.md), with its license, its URL and
 our usage tier. It is built from that plan. The pinned revisions and acquisition checks are in
-[`docs/data/sources.md`](../data/sources.md). This page belongs in `docs/data/vul/LICENSES.md` once that
+[`research/results/sources.md`](../../research/results/sources.md). This page belongs in `research/results/vul/LICENSES.md` once that
 directory exists. It is not legal advice.
 
 **Usage tiers:**

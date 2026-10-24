@@ -1,7 +1,7 @@
 # Code benchmark aggregates
 
 Counts, rates, 95% repository-bootstrap intervals and rule ids from `kestrixcodebench` (method and caveats:
-[`docs/benchmarks/cvefixes.md`](../../benchmarks/cvefixes.md)). No code, file paths, repository names or CVE text. Raw
+[`docs/benchmarks/cvefixes.md`](../../../docs/benchmarks/cvefixes.md)). No code, file paths, repository names or CVE text. Raw
 files stay on the cluster under `/scratch/$USER/kestrix/codebench/` (and `codebench2/` for test2). The round-1 locked test is in
 `codebench-locked-codebench-v1.json`; test2 (a second held-out set) has a manifest only and has not been run.
 

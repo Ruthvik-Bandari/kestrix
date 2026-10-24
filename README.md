@@ -479,12 +479,12 @@ The benchmark tooling lives in `src/kestrixbench/`, a research package that is n
 pinned public sources (SigmaHQ, OTRF Security-Datasets, Atomic Red Team), records license and hash
 manifests, and writes aggregate QC reports. Related docs:
 
-- [docs/data/sources.md](docs/data/sources.md): the license record.
-- [docs/data/policy.md](docs/data/policy.md): the data and model guardrails.
-- [docs/data/compliance.md](docs/data/compliance.md): the approvals checklist.
+- [research/results/sources.md](research/results/sources.md): the license record.
+- [research/results/policy.md](research/results/policy.md): the data and model guardrails.
+- [research/results/compliance.md](research/results/compliance.md): the approvals checklist.
 - [docs/hpc.md](docs/hpc.md): cluster jobs and choosing GPUs by task.
 - [docs/research.md](docs/research.md): the research pipeline end to end (benchmark → B0/B1/B2 → M1 → locked comparison).
-- [docs/data/dataset-card.md](docs/data/dataset-card.md) and [docs/model-card.md](docs/model-card.md): the benchmark and the M1 adapter, with results and limitations.
+- [research/results/dataset-card.md](research/results/dataset-card.md) and [docs/model-card.md](docs/model-card.md): the benchmark and the M1 adapter, with results and limitations.
 
 ## Credits and license
 

@@ -1,6 +1,6 @@
 # Email benchmark outputs (aggregate only)
 
-Produced by `python -m kestrixmailbench` on the Explorer cluster; method, results and caveats are in [`docs/research/mail-benchmark.md`](../../research/mail-benchmark.md). Every file holds counts, rates, intervals, finding-id frequencies, weights or hashes. None holds a message body, address, subject or mailbox name. Raw messages stay under `/scratch/$USER/kestrix/mailbench/`.
+Produced by `python -m kestrixmailbench` on the Explorer cluster; method, results and caveats are in [`docs/research/mail-benchmark.md`](../../../docs/research/mail-benchmark.md). Every file holds counts, rates, intervals, finding-id frequencies, weights or hashes. None holds a message body, address, subject or mailbox name. Raw messages stay under `/scratch/$USER/kestrix/mailbench/`.
 
 | File | What it is |
 | --- | --- |

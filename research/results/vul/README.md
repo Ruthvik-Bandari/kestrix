@@ -2,7 +2,7 @@
 
 This folder records slice C5 of ADR 0005: data acquisition, checks, relabelling, deduplication, license
 annotation and the frozen split for a learned Python/JavaScript vulnerability model. The plan is
-[`docs/research/code-vuln-ml-plan.md`](../../research/code-vuln-ml-plan.md); sources and licenses are in
+[`docs/research/code-vuln-ml-plan.md`](../../../docs/research/code-vuln-ml-plan.md); sources and licenses are in
 [`../sources.md`](../sources.md). **Nothing was trained or evaluated.**
 
 The files here are aggregate: counts, CWE ids, dates, hashes and record ids. They hold no code, commit
@@ -234,5 +234,5 @@ persistent private location) before the purge to skip the rebuild.
 Training will run on H200: the `gpu` partition offers `--gres=gpu:h200:N` with an 8 h limit. The existing
 `/scratch/$USER/kestrix/venv-gpu` (torch 2.6.0+cu124) works on H200 (smoke job 11258264).
 
-Training and evaluation (slice C6): see [the plan's "Training" section](../../research/code-vuln-ml-plan.md#training-slice-c6).
+Training and evaluation (slice C6): see [the plan's "Training" section](../../../docs/research/code-vuln-ml-plan.md#training-slice-c6).
 The training code reads only `train` and `dev`. `test` and `test_extension` are read once, by `evaluate.py --locked`.

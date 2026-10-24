@@ -64,7 +64,7 @@ browser sweep 390 page loads with no overflow, console errors or CSP violations.
   - 0 engine errors;
   - fidelity 83/83 against SigmaHQ's declared match counts;
   - 176 rules with at least one positive and 43 with two or more.
-  - Details are in `docs/data/qc/README.md`.
+  - Details are in `research/results/qc/README.md`.
 - Webcheck:
   - CSP strength, HSTS details and cookie prefix checks;
   - offline conformance pages;

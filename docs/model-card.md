@@ -29,11 +29,11 @@ The model has no tools and no network access. It loads with `trust_remote_code=F
 
 ## Training data
 
-126 train and 43 development examples come from the benchmark's train and development splits, never test; see the [dataset card](data/dataset-card.md). Each example pairs the exact B2 prompt with the reference repair recovered from the healthy rule. Missing-telemetry and healthy cases have the target `{"candidates": []}`. Six natural fixes that cannot be written within the contract were skipped. The prompts hold no event values.
+126 train and 43 development examples come from the benchmark's train and development splits, never test; see the [dataset card](../research/results/dataset-card.md). Each example pairs the exact B2 prompt with the reference repair recovered from the healthy rule. Missing-telemetry and healthy cases have the target `{"candidates": []}`. Six natural fixes that cannot be written within the contract were skipped. The prompts hold no event values.
 
 ## Results
 
-All comparisons are paired, and the intervals come from a root-resampling bootstrap. Full tables are in [`data/qc/README.md`](data/qc/README.md), under "Final results on the frozen split".
+All comparisons are paired, and the intervals come from a root-resampling bootstrap. Full tables are in [`research/results/qc/README.md`](../research/results/qc/README.md), under "Final results on the frozen split".
 
 **Best possible success.** A case with one recorded attack has no validation suite, so the best possible validated success is 0.591 on development and 0.648 on test.
 

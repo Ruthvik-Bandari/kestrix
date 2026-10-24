@@ -8,7 +8,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
 #SBATCH --output=/scratch/%u/kestrix/vul/logs/%x-%j.out
-# Offline. Extends the C5 pool without touching the frozen test split (docs/data/vul/README.md):
+# Offline. Extends the C5 pool without touching the frozen test split (research/results/vul/README.md):
 #   targets  GHSA fix commits not in CVEfixes or MoreFixes, plus the pool commits (negatives)
 #            -> then run research/hpc/vul/vul_mine.sh on the transfer node
 #   extract  functions and PrimeVul labels of the fetched commits, dedup-extend, the list of new

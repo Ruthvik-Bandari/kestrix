@@ -207,8 +207,8 @@ measurably improves on the rules, following the same rule as the detection-repai
 
 ## Results (C6, 2026-10-21)
 
-Reports: [`reports/vul-eval-dev-c6.json`](reports/vul-eval-dev-c6.json) (dev, H200 job 11277237) and
-[`reports/vul-eval-test-c6.json`](reports/vul-eval-test-c6.json) (the one-time locked test, H200 job 11286516,
+Reports: [`research/results/vul/vul-eval-dev-c6.json`](../../research/results/vul/vul-eval-dev-c6.json) (dev, H200 job 11277237) and
+[`research/results/vul/vul-eval-test-c6.json`](../../research/results/vul/vul-eval-test-c6.json) (the one-time locked test, H200 job 11286516,
 claimed in `LOCKED_EVAL.json`; it cannot be run again). Both use the same code and the same three trained runs:
 teacher `teacher-seed1-11277233` (the candidate, chosen on dev), student `student-seed1-11277235`, and zero-shot
 Qwen2.5-Coder-7B-Instruct. PR-AUC with 95% repository-bootstrap intervals; "pair" is the share of
@@ -242,8 +242,8 @@ this test set is now spent.
 Code: `src/kestrixvul/round2.py` (data, split, ship rule), `train.py` (repo weights, paired contrast), `evaluate.py`
 (`--split test2 --locked`, `--ensemble`); jobs `research/hpc/vul/vul2_*.sbatch`. Code on the cluster in
 `/scratch/$USER/kestrix/vul2-code` (the home quota was full; SHA `ad3bad7+11983a32`), data in `/scratch/$USER/kestrix/vul2`.
-Reports: [`vul-eval-test2-r2.json`](reports/vul-eval-test2-r2.json), [`vul-ship-decision-r2.json`](reports/vul-ship-decision-r2.json),
-[`vul-r2-ablation-validation.json`](reports/vul-r2-ablation-validation.json).
+Reports: [`vul-eval-test2-r2.json`](../../research/results/vul/vul-eval-test2-r2.json), [`vul-ship-decision-r2.json`](../../research/results/vul/vul-ship-decision-r2.json),
+[`vul-r2-ablation-validation.json`](../../research/results/vul/vul-r2-ablation-validation.json).
 
 ### Decision rule (written into `reports/TEST2_FROZEN.json` and the `round2.py` docstring before any training)
 

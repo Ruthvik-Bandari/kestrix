@@ -9,7 +9,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=/scratch/%u/kestrix/logs/%x-%j.out
 # Offline. Stage "candidates" (default): labels, dedup and the public repository list for the
-# license lookup. Then run `licenses-fetch` on the owner's machine (docs/data/vul/README.md), copy
+# license lookup. Then run `licenses-fetch` on the owner's machine (research/results/vul/README.md), copy
 # the table to $VUL/licenses/fetched.csv, and run stage "split": licenses-import and split.
 # No model is trained and nothing is evaluated. Run research/hpc/vul/vul_qc.sbatch first.
 set -euo pipefail

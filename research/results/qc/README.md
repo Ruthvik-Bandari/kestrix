@@ -46,7 +46,7 @@ Corrected on 2026-10-15 (Slurm job 11105891). OTRF reuses 37 archive names under
 
 ## After ADR 0002 (Slurm job 11086173)
 
-[ADR 0002](../../adr/0002-sigma-subset-common-idioms.md) widened the subset to lists of field maps, `|all`, and `1 of` / `all of`. QC now also requires each supported rule to convert with the pinned pySigma Lucene backend.
+[ADR 0002](../../../docs/adr/0002-sigma-subset-common-idioms.md) widened the subset to lists of field maps, `|all`, and `1 of` / `all of`. QC now also requires each supported rule to convert with the pinned pySigma Lucene backend.
 
 - **997 of 1,182 rules (84%) are supported, and every one of them converts.** Before the change, 192 rules were supported.
 - **101 supported rules have SigmaHQ positive regression events.** Before the change, 12 did.

@@ -9,7 +9,7 @@ The benchmark evaluates systems that repair broken SIEM detections. Each system 
 **Out of scope:**
 - training or evaluating malware or attack classifiers;
 - telemetry from any organization;
-- rules outside the supported single-event Sigma subset ([ADR 0002](../adr/0002-sigma-subset-common-idioms.md)).
+- rules outside the supported single-event Sigma subset ([ADR 0002](../../docs/adr/0002-sigma-subset-common-idioms.md)).
 
 ## Sources
 

@@ -5,7 +5,7 @@
 Archive sources are pinned by Zenodo record, exact file name, size and MD5 (from
 ``https://zenodo.org/api/records/<id>``) plus the SHA-256 computed on the first verified
 download. Git sources are pinned by commit. Changing a pin is a dataset version change:
-update ``docs/data/sources.md`` and re-run ``acquire`` and ``qc``.
+update ``research/results/sources.md`` and re-run ``acquire`` and ``qc``.
 """
 
 from __future__ import annotations

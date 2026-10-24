@@ -25,7 +25,7 @@
 
 - [benchmarks/](benchmarks/) measured results, for example [detect](benchmarks/detect.md), [CVEfixes](benchmarks/cvefixes.md), [plugin A/B](benchmarks/plugin-ab.md)
 - [research/](research/) plans, benchmark write-ups and the [language roadmap](research/language-roadmap.md); see also [research.md](research.md)
-- [data/dataset-card.md](data/dataset-card.md) datasets and licenses
+- [research/results/dataset-card.md](../research/results/dataset-card.md) datasets and licenses
 
 ## Legal and history
 

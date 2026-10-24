@@ -6,7 +6,7 @@
 
 ## Context
 
-The first QC run over SigmaHQ release r2026-07-01 (`docs/data/qc/README.md`) found that only 192 of the 1,182
+The first QC run over SigmaHQ release r2026-07-01 (`research/results/qc/README.md`) found that only 192 of the 1,182
 Windows process_creation rules (16%) parse under the version one subset. Only 12 of those 192 have SigmaHQ
 regression events. The plan's benchmark needs about 60 clean roots, so the subset was too narrow for the
 benchmark. It also made `kestrix detect` unusable on most real rules.

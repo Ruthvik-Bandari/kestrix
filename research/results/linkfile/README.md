@@ -1,6 +1,6 @@
 # Link and file benchmark outputs (aggregate only)
 
-Produced by `python -m kestrixlinkfilebench` on the Explorer cluster; method, results and caveats are in [`docs/research/linkfile-benchmark.md`](../../research/linkfile-benchmark.md). Every file holds counts, rates, intervals, finding-id and tag frequencies, or hashes. None holds a URL, host name, file name or file content. Raw downloads stay under `/scratch/$USER/kestrix/linkfilebench/` (directories 0700, files 0600); that area is purged on 2026-11-03.
+Produced by `python -m kestrixlinkfilebench` on the Explorer cluster; method, results and caveats are in [`docs/research/linkfile-benchmark.md`](../../../docs/research/linkfile-benchmark.md). Every file holds counts, rates, intervals, finding-id and tag frequencies, or hashes. None holds a URL, host name, file name or file content. Raw downloads stay under `/scratch/$USER/kestrix/linkfilebench/` (directories 0700, files 0600); that area is purged on 2026-11-03.
 
 | File | What it is |
 | --- | --- |

@@ -98,7 +98,7 @@ This is research in the style of the detection-repair track, under its rules:
 **Data:**
 - public function-level vulnerability datasets with recorded licenses (candidates: PrimeVul, DiverseVul,
   CVEfixes);
-- every dataset is checked and recorded in `docs/data/sources.md` before use.
+- every dataset is checked and recorded in `research/results/sources.md` before use.
 
 **Method:**
 - splits by project and by CVE, with no leakage, and a test split evaluated exactly once;

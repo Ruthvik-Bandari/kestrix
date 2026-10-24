@@ -1,6 +1,6 @@
 # Kestrix code scanner on CVE-fix commits (CVEfixes and GitHub Advisory Database)
 
-This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`docs/data/codebench/`](../data/codebench/).
+This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`research/results/codebench/`](../../research/results/codebench/).
 
 Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm.
 
@@ -8,7 +8,7 @@ The ground truth is approximate. Read [What is not claimed](#what-is-not-claimed
 
 ## Method
 
-**Data.** Nothing new was downloaded: the benchmark reuses what `kestrixvul` acquired on the cluster ([data card](../data/vul/README.md)).
+**Data.** Nothing new was downloaded: the benchmark reuses what `kestrixvul` acquired on the cluster ([data card](../../research/results/vul/README.md)).
 
 - **CVEfixes v1.0.8** (CC BY 4.0), from the private working database: every Python, JavaScript and TypeScript file a CVE fix commit modified, with the whole file before and after.
 - **GitHub Advisory Database fix commits** (CC BY 4.0), mined from the public repositories by `kestrixvul`: commits that neither CVEfixes nor MoreFixes hold, before and after text of each changed file. The files the miner sampled from the parent snapshot of every mined commit (up to 3 per commit, which the commit did not change) are the **unchanged files**.
@@ -195,7 +195,7 @@ CVEfixes: Bhandari, G., Naseer, A. and Moonen, L. (2021), *CVEfixes: automated c
 ## Locked test (2026-10-22)
 
 Run once (job 11300842, code `51669cf+9230f191`, claim `LOCKED_EVAL.json`) on the test half: 619 projects, 1,679
-CVEs, 4,367 file pairs (2,172 in scope). Report: [`codebench-locked-codebench-v1.json`](../data/codebench/codebench-locked-codebench-v1.json).
+CVEs, 4,367 file pairs (2,172 in scope). Report: [`codebench-locked-codebench-v1.json`](../../research/results/codebench/codebench-locked-codebench-v1.json).
 95% repository-bootstrap intervals.
 
 | Tool | Language | Detection | Fix-aware | False alarms per KLOC (fixed files) |
@@ -248,7 +248,7 @@ Only 5 advisories are new by the strictest reading because the pinned checkout o
 | Overlap with the round-1 data: GHSA ids, CVE ids, fix commits, file contents | 0, 0, 0, 0 |
 | Repositories also in the tuning data | 332 of 522 (1,568 of 1,969 pairs) |
 
-Aggregate manifest: [`test2-manifest.json`](../data/codebench/test2-manifest.json) (SHA-256 of `pairs.jsonl` `028af3a2...`). The private manifest with advisory ids, repositories, commits and the SHA-256 of every file stays on the cluster (`reports/test2-files.json`), with the files, under `/scratch/$USER/kestrix/codebench2/` (0700/0600; `/scratch` is purged 2026-11-03). Advisory data: CC BY 4.0, attribution to the GitHub Advisory Database; the fetched source files keep their project licenses and are not redistributed. Jobs: select 11303297 (strict), 11303732 (tiers), 11303906 (final); fetch on `explorer-xfer` (1,410 commits); build 11305898 and 11305973.
+Aggregate manifest: [`test2-manifest.json`](../../research/results/codebench/test2-manifest.json) (SHA-256 of `pairs.jsonl` `028af3a2...`). The private manifest with advisory ids, repositories, commits and the SHA-256 of every file stays on the cluster (`reports/test2-files.json`), with the files, under `/scratch/$USER/kestrix/codebench2/` (0700/0600; `/scratch` is purged 2026-11-03). Advisory data: CC BY 4.0, attribution to the GitHub Advisory Database; the fetched source files keep their project licenses and are not redistributed. Jobs: select 11303297 (strict), 11303732 (tiers), 11303906 (final); fetch on `explorer-xfer` (1,410 commits); build 11305898 and 11305973.
 
 ### Tuning measurements
 
@@ -301,7 +301,7 @@ Final scanner against round 1 on the tuning data (paired, repository bootstrap):
 | round 1 | js_ts (5,028) | 6.46 [4.55, 8.72] | 4.73 [3.15, 6.70] | 0.76 [0.48, 1.13] | 0.40 [0.28, 0.56] | 12.8 [8.6, 18.8] |
 | round 2 | js_ts | 6.72 [4.81, 8.97] | 4.89 [3.29, 6.87] | 0.77 [0.50, 1.15] | 0.41 [0.29, 0.57] | 13.0 [8.8, 19.0] |
 
-Round 2 is a small gain: 23 more detected pairs of 8,806 in scope, for 159 more alerts; the nine changes added 129 alerts alone and 159 together (the wider analysis scope adds a few). Alerts rise 2.4% in total, just over the 2% line the single changes each stayed under. Aggregates: [`codebench-tuning-r2-t0.json`](../data/codebench/codebench-tuning-r2-t0.json), [`codebench-tuning-r2-final.json`](../data/codebench/codebench-tuning-r2-final.json), `codebench-compare-r2-*.json`.
+Round 2 is a small gain: 23 more detected pairs of 8,806 in scope, for 159 more alerts; the nine changes added 129 alerts alone and 159 together (the wider analysis scope adds a few). Alerts rise 2.4% in total, just over the 2% line the single changes each stayed under. Aggregates: [`codebench-tuning-r2-t0.json`](../../research/results/codebench/codebench-tuning-r2-t0.json), [`codebench-tuning-r2-final.json`](../../research/results/codebench/codebench-tuning-r2-final.json), `codebench-compare-r2-*.json`.
 
 **Speed** (job 11306099, one core, every dev file, 39,420 files, two repetitions each, same node): round 1 36.8 and 38.8 files per second, round 2 38.9 and 38.7. No measurable slowdown (the limit was 10%); the scanner still has no runtime dependencies.
 
@@ -325,7 +325,7 @@ ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codeb
 Run once (job 11308164, claim `LOCKED_EVAL_TEST2.json`) on test2: 1,024 in-scope pairs from 522 projects, with no
 advisory, CVE, fix commit or file content shared with any tuning data (332 repositories do overlap; the 239
 in-scope pairs from never-scanned repositories are reported separately in the JSON). Report:
-[`codebench-locked-test2-v1.json`](../data/codebench/codebench-locked-test2-v1.json). 95% repository-bootstrap
+[`codebench-locked-test2-v1.json`](../../research/results/codebench/codebench-locked-test2-v1.json). 95% repository-bootstrap
 intervals.
 
 | Tool | Language | Detection | False alarms per KLOC (fixed files) |
@@ -357,7 +357,7 @@ Phase 1 of the [language roadmap](../research/language-roadmap.md) adds web-file
 number below is a tuning number.** All earlier held-out sets are spent (round-1 test, test2), the rules were written
 and kept with these files in view, and there is no fresh set yet: `research/hpc/codebench/codebench_heldout_future.sh` builds a `test3`
 from advisories published after 2026-10-22 once they exist (see the end of this section). Aggregates:
-[`docs/data/codebench/`](../data/codebench/README.md).
+[`research/results/codebench/`](../../research/results/codebench/README.md).
 
 ### Method
 
@@ -472,7 +472,7 @@ advisory miner fetches those files, which is why the web files above come from C
 round-2 tuning data (round-1 dev plus the round-1 test: 17,474 file pairs, 8,806 in scope, 3,778 of them Python) for the
 gap analysis, the rule choices and the measurements, the round-2 keep rule, and one repository bootstrap. Bandit's
 findings on that data are the dev scan (`base`) and the locked-test scan of the same Bandit 1.9.4, merged. Aggregates:
-[`docs/data/codebench/`](../data/codebench/README.md) (`codebench-gap-r3-gap*.json`, `codebench-compare-r3*.json`).
+[`research/results/codebench/`](../../research/results/codebench/README.md) (`codebench-gap-r3-gap*.json`, `codebench-compare-r3*.json`).
 
 ### Where Bandit detects and Kestrix does not
 
@@ -568,7 +568,7 @@ One core, every dev file of the Python/JavaScript/TypeScript benchmark (39,420 f
 Phase 2 of the [language roadmap](../research/language-roadmap.md) adds PHP (nine `php.*` rules, a bounded tokenizer, request
 sources for plain PHP, Laravel, Symfony, WordPress, CodeIgniter and CakePHP, Blade) and SQL files (three `sql.*` rules). The PHP
 rules were tuned on a development split of a new PHP benchmark and then run **once** on its held-out split next to Psalm's
-taint analysis. Aggregates: [`docs/data/codebench/`](../data/codebench/README.md).
+taint analysis. Aggregates: [`research/results/codebench/`](../../research/results/codebench/README.md).
 
 ### Data and method
 
@@ -668,7 +668,7 @@ second; Psalm reads 0.3 to 0.4. Pathological inputs (quote, heredoc, comment, ba
 ### Held-out run (`php-v1`)
 
 Run once on the 1,456-pair test split (1,121 in scope, 210 projects, 711 KLOC of fixed files), after the claim file
-[`php-heldout-claim.json`](../data/codebench/php-heldout-claim.json) was committed and the lock (`LOCKED_EVAL.json`, scanner tree
+[`php-heldout-claim.json`](../../research/results/codebench/php-heldout-claim.json) was committed and the lock (`LOCKED_EVAL.json`, scanner tree
 `c03f738+8944d155`) was claimed by job 11350678. Scanner frozen; no rule or threshold changed in response.
 
 | Tool | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Precision % (proxy) | Files per second |

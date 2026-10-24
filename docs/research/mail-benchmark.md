@@ -1,6 +1,6 @@
 # Email accuracy benchmark
 
-This page records how well `kestrix.mail` detects phishing and spam on public corpora, why it misses or over-flags, and what signal weights a simple explainable model learns from the same data. It is research tooling: the package is [`src/kestrixmailbench/`](../../src/kestrixmailbench/) (not in the published wheel), the jobs are `research/hpc/mail/mail_*`, and the aggregate outputs are in [`docs/data/mail/`](../data/mail/README.md).
+This page records how well `kestrix.mail` detects phishing and spam on public corpora, why it misses or over-flags, and what signal weights a simple explainable model learns from the same data. It is research tooling: the package is [`src/kestrixmailbench/`](../../src/kestrixmailbench/) (not in the published wheel), the jobs are `research/hpc/mail/mail_*`, and the aggregate outputs are in [`research/results/mail/`](../../research/results/mail/README.md).
 
 **Status (2026-10-24, modern-mail section added at the end).** Everything below is **development-split** numbers. Sections up to "Learned weights" describe the rules as shipped when the benchmark ran; [Round 1](#round-1-rule-changes-measured-on-dev) records the rule changes made from that analysis and their before and after numbers. The locked test split has not been opened. No learned weights are wired into `kestrix.mail`; `docs/modules/mail.md` still says Kestrix has not measured detection or false-alarm rates, and that stays true until the locked test has run and the owner decides.
 
@@ -47,9 +47,9 @@ TREC 2007 is not available yet. It can be added as another `Source` in `src/kest
 
 ## Method
 
-1. **Acquire** (`research/hpc/mail/mail_acquire.sh`, transfer node). Downloads are recorded with URL, size, SHA-256 and time in `manifests/mailbench-manifest.json`; a file that no longer matches its manifest entry is rejected. [`docs/data/mail/mailbench-manifest.json`](../data/mail/mailbench-manifest.json) is the committed copy.
+1. **Acquire** (`research/hpc/mail/mail_acquire.sh`, transfer node). Downloads are recorded with URL, size, SHA-256 and time in `manifests/mailbench-manifest.json`; a file that no longer matches its manifest entry is rejected. [`research/results/mail/mailbench-manifest.json`](../../research/results/mail/mailbench-manifest.json) is the committed copy.
 2. **Build** (Slurm, CPU). Messages are split out of mbox files and tar archives without extracting to disk, and anything `kestrix.mail` would reject is dropped with a reason. Enron is sampled by seeded hash (seed `kestrixmail-v1`) from every file of the May 2015 release, over-sampled 1.5 times, deduplicated, and cut to the first 20,000 by rank.
-3. **Split before any tuning.** The unit is a *group*: a source file (or Enron mailbox) plus the `Date` year, except one-year files, which are one group whole. Groups are assigned to dev or test within each (source, label) stratum by seeded hash until about 30% of the stratum is in test, so a campaign, a mailbox-year or a corpus file never straddles the split. The split manifest ([`split-manifest.json`](../data/mail/split-manifest.json)) holds counts and ID hashes only.
+3. **Split before any tuning.** The unit is a *group*: a source file (or Enron mailbox) plus the `Date` year, except one-year files, which are one group whole. Groups are assigned to dev or test within each (source, label) stratum by seeded hash until about 30% of the stratum is in test, so a campaign, a mailbox-year or a corpus file never straddles the split. The split manifest ([`split-manifest.json`](../../research/results/mail/split-manifest.json)) holds counts and ID hashes only.
 
 | Split | Source/label | Messages |
    | --- | --- | --- |
@@ -319,13 +319,13 @@ In words:
 - On `content_noera` both scorers are weak (about 23% phishing catch at under 1% false alarms), and the learned weights are better only at `malicious` (17.1% against 8.8% phishing catch).
 - Targeting 5% and 1% on *each* ham source is demanding because the baseline already flags 19.8% of SpamAssassin ham. The pooled variants (files ending `_pooled`) let SpamAssassin ham reach 14.8-19.4% false alarms in the same-era comparisons because Enron dominates the pooled rate; use them with care.
 
-The thresholds, targets, L2 strengths, cross-validation losses and a hash of the dev training IDs are inside each weights file ([`docs/data/mail/`](../data/mail/README.md)).
+The thresholds, targets, L2 strengths, cross-validation losses and a hash of the dev training IDs are inside each weights file ([`research/results/mail/`](../../research/results/mail/README.md)).
 
 ## Round 1: rule changes measured on dev
 
 The dev error analysis above pointed at five things: mailing-list mail flagged for its own `Reply-To`, high-severity findings on legitimate HTML mail, many weak findings that never add up, no signal for generic spam wording, and phishing with no finding at all. Round 1 changes `kestrix.mail` for each, **one change at a time, re-measured on the full dev split after each**, and keeps a change only if it raises catch without false alarms moving beyond noise, or cuts false alarms without losing catch. The locked test was not run, and the round tooling cannot run it: `features --splits dev` never analyzes a test message.
 
-**Setup.** Same dev split and the same *content only* feature set as the baseline table (every `auth` finding removed; flagged is `suspicious` or `malicious`; intervals are the same grouped bootstrap, `msg` where a cohort has fewer than 8 groups). `research/hpc/mail/mail_round.sh NAME` runs the changed analyzers over every dev message (16-task array, about a minute each) and then the dev metrics, into `/scratch/$USER/kestrix/mailbench-rules/NAME/`; the benchmark's own `reports/` and `features/` were not touched. The code ran from `~/kestrix-mailrules` (rounds record `MAILBENCH_SHA` there), not `~/kestrix`, so another sync could not change it mid-round. Aggregate probes (`python -m kestrixmailbench probe`, `research/hpc/mail/mail_probe.sbatch`) counted coarse properties and curated candidate terms per cohort inside Slurm jobs and wrote counts only (cells under 3 messages dropped): [`mail-probe-baseline.json`](../data/mail/mail-probe-baseline.json). Re-running the shipped rules through this tooling (`r0`) reproduced the baseline to the digit. All rounds: [`mail-rules-round1.json`](../data/mail/mail-rules-round1.json); the final dev metrics: [`mail-dev-metrics-round1.json`](../data/mail/mail-dev-metrics-round1.json).
+**Setup.** Same dev split and the same *content only* feature set as the baseline table (every `auth` finding removed; flagged is `suspicious` or `malicious`; intervals are the same grouped bootstrap, `msg` where a cohort has fewer than 8 groups). `research/hpc/mail/mail_round.sh NAME` runs the changed analyzers over every dev message (16-task array, about a minute each) and then the dev metrics, into `/scratch/$USER/kestrix/mailbench-rules/NAME/`; the benchmark's own `reports/` and `features/` were not touched. The code ran from `~/kestrix-mailrules` (rounds record `MAILBENCH_SHA` there), not `~/kestrix`, so another sync could not change it mid-round. Aggregate probes (`python -m kestrixmailbench probe`, `research/hpc/mail/mail_probe.sbatch`) counted coarse properties and curated candidate terms per cohort inside Slurm jobs and wrote counts only (cells under 3 messages dropped): [`mail-probe-baseline.json`](../../research/results/mail/mail-probe-baseline.json). Re-running the shipped rules through this tooling (`r0`) reproduced the baseline to the digit. All rounds: [`mail-rules-round1.json`](../../research/results/mail/mail-rules-round1.json); the final dev metrics: [`mail-dev-metrics-round1.json`](../../research/results/mail/mail-dev-metrics-round1.json).
 
 ### Per change, dev, content only
 
@@ -441,15 +441,15 @@ ssh explorer 'cd ~/kestrix-mailrules && export KESTRIX_CODE=$HOME/kestrix-mailru
 ssh explorer 'cd ~/kestrix-mailrules && export KESTRIX_CODE=$HOME/kestrix-mailrules && sbatch research/hpc/mail/mail_probe.sbatch'  # aggregate cohort probe
 ```
 
-`/scratch` is purged on the first Tuesday of each month (next: 2026-11-03). The manifest lets every download be repeated; the learned weights and aggregate reports are committed under `docs/data/mail/`.
+`/scratch` is purged on the first Tuesday of each month (next: 2026-11-03). The manifest lets every download be repeated; the learned weights and aggregate reports are committed under `research/results/mail/`.
 
 
 ## Locked test (2026-10-22)
 
 Run once each, after the round-1 rules were frozen, on the 10,897 locked-test messages (3,019 phishing, 238 spam,
 7,550 normal: 6,014 Enron and 1,536 SpamAssassin), in 135 split groups. Reports:
-[`mail-locked-rules-baseline.json`](../data/mail/mail-locked-rules-baseline.json) (the old rules, stored features; job
-11297308) and [`mail-locked-rules-round1.json`](../data/mail/mail-locked-rules-round1.json) (round-1 rules at
+[`mail-locked-rules-baseline.json`](../../research/results/mail/mail-locked-rules-baseline.json) (the old rules, stored features; job
+11297308) and [`mail-locked-rules-round1.json`](../../research/results/mail/mail-locked-rules-round1.json) (round-1 rules at
 `a3bfd06`, features recomputed on the cluster, job 11297304, evaluated by job 11297306). Content-only feature set;
 95% group-bootstrap intervals (SpamAssassin ham has too few groups for one and is shown without).
 
@@ -477,7 +477,7 @@ What the locked test shows:
 
 ## Modern normal mail (2022-2026)
 
-Measured 2026-10-23 and 2026-10-24 on the rules at `main` 0ca93a7 (round 1 included). Question: how often does the email check flag *modern* normal mail, given that the benchmark's normal mail is 1999-2005 (Enron lacks nearly every modern header; SpamAssassin ham is one person's 2002 lists)? Code: `src/kestrixmailbench/modern*.py`; jobs `research/hpc/mail/modern_*.sbatch`; aggregates `docs/data/mail/modern-*.json`.
+Measured 2026-10-23 and 2026-10-24 on the rules at `main` 0ca93a7 (round 1 included). Question: how often does the email check flag *modern* normal mail, given that the benchmark's normal mail is 1999-2005 (Enron lacks nearly every modern header; SpamAssassin ham is one person's 2002 lists)? Code: `src/kestrixmailbench/modern*.py`; jobs `research/hpc/mail/modern_*.sbatch`; aggregates `research/results/mail/modern-*.json`.
 
 ### Data and its bias
 
@@ -540,7 +540,7 @@ Not tested: a user's own mailbox, whose topmost `Authentication-Results` is the 
 
 ### Proposed rule changes (design on dev) and what was applied
 
-**Applied 2026-10-24: P1, P3 and P6 are now in `kestrix.mail`** (`analyzers.py`; docs in `docs/modules/mail.md`). Rerun on dev with the real implementation (`docs/data/mail/modern-variants-applied.json`; harness base column): modern dev flagged 0.49% (114 of 23,303; 0.19-0.89) and malicious 0.33% (77), old-dev phishing 68.45% flagged / 11.50% malicious, spam 43.86%, SpamAssassin ham 4.46%, Enron ham 0.71%, synthetic modern 0 flagged: the P1 + P3 + P6 row below, message for message (same counts in every cohort). Two details differ from the proposal text. The shipped gateway list is anchored to vendor domains, not the broad `REWRITER` pattern: Outlook Safe Links `*.safelinks.protection.outlook.com`, Proofpoint `urldefense.com` and `urldefense.proofpoint.com`, Mimecast `protect-<region>.mimecast.com` and `*.mimecastprotect.com`, plus Barracuda `linkprotect.cudasvc.com` and Cisco `secure-web.cisco.com`. A first version with only the first three vendors gave 126 flagged (0.54%) because 176 dev links went through Barracuda and 4 through Cisco; adding them (the only other gateways seen in dev links) restored the exact numbers. A Proofpoint PhishAlarm host (`*-phishalarm-*.proofpoint.com`, 6 links) matched the old pattern but is a reporting button, not a rewriter, and is not in the list. Proofpoint v2/v3 and Mimecast/Cisco links carry the target in the path or an encoded query value, so for them the wrapped address is usually unreadable and only the text comparison is skipped. Held-out lists were not run. The numbers below are the design measurements.
+**Applied 2026-10-24: P1, P3 and P6 are now in `kestrix.mail`** (`analyzers.py`; docs in `docs/modules/mail.md`). Rerun on dev with the real implementation (`research/results/mail/modern-variants-applied.json`; harness base column): modern dev flagged 0.49% (114 of 23,303; 0.19-0.89) and malicious 0.33% (77), old-dev phishing 68.45% flagged / 11.50% malicious, spam 43.86%, SpamAssassin ham 4.46%, Enron ham 0.71%, synthetic modern 0 flagged: the P1 + P3 + P6 row below, message for message (same counts in every cohort). Two details differ from the proposal text. The shipped gateway list is anchored to vendor domains, not the broad `REWRITER` pattern: Outlook Safe Links `*.safelinks.protection.outlook.com`, Proofpoint `urldefense.com` and `urldefense.proofpoint.com`, Mimecast `protect-<region>.mimecast.com` and `*.mimecastprotect.com`, plus Barracuda `linkprotect.cudasvc.com` and Cisco `secure-web.cisco.com`. A first version with only the first three vendors gave 126 flagged (0.54%) because 176 dev links went through Barracuda and 4 through Cisco; adding them (the only other gateways seen in dev links) restored the exact numbers. A Proofpoint PhishAlarm host (`*-phishalarm-*.proofpoint.com`, 6 links) matched the old pattern but is a reporting button, not a rewriter, and is not in the list. Proofpoint v2/v3 and Mimecast/Cisco links carry the target in the path or an encoded query value, so for them the wrapped address is usually unreadable and only the text comparison is skipped. Held-out lists were not run. The numbers below are the design measurements.
 
 All numbers below are dev. Variants are applied by monkeypatch in `src/kestrixmailbench/modern_proposals.py` over the unmodified `kestrix.mail`, run on the modern dev lists and on the old dev corpora (24,359 messages) to see what each change costs in catch. Dev only: the held-out lists were not used for any of these and were not re-run with them.
 
@@ -564,7 +564,7 @@ Synthetic modern cohort: the 120 messages (receipts, password resets, shipping, 
 
 ### Held-out claim
 
-`reports/LOCKED_EVAL.json` on the cluster was claimed once (job 11346774, rules unmodified, features of the held-out lists computed in that job) and is copied to [`modern-locked-eval.json`](../data/mail/modern-locked-eval.json). The held-out measurement was run for the current rules only; no variant was run on it. Anything further on those five lists is no longer a held-out measurement.
+`reports/LOCKED_EVAL.json` on the cluster was claimed once (job 11346774, rules unmodified, features of the held-out lists computed in that job) and is copied to [`modern-locked-eval.json`](../../research/results/mail/modern-locked-eval.json). The held-out measurement was run for the current rules only; no variant was run on it. Anything further on those five lists is no longer a held-out measurement.
 
 ### Caveats
 

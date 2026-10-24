@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""AI-assisted label audit of the vulnerable-labelled functions (``docs/data/policy.md``, section 6).
+"""AI-assisted label audit of the vulnerable-labelled functions (``research/results/policy.md``, section 6).
 
 1. ``audit-sample`` (Slurm): a seeded random sample, stratified by source family (CVEfixes and
    MoreFixes, SVEN, GHSA), language and label rule, of the train and dev records of
@@ -315,7 +315,7 @@ def aggregate(
     )
     return {
         "schema_version": 1,
-        "procedure": "AI-assisted (docs/data/review.md): two open-weight reviewers (ai-a, ai-b) on the cluster, "
+        "procedure": "AI-assisted (research/results/review.md): two open-weight reviewers (ai-a, ai-b) on the cluster, "
         "the stronger one adjudicates disagreements with a separate prompt; no human review (owner decision). "
         "Train and dev records only.",
         "label_accuracy_definition": "share of audited records whose final verdict is 'vulnerable' (unclear "

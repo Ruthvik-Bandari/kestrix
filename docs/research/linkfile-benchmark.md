@@ -1,6 +1,6 @@
 # Link and file checker accuracy benchmark
 
-This page records how well the `kestrix.forensics` URL checker and file checker do on public data, where they fail, and what one round of rule changes bought. It is research tooling: the package is [`src/kestrixlinkfilebench/`](../../src/kestrixlinkfilebench/) (not in the published wheel; it follows the [email benchmark](mail-benchmark.md) and imports its shared helpers), the jobs are `research/hpc/linkfile/linkfile_*`, and the aggregate outputs are in [`docs/data/linkfile/`](../data/linkfile/README.md).
+This page records how well the `kestrix.forensics` URL checker and file checker do on public data, where they fail, and what one round of rule changes bought. It is research tooling: the package is [`src/kestrixlinkfilebench/`](../../src/kestrixlinkfilebench/) (not in the published wheel; it follows the [email benchmark](mail-benchmark.md) and imports its shared helpers), the jobs are `research/hpc/linkfile/linkfile_*`, and the aggregate outputs are in [`research/results/linkfile/`](../../research/results/linkfile/README.md).
 
 **Status (2026-10-23).** The first sections (up to round 1) are **development-split** numbers; the one-time locked test of 2026-10-22 is reported under *Locked test*. Round 2 (below it) was measured on the development splits, and its real-URL test split was evaluated once on 2026-10-23. The module page [`forensics.md`](../modules/forensics.md) still says the checks are not verdicts; nothing here changes that.
 
@@ -23,7 +23,7 @@ This page records how well the `kestrix.forensics` URL checker and file checker 
 | Common Crawl URL index, crawl `CC-MAIN-2026-43` (round 2) | benign full URLs: 45,426 pages of 5,000 Majestic top-100,000 domains plus 20,000 user-site pages on four platforms (after the cap, 65,426 URLs, 19,318 groups) | 65,426 | `cluster.idx` 104,520,381 B, plus several GB of range reads | Common Crawl Terms of Use (limited license; crawled content stays under its owners' terms) | <https://commoncrawl.org/terms-of-use> |
 | Synthetic files (`synth.py`) | recall per case, benign controls | 900 (18 malicious-style and 12 benign-control families x 30) | generated in memory | Generated here (Apache-2.0) | `src/kestrixlinkfilebench/synth.py` |
 
-[`linkfilebench-manifest.json`](../data/linkfile/linkfilebench-manifest.json) records URL, size, SHA-256 and download time of every file (trust on first use, downloaded 2026-10-22 on the transfer node).
+[`linkfilebench-manifest.json`](../../research/results/linkfile/linkfilebench-manifest.json) records URL, size, SHA-256 and download time of every file (trust on first use, downloaded 2026-10-22 on the transfer node).
 
 **Attribution.** PhiUSIIL: Prasad, A. & Chandra, S. (2024). *PhiUSIIL Phishing URL (Website)* [Dataset]. UCI Machine Learning Repository. <https://doi.org/10.1016/j.cose.2023.103545> (CC BY 4.0). Majestic: *Majestic Million*, Majestic, <https://majestic.com/reports/majestic-million> (CC BY 3.0). Govdocs1: Garfinkel, S., Farrell, P., Roussev, V., & Dinolt, G. (2009). Bringing science to digital forensics with standardized forensic corpora. *Digital Investigation, 6*, S2-S11 (DFRWS 2009).
 
@@ -35,7 +35,7 @@ This page records how well the `kestrix.forensics` URL checker and file checker 
 
 1. **Acquire** (`research/hpc/linkfile/linkfile_acquire.sh`, transfer node, standard library only). Reuses the email benchmark's download, size/SHA-256 and manifest code.
 2. **Build** (Slurm, CPU). *Links:* PhiUSIIL labels inverted (tested), Majestic domains chosen by seeded hash (`kestrixlinkfile-v1`) and turned into host roots, URLs the analyzer rejects dropped (none were), exact duplicates (same lower-cased scheme, host, path, query) and near duplicates (same host without `www.`, same path, query ignored) collapsed, any near-duplicate key that carries both labels dropped from both. PhiUSIIL lost 5,821 phishing and 43 benign URLs; Majestic lost 1,730. *Files:* every zip member hashed, content duplicates across threads kept once, members over 50 MiB dropped.
-3. **Split before any tuning** ([`link-split-manifest.json`](../data/linkfile/link-split-manifest.json), [`file-split-manifest.json`](../data/linkfile/file-split-manifest.json)). Links are grouped by registered domain, estimated offline (last two labels, three under a country code with a common second level; coarser than the Public Suffix List, which only keeps more together); group names are hashed, so no host is stored with the features. Files are grouped by Govdocs thread. Groups go to dev or test within each (source, label) stratum by seeded hash until about 30% is in test. Dev: 180,739 links (142,071 groups), 13,416 files (13 Govdocs threads plus 30 synthetic groups). Test: 77,462 links, 7,177 files. Synthetic variants 0-19 of each family are dev, 20-29 test.
+3. **Split before any tuning** ([`link-split-manifest.json`](../../research/results/linkfile/link-split-manifest.json), [`file-split-manifest.json`](../../research/results/linkfile/file-split-manifest.json)). Links are grouped by registered domain, estimated offline (last two labels, three under a country code with a common second level; coarser than the Public Suffix List, which only keeps more together); group names are hashed, so no host is stored with the features. Files are grouped by Govdocs thread. Groups go to dev or test within each (source, label) stratum by seeded hash until about 30% is in test. Dev: 180,739 links (142,071 groups), 13,416 files (13 Govdocs threads plus 30 synthetic groups). Test: 77,462 links, 7,177 files. Synthetic variants 0-19 of each family are dev, 20-29 test.
 4. **Features** (Slurm arrays, 16 and 20 tasks). `analyze_url` and `analyze_file` run offline per item; only finding ids and severities, the URL level and score, URL shape counts (length, path, query, scheme, host dots/hyphens/digits, TLD), the detected file type, extension, size and entropy are stored. No URL, host, file name or content. Each shard report records the code version; the locked test refuses to run when dev and test features come from different rules. Pillow 12.2.0 was installed beside the code (not in the shared environment), so photo-metadata findings are included.
 5. **Metrics.** Links: share of phishing at or above each level (`low`, `medium`, `high`), benign false alarms per cohort, precision at the corpus class mix (not real-world precision). Files: the *alarm* of a file is the highest severity among its **security** findings; photo-metadata findings (`gps_location`, `identifying_metadata`) are privacy findings and `executable_file`, `empty_file`, `expected_high_entropy` are context, both reported separately. Intervals are the email benchmark's 95% percentile bootstrap that resamples whole groups (1,000 resamples); cohorts under 8 groups show a message-level binomial interval marked `msg`.
 6. **Leakage controls (links).** See below.
@@ -87,7 +87,7 @@ Synthetic cases (dev, 20 variants per family; never pooled with Govdocs): caught
 
 ## Round 1: rule changes measured on dev
 
-**Decision rule, fixed before the candidates were measured.** Files: keep a change if its target synthetic family is caught more, no family or control gets worse, and Govdocs dev false alarms at `medium` or higher rise by at most 0.1 point (or fall). Links: keep a change if catch rises by at least 0.5 point on the full set and on the matched subset, and false alarms of each benign cohort at the same level rise by at most 0.1 point. Each candidate was measured alone on the full dev split (Slurm job ids in [`linkfile-rules-round1.json`](../data/linkfile/linkfile-rules-round1.json)), then the kept set together. Candidates came from the checker's known gaps (the synthetic families) and from the dev error analysis and probes (Govdocs false-alarm causes, link host shapes). Host-shape tags that did not separate the classes in the probe (hyphens, digits in the registered label, entropy) were not built.
+**Decision rule, fixed before the candidates were measured.** Files: keep a change if its target synthetic family is caught more, no family or control gets worse, and Govdocs dev false alarms at `medium` or higher rise by at most 0.1 point (or fall). Links: keep a change if catch rises by at least 0.5 point on the full set and on the matched subset, and false alarms of each benign cohort at the same level rise by at most 0.1 point. Each candidate was measured alone on the full dev split (Slurm job ids in [`linkfile-rules-round1.json`](../../research/results/linkfile/linkfile-rules-round1.json)), then the kept set together. Candidates came from the checker's known gaps (the synthetic families) and from the dev error analysis and probes (Govdocs false-alarm causes, link host shapes). Host-shape tags that did not separate the classes in the probe (hyphens, digits in the registered label, entropy) were not built.
 
 ### Files
 
@@ -118,7 +118,7 @@ L1 and L2 together: **86.4% (82.7-89.5) caught at `low` or higher, 3.0% (2.4-3.8
 
 ## Round 2 (2026-10-23): file gaps and real-browsing links
 
-Rules and data added after the locked test. Round 2 is measured on the **development split only**, and the old locked splits stay spent: nothing here was tuned on them. The code versions are in [`linkfile-rules-round2.json`](../data/linkfile/linkfile-rules-round2.json); each candidate was measured on the cluster with the same synthetic cases, the same 12,816 Govdocs1 dev files and the same split as round 1.
+Rules and data added after the locked test. Round 2 is measured on the **development split only**, and the old locked splits stay spent: nothing here was tuned on them. The code versions are in [`linkfile-rules-round2.json`](../../research/results/linkfile/linkfile-rules-round2.json); each candidate was measured on the cluster with the same synthetic cases, the same 12,816 Govdocs1 dev files and the same split as round 1.
 
 ### File gaps
 
@@ -147,7 +147,7 @@ What the numbers mean and do not:
 
 **Why.** The benign URLs of the first benchmark were host roots, so `long_url`, `not_https`, the keyword and path signals, and the two round-1 subdomain signals had no measurable false-alarm rate on real links. Round 2 builds a benign sample of full URLs and measures them.
 
-**Dataset** ([`commoncrawl-manifest.json`](../data/linkfile/commoncrawl-manifest.json), [`realurl-build.json`](../data/linkfile/realurl-build.json), [`realurl-split-manifest.json`](../data/linkfile/realurl-split-manifest.json)).
+**Dataset** ([`commoncrawl-manifest.json`](../../research/results/linkfile/commoncrawl-manifest.json), [`realurl-build.json`](../../research/results/linkfile/realurl-build.json), [`realurl-split-manifest.json`](../../research/results/linkfile/realurl-split-manifest.json)).
 
 - *Source and terms.* The Common Crawl URL index of crawl `CC-MAIN-2026-43` (crawled 2026-10-05 to 2026-10-18), read through the public `cluster.idx` and `cdx-*.gz` files with range requests of about 250 KB. Terms of Use <https://commoncrawl.org/terms-of-use> (last updated 2024-03-07; saved copy hash `d438ca60...2342c4`): a limited, non-exclusive license to use the service; the crawled content may be subject to its owners' own terms; no unlawful use, no violation of others' rights, no collecting of personal information for use apart from the content. Only the text of index lines (URL, HTTP status, MIME type) is read: no page is fetched, no URL is visited, and the URLs are not redistributed (they stay under `/scratch`, mode 0700/0600); the repository holds counts and rates. This is not legal advice.
 - *Top domains.* A seeded sample (`kestrixlinkfile-v1`) of 12,000 domains from the first 100,000 Majestic ranks was tried in order until 5,000 had at least one usable page (7,900 were tried, 63% had one in the crawl; HTTP status 200 and an HTML MIME type). Up to 10 URLs per domain came from one or two random blocks of the domain's key range. This gave 45,428 URLs, 45,426 after exact deduplication. Both `http` and `https` pages are kept as crawled: 89.9% are `https` in the dev sample.
@@ -181,7 +181,7 @@ Share of each cohort that raises each finding at any severity (shipped rules), t
 
 By shape (top domains, dev): every `http` page is at `low` (100.0% of 164 bare and 3,062 with a path), `https` bare hosts 9.2%, `https` with a path 24.3%. So the first benchmark's picture reverses on real links: `long_url` and `not_https`, which look like phishing in PhiUSIIL (3.2% and 54.3% of phishing) fire on one real page in five and one in ten.
 
-**Decisions** (each candidate measured on the real dev sample and on the PhiUSIIL dev split; codes and job ids in [`linkfile-rules-round2.json`](../data/linkfile/linkfile-rules-round2.json); M6 and M5's first look used 100 resamples, the final rules' run and the others use 1,000; the final rules' report is [`link-dev-metrics-round2.json`](../data/linkfile/link-dev-metrics-round2.json)):
+**Decisions** (each candidate measured on the real dev sample and on the PhiUSIIL dev split; codes and job ids in [`linkfile-rules-round2.json`](../../research/results/linkfile/linkfile-rules-round2.json); M6 and M5's first look used 100 resamples, the final rules' run and the others use 1,000; the final rules' report is [`link-dev-metrics-round2.json`](../../research/results/linkfile/link-dev-metrics-round2.json)):
 
 | Candidate | Real URLs `low`+ (all / top / platforms) | Phishing `low`+ / `medium`+ (matched subset `low`+) | Decision |
 | --- | --- | --- | --- |
@@ -196,7 +196,7 @@ The platform candidates M1, M3 and M4 were designed from the signal definitions 
 
 What changed in the rules: `hosting_platform_subdomain` still appears on every page of a listed host, but as `info` without weight unless another weighted finding is present (then `low`, weight 10 as before); `long_url` starts at 200 characters. Cost, measured on the PhiUSIIL dev split: phishing at `low` or higher **86.4% (82.7-89.5) to 75.6% (70.0-81.3)**, at `medium` or higher unchanged at 3.0%, benign host-root false alarms unchanged (0.2% and 1.6%). On the matched subset (https host roots on both sides) the `low` catch falls from 75.9% to 45.4%, which shows how much of round 1's matched-subset gain was the platform signal alone. The platform signal alone is therefore a measurable trade: it caught about ten points of phishing at the price of flagging every legitimate user page.
 
-**Locked test of the real URLs, run once on 2026-10-23** ([`realurl-locked-realurl-v1.json`](../data/linkfile/realurl-locked-realurl-v1.json), claim [`realurl-LOCKED_EVAL.json`](../data/linkfile/realurl-LOCKED_EVAL.json); 19,637 URLs in 5,800 groups, never analyzed before; shipped rules `0ca93a7+main-rules`, final rules `0ca93a7+worktree-c47647f043dc`):
+**Locked test of the real URLs, run once on 2026-10-23** ([`realurl-locked-realurl-v1.json`](../../research/results/linkfile/realurl-locked-realurl-v1.json), claim [`realurl-LOCKED_EVAL.json`](../../research/results/linkfile/realurl-LOCKED_EVAL.json); 19,637 URLs in 5,800 groups, never analyzed before; shipped rules `0ca93a7+main-rules`, final rules `0ca93a7+worktree-c47647f043dc`):
 
 | Cohort | Shipped rules, `low`+ | Final rules, `low`+ | Shipped, `medium`+ | Final, `medium`+ |
 | --- | --- | --- | --- | --- |
@@ -230,8 +230,8 @@ The locked test, once the owner approves, is `ssh explorer 'cd ~/kestrix-linkfil
 
 Run once each (link: features 11301724/11301726, evaluation 11301728; file: features 11301731/11301733, evaluation
 11301745) on the held-out test split, baseline and round-1 rules side by side. Reports:
-[`link-locked-linkfile-v1.json`](../data/linkfile/link-locked-linkfile-v1.json) and
-[`file-locked-linkfile-v1.json`](../data/linkfile/file-locked-linkfile-v1.json). 95% grouped-bootstrap intervals
+[`link-locked-linkfile-v1.json`](../../research/results/linkfile/link-locked-linkfile-v1.json) and
+[`file-locked-linkfile-v1.json`](../../research/results/linkfile/file-locked-linkfile-v1.json). 95% grouped-bootstrap intervals
 (file intervals are message-level: the test has only 7 Govdocs threads).
 
 **Files** (6,877 Govdocs1 files; 180 synthetic malicious-style and 120 synthetic benign-control files):
