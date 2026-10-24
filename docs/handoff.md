@@ -1,6 +1,6 @@
 # Session handoff
 
-Maintained per session: overwrite these sections at the end of every Claude Code session (see `docs/claude/workflow.md`). Detailed history lives in git.
+Maintained per session: overwrite these sections at the end of every Claude Code session (see `.claude/workflow.md`). Detailed history lives in git.
 
 ## Current git SHA
 
@@ -103,3 +103,14 @@ browser sweep 390 page loads with no overflow, console errors or CSP violations.
 
 Gmail / Microsoft 365 read-only connector for the email check (design first: scopes, local vs hosted, Google
 restricted-scope verification for a public hosted app).
+
+## Repository cleanup 2026-10-24
+
+- Deleted: 9 unreferenced `docs/screenshots/*.png`; the shipped redesign folder `docs/design/2026-10-21-redesign/` (only
+  `DESIGN.md` kept, now `docs/design-system.md`); the old CyberGuard starter pack files in `docs/claude/`; the skills
+  `cg-plan-slice`, `cg-connector`, `cg-telemetry-ingest`, `cg-model-training`, `cg-evaluate`, `cg-release-review`;
+  unused landing samples (`file`, `url`, `detect`, `bitcoin`) and dead frontend exports.
+- Moved: `docs/claude/workflow.md` and `skill_validation_cases.md` to `.claude/`;
+  `docs/CyberGuard_Engineering_Plan.md` to `docs/history/cyberguard-engineering-plan.md`.
+- Renamed: remaining `cg-*` skills to `kx-*`. `scripts/check_claude_pack.py` checks the new set.
+- Added: `docs/README.md` (docs index); `bench-results/` and `.gstack/` in `.gitignore`.

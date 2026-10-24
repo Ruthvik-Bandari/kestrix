@@ -51,20 +51,6 @@ def test_email_sample_is_flagged_by_real_findings() -> None:
     assert sample["message"]["from_address"].endswith(".example")
 
 
-def test_detect_sample_schema() -> None:
-    sample = _committed("detect")
-    assert sample["outcome"] in {"repaired", "unchanged", "abstained", "unsupported", "insufficient_evidence"}
-    event_ids = {e["event_id"] for e in sample["events"]}
-    for phase in ("healthy", "before", "after"):
-        counts = sample[phase]["counts"]
-        assert set(counts) >= {"tp", "fp", "fn", "tn"}
-        assert all(isinstance(v, int) for v in counts.values())
-        assert set(sample[phase]["matched"]) <= event_ids
-        assert counts["tp"] + counts["fp"] == len(sample[phase]["matched"])
-    assert sample["diff"].startswith("--- a/")
-    assert sample["patch"]
-
-
 def test_webcheck_sample_schema() -> None:
     sample = _committed("webcheck")
     assert sample["grade"] in {"A", "B", "C", "D", "F"}

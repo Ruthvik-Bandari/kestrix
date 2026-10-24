@@ -241,7 +241,7 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
 
 ### Added
 
-- **Detection repair** (`kestrix detect`), the deterministic B0 baseline from the [engineering plan](docs/CyberGuard_Engineering_Plan.md):
+- **Detection repair** (`kestrix detect`), the deterministic B0 baseline from the [engineering plan](docs/history/cyberguard-engineering-plan.md):
   - parser for a bounded single-event Sigma subset (Windows `process_creation`, exact/`contains`/`startswith`/`endswith`, value lists, `and`/`or`/`not`), with a reason code for every rejection;
   - environment field mappings and conversion with the pySigma Lucene backend;
   - replay on Elasticsearch 8.19.3 pinned by image digest, with a disposable index per run, count verification and full pagination;
