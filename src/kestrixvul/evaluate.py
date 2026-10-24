@@ -47,9 +47,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .round2 import TEST2_SPLITS
 from .train import (
     DATA_SEED,
-    HELD_OUT,
     STUDENT_REPO,
     STUDENT_REVISION,
     TEACHER_REPO,
@@ -74,6 +74,8 @@ from .train import (
 FPR_CAPS = (0.005, 0.01, 0.05)
 KS = (1, 5, 10)
 LOCK_NAME = "LOCKED_EVAL.json"
+LOCK_NAME_TEST2 = "LOCKED_EVAL_TEST2.json"
+C6_HELD_OUT = frozenset({"test", "test_extension"})
 
 
 class EvalError(RuntimeError):
@@ -284,9 +286,9 @@ class LockedClaim:
     path: Path
 
 
-def claim_locked(root: Path, info: dict[str, Any]) -> LockedClaim:
+def claim_locked(root: Path, info: dict[str, Any], lock_name: str = LOCK_NAME) -> LockedClaim:
     """Create ``reports/LOCKED_EVAL.json`` exclusively, or refuse: the held-out splits are evaluated once."""
-    path = root / "reports" / LOCK_NAME
+    path = root / "reports" / lock_name
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -318,10 +320,26 @@ def read_held_out(root: Path, claim: LockedClaim) -> dict[str, list[dict[str, An
     """``test`` and ``test_extension`` examples (all their negatives); needs a claimed lock."""
     if not isinstance(claim, LockedClaim) or not claim.path.is_file():
         raise LockedEvalError("held-out splits are read only under a claimed LOCKED_EVAL.json")
-    records = list(stream_rows(manifest_path(root), HELD_OUT))
-    negatives = list(stream_rows(negatives_path(root), HELD_OUT))
+    records = list(stream_rows(manifest_path(root), C6_HELD_OUT))
+    negatives = list(stream_rows(negatives_path(root), C6_HELD_OUT))
     out = {}
-    for split in sorted(HELD_OUT):
+    for split in sorted(C6_HELD_OUT):
+        recs = [r for r in records if r["split"] == split]
+        if recs:
+            out[split] = examples_from(recs, [n for n in negatives if n["split"] == split], neg_ratio=None)
+    return out
+
+
+def read_test2(root: Path, claim: LockedClaim) -> dict[str, list[dict[str, Any]]]:
+    """Round-2 held-out set test-v2 (``work/test2.jsonl`` with its negatives); needs a claimed lock."""
+    if not isinstance(claim, LockedClaim) or not claim.path.is_file():
+        raise LockedEvalError("test-v2 is read only under a claimed LOCKED_EVAL_TEST2.json")
+    if not (root / "reports" / "TEST2_FROZEN.json").is_file():
+        raise LockedEvalError("test-v2 is not frozen (reports/TEST2_FROZEN.json is missing)")
+    records = list(stream_rows(root / "work" / "test2.jsonl", TEST2_SPLITS))
+    negatives = list(stream_rows(root / "work" / "negatives_test2.jsonl", TEST2_SPLITS))
+    out = {}
+    for split in sorted(TEST2_SPLITS):
         recs = [r for r in records if r["split"] == split]
         if recs:
             out[split] = examples_from(recs, [n for n in negatives if n["split"] == split], neg_ratio=None)
@@ -488,6 +506,21 @@ def teacher_systems(
             System(f"teacher:{run.name}", "probability", scored(model, head, vocab), extra={"best": meta["best"]})
         )
     return out
+
+
+def ensemble_system(systems: list[System], names: list[str], label: str = "ensemble") -> System:
+    """Mean-logit ensemble of the named probability systems (same examples in every split)."""
+    members = [s for s in systems if s.name in names]
+    if len(members) < 2 or len(members) != len(names):
+        raise EvalError(f"an ensemble needs at least two existing systems, got {names}")
+    scored = {
+        split: [
+            Scored(sum(m.scored[split][i].score for m in members) / len(members))
+            for i in range(len(members[0].scored[split]))
+        ]
+        for split in members[0].scored
+    }
+    return System(label, "probability", scored, extra={"members": names, "combination": "mean logit"})
 
 
 def _timed(
@@ -750,14 +783,16 @@ class EvalOptions:
     batch: int = 8
     latency_n: int = 200
     bow_neg_ratio: float = TeacherConfig.neg_ratio
+    ensemble: bool = False
+    ensemble_runs: tuple[str, ...] = ()
 
 
 def evaluate(root: Path, models: Path, opts: EvalOptions) -> Path:
     """Score every system, write the scores (``eval/<name>/``, 0600) and ``reports/vul-eval-<name>.json``."""
-    if opts.split not in {"dev", "test"}:
-        raise EvalError("--split is dev or test")
-    if (opts.split == "test") != opts.locked:
-        raise EvalError("the held-out splits need --split test --locked, and --locked only applies to --split test")
+    if opts.split not in {"dev", "test", "test2"}:
+        raise EvalError("--split is dev, test or test2")
+    if (opts.split != "dev") != opts.locked:
+        raise EvalError("the held-out splits need --locked, and --locked only applies to --split test or test2")
     name = opts.name or f"{opts.split}-{os.environ.get('SLURM_JOB_ID', int(time.time()))}"
     for run in opts.teacher_runs:
         _run_meta(root, run, "teacher")
@@ -774,14 +809,20 @@ def evaluate(root: Path, models: Path, opts: EvalOptions) -> Path:
             "git_sha": git_sha(),
             "manifest_sha256": file_sha256(manifest),
         }
-        claim = claim_locked(root, info)
-        splits |= read_held_out(root, claim)
+        if opts.split == "test2":
+            claim = claim_locked(root, info, LOCK_NAME_TEST2)
+            splits |= read_test2(root, claim)
+        else:
+            claim = claim_locked(root, info)
+            splits |= read_held_out(root, claim)
     started = time.time()
     systems = baseline_systems(root, splits, opts.seed, opts.bow_neg_ratio)
     if opts.zero_shot or opts.teacher_runs:
         systems += teacher_systems(root, models, splits, list(opts.teacher_runs), opts.zero_shot, opts.batch)
     if opts.student_run:
         systems.append(student_system(root, models, splits, opts.student_run, opts.latency_n))
+    if opts.ensemble:
+        systems.append(ensemble_system(systems, [f"teacher:{r}" for r in opts.ensemble_runs or opts.teacher_runs]))
     for s in systems:
         for split, rows in s.scored.items():
             ids = [e["id"] for e in splits[split]]
@@ -819,8 +860,10 @@ def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m kestrixvul.evaluate", description=__doc__.splitlines()[0])
     p.add_argument("--root", type=Path, required=True)
     p.add_argument("--models", type=Path, help="model snapshots (default: <root>/../models)")
-    p.add_argument("--split", choices=("dev", "test"), default="dev")
-    p.add_argument("--locked", action="store_true", help="evaluate test and test_extension, once")
+    p.add_argument("--split", choices=("dev", "test", "test2"), default="dev")
+    p.add_argument("--locked", action="store_true", help="evaluate test and test_extension (or test-v2), once")
+    p.add_argument("--ensemble-run", action="append", default=[], help="ensemble members (default: all teacher runs)")
+    p.add_argument("--ensemble", action="store_true", help="also report the mean-logit ensemble of the teacher runs")
     p.add_argument("--name", default="")
     p.add_argument("--teacher-run", action="append", default=[])
     p.add_argument("--student-run")
@@ -837,9 +880,9 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     root: Path = args.root.resolve()
-    if (args.split == "test") != args.locked:
+    if (args.split != "dev") != args.locked:
         print(
-            "evaluate: the held-out splits need --split test --locked (and --locked needs --split test)",
+            "evaluate: the held-out splits need --split test|test2 --locked (and --locked needs a held-out split)",
             file=sys.stderr,
         )
         return 2
@@ -856,6 +899,8 @@ def main(argv: list[str] | None = None) -> int:
         seed=args.seed,
         batch=args.batch,
         latency_n=args.latency_n,
+        ensemble=args.ensemble,
+        ensemble_runs=tuple(args.ensemble_run),
     )
     os.umask(0o077)
     try:

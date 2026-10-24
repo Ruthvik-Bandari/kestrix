@@ -60,7 +60,7 @@ TEACHER_REVISION = "c03e6d358207e414f1eca0bb1891e29f1db0e242"
 STUDENT_REPO = "microsoft/unixcoder-base"
 STUDENT_REVISION = "5604afdc964f6c53782a6813140ade5216b99006"
 TRAINABLE = frozenset({"train", "dev"})
-HELD_OUT = frozenset({"test", "test_extension"})
+HELD_OUT = frozenset({"test", "test_extension", "test2", "test2_fresh"})
 VIEWS = ("full", "filtered")
 DATA_SEED = "kestrixvul-train-v1"
 ANSWER_PREFIX = '{"vulnerable":'
@@ -277,6 +277,73 @@ def make_batches(lengths: list[int], size: int, rng: random.Random, chunk: int =
     return batches
 
 
+def repo_weights(examples: list[dict[str, Any]], alpha: float) -> list[float]:
+    """Per-example loss weights that damp large repositories: ``n_repo ** -alpha``, scaled to mean 1.
+
+    ``n_repo`` is the number of vulnerable records of the example's repository (at least 1), so a project with
+    100 records contributes ``100 ** (1 - alpha)`` units of loss instead of 100. ``alpha`` 0 gives all ones.
+    """
+    if alpha == 0 or not examples:
+        return [1.0] * len(examples)
+    counts = Counter(e["repo"] for e in examples if e["role"] == "vulnerable")
+    raw = [max(counts.get(e["repo"], 1), 1) ** -alpha for e in examples]
+    mean = sum(raw) / len(raw)
+    return [w / mean for w in raw]
+
+
+def pair_index(examples: list[dict[str, Any]]) -> dict[int, int]:
+    """{index of a vulnerable example: index of its patched counterpart} for records that have both."""
+    by: dict[str, dict[str, int]] = {}
+    for i, e in enumerate(examples):
+        if e["role"] in {"vulnerable", "patched"}:
+            by.setdefault(e["record_id"], {})[e["role"]] = i
+    return {d["vulnerable"]: d["patched"] for d in by.values() if len(d) == 2}
+
+
+def make_unit_batches(
+    lengths: list[int], pairs: dict[int, int], size: int, rng: random.Random, chunk: int = 50
+) -> list[list[int]]:
+    """Like ``make_batches`` but a vulnerable example and its patched version always share a micro-batch.
+
+    Units are a pair (both indices) or a single example; units are shuffled, length-sorted within chunks and packed
+    greedily into batches of at most ``size`` examples (a pair never splits, so ``size`` should be at least 2).
+    """
+    paired = set(pairs.values())
+    units = [[i, pairs[i]] if i in pairs else [i] for i in range(len(lengths)) if i not in paired]
+    rng.shuffle(units)
+    batches: list[list[int]] = []
+    for s in range(0, len(units), size * chunk):
+        block = sorted(units[s : s + size * chunk], key=lambda u: max(lengths[i] for i in u))
+        current: list[int] = []
+        for unit in block:
+            if current and len(current) + len(unit) > size:
+                batches.append(current)
+                current = []
+            current += unit
+        if current:
+            batches.append(current)
+    rng.shuffle(batches)
+    return batches
+
+
+def pairs_in_batch(batch: list[int], pairs: dict[int, int]) -> list[tuple[int, int]]:
+    """(position of the vulnerable example, position of its patched version) for pairs fully inside ``batch``."""
+    pos = {i: j for j, i in enumerate(batch)}
+    return [(pos[v], pos[p]) for v, p in pairs.items() if v in pos and p in pos]
+
+
+def pair_higher(scored: list[dict[str, Any]], examples: list[dict[str, Any]]) -> float | None:
+    """Share of vulnerable/patched pairs whose vulnerable version has the higher logit (ties count half)."""
+    pairs = pair_index(examples)
+    if not pairs:
+        return None
+    total = 0.0
+    for v, p in pairs.items():
+        a, b = scored[v]["logit"], scored[p]["logit"]
+        total += 1.0 if a > b else 0.5 if a == b else 0.0
+    return total / len(pairs)
+
+
 def prompt(example: dict[str, Any], code: str, context_chars: int = 0) -> str:
     lang = example["language"]
     parts = [f"Language: {lang}", f"File: {example['path']}", f"Function: {example['function']}"]
@@ -402,6 +469,8 @@ class TeacherConfig:
     max_steps: int = 0  # >0: smoke runs
     limit: int = 0  # >0: at most this many train examples (smoke)
     dev_limit: int = 0  # >0: at most this many dev examples (smoke)
+    repo_balance: float = 0.0  # round 2: example weight ~ (vulnerable records of its repository) ** -repo_balance
+    pair_weight: float = 0.0  # round 2: weight of the vulnerable-over-patched logistic loss on pairs in a batch
 
 
 TARGET_MODULES = ("q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj")
@@ -588,8 +657,10 @@ def train_teacher(root: Path, snapshot: Path, run: Path, cfg: TeacherConfig) -> 
     per_epoch = math.ceil(math.ceil(len(encoded) / cfg.micro_batch) / cfg.grad_accumulation)
     total = cfg.max_steps or per_epoch * cfg.epochs
     sched = get_cosine_schedule_with_warmup(opt, int(cfg.warmup_ratio * total), total)
-    bce = torch.nn.BCEWithLogitsLoss()
+    bce = torch.nn.BCEWithLogitsLoss(reduction="none")
     ce = torch.nn.CrossEntropyLoss()
+    weights = repo_weights(train_ex, cfg.repo_balance)
+    pairs = pair_index(train_ex) if cfg.pair_weight > 0 else {}
 
     best: dict[str, Any] = {"step": None, "dev_pr_auc": None}
     evals_without_gain = 0
@@ -603,9 +674,10 @@ def train_teacher(root: Path, snapshot: Path, run: Path, cfg: TeacherConfig) -> 
         )
         auc = _dev_pr_auc(scored, dev_ex)
         model.train()
-        log("dev", step=step, dev_pr_auc=auc, n=len(dev_ex), seconds=round(time.time() - t0, 1))
+        pair = pair_higher(scored, dev_ex)
+        log("dev", step=step, dev_pr_auc=auc, dev_pair_higher=pair, n=len(dev_ex), seconds=round(time.time() - t0, 1))
         if best["step"] is None or (auc is not None and (best["dev_pr_auc"] is None or auc > best["dev_pr_auc"])):
-            best.update(step=step, dev_pr_auc=auc)
+            best.update(step=step, dev_pr_auc=auc, dev_pair_higher=pair)
             model.save_pretrained(run / "best")
             torch.save(head.state_dict(), run / "best" / "cwe_head.pt")
             evals_without_gain = 0
@@ -618,11 +690,21 @@ def train_teacher(root: Path, snapshot: Path, run: Path, cfg: TeacherConfig) -> 
     window: list[float] = []
     model.train()
     for epoch in range(cfg.epochs):
-        batches = make_batches([len(i) for i, _ in encoded], cfg.micro_batch, rng)
+        lengths = [len(i) for i, _ in encoded]
+        batches = (
+            make_unit_batches(lengths, pairs, cfg.micro_batch, rng)
+            if pairs
+            else make_batches(lengths, cfg.micro_batch, rng)
+        )
         for bi, batch in enumerate(batches, 1):
             hidden = _hidden(lm, [encoded[i][0] for i in batch], tokenizer.pad_token_id)
             logit = _vuln_logit(lm, hidden, answers)
-            loss = bce(logit, torch.tensor([labels[i] for i in batch], device=device))
+            w = torch.tensor([weights[i] for i in batch], device=device)
+            loss = (w * bce(logit, torch.tensor([labels[i] for i in batch], device=device))).mean()
+            in_batch = pairs_in_batch(batch, pairs) if pairs else []
+            if in_batch:
+                gap = torch.stack([logit[v] - logit[p] for v, p in in_batch])
+                loss = loss + cfg.pair_weight * torch.nn.functional.softplus(-gap).mean()
             pos = [j for j, i in enumerate(batch) if targets[i] >= 0]
             if pos:
                 cwe_logits = head(hidden[pos].float())

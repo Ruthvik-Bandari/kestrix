@@ -1,0 +1,44 @@
+{
+ "selection": "project-disjoint validation split only (never test-v2); seed 1; score = val PR-AUC + val pair_higher (threshold-free share of pairs with the vulnerable version scored higher); job 11328167, 4h14m on one H200",
+ "variants": {
+  "v0_c6_recipe": {
+   "pr_auc": 0.4404,
+   "pair_higher": 0.589,
+   "best_step": 1972
+  },
+  "v1_repo_balance_0.5": {
+   "pr_auc": 0.4423,
+   "pair_higher": 0.5923,
+   "best_step": 1600
+  },
+  "v2_pair_contrast_1.0": {
+   "pr_auc": 0.4249,
+   "pair_higher": 0.7687,
+   "best_step": 2000
+  },
+  "v3_both": {
+   "pr_auc": 0.4239,
+   "pair_higher": 0.7371,
+   "best_step": 1200
+  }
+ },
+ "chosen": "v2_pair_contrast_1.0 (highest PR-AUC + pair_higher: 1.194 vs 1.161, 1.034, 1.029); repo balance gave +0.002 PR-AUC and +0.003 pair (below the 0.01 noise floor) so it was not adopted",
+ "final_runs": {
+  "r2-seed1": {
+   "pr_auc": 0.4247,
+   "pair_higher": 0.7537
+  },
+  "r2-seed2": {
+   "pr_auc": 0.4331,
+   "pair_higher": 0.7579
+  },
+  "r2-seed3": {
+   "pr_auc": 0.4353,
+   "pair_higher": 0.7304
+  },
+  "student": {
+   "pr_auc": 0.402
+  }
+ },
+ "note": "validation PR-AUC uses 5 negatives per vulnerable record, so it is not comparable to the full-prevalence numbers"
+}
