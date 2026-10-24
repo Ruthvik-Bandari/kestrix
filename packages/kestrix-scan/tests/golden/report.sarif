@@ -2714,32 +2714,6 @@
               }
             },
             {
-              "id": "php.deserialize.unserialize",
-              "name": "PhpDeserializeUnserialize",
-              "shortDescription": {
-                "text": "unserialize() of request data"
-              },
-              "fullDescription": {
-                "text": "unserialize() rebuilds PHP objects from text, and an object's magic methods (__wakeup, __destruct, __toString) run on the way. With request data as the input, an attacker can chain the classes the application already loads into file writes, requests or code execution (PHP object injection). Passing ['allowed_classes' => false] is not reported."
-              },
-              "help": {
-                "text": "Exchange data as JSON (json_decode) instead. If unserialize() is unavoidable, pass ['allowed_classes' => false] or a short list of classes, and sign the data (hash_hmac) and check the signature before reading it.",
-                "markdown": "**Why:** unserialize() rebuilds PHP objects from text, and an object's magic methods (__wakeup, __destruct, __toString) run on the way. With request data as the input, an attacker can chain the classes the application already loads into file writes, requests or code execution (PHP object injection). Passing ['allowed_classes' => false] is not reported.\n\n**Fix:** Exchange data as JSON (json_decode) instead. If unserialize() is unavoidable, pass ['allowed_classes' => false] or a short list of classes, and sign the data (hash_hmac) and check the signature before reading it."
-              },
-              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "properties": {
-                "security-severity": "8.0",
-                "precision": "medium",
-                "tags": [
-                  "security",
-                  "CWE-502"
-                ]
-              }
-            },
-            {
               "id": "php.ssrf.request",
               "name": "PhpSsrfRequest",
               "shortDescription": {
@@ -2788,58 +2762,6 @@
                 "tags": [
                   "security",
                   "CWE-22"
-                ]
-              }
-            },
-            {
-              "id": "php.exec.eval",
-              "name": "PhpExecEval",
-              "shortDescription": {
-                "text": "eval(), assert() of a string or create_function() with code built from request data"
-              },
-              "fullDescription": {
-                "text": "eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding appears when a request value reaches the call inside one function; eval of a value that is not a literal is not reported without one (in measurement it fired about 100 times per extra detected pair)."
-              },
-              "help": {
-                "text": "Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition).",
-                "markdown": "**Why:** eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding appears when a request value reaches the call inside one function; eval of a value that is not a literal is not reported without one (in measurement it fired about 100 times per extra detected pair).\n\n**Fix:** Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition)."
-              },
-              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "properties": {
-                "security-severity": "8.0",
-                "precision": "medium",
-                "tags": [
-                  "security",
-                  "CWE-95"
-                ]
-              }
-            },
-            {
-              "id": "php.regex.preg_replace_e",
-              "name": "PhpRegexPregReplaceE",
-              "shortDescription": {
-                "text": "preg_replace() with the /e modifier"
-              },
-              "fullDescription": {
-                "text": "The /e modifier makes preg_replace() evaluate the replacement as PHP code after substitution, so text matched from the subject is run as code. It was deprecated in PHP 5.5 and removed in PHP 7.0, which makes a match a sign of old code that still carries the hole. The finding is medium when the subject and replacement are literals."
-              },
-              "help": {
-                "text": "Use preg_replace_callback() with a closure that builds the replacement, and drop the /e modifier.",
-                "markdown": "**Why:** The /e modifier makes preg_replace() evaluate the replacement as PHP code after substitution, so text matched from the subject is run as code. It was deprecated in PHP 5.5 and removed in PHP 7.0, which makes a match a sign of old code that still carries the hole. The finding is medium when the subject and replacement are literals.\n\n**Fix:** Use preg_replace_callback() with a closure that builds the replacement, and drop the /e modifier."
-              },
-              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "properties": {
-                "security-severity": "8.0",
-                "precision": "high",
-                "tags": [
-                  "security",
-                  "CWE-95"
                 ]
               }
             },

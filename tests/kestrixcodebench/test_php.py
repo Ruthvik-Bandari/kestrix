@@ -92,3 +92,19 @@ def test_psalm_taint_types_map_to_families_and_parse_errors_are_counted() -> Non
 def test_psalm_is_a_scan_tool_and_counts_php_files() -> None:
     assert "psalm" in SCAN_TOOLS
     assert count_files(Path("/nonexistent"), "psalm") == {"b": 0, "a": 0, "u": 0}
+
+
+def test_php_corpus_counts_findings_per_rule(tmp_path: Path) -> None:
+    import json
+
+    from kestrixcodebench.common import Layout
+    from kestrixcodebench.corpus import php_corpus
+
+    tree = tmp_path / "pkg" / "vendor" / "lib"
+    tree.mkdir(parents=True)
+    (tree / "a.php").write_text("<?php\necho $_GET['q'];\n")
+    (tree / "b.sql").write_text("GRANT ALL ON *.* TO a;\n")
+    (tree / "c.py").write_text("x = 1\n")
+    report = json.loads(php_corpus(Layout(tmp_path / "root"), [tmp_path / "pkg"], "t").read_text())
+    assert report["files_scanned"] == {".php": 1, ".sql": 1}
+    assert set(report["rules"]) == {"php.xss.echo", "sql.grant.all"}

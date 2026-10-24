@@ -30,7 +30,7 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
   {
     heading: "PHP and Blade (php.*)",
     prefixes: ["php."],
-    intro: "Run on `.php`, `.phtml` and `.blade.php` files with a bounded tokenizer, not a full parser. Request values (`$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, `php://input`, Laravel and Symfony request objects) are followed inside one function to command, include, SQL, echo, unserialize, request, file, eval and extract sinks; SQL, command and eval sinks also report, at medium severity and low confidence, text built from a non-literal.",
+    intro: "Run on `.php`, `.phtml` and `.blade.php` files with a bounded tokenizer, not a full parser. Request values (`$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, `php://input`, Laravel and Symfony request objects) are followed inside one function to command, include, SQL, echo, request, file and extract sinks; SQL sinks also report, at medium severity and low confidence, text built from a non-literal in the strict sense.",
   },
   {
     heading: "SQL files (sql.*)",

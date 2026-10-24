@@ -23,13 +23,23 @@ from typing import Any
 from kestrix_scan.analyze import scan_text
 from kestrix_scan.walk import MAX_FILE_BYTES, Candidate, Unreadable, read_text
 
-from .common import WEB_EXTENSIONS, Layout, write_json
+from .common import PHP_EXTENSIONS, WEB_EXTENSIONS, Layout, write_json
 
 MAX_FILES = 200_000
 
 
 def web_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
     """Scan every web file under ``roots`` and write ``reports/codebench-webcorpus-LABEL.json``."""
+    return corpus_scan(layout, roots, label, WEB_EXTENSIONS, "webcorpus")
+
+
+def php_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
+    """Scan every PHP, PHTML and SQL file under ``roots`` (third-party libraries, no CVE fix touched them) and write
+    ``reports/codebench-phpcorpus-LABEL.json``: findings per KLOC per rule, an upper bound on false alarms."""
+    return corpus_scan(layout, roots, label, (*PHP_EXTENSIONS, ".sql"), "phpcorpus")
+
+
+def corpus_scan(layout: Layout, roots: list[Path], label: str, extensions: tuple[str, ...], prefix: str) -> Path:
     files: Counter[str] = Counter()
     skipped: Counter[str] = Counter()
     lines: Counter[str] = Counter()
@@ -41,7 +51,7 @@ def web_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
             dirnames.sort()
             for name in sorted(filenames):
                 ext = Path(name).suffix.lower()
-                if ext not in WEB_EXTENSIONS or total >= MAX_FILES:
+                if ext not in extensions or total >= MAX_FILES:
                     continue
                 path = Path(dirpath) / name
                 total += 1
@@ -86,6 +96,6 @@ def web_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
         if total_kloc
         else None,
     }
-    path = layout.reports / f"codebench-webcorpus-{label}.json"
+    path = layout.reports / f"codebench-{prefix}-{label}.json"
     write_json(path, body)
     return path

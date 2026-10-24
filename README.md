@@ -404,7 +404,7 @@ flowchart LR
   end
 
   subgraph scanner["kestrix-scan (zero dependencies)"]
-    rules["115 rules: Python, JS/TS, web files, PHP, SQL,<br/>CI and infrastructure, secrets, agent config"]
+    rules["112 rules: Python, JS/TS, web files, PHP, SQL,<br/>CI and infrastructure, secrets, agent config"]
     taint["Source → sink traces"]
     osv[("Local OSV<br/>vulnerability index")]
   end

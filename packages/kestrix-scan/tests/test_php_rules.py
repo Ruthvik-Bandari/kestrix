@@ -293,22 +293,6 @@ def test_taint_does_not_cross_functions() -> None:
     assert ids("function a() { $x = $_GET['a']; $f = function() use ($x) { echo $x; }; }") == {"php.xss.echo"}
 
 
-# ----- php.deserialize.unserialize
-
-
-def test_unserialize_of_request_values() -> None:
-    assert ids("$o = unserialize($_COOKIE['data']);") == {"php.deserialize.unserialize"}
-    assert ids("$o = unserialize(base64_decode($_POST['d']));") == {"php.deserialize.unserialize"}
-    assert ids("$o = unserialize(file_get_contents('php://input'));") == {"php.deserialize.unserialize"}
-    assert ids("$o = maybe_unserialize($_REQUEST['o']);") == {"php.deserialize.unserialize"}
-
-
-def test_unserialize_negatives() -> None:
-    assert ids("$o = unserialize($_COOKIE['d'], ['allowed_classes' => false]);") == set()
-    assert ids("$o = unserialize($stored);") == set()
-    assert ids("$o = json_decode($_COOKIE['d']);") == set()
-
-
 # ----- php.ssrf.request and php.path.traversal
 
 
@@ -348,38 +332,6 @@ def test_path_traversal_negatives() -> None:
     assert ids("move_uploaded_file($_FILES['f']['tmp_name'], 'up/' . uniqid());") == set()
     assert ids("file_put_contents('/tmp/log', $_GET['x']);") == set()
     assert ids("move_uploaded_file($_FILES['f']['tmp_name'], 'up/' . md5($_FILES['f']['name']));") == set()
-
-
-# ----- php.exec.eval, php.regex.preg_replace_e, php.extract.request
-
-
-def test_eval_assert_and_create_function() -> None:
-    assert ids("eval($_GET['code']);") == {"php.exec.eval"}
-    assert ids("eval('return ' . $_POST['x'] . ';');") == {"php.exec.eval"}
-    assert ids("assert($_GET['a']);") == {"php.exec.eval"}
-    assert ids('assert("is_int($_GET[a])");') == {"php.exec.eval"}
-    assert ids("$f = create_function('$a', $_GET['body']);") == {"php.exec.eval"}
-    assert ids("$f = create_function('$a', 'return $a * 2;');") == set()
-    assert ids("eval('return 1;');") == set()
-    assert ids("assert($a > 0);") == set()
-    assert ids("assert(is_int($x));") == set()
-
-
-def test_eval_of_a_non_literal_is_not_reported_without_request_data() -> None:
-    assert ids("eval($code);") == set()
-    assert ids('assert("is_int($x)");') == set()
-    assert ids("$f = create_function('$a', $body);") == set()
-
-
-def test_preg_replace_e_modifier() -> None:
-    (found,) = hits("$s = preg_replace('/(a)/e', 'strtoupper(\"\\\\1\")', $text);")
-    assert found.rule_id == "php.regex.preg_replace_e"
-    assert ids("$s = preg_replace('#x#ie', $r, $t);") == {"php.regex.preg_replace_e"}
-    assert ids("$s = preg_replace('{x}e', $r, $t);") == {"php.regex.preg_replace_e"}
-    assert ids("$s = preg_replace('/(a)/', 'b', $text);") == set()
-    assert ids("$s = preg_replace('/e/i', 'b', $text);") == set()
-    assert ids("$s = preg_replace_callback('/(a)/', fn($m) => $m[1], $text);") == set()
-    assert ids("$s = preg_replace('/a/ei' . $x, 'b', $text);") == set()
 
 
 def test_extract_of_request_arrays() -> None:
@@ -524,10 +476,8 @@ def test_findings_carry_registry_text_and_cwe() -> None:
         ("php.include.dynamic", "include $_GET['p'];", "CWE-98"),
         ("php.sql.injection", "$db->query('SELECT * FROM t WHERE a=' . $_GET['a']);", "CWE-89"),
         ("php.xss.echo", "echo $_GET['a'];", "CWE-79"),
-        ("php.deserialize.unserialize", "unserialize($_GET['a']);", "CWE-502"),
         ("php.ssrf.request", "curl_init($_GET['a']);", "CWE-918"),
         ("php.path.traversal", "unlink($_GET['a']);", "CWE-22"),
-        ("php.exec.eval", "eval($_GET['a']);", "CWE-95"),
         ("php.extract.request", "extract($_GET);", "CWE-621"),
         ("php.crypto.weak_password_hash", "md5($password);", "CWE-916"),
     ):

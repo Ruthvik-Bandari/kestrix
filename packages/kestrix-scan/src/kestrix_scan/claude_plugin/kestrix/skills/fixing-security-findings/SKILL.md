@@ -2701,28 +2701,6 @@ After:
 echo 'Hello ' . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8');
 ```
 
-### `php.deserialize.unserialize`: unserialize() of request data
-
-CWE-502 · default severity high · confidence medium
-
-**Why:** unserialize() rebuilds PHP objects from text, and an object's magic methods (__wakeup, __destruct, __toString) run on the way. With request data as the input, an attacker can chain the classes the application already loads into file writes, requests or code execution (PHP object injection). Passing ['allowed_classes' => false] is not reported.
-
-**Fix:** Exchange data as JSON (json_decode) instead. If unserialize() is unavoidable, pass ['allowed_classes' => false] or a short list of classes, and sign the data (hash_hmac) and check the signature before reading it.
-
-Before (`prefs.php`):
-
-```php
-<?php
-$prefs = unserialize($_COOKIE['prefs']);
-```
-
-After:
-
-```php
-<?php
-$prefs = json_decode($_COOKIE['prefs'], true);
-```
-
 ### `php.ssrf.request`: Server-side request to a URL built from request data
 
 CWE-918 · default severity high · confidence medium
@@ -2765,51 +2743,6 @@ After:
 ```php
 <?php
 $data = file_get_contents('uploads/' . basename($_GET['file']));
-```
-
-### `php.exec.eval`: eval(), assert() of a string or create_function() with code built from request data
-
-CWE-95 · default severity high · confidence medium
-
-**Why:** eval() runs its argument as PHP code, assert() does the same for a string argument before PHP 8, and create_function() compiles its body (deprecated in PHP 7.2, removed in PHP 8). Request data in the code is arbitrary code execution. The finding appears when a request value reaches the call inside one function; eval of a value that is not a literal is not reported without one (in measurement it fired about 100 times per extra detected pair).
-
-**Fix:** Remove the dynamic code. Look values up in an array or call a function chosen from an allowlist, parse data with json_decode(), and for expressions use a small parser. Replace create_function() with a closure and assert('...') with assert($condition).
-
-Before (`calc.php`):
-
-```php
-<?php
-eval($_POST['expr']);
-```
-
-After:
-
-```php
-<?php
-$ops = ['add' => fn($a, $b) => $a + $b];
-$result = $ops[$_POST['op']]($a, $b);
-```
-
-### `php.regex.preg_replace_e`: preg_replace() with the /e modifier
-
-CWE-95 · default severity high · confidence high
-
-**Why:** The /e modifier makes preg_replace() evaluate the replacement as PHP code after substitution, so text matched from the subject is run as code. It was deprecated in PHP 5.5 and removed in PHP 7.0, which makes a match a sign of old code that still carries the hole. The finding is medium when the subject and replacement are literals.
-
-**Fix:** Use preg_replace_callback() with a closure that builds the replacement, and drop the /e modifier.
-
-Before (`title.php`):
-
-```php
-<?php
-$out = preg_replace('/(\w+)/e', 'ucfirst("$1")', $text);
-```
-
-After:
-
-```php
-<?php
-$out = preg_replace_callback('/(\w+)/', fn($m) => ucfirst($m[1]), $text);
 ```
 
 ### `php.extract.request`: extract() of request data

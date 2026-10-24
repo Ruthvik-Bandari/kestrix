@@ -791,14 +791,6 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
-## `php.deserialize.unserialize`
-
-- CWE: [CWE-502](https://cwe.mitre.org/data/definitions/502.html)
-- Documentation: <https://www.php.net/manual/en/function.unserialize.php>
-- Documentation: <https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection>
-- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html>
-- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
-
 ## `php.ssrf.request`
 
 - CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
@@ -815,21 +807,6 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://www.php.net/manual/en/function.realpath.php>
 - Documentation: <https://www.php.net/manual/en/features.file-upload.php>
 - Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
-- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
-
-## `php.exec.eval`
-
-- CWE: [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
-- Documentation: <https://www.php.net/manual/en/function.eval.php>
-- Documentation: <https://www.php.net/manual/en/function.assert.php>
-- Documentation: <https://www.php.net/manual/en/function.create-function.php>
-- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
-
-## `php.regex.preg_replace_e`
-
-- CWE: [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
-- Documentation: <https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php>
-- Documentation: <https://www.php.net/manual/en/function.preg-replace-callback.php>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
 ## `php.extract.request`

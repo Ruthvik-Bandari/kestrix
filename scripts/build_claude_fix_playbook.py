@@ -319,12 +319,6 @@ PHP_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
         "<?php\necho 'Hello ' . $_GET['name'];\n",
         "<?php\necho 'Hello ' . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8');\n",
     ),
-    "php.deserialize.unserialize": (
-        "prefs.php",
-        "php",
-        "<?php\n$prefs = unserialize($_COOKIE['prefs']);\n",
-        "<?php\n$prefs = json_decode($_COOKIE['prefs'], true);\n",
-    ),
     "php.ssrf.request": (
         "feed.php",
         "php",
@@ -336,18 +330,6 @@ PHP_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
         "php",
         "<?php\n$data = file_get_contents('uploads/' . $_GET['file']);\n",
         "<?php\n$data = file_get_contents('uploads/' . basename($_GET['file']));\n",
-    ),
-    "php.exec.eval": (
-        "calc.php",
-        "php",
-        "<?php\neval($_POST['expr']);\n",
-        "<?php\n$ops = ['add' => fn($a, $b) => $a + $b];\n$result = $ops[$_POST['op']]($a, $b);\n",
-    ),
-    "php.regex.preg_replace_e": (
-        "title.php",
-        "php",
-        "<?php\n$out = preg_replace('/(\\w+)/e', 'ucfirst(\"$1\")', $text);\n",
-        "<?php\n$out = preg_replace_callback('/(\\w+)/', fn($m) => ucfirst($m[1]), $text);\n",
     ),
     "php.extract.request": (
         "form.php",

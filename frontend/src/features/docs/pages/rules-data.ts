@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (115 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (112 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -110,11 +110,8 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["php.include.dynamic", "high", "CWE-98", "include or require of a path built from request data"],
   ["php.sql.injection", "high", "CWE-89", "SQL text built from request data (or by concatenation or interpolation)"],
   ["php.xss.echo", "high", "CWE-79", "echo or print of request data without escaping"],
-  ["php.deserialize.unserialize", "high", "CWE-502", "unserialize() of request data"],
   ["php.ssrf.request", "high", "CWE-918", "Server-side request to a URL built from request data"],
   ["php.path.traversal", "high", "CWE-22", "File path built from request data"],
-  ["php.exec.eval", "high", "CWE-95", "eval(), assert() of a string or create_function() with dynamic code"],
-  ["php.regex.preg_replace_e", "high", "CWE-95", "preg_replace() with the /e modifier"],
   ["php.extract.request", "high", "CWE-621", "extract() of request data"],
   ["php.crypto.weak_password_hash", "medium", "CWE-916", "md5() or sha1() of a password"],
   ["php.blade.unescaped", "medium", "CWE-79", "Blade {!! !!} of a value that is not a literal"],

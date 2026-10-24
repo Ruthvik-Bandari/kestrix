@@ -4,8 +4,10 @@
 
 Every rule matches one precise shape and says less when a value cannot be judged from the text. A request value
 (``$_GET``, ``$_POST``, ``$_REQUEST``, ``$_COOKIE``, ``php://input``, a Laravel or Symfony request object ...) that
-reaches a sink inside one function gives a finding with a trace; SQL, command and ``eval`` sinks also report, at lower
-severity and confidence, an argument built by concatenation or interpolation from a value that is not a literal.
+reaches a sink inside one function gives a finding with a trace; SQL sinks also report, at lower severity and
+confidence, text built by concatenation or interpolation from a value that is not a literal (the strict reading of
+``_built``). ``unserialize``, ``eval``/``assert``/``create_function`` and ``preg_replace`` ``/e`` have no rule: they had no
+detection on the development data, only alerts (docs/benchmarks/cvefixes.md).
 Blade templates (``*.blade.php``) are also checked for ``{!! !!}`` of a value that is not a literal.
 
 Minified files (an average line longer than ``MAX_AVERAGE_LINE`` characters) are skipped as ``minified``; files over the
@@ -21,7 +23,6 @@ from .php_index import (
     CLEAN,
     CLEARS,
     CODE,
-    DESER,
     HTML,
     PATH,
     SHELL,
@@ -113,7 +114,6 @@ _ECHO_FUNCS = frozenset({"printf", "vprintf"})
 _PASSWORD = re.compile(r"(?:^|_)(?:pass|passwd|password|passphrase|pwd|userpass|userpwd)(?:_|$)")
 _CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _URL_START = re.compile(r"^\s*(?:https?:|ftp:|ftps:|//)", re.IGNORECASE)
-_MODIFIER_PAIRS = {"(": ")", "[": "]", "{": "}", "<": ">"}
 _BLADE_COMMENT = re.compile(r"\{\{--.*?--\}\}", re.DOTALL)
 _BLADE_VERBATIM = re.compile(r"@verbatim.*?@endverbatim", re.DOTALL)
 _BLADE_RAW = re.compile(r"\{!!\s*(.*?)\s*!!\}", re.DOTALL)
@@ -302,8 +302,6 @@ class _Checker:
             for span in args:
                 if self._sql_arg(i, f"{word}()", span, keyword=False):
                     break
-        elif word in ("unserialize", "maybe_unserialize"):
-            self._unserialize(i, word, args)
         elif word in _URL_FUNCS:
             self.flow(
                 "php.ssrf.request", i, args[:1], URL, f"{word}()", f"{word}() requests a URL that the request controls."
@@ -319,14 +317,6 @@ class _Checker:
             self.flow(
                 "php.path.traversal", i, spans, PATH, f"{word}()", f"{word}() uses a path built from request data."
             )
-        elif word == "eval":
-            self._eval(i, args)
-        elif word == "assert":
-            self._assert(i, args)
-        elif word == "create_function":
-            self._create_function(i, args)
-        elif word in ("preg_replace", "mb_ereg_replace"):
-            self._preg_e(i, word, args)
         elif word == "extract":
             self._extract(i, args)
         elif word in ("md5", "sha1", "hash"):
@@ -345,8 +335,6 @@ class _Checker:
             self._sql_arg(i, f"->{tok.value}()", args[0], keyword=True)
         elif word in _RAW_METHODS and args:
             self._sql_arg(i, f"->{tok.value}()", args[0], keyword=False, raw=True)
-        elif word == "unserialize":
-            self._unserialize(i, word, args)
 
     def _static(self, i: int, tok: Token, cls: str, word: str, args: list[tuple[int, int]]) -> None:
         if cls.endswith("db") or cls == "capsule":
@@ -408,27 +396,6 @@ class _Checker:
             else:
                 break
 
-    def _unserialize(self, i: int, word: str, args: list[tuple[int, int]]) -> None:
-        if not args:
-            return
-        if len(args) > 1:
-            window = self.toks[args[1][0] : args[1][1]]
-            for k, tok in enumerate(window):
-                if (
-                    tok.value.lower() == "allowed_classes"
-                    and k + 2 < len(window)
-                    and window[k + 2].value.lower() == "false"
-                ):
-                    return
-        self.flow(
-            "php.deserialize.unserialize",
-            i,
-            args[:1],
-            DESER,
-            f"{word}()",
-            f"{word}() rebuilds PHP objects from request data.",
-        )
-
     def _curl_setopt(self, i: int, args: list[tuple[int, int]]) -> None:
         if len(args) >= 3 and self.toks[args[1][0]].value == "CURLOPT_URL" and args[1][1] == args[1][0] + 1:
             self.flow(
@@ -488,44 +455,6 @@ class _Checker:
                 f"{word}()",
                 f"{word}() opens a path built from request data.",
             )
-
-    def _eval(self, i: int, args: list[tuple[int, int]]) -> None:
-        if args:
-            self.flow("php.exec.eval", i, args[:1], CODE, "eval()", "eval() runs PHP code built from request data.")
-
-    def _assert(self, i: int, args: list[tuple[int, int]]) -> None:
-        if args:
-            message = "assert() evaluates a string argument as PHP code (before PHP 8), and this one is built from request data."
-            self.flow("php.exec.eval", i, args[:1], CODE, "assert()", message)
-
-    def _create_function(self, i: int, args: list[tuple[int, int]]) -> None:
-        self.flow(
-            "php.exec.eval",
-            i,
-            args,
-            CODE,
-            "create_function()",
-            "create_function() compiles PHP code built from request data.",
-        )
-
-    def _preg_e(self, i: int, word: str, args: list[tuple[int, int]]) -> None:
-        if not args:
-            return
-        lo, hi = args[0]
-        tok = self.toks[lo]
-        if hi != lo + 1 or tok.kind != STR or not _has_e_modifier(tok.value):
-            return
-        rest = args[1:]
-        tainted = any(best(self.ix.taint(a, b), CODE) for a, b in rest)
-        dynamic = any(not (b == a + 1 and self.toks[a].kind == STR) for a, b in rest)
-        self.hit(
-            "php.regex.preg_replace_e",
-            i,
-            f"{word}() with the /e modifier evaluates the replacement as PHP code (removed in PHP 7)."
-            + (" A subject or replacement is built from request data." if tainted else ""),
-            severity=None if tainted or dynamic else "medium",
-            confidence="high" if tainted else None,
-        )
 
     def _extract(self, i: int, args: list[tuple[int, int]]) -> None:
         if not args:
@@ -658,21 +587,6 @@ class _Checker:
 
 
 _SAFE_CASTS = frozenset({"int", "integer", "float", "double", "real", "bool", "boolean"})
-
-
-def _has_e_modifier(pattern: str) -> bool:
-    text = pattern.lstrip()
-    if len(text) < 3:
-        return False
-    delimiter = text[0]
-    if delimiter.isalnum() or delimiter in "\\ ":
-        return False
-    closing = _MODIFIER_PAIRS.get(delimiter, delimiter)
-    end = text.rfind(closing)
-    if end <= 0:
-        return False
-    modifiers = text[end + 1 :].strip()
-    return modifiers.isalpha() and "e" in modifiers
 
 
 def _password_like(window: list[Token]) -> bool:

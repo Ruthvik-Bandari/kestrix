@@ -243,7 +243,7 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 115 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 112 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, Jinja2 environments without autoescape, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
@@ -257,9 +257,9 @@ web files (12 rules in `vue.*`, `svelte.*`, `web.*`, `html.*`, `css.*` and `next
 `.css`, `.scss` and `next.config.*`: `v-html` and `{@html}` with a non-literal value, `javascript:` links, inline event
 handlers, `target="_blank"` without `noopener`, forms and subresources over `http:`, Angular `[innerHTML]`, remote CSS over
 `http:` and `expression()`, and a `**` image host in `next.config`; mostly low severity, with `<script>` blocks run through the
-`js.*` rules), PHP and Blade (12 `php.*` rules for `.php`, `.phtml` and `.blade.php`: request values from `$_GET`, `$_POST`, `$_REQUEST`,
-`$_COOKIE`, `php://input` and Laravel/Symfony request objects reaching commands, `include`, SQL, `echo`, `unserialize`, URLs and file paths inside one
-function, `eval`/`assert`/`create_function`, `preg_replace` `/e`, `extract($_REQUEST)`, `md5`/`sha1` of passwords and Blade `{!! !!}`), SQL files
+`js.*` rules), PHP and Blade (9 `php.*` rules for `.php`, `.phtml` and `.blade.php`: request values from `$_GET`, `$_POST`, `$_REQUEST`,
+`$_COOKIE`, `php://input` and Laravel/Symfony request objects reaching commands, `include`, SQL, `echo`, URLs and file paths inside one
+function, `extract($_REQUEST)`, `md5`/`sha1` of passwords and Blade `{!! !!}`), SQL files
 (3 `sql.*` rules for `.sql`: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`), CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
 workflows, Dockerfiles, `.sh` and `.bash` scripts, Terraform and Kubernetes manifests: `pull_request_target` checking out the PR head,
 `${{ github.event.* }}` in `run:`, unpinned third-party actions, `permissions: write-all`, running as root, `ADD` of a URL,
