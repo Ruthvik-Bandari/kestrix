@@ -45,6 +45,14 @@ def test_skips_framework_build_dirs_and_keeps_web_files(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("no_git")
+def test_keeps_php_and_sql_files_and_skips_composer_vendor(tmp_path: Path) -> None:
+    kept = ("src/a.php", "views/page.phtml", "resources/views/x.blade.php", "db/schema.sql")
+    for rel in (*kept, "vendor/laravel/framework/src/b.php"):
+        write(tmp_path, rel)
+    assert names(tmp_path) == sorted(kept)
+
+
+@pytest.mark.usefixtures("no_git")
 def test_big_file_is_reported_as_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(walk, "MAX_FILE_BYTES", 10)
     write(tmp_path, "big.py", "x = '" + "a" * 20 + "'\n")

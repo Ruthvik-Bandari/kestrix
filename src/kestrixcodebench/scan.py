@@ -25,10 +25,22 @@ import time
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .common import EXTENSIONS, KINDS, LOCK_NAME, WEB_EXTENSIONS, CodeBenchError, Layout, now, write_json, write_jsonl
-from .families import bandit_families, eslint_families, kestrix_families
+from .common import (
+    EXTENSIONS,
+    KINDS,
+    LOCK_NAME,
+    PHP_EXTENSIONS,
+    WEB_EXTENSIONS,
+    CodeBenchError,
+    Layout,
+    now,
+    write_json,
+    write_jsonl,
+)
+from .families import bandit_families, eslint_families, kestrix_families, psalm_families
 
 TOOLS = ("kestrix", "bandit", "eslint")
+SCAN_TOOLS = (*TOOLS, "psalm")  # psalm runs on the PHP benchmark only, from the Phase 2 root
 TUNING = "tuning"  # round-1 dev plus the round-1 test, which is spent (LOCKED_EVAL.json) and so usable for tuning
 TUNING_PARTS = ("dev", "test")
 
@@ -139,6 +151,21 @@ def reduce_eslint(report: list[dict[str, Any]], cwd: Path) -> tuple[list[Record]
     return out, failed
 
 
+def reduce_psalm(issues: list[dict[str, Any]], rel: str) -> tuple[list[Record], int]:
+    """Taint findings of one file (``rel`` is its path in the shard) and 1 when Psalm could not parse it."""
+    out = []
+    for item in issues:
+        kind = item.get("type", "")
+        if kind == "ParseError":
+            return [], 1
+        if kind.startswith("Tainted"):
+            line = int(item.get("line_from") or 1)
+            rec = record(rel, kind, line, int(item.get("line_to") or line), psalm_families(kind))
+            if rec:
+                out.append(rec)
+    return out, 0
+
+
 def _run(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> float:
     start = time.perf_counter()
     proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
@@ -160,7 +187,8 @@ def count_files(directory: Path, tool: str) -> dict[str, int]:
     wanted = {
         "kestrix": tuple(EXTENSIONS),
         "bandit": (".py",),
-        "eslint": tuple(e for e in EXTENSIONS if e != ".py" and e not in WEB_EXTENSIONS),
+        "psalm": PHP_EXTENSIONS,
+        "eslint": tuple(e for e in EXTENSIONS if e != ".py" and e not in WEB_EXTENSIONS and e not in PHP_EXTENSIONS),
     }[base_tool(tool)]
     return {kind: sum(1 for p in (directory / kind).glob("*") if p.suffix in wanted) for kind in KINDS}
 
@@ -211,7 +239,67 @@ def run_tool(
             found,
             failed,
         )
-    raise CodeBenchError(f"unknown tool {tool!r}; choose from {', '.join(TOOLS)}")
+    if tool == "psalm":
+        return _run_psalm(shard_dir)
+    raise CodeBenchError(f"unknown tool {tool!r}; choose from {', '.join(SCAN_TOOLS)}")
+
+
+PSALM_TIMEOUT_S = 300
+PSALM_CONFIG = """<?xml version="1.0"?>
+<psalm errorLevel="8" findUnusedCode="false" findUnusedBaselineEntry="false" ignoreInternalFunctionFalseReturn="true"
+  phpVersion="8.3" cacheDirectory="{cache}">
+  <projectFiles><directory name="b"/><directory name="a"/><directory name="u"/></projectFiles>
+</psalm>
+"""
+
+
+def _run_psalm(shard_dir: Path) -> tuple[str, float, list[Record], dict[str, int]]:
+    """Psalm 6 taint analysis (MIT), one file at a time so a before-file and its after-file cannot see each other.
+
+    ``KESTRIX_PSALM_HOME`` holds ``env`` (a PHP build, run with its own libraries) and ``psalm`` (``composer require
+    vimeo/psalm``). Files Psalm cannot parse are counted as not parsed."""
+    home = Path(os.environ.get("KESTRIX_PSALM_HOME", f"/scratch/{os.environ.get('USER', '')}/kestrix/php"))
+    php = home / "env" / "bin" / "php"
+    psalm = home / "psalm" / "vendor" / "bin" / "psalm"
+    env = {**os.environ, "LD_LIBRARY_PATH": str(home / "env" / "lib"), "HOME": str(home / "home")}
+    config = shard_dir / ".psalm.xml"
+    config.write_text(PSALM_CONFIG.format(cache=shard_dir / ".psalm-cache"), encoding="utf-8")
+    version = _version([str(php), str(psalm), "--version"]).split("@")[0]
+    found: list[Record] = []
+    failed: dict[str, int] = {}
+    total = 0.0
+    for kind in KINDS:
+        for path in sorted((shard_dir / kind).glob("*")):
+            if path.suffix not in PHP_EXTENSIONS:
+                continue
+            rel = f"{kind}/{path.name}"
+            args = [
+                str(php),
+                "-d",
+                "memory_limit=2G",
+                str(psalm),
+                "--taint-analysis",
+                "--no-progress",
+                "--no-cache",
+                "--output-format=json",
+                f"--config={config}",
+                f"--root={shard_dir}",
+                rel,
+            ]
+            start = time.perf_counter()
+            try:
+                proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
+                    args, cwd=shard_dir, capture_output=True, text=True, timeout=PSALM_TIMEOUT_S, check=False, env=env
+                )
+                issues = json.loads(proc.stdout or "[]")
+            except (subprocess.TimeoutExpired, ValueError):
+                failed[kind] = failed.get(kind, 0) + 1
+                continue
+            total += time.perf_counter() - start
+            records, bad = reduce_psalm(issues, rel)
+            found += records
+            failed[kind] = failed.get(kind, 0) + bad
+    return version, total, found, {k: v for k, v in failed.items() if v}
 
 
 def scan_shard(

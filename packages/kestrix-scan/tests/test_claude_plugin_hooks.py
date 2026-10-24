@@ -722,7 +722,18 @@ def test_bash_source_like_names() -> None:
     spec.loader.exec_module(module)
     for name in ("a.py", "src/app.TSX", "x/.mcp.json", ".env", ".env.local", "deploy.sh", "settings.yaml"):
         assert module.source_like(name), name
-    for name in ("App.vue", "src/Page.svelte", "index.html", "old.htm", "site.css", "theme.SCSS"):
+    for name in (
+        "App.vue",
+        "src/Page.svelte",
+        "index.html",
+        "old.htm",
+        "site.css",
+        "theme.SCSS",
+        "a.php",
+        "t.phtml",
+        "v.blade.php",
+        "x.SQL",
+    ):
         assert module.source_like(name), name
     for name in ("notes.txt", "package-lock.json", "image.png", "Makefile", "uv.lock"):
         assert not module.source_like(name), name

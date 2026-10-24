@@ -295,6 +295,99 @@ WEB_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
 
 # The literal a credential example shows. It is not secret-shaped, so the playbook itself stays clean; the
 # test replaces it with a synthetic token assembled at run time.
+PHP_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
+    "php.exec.command": (
+        "ping.php",
+        "php",
+        "<?php\nsystem('ping -c 1 ' . $_GET['host']);\n",
+        "<?php\nsystem('ping -c 1 ' . escapeshellarg($_GET['host']));\n",
+    ),
+    "php.include.dynamic": (
+        "index.php",
+        "php",
+        "<?php\ninclude $_GET['page'] . '.php';\n",
+        "<?php\n$pages = ['home' => 'home.php', 'about' => 'about.php'];\n$page = $_GET['page'] ?? 'home';\ninclude $pages[$page] ?? $pages['home'];\n",
+    ),
+    "php.sql.injection": (
+        "user.php",
+        "php",
+        "<?php\n$r = mysqli_query($link, \"SELECT * FROM users WHERE id = \" . $_GET['id']);\n",
+        "<?php\n$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');\n$stmt->execute([$_GET['id']]);\n",
+    ),
+    "php.xss.echo": (
+        "hello.php",
+        "php",
+        "<?php\necho 'Hello ' . $_GET['name'];\n",
+        "<?php\necho 'Hello ' . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8');\n",
+    ),
+    "php.deserialize.unserialize": (
+        "prefs.php",
+        "php",
+        "<?php\n$prefs = unserialize($_COOKIE['prefs']);\n",
+        "<?php\n$prefs = json_decode($_COOKIE['prefs'], true);\n",
+    ),
+    "php.ssrf.request": (
+        "feed.php",
+        "php",
+        "<?php\n$ch = curl_init($_GET['url']);\n",
+        "<?php\n$ch = curl_init('https://api.example.com/feed?q=' . urlencode($_GET['q']));\n",
+    ),
+    "php.path.traversal": (
+        "download.php",
+        "php",
+        "<?php\n$data = file_get_contents('uploads/' . $_GET['file']);\n",
+        "<?php\n$data = file_get_contents('uploads/' . basename($_GET['file']));\n",
+    ),
+    "php.exec.eval": (
+        "calc.php",
+        "php",
+        "<?php\neval($_POST['expr']);\n",
+        "<?php\n$ops = ['add' => fn($a, $b) => $a + $b];\n$result = $ops[$_POST['op']]($a, $b);\n",
+    ),
+    "php.regex.preg_replace_e": (
+        "title.php",
+        "php",
+        "<?php\n$out = preg_replace('/(\\w+)/e', 'ucfirst(\"$1\")', $text);\n",
+        "<?php\n$out = preg_replace_callback('/(\\w+)/', fn($m) => ucfirst($m[1]), $text);\n",
+    ),
+    "php.extract.request": (
+        "form.php",
+        "php",
+        "<?php\nextract($_POST);\n",
+        "<?php\n$name = $_POST['name'] ?? '';\n",
+    ),
+    "php.crypto.weak_password_hash": (
+        "register.php",
+        "php",
+        "<?php\n$hash = md5($password);\n",
+        "<?php\n$hash = password_hash($password, PASSWORD_DEFAULT);\n",
+    ),
+    "php.blade.unescaped": (
+        "profile.blade.php",
+        "blade",
+        "<div>{!! $request->input('bio') !!}</div>\n",
+        "<div>{!! e($request->input('bio')) !!}</div>\n",
+    ),
+    "sql.grant.all": (
+        "init.sql",
+        "sql",
+        "GRANT ALL PRIVILEGES ON *.* TO 'app'@'%';\n",
+        "GRANT SELECT, INSERT, UPDATE, DELETE ON shop.* TO 'app'@'%';\n",
+    ),
+    "sql.credentials.plaintext": (
+        "roles.sql",
+        "sql",
+        "CREATE ROLE app LOGIN PASSWORD 'hunter2';\n",
+        "CREATE ROLE app LOGIN PASSWORD :'app_password';\n",
+    ),
+    "sql.function.security_definer_path": (
+        "functions.sql",
+        "sql",
+        "CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;\n",
+        "CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;\n",
+    ),
+}
+
 SECRET_PLACEHOLDER = "<the literal token>"  # noqa: S105 - a placeholder, not a credential
 
 # config rule id -> (file name, before, after), pretty-printed JSON.
@@ -411,7 +504,7 @@ def _js_section(rule: Rule) -> str:
 
 
 def _web_section(rule: Rule) -> str:
-    name, language, before, after = WEB_EXAMPLES[rule.id]
+    name, language, before, after = (WEB_EXAMPLES | PHP_EXAMPLES)[rule.id]
     return "\n".join(
         [
             f"### `{rule.id}`: {rule.title}",
@@ -473,6 +566,10 @@ def _secret_section(rule: Rule) -> str:
 
 
 def render() -> str:
+    php_sql = {rule.id for rule in RULES.values() if rule.language in ("php", "sql")}
+    if set(PHP_EXAMPLES) != php_sql:
+        missing, extra = sorted(php_sql - set(PHP_EXAMPLES)), sorted(set(PHP_EXAMPLES) - php_sql)
+        raise SystemExit(f"php and sql examples out of sync with the registry: missing {missing}, unknown {extra}")
     for language, examples in (
         ("python", set(EXAMPLES)),
         ("config", set(CONFIG_EXAMPLES)),
@@ -531,6 +628,20 @@ def render() -> str:
         "`/* ... */` in CSS, on the line or the line above.\n",
     ]
     parts += [_web_section(rule) for rule in RULES.values() if rule.language == "web"]
+    parts += [
+        "## PHP rules (PHP, PHTML and Blade templates)\n",
+        "These rules read `.php`, `.phtml` and `.blade.php` files. A request value ($_GET, $_POST, $_REQUEST, $_COOKIE, "
+        "php://input, a Laravel or Symfony request object) that reaches a sink inside one function gives a finding "
+        "with a trace. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` (or `#`) "
+        "on the line or the line above, and a Blade comment (double curly braces around `-- kestrix: ignore[<rule-id>] <reason> --`) in Blade.\n",
+    ]
+    parts += [_web_section(rule) for rule in RULES.values() if rule.language == "php"]
+    parts += [
+        "## SQL file rules\n",
+        "These rules read `.sql` files. Suppress a confirmed false positive with "
+        "`-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.\n",
+    ]
+    parts += [_web_section(rule) for rule in RULES.values() if rule.language == "sql"]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

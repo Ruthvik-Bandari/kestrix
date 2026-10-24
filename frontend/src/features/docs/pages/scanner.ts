@@ -27,6 +27,16 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     prefixes: ["vue.", "svelte.", "web.", "html.", "css.", "next."],
     intro: "Run on `.vue`, `.svelte`, `.html`, `.htm`, `.css` and `.scss` files with a bounded tag scanner, and on `next.config.*`. Mostly low severity; a missing Content-Security-Policy is not reported.",
   },
+  {
+    heading: "PHP and Blade (php.*)",
+    prefixes: ["php."],
+    intro: "Run on `.php`, `.phtml` and `.blade.php` files with a bounded tokenizer, not a full parser. Request values (`$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, `php://input`, Laravel and Symfony request objects) are followed inside one function to command, include, SQL, echo, unserialize, request, file, eval and extract sinks; SQL, command and eval sinks also report, at medium severity and low confidence, text built from a non-literal.",
+  },
+  {
+    heading: "SQL files (sql.*)",
+    prefixes: ["sql."],
+    intro: "Run on `.sql` files: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`.",
+  },
   { heading: "Secrets (secret.*)", prefixes: ["secret."], intro: "Run on every text file. Findings show only the kind of secret and its first four characters, never the value." },
   {
     heading: "Claude Code and MCP configuration (config.*)",

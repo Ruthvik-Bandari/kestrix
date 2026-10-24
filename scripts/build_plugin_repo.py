@@ -72,6 +72,8 @@ RULE_FAMILIES = (
     ("py", "Python"),
     ("js", "JS/TS"),
     ("web", "web-file"),
+    ("php", "PHP"),
+    ("sql", "SQL-file"),
     ("secret", "secret"),
     ("dep", "dependency"),
     ("config", "agent-config"),
@@ -79,7 +81,7 @@ RULE_FAMILIES = (
 
 
 def rule_counts() -> tuple[int, str]:
-    """(total, "28 Python, 15 JS/TS, 12 web-file, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
+    """(total, "30 Python, 16 JS/TS, 12 web-file, 12 PHP, 3 SQL-file, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
     counts: dict[str, int] = {}
     for rule in rules():
         family = rule.id.split(".")[0]

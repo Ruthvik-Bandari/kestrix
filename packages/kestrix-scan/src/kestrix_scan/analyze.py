@@ -9,6 +9,7 @@ findings whose fingerprint is in the baseline.
 
 JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
 HTML, Vue, Svelte and Angular templates take ``<!-- kestrix: ignore[...] reason -->``; CSS takes ``/* ... */``.
+PHP files take ``//``, ``#`` and ``/* ... */`` comments (Blade also ``{{-- kestrix: ignore[...] reason --}}``); SQL files take ``-- ...``.
 A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
 
 Suppression: ``# kestrix: ignore[rule-id] reason`` (or ``// kestrix: ignore[...] reason``) on the
@@ -33,10 +34,12 @@ from .agent_config import check_config, config_kind
 from .config import FAIL_ON_CHOICES, Config
 from .errors import Reason, Rejected
 from .js_rules import JS_SUFFIXES, check_js
-from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, count, fingerprint, ordered
+from .models import SEVERITY_RANK, Finding, Note, ScanReport, SkippedFile, SkipReason, count, fingerprint, ordered
+from .php_rules import PHP_SUFFIXES, check_php
 from .python_rules import check_python
 from .registry import RULES, Hit
 from .secrets import check_secrets, redact
+from .sql_rules import SQL_SUFFIXES, check_sql
 from .walk import MAX_FILE_BYTES, Candidate, Unreadable, collect, file_limit, git_executable, is_within, read_text
 from .web_rules import WEB_SUFFIXES, check_web
 
@@ -45,7 +48,7 @@ MAX_BASELINE_BYTES = 10 * 1024 * 1024
 PYTHON_SUFFIXES = frozenset({".py", ".pyw"})
 MISSING_REASON = "kestrix.suppression.missing_reason"
 
-_SUPPRESSION = re.compile(r"(?:#|//|/\*|<!--)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
+_SUPPRESSION = re.compile(r"(?:#|//|/\*|<!--|--)\s*kestrix:\s*ignore\[([^\]\n]*)\]([^\n]*)")
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 _HUNK = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 _GIT_TIMEOUT_S = 30
@@ -146,30 +149,11 @@ def scan_text(
     """
     hits: list[Hit] = []
     skip = None
-    if candidate.path.suffix in PYTHON_SUFFIXES:
-        result = check_python(text, candidate.rel)
-        if isinstance(result, list):
-            hits.extend(result)
-        else:
-            skip = SkippedFile(path=candidate.rel, reason=result)
-    elif candidate.path.suffix in JS_SUFFIXES:
-        result = check_js(text, candidate.rel)
-        if isinstance(result, list):
-            hits.extend(result)
-        else:
-            skip = SkippedFile(path=candidate.rel, reason=result)
-    elif candidate.path.suffix.lower() in WEB_SUFFIXES:
-        result = check_web(text, candidate.rel)
-        if isinstance(result, list):
-            hits.extend(result)
-        else:
-            skip = SkippedFile(path=candidate.rel, reason=result)
-    elif config_kind(candidate.rel) is not None:
-        result = check_config(text, candidate.rel)
-        if isinstance(result, list):
-            hits.extend(result)
-        else:
-            skip = SkippedFile(path=candidate.rel, reason=result)
+    result = _language_hits(text, candidate)
+    if isinstance(result, list):
+        hits.extend(result)
+    elif result is not None:
+        skip = SkippedFile(path=candidate.rel, reason=result)
     dependency_file = deps.is_dependency_file(candidate.rel)
     if not dependency_file or len(text) <= MAX_FILE_BYTES:
         hits.extend(check_secrets(text))
@@ -195,6 +179,25 @@ def scan_text(
             continue
         findings.append(_finding(item, candidate.rel))
     return findings, notes, suppressed, skip
+
+
+def _language_hits(text: str, candidate: Candidate) -> list[Hit] | SkipReason | None:
+    """The code rules for the file's language, a reason it was not analyzed, or None when no language rules apply."""
+    suffix = candidate.path.suffix
+    lowered = suffix.lower()
+    if suffix in PYTHON_SUFFIXES:
+        return check_python(text, candidate.rel)
+    if suffix in JS_SUFFIXES:
+        return check_js(text, candidate.rel)
+    if lowered in WEB_SUFFIXES:
+        return check_web(text, candidate.rel)
+    if lowered in PHP_SUFFIXES:
+        return check_php(text, candidate.rel)
+    if lowered in SQL_SUFFIXES:
+        return check_sql(text, candidate.rel)
+    if config_kind(candidate.rel) is not None:
+        return check_config(text, candidate.rel)
+    return None
 
 
 def _finding(item: Hit, rel: str) -> Finding:
@@ -229,7 +232,7 @@ def _suppressions(text: str, rel: str) -> tuple[dict[int, frozenset[str]], list[
         if match is None:
             continue
         ids = frozenset(part.strip() for part in match.group(1).split(",") if part.strip())
-        reason = match.group(2).strip().removesuffix("-->").removesuffix("*/").strip()
+        reason = match.group(2).strip().removesuffix("-->").removesuffix("*/").removesuffix("--}}").strip()
         if any(char.isalnum() for char in reason):
             by_line[number] = ids
         else:

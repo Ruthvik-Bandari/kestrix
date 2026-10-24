@@ -210,6 +210,19 @@ def test_hook_scans_web_files(tmp_path: Path) -> None:
         assert context is not None and rule in context, name
 
 
+def test_hook_scans_php_and_sql_files(tmp_path: Path) -> None:
+    for name, text, rule in (
+        ("page.php", "<?php\necho $_GET['q'];\n", "php.xss.echo"),
+        ("view.blade.php", "<p>{!! $request->input('q') !!}</p>\n", "php.blade.unescaped"),
+        ("init.sql", "GRANT ALL PRIVILEGES ON *.* TO 'app'@'%';\n", "sql.grant.all"),
+    ):
+        target = tmp_path / name
+        target.write_text(text)
+        payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}, "cwd": str(tmp_path)}
+        context = _context({**payload, "tool_response": {"type": "create"}})
+        assert context is not None and rule in context, name
+
+
 def test_hook_context_leaves_out_low_severity_web_findings(tmp_path: Path) -> None:
     target = tmp_path / "site.css"
     target.write_text("@import url(http://example.com/a.css);\n")

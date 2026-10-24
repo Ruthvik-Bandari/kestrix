@@ -199,6 +199,8 @@ def test_secure_code_review_covers_every_rule() -> None:
     assert js_ids <= set(re.findall(r"`(js\.[a-z_.]+)`", text))
     web_ids = {rule.id for rule in RULES.values() if rule.language == "web"}
     assert web_ids <= set(re.findall(r"`((?:vue|svelte|html|css|web|next)\.[a-z_.]+)`", text))
+    php_ids = {rule.id for rule in RULES.values() if rule.language in ("php", "sql")}
+    assert php_ids <= set(re.findall(r"`((?:php|sql)\.[a-z_.]+)`", text))
     assert "`secret.*`" in text
     assert "fixing-security-findings" in text
 
@@ -309,6 +311,27 @@ def test_fix_playbook_web_examples_fire_before_and_not_after(
     assert before_skip is None and after_skip is None
     assert rule_id in {finding.rule_id for finding in before_findings}
     assert after_findings == []
+
+
+@pytest.mark.parametrize("rule_id", [rule.id for rule in RULES.values() if rule.language in ("php", "sql")])
+def test_fix_playbook_php_and_sql_examples_fire_before_and_not_after(
+    generator: ModuleType, rule_id: str, tmp_path: Path
+) -> None:
+    name, _, before, after = generator.PHP_EXAMPLES[rule_id]
+    candidate = Candidate(path=tmp_path / name, rel=name)
+    before_findings, _, _, before_skip = scan_text(before, candidate)
+    after_findings, _, _, after_skip = scan_text(after, candidate)
+    assert before_skip is None and after_skip is None
+    assert rule_id in {finding.rule_id for finding in before_findings}
+    assert after_findings == []
+
+
+def test_fix_playbook_refuses_a_php_rule_without_an_example(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delitem(generator.PHP_EXAMPLES, "php.xss.echo")
+    with pytest.raises(SystemExit, match=r"missing \['php.xss.echo'\]"):
+        generator.render()
 
 
 def test_fix_playbook_refuses_a_web_rule_without_an_example(

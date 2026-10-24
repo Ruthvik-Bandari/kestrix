@@ -37,9 +37,14 @@ EXTENSIONS = {
     ".htm": "web",
     ".css": "web",
     ".scss": "web",
+    # PHP (kestrix-scan Phase 2): built in its own root from a CVEfixes PHP working database (`php-dump`)
+    ".php": "php",
+    ".phtml": "php",
 }
 WEB_LANGUAGE = "web"
 WEB_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language == WEB_LANGUAGE)
+PHP_LANGUAGE = "php"
+PHP_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language == PHP_LANGUAGE)
 
 
 class CodeBenchError(RuntimeError):

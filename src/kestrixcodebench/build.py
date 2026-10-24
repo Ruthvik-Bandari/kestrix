@@ -25,6 +25,7 @@ from kestrixvul.split import UnionFind
 from .common import (
     EXTENSIONS,
     KINDS,
+    PHP_LANGUAGE,
     SEED,
     SHARDS,
     SPLITS,
@@ -71,7 +72,11 @@ def size_reason(text: str, *, minimum: bool) -> str | None:
 
 def _language_ok(path: str, only: str | None) -> bool:
     found = language_of(path)
-    return found is not None and (only is None or found[0] == only)
+    if found is None:
+        return False
+    if only is None:  # PHP has a root of its own (a different working database), so the default build leaves it out
+        return found[0] != PHP_LANGUAGE
+    return found[0] == only
 
 
 def pair_reason(pair: RawPair, only: str | None = None) -> str | None:

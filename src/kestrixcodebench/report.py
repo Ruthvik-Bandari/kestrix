@@ -38,12 +38,13 @@ VARIANT_DROPS = frozenset({"security/detect-object-injection"})
 
 # Which language subsets a tool is run on (a baseline is scored only where it applies).
 TOOL_SUBSETS: dict[str, tuple[str, ...]] = {
-    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web"),
+    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web", "php"),
     "bandit": ("python",),
+    "psalm": ("php",),
     "eslint": ("javascript", "typescript", "js_ts"),
     VARIANT: ("javascript", "typescript", "js_ts"),
 }
-OVERLAPS = (("kestrix", "bandit", "python"), ("kestrix", "eslint", "js_ts"))
+OVERLAPS = (("kestrix", "bandit", "python"), ("kestrix", "eslint", "js_ts"), ("kestrix", "psalm", "php"))
 DEV_REPORT = "codebench-dev-{label}.json"
 LOCKED_REPORT = "codebench-locked-{name}.json"
 
@@ -97,7 +98,9 @@ def evaluate_report(
             wanted = TOOL_SUBSETS[base_tool(name)]
             subsets = {sub: metrics_for(frame, ev, SUBSETS[sub]) for sub in wanted}
             errors = {sub: error_analysis(frame, ev, SUBSETS[sub]) for sub in wanted if sub != "js_ts"}
-            families = {sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in ("python", "js_ts") if sub in wanted}
+            families = {
+                sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in ("python", "js_ts", "php") if sub in wanted
+            }
             tools[name] = {
                 **tool_summary(reports),
                 "run": run,

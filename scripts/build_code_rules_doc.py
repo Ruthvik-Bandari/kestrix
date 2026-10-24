@@ -33,6 +33,8 @@ def rules_table() -> str:
             "python": "Python",
             "javascript": "JavaScript, TypeScript",
             "web": "HTML, Vue, Svelte, CSS, next.config",
+            "php": "PHP, Blade",
+            "sql": "SQL files",
             "config": "Claude Code and MCP config",
             "dependency": "lockfiles",
         }.get(rule.language, "any text file")

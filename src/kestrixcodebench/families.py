@@ -26,6 +26,7 @@ EXTRA_CWE_FAMILY: dict[int, str] = {
     352: "csrf",
     208: "timing",
     942: "cors",
+    98: "fileinclusion",  # PHP include/require of a request-chosen path (added with the PHP benchmark)
 }
 FAMILY_OF_CWE: dict[int, str] = CWE_CATEGORY | EXTRA_CWE_FAMILY
 
@@ -55,6 +56,7 @@ FAMILY_NAMES: dict[str, str] = {
     "csrf": "Cross-site request forgery",
     "timing": "Timing side channel",
     "cors": "Permissive CORS",
+    "fileinclusion": "File inclusion",
 }
 
 # eslint-plugin-security rule -> CWE of the weakness the rule documents. Rules with no entry map to no family.
@@ -105,6 +107,28 @@ def bandit_families(test_id: str, cwe: int | None) -> frozenset[str]:
     if test_id in BANDIT_OVERRIDES:
         family = BANDIT_OVERRIDES[test_id]
         return frozenset({family}) if family else frozenset()
+    return families_for_cwes([cwe] if cwe else [])
+
+
+# Psalm taint analysis issue type -> CWE of the weakness it reports (the weakness each type's documentation names).
+PSALM_TAINT_CWE: dict[str, int] = {
+    "TaintedSql": 89,
+    "TaintedHtml": 79,
+    "TaintedTextWithQuotes": 79,
+    "TaintedShell": 78,
+    "TaintedInclude": 98,
+    "TaintedFile": 22,
+    "TaintedSSRF": 918,
+    "TaintedUnserialize": 502,
+    "TaintedEval": 95,
+    "TaintedCallable": 94,
+    "TaintedLdap": 90,
+    "TaintedXpath": 643,
+}
+
+
+def psalm_families(issue_type: str) -> frozenset[str]:
+    cwe = PSALM_TAINT_CWE.get(issue_type)
     return families_for_cwes([cwe] if cwe else [])
 
 

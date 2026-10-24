@@ -587,3 +587,124 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://nextjs.org/docs/app/api-reference/components/image#remotepatterns>
 - Documentation: <https://nextjs.org/docs/app/api-reference/components/image#domains>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.exec.command`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://www.php.net/manual/en/function.escapeshellarg.php>
+- Documentation: <https://www.php.net/manual/en/function.proc-open.php>
+- Documentation: <https://www.php.net/manual/en/function.system.php>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.include.dynamic`
+
+- CWE: [CWE-98](https://cwe.mitre.org/data/definitions/98.html)
+- Documentation: <https://www.php.net/manual/en/function.include.php>
+- Documentation: <https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-include>
+- Documentation: <https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.sql.injection`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://www.php.net/manual/en/security.database.sql-injection.php>
+- Documentation: <https://www.php.net/manual/en/mysqli.quickstart.prepared-statements.php>
+- Documentation: <https://developer.wordpress.org/reference/classes/wpdb/prepare/>
+- Documentation: <https://laravel.com/docs/queries#raw-methods>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.xss.echo`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://www.php.net/manual/en/function.htmlspecialchars.php>
+- Documentation: <https://developer.wordpress.org/apis/security/escaping/>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.deserialize.unserialize`
+
+- CWE: [CWE-502](https://cwe.mitre.org/data/definitions/502.html)
+- Documentation: <https://www.php.net/manual/en/function.unserialize.php>
+- Documentation: <https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.ssrf.request`
+
+- CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
+- Documentation: <https://www.php.net/manual/en/function.curl-setopt.php>
+- Documentation: <https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen>
+- Documentation: <https://developer.wordpress.org/reference/functions/wp_safe_remote_get/>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.path.traversal`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://www.php.net/manual/en/function.basename.php>
+- Documentation: <https://www.php.net/manual/en/function.realpath.php>
+- Documentation: <https://www.php.net/manual/en/features.file-upload.php>
+- Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.exec.eval`
+
+- CWE: [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
+- Documentation: <https://www.php.net/manual/en/function.eval.php>
+- Documentation: <https://www.php.net/manual/en/function.assert.php>
+- Documentation: <https://www.php.net/manual/en/function.create-function.php>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.regex.preg_replace_e`
+
+- CWE: [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
+- Documentation: <https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php>
+- Documentation: <https://www.php.net/manual/en/function.preg-replace-callback.php>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.extract.request`
+
+- CWE: [CWE-621](https://cwe.mitre.org/data/definitions/621.html)
+- Documentation: <https://www.php.net/manual/en/function.extract.php>
+- Documentation: <https://www.php.net/manual/en/security.globals.php>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.crypto.weak_password_hash`
+
+- CWE: [CWE-916](https://cwe.mitre.org/data/definitions/916.html)
+- Documentation: <https://www.php.net/manual/en/function.password-hash.php>
+- Documentation: <https://www.php.net/manual/en/faq.passwords.php>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `php.blade.unescaped`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://laravel.com/docs/blade#displaying-unescaped-data>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sql.grant.all`
+
+- CWE: [CWE-250](https://cwe.mitre.org/data/definitions/250.html)
+- Documentation: <https://dev.mysql.com/doc/refman/8.4/en/grant.html>
+- Documentation: <https://www.postgresql.org/docs/current/sql-grant.html>
+- Documentation: <https://dev.mysql.com/doc/refman/8.4/en/privileges-provided.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sql.credentials.plaintext`
+
+- CWE: [CWE-798](https://cwe.mitre.org/data/definitions/798.html)
+- Documentation: <https://dev.mysql.com/doc/refman/8.4/en/create-user.html>
+- Documentation: <https://www.postgresql.org/docs/current/sql-createrole.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `sql.function.security_definer_path`
+
+- CWE: [CWE-427](https://cwe.mitre.org/data/definitions/427.html)
+- Documentation: <https://www.postgresql.org/docs/current/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY>
+- Documentation: <https://wiki.postgresql.org/wiki/A_Guide_to_CVE-2018-1058:_Protect_Your_Search_Path>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """``python -m kestrixcodebench COMMAND --root DIR``: kestrix-scan accuracy on CVE-fix file pairs (offline).
 
-``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
+``php-dump`` streams the PHP files of the CVEfixes archive into a working database; ``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
 into dev and a locked test and writes the files. ``scan`` runs one tool on dev shards (a Slurm array task);
 ``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus`` scans directory trees of web files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
 ``table`` prints Markdown tables from a report; ``locked-test`` claims the lock and evaluates the test split once.
@@ -20,6 +20,7 @@ from pathlib import Path
 from .common import SHARDS, CodeBenchError, Layout
 
 COMMANDS = (
+    "php-dump",
     "build",
     "scan",
     "dev-metrics",
@@ -37,6 +38,10 @@ COMMANDS = (
 )
 
 
+def _tools(value: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(part for part in value.split(",") if part) if value else default
+
+
 def _runs(items: list[str] | None, default: str, tools: tuple[str, ...]) -> dict[str, str]:
     runs = dict.fromkeys(tools, default)
     for item in items or []:
@@ -51,13 +56,16 @@ def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="kestrixcodebench", description=__doc__)
     p.add_argument("command", choices=COMMANDS)
     p.add_argument("--root", type=Path, help="benchmark root, for example /scratch/$USER/kestrix/codebench")
+    p.add_argument("--cvefixes-zip", type=Path, help="php-dump: the CVEfixes_v1.0.8.zip archive")
+    p.add_argument("--out", type=Path, help="php-dump: the working database to write")
     p.add_argument("--cvefixes-db", type=Path, help="build: kestrixvul's work/cvefixes.sqlite")
     p.add_argument("--vul-root", type=Path, help="build: kestrixvul's root (work/ghsa.jsonl, mine/)")
     p.add_argument("--limit", type=int, help="build: at most this many changed files per source (smoke runs)")
     p.add_argument(
-        "--only-language", choices=("python", "javascript", "typescript", "web"), help="build: keep one language"
+        "--only-language", choices=("python", "javascript", "typescript", "web", "php"), help="build: keep one language"
     )
     p.add_argument("--corpus-dir", type=Path, action="append", help="web-corpus: a directory tree to scan (repeat)")
+    p.add_argument("--tools", help="dev-metrics, locked-test: comma-separated tools (default kestrix,bandit,eslint)")
     p.add_argument("--tool", help="scan: kestrix, bandit or eslint; examples: the tool to analyse")
     p.add_argument("--shard", type=int, help="scan: shard number, or omit to scan every shard in turn")
     p.add_argument("--run", default="base", help="scan: run name for the output; dev-metrics: default run per tool")
@@ -160,6 +168,12 @@ def _run(args: argparse.Namespace) -> int:
         _need(args.report, "--report")
         sys.stdout.write(markdown(json.loads(args.report.read_text(encoding="utf-8"))))
         return 0
+    if args.command == "php-dump":
+        from .phpsource import load_php
+
+        _need(args.cvefixes_zip and args.out, "--cvefixes-zip and --out")
+        print(json.dumps(load_php(args.cvefixes_zip, args.out), sort_keys=True))
+        return 0
     _need(args.root, "--root")
     layout = Layout(args.root)
     if args.command == "build":
@@ -177,10 +191,10 @@ def _run(args: argparse.Namespace) -> int:
         )
         return 0
     if args.command == "scan":
-        from .scan import TOOLS, base_tool, scan_shard
+        from .scan import SCAN_TOOLS, base_tool, scan_shard
 
-        if base_tool(args.tool) not in TOOLS:
-            raise SystemExit(f"scan needs --tool from {', '.join(TOOLS)}")
+        if base_tool(args.tool) not in SCAN_TOOLS:
+            raise SystemExit(f"scan needs --tool from {', '.join(SCAN_TOOLS)}")
         trees = _trees(args.kestrix_tree)
         tree = trees.get(args.tool.partition("@")[2]) if "@" in args.tool else None
         for shard in [args.shard] if args.shard is not None else range(SHARDS):
@@ -190,7 +204,7 @@ def _run(args: argparse.Namespace) -> int:
         from .report import dev_report
         from .scan import TOOLS
 
-        tools = ("kestrix",) if args.split == "tuning" else TOOLS  # the baselines were scanned on dev only
+        tools = ("kestrix",) if args.split == "tuning" else _tools(args.tools, TOOLS)  # baselines: dev only
         runs = _runs(args.tool_run, args.run, tools)
         print(dev_report(layout, runs, args.label, reps=args.bootstrap, split=args.split))
         return 0
@@ -227,7 +241,11 @@ def _run(args: argparse.Namespace) -> int:
     from .report import locked_test
     from .scan import TOOLS
 
-    print(locked_test(layout, args.name, _runs(args.tool_run, args.run, TOOLS), code_sha, reps=args.bootstrap))
+    print(
+        locked_test(
+            layout, args.name, _runs(args.tool_run, args.run, _tools(args.tools, TOOLS)), code_sha, reps=args.bootstrap
+        )
+    )
     return 0
 
 
