@@ -67,7 +67,7 @@ def test_bootstrap_resamples_roots_and_summary_keeps_failures_in_denominator():
 def test_b0_runs_generated_cases_and_skips_locked_test(tmp_path):
     from kestrixbench.evaluate import SYSTEMS
     from kestrixbench.variants import build
-    from tests.bench.test_variants import make_root, split_manifest
+    from tests.kestrixbench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path)
     es = Elasticsearch(ES_URL)

@@ -70,7 +70,7 @@ def test_model_candidate_goes_through_screening_and_validation(tmp_path):
     from kestrix.detect.workflow import run
     from kestrixbench.evaluate import load_case, score
     from kestrixbench.variants import build
-    from tests.bench.test_variants import make_root, split_manifest
+    from tests.kestrixbench.test_variants import make_root, split_manifest
 
     def oracle(prompt: str) -> str:  # stands in for the GPU model
         return json.dumps(

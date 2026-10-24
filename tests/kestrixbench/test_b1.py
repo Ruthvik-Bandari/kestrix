@@ -29,7 +29,7 @@ def test_edit_signature(before, after, signature):
 
 def _cases(tmp_path, split):
     from kestrixbench.variants import build
-    from tests.bench.test_variants import make_root, split_manifest
+    from tests.kestrixbench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path / split)
     manifest = split_manifest()

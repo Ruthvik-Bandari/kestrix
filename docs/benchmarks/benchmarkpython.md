@@ -476,7 +476,7 @@ ones.
 
 The [`bench.yml`](../../.github/workflows/bench.yml) workflow runs the harness weekly and on demand, and uploads the
 scored results as an artifact. It is not a pull-request check. The scoring code is unit-tested in
-[`tests/codebench/test_scoring.py`](../../tests/codebench/test_scoring.py) against a small synthetic
+[`tests/kestrixscanbench/test_scoring.py`](../../tests/kestrixscanbench/test_scoring.py) against a small synthetic
 expected-results file.
 
 Each run records the date, the machine, the Kestrix commit (and whether the scanner had uncommitted changes), the

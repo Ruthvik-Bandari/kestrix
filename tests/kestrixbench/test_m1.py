@@ -71,7 +71,7 @@ def test_encode_masks_the_prompt_and_truncates_from_the_left():
 def test_sft_examples_are_valid_and_value_free(tmp_path):
     from kestrixbench.b2 import parse
     from kestrixbench.variants import build as build_variants
-    from tests.bench.test_variants import make_root, split_manifest
+    from tests.kestrixbench.test_variants import make_root, split_manifest
 
     data = make_root(tmp_path)
     manifest = split_manifest()
