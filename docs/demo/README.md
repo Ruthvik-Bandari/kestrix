@@ -2,7 +2,7 @@
 
 A scripted demo of the `kestrix` Claude Code plugin: a tiny project with planted security problems, the exact
 prompts to give Claude, and the hook output each step produces. How to record it is in
-[`scripts/record_demo.md`](../../scripts/record_demo.md).
+[`docs/demo/record.md`](record.md).
 
 ## What is here
 

@@ -121,7 +121,7 @@ jobs:
       # Blocking: the committed code has no findings, so any new one is a regression to fix or to suppress
       # with a written reason (an unreviewed suppression comment suppresses nothing).
       - name: kestrix-scan on Kestrix's own code
-        run: uv run kestrix-scan src frontend/src scripts packages --fail-on low
+        run: uv run kestrix-scan src frontend/src scripts research/scripts packages --fail-on low
       # Blocking: these are the packages the container image ships. A new advisory can fail an unrelated
       # pull request; the fix is a lockfile bump (`uv lock --upgrade-package <name>`) or, with no fix
       # upstream, an --ignore-vuln entry here with the reason beside it.

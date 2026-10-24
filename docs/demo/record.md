@@ -1,7 +1,7 @@
 # Recording the plugin demo
 
 How to capture the screenshots and the recording for the plugin's directory listing and README. The demo itself
-is [`docs/demo/`](../docs/demo/README.md). Record on a machine with no real credentials in the shell history or
+is [`docs/demo/`](README.md). Record on a machine with no real credentials in the shell history or
 the terminal scrollback, and in a fresh directory, so nothing private appears on screen.
 
 ## 1. Prepare a clean environment
@@ -34,7 +34,7 @@ Use [asciinema](https://docs.asciinema.org/) for a text recording (small, copyab
 asciinema rec kestrix-demo.cast --idle-time-limit 2 --command claude
 ```
 
-Inside the session, give the prompts of [`docs/demo/prompts.md`](../docs/demo/prompts.md) in order: steps 1, 2 and 4.
+Inside the session, give the prompts of [`docs/demo/prompts.md`](prompts.md) in order: steps 1, 2 and 4.
 Press Ctrl+O after step 2 to show the hook context in the transcript. Exit with `/exit`.
 
 For a video instead, use the macOS screen recorder (Shift-Command-5, **Record Selected Portion**) on the terminal

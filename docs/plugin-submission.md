@@ -129,7 +129,7 @@ rule is broken, and `test_the_checklist_audit_passes_and_catches_each_problem` p
 | Non-image files < 256 KiB | Pass | largest is `skills/fixing-security-findings/SKILL.md`, 43.6 KB; build audit |
 | ≤ 512 files | Pass | 112; build audit |
 | Text files only (no binaries) | Pass | build audit decodes every file as UTF-8 |
-| Bundled images only through Markdown image syntax | n/a | no images yet; `scripts/record_demo.md` says how to add them |
+| Bundled images only through Markdown image syntax | n/a | no images yet; `docs/demo/record.md` says how to add them |
 | MCP servers declared with `command`/`url`, no bundles | n/a | no MCP servers |
 | Launchers pinned; `uv run` with `--locked` | Pass (none used) | build audit greps the hook script for `npx`, `bunx`, `uvx`, `pnpm dlx`, `yarn dlx`, `pipx run`, `uv run`, `pip install`, `npm install` |
 | No package-source config files (`.npmrc`, `uv.toml`, ...) | Pass | build audit |
@@ -204,7 +204,7 @@ the PyPI project's source links return 404 to others.
      --title "Kestrix plugin 0.1.0" --notes-file CHANGELOG.md
    ```
 
-   Attach the demo recording to the release, not the repository (see `scripts/record_demo.md`).
+   Attach the demo recording to the release, not the repository (see `docs/demo/record.md`).
 5. **Make the repository public, after `kestrix-scan` is on PyPI:**
 
    ```bash
@@ -221,7 +221,7 @@ the PyPI project's source links return 404 to others.
    PATH="$PWD/../../.venv/bin:$PATH" claude plugin eval . --allow-tools Write Edit --threshold 0.75 --no-publish
    ```
 
-7. **Capture the screenshots and recording** with [scripts/record_demo.md](../scripts/record_demo.md).
+7. **Capture the screenshots and recording** with [docs/demo/record.md](demo/record.md).
 8. **Submit at <https://claude.ai/directory/manage>** (Pro, Max, Team or Enterprise plan; Free cannot submit). Connect
    GitHub for the claude.ai organization that should own the listing, then **Submit new → Plugin bundle**, enter
    the repository, **Validate**, fix any **Blocking** finding and **Re-validate**, then fill the steps with the

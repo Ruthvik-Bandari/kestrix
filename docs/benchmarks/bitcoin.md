@@ -32,9 +32,9 @@ Every official vector is copied verbatim; none was written for this evaluation.
 
 | Source | Licence | Where |
 | --- | --- | --- |
-| Bitcoin Core `src/test/data/base58_encode_decode.json`, `key_io_valid.json`, `key_io_invalid.json` (https://github.com/bitcoin/bitcoin/tree/master/src/test/data) | MIT | `scripts/bitcoin_vectors/` |
+| Bitcoin Core `src/test/data/base58_encode_decode.json`, `key_io_valid.json`, `key_io_invalid.json` (https://github.com/bitcoin/bitcoin/tree/master/src/test/data) | MIT | `tests/fixtures/bitcoin_vectors/` |
 | BIP-173 Bech32 and BIP-350 Bech32m test vectors (https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki, `bip-0350.mediawiki`) | BSD-2-Clause | `scripts/bitcoin_bip_vectors.py` |
-| BIP-341 `wallet-test-vectors.json`, `scriptPubKey` section (https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json) | BSD-3-Clause | `scripts/bitcoin_vectors/bip341_scriptpubkey.json` |
+| BIP-341 `wallet-test-vectors.json`, `scriptPubKey` section (https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json) | BSD-3-Clause | `tests/fixtures/bitcoin_vectors/bip341_scriptpubkey.json` |
 
 BIP-13 (https://github.com/bitcoin/bips/blob/master/bip-0013.mediawiki) defines version bytes 5 and 196 and the leading characters `3` and `2`, and publishes no test vectors, so those 100 cases are generated. Bitcoin Core's `key_io_valid.json` covers real P2SH addresses.
 

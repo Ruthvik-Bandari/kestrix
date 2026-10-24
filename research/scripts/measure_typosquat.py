@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Measure the typosquat detector (``kestrix_scan.popular``) offline; prints the numbers docs/modules/code.md quotes.
 
-Run from the repo root: ``python3 scripts/measure_typosquat.py --tail-dir DIR [--simple-index FILE]``.
+Run from the repo root: ``python3 research/scripts/measure_typosquat.py --tail-dir DIR [--simple-index FILE]``.
 
 - ``--tail-dir``: the ``tail-<ecosystem>.txt`` files that ``scripts/refresh_popular_names.py --tail-dir`` writes
   (ranks 5,001 to 10,000: real, established packages the detector should leave alone).
@@ -25,7 +25,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "kestrix-scan" / "src"))
 
 from kestrix_scan import osvdb, popular  # noqa: E402

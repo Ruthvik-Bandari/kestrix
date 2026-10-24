@@ -443,7 +443,7 @@ graded by `kestrix-scan` and regex checks): design, metrics and a results page t
 
 ## Latency
 
-`scripts/bench_hook.py` measures the hooks on generated Python files and an `Edit` that adds one
+`research/scripts/bench_hook.py` measures the hooks on generated Python files and an `Edit` that adds one
 `os.system` call. Each row is 30 runs; times are in milliseconds, p50 / p95.
 
 Measured 2026-10-19 on an Apple M4 Pro (12 logical CPUs), macOS (Darwin 27.0.0), Python 3.12.13, with the
@@ -464,7 +464,7 @@ hook script run by the same Python:
 The hooks call `kestrix-scan`, which imports only the standard library, so the fixed start-up cost of the
 PostToolUse process is about 90 ms (it was about 370 ms when the hooks started the full `kestrix` command,
 which loaded every module). The scan itself grows with the file, to about a quarter of a second at 5,000 lines. A test keeps the in-process hook on a 2,000-line file under 2 seconds.
-Rerun with `uv run python scripts/bench_hook.py`.
+Rerun with `uv run python research/scripts/bench_hook.py`.
 
 ## Suppressing a finding
 

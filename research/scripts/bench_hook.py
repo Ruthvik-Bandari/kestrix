@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Measure the Claude Code hook's latency on generated Python files of 100, 1,000 and 5,000 lines.
 
-Run from the repo root: ``uv run python scripts/bench_hook.py [--runs 30]``. For each size it reports
+Run from the repo root: ``uv run python research/scripts/bench_hook.py [--runs 30]``. For each size it reports
 p50 and p95 in milliseconds of:
 
 - ``in-process``: ``kestrix_scan.hook.hook_response`` for an Edit (scan after the edit, plus the scan
@@ -30,7 +30,7 @@ from pathlib import Path
 
 from kestrix_scan import hook
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = (
     ROOT
     / "packages"

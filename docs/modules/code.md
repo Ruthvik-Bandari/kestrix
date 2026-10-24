@@ -489,7 +489,7 @@ Rules, in order, applied to the normalized name (PEP 503 for PyPI, `-` for `_` o
 
 Edits that add, remove or change a digit are ignored (`boto`, `boto3`), and a name in the popular package's own npm scope or Packagist vendor is never flagged because only its owner can publish there. The reason is spelled out (`two adjacent letters are swapped`, `` `u` is added ``) with the target's rank. The rules are deterministic; this is a heuristic, not a probability.
 
-**Measured 2026-10-23** (`python3 scripts/measure_typosquat.py`, seed 20261023; the snapshot above; the local OSV index of 2026-10-22):
+**Measured 2026-10-23** (`python3 research/scripts/measure_typosquat.py`, seed 20261023; the snapshot above; the local OSV index of 2026-10-22):
 
 | | PyPI | npm | crates.io | Packagist |
 | --- | --- | --- | --- | --- |

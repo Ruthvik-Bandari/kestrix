@@ -12,7 +12,7 @@ measure: whether a real address has spent from itself. That needs chain data, so
 Vector sources (all copied verbatim; none was written for this evaluation):
 
 * Bitcoin Core ``src/test/data/base58_encode_decode.json``, ``key_io_valid.json`` and ``key_io_invalid.json``,
-  MIT licence, https://github.com/bitcoin/bitcoin/tree/master/src/test/data (copies in ``scripts/bitcoin_vectors``).
+  MIT licence, https://github.com/bitcoin/bitcoin/tree/master/src/test/data (copies in ``tests/fixtures/bitcoin_vectors``).
 * BIP-173 and BIP-350 test vectors, BSD-2-Clause (``scripts/bitcoin_bip_vectors.py``).
 * BIP-341 ``wallet-test-vectors.json``, ``scriptPubKey`` section, BSD-3-Clause,
   https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json.
@@ -53,7 +53,7 @@ from kestrix.bitcoin.models import AddressType, ChainActivity, KeyExposure, Netw
 from kestrix.bitcoin.risk import HASH_TYPES, assess, scan  # noqa: E402
 from kestrix.core.errors import Rejected  # noqa: E402
 
-VECTORS = ROOT / "scripts" / "bitcoin_vectors"
+VECTORS = ROOT / "tests" / "fixtures" / "bitcoin_vectors"
 REPORT = ROOT / "docs" / "benchmarks" / "bitcoin.json"
 
 Failure = str | None  # None means the case passed; a string says why it failed
