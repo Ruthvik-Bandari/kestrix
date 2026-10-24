@@ -196,10 +196,6 @@ def _triples(found: list[Dependency]) -> list[tuple[str, str, str, int]]:
     return [(d.ecosystem, d.name, d.version, d.line) for d in found]
 
 
-def _line_of(text: str, needle: str) -> int:
-    return next(i for i, line in enumerate(text.splitlines(), start=1) if needle in line)
-
-
 COMPOSER_LOCK = """{
     "_readme": ["This file locks the dependencies of your project to a known state"],
     "packages": [

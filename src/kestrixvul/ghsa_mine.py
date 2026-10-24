@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import contextlib
 import gzip
-import hashlib
 import json
 import os
 import random
@@ -642,10 +641,6 @@ def descriptions(advisories: list[dict[str, Any]]) -> list[str]:
     for adv in advisories:
         out += [t for t in (adv["summary"], prose(adv["details"]), *adv["cve_descriptions"]) if t.strip()]
     return out
-
-
-def code_sha256(code: str) -> str:
-    return hashlib.sha256(code.encode()).hexdigest()
 
 
 @dataclass

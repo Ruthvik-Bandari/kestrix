@@ -113,17 +113,3 @@ GIT_SOURCES: tuple[GitSource, ...] = (
 )
 
 NAMES: tuple[str, ...] = tuple(s.name for s in ARCHIVES) + tuple(s.name for s in GIT_SOURCES)
-
-
-def archive(name: str) -> ArchiveSource:
-    for source in ARCHIVES:
-        if source.name == name:
-            return source
-    raise KeyError(name)
-
-
-def git_source(name: str) -> GitSource:
-    for source in GIT_SOURCES:
-        if source.name == name:
-            return source
-    raise KeyError(name)

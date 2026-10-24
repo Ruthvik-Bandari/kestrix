@@ -29,10 +29,6 @@ def ids(body: str, rel: str = "app/x.php", *, wrap: bool = True) -> set[str]:
     return {h.rule_id for h in hits(body, rel, wrap=wrap)}
 
 
-def lines_of(body: str, rule: str) -> list[int]:
-    return [h.line for h in hits(body) if h.rule_id == rule]
-
-
 # ----- tokenizer
 
 
