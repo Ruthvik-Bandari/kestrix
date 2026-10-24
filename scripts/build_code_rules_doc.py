@@ -33,6 +33,11 @@ def rules_table() -> str:
             "python": "Python",
             "javascript": "JavaScript, TypeScript",
             "web": "HTML, Vue, Svelte, CSS, next.config",
+            "github-actions": "GitHub Actions workflows",
+            "dockerfile": "Dockerfile, Containerfile",
+            "shell": "shell scripts, run: blocks, RUN lines",
+            "terraform": "Terraform",
+            "kubernetes": "Kubernetes manifests",
             "config": "Claude Code and MCP config",
             "dependency": "lockfiles",
         }.get(rule.language, "any text file")

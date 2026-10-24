@@ -1,6 +1,6 @@
 # Language and framework roadmap for kestrix-scan
 
-Status: Phase 1 (web stack) implemented 2026-10-23 and measured on tuning data only (see [the Phase 1 section of the CVE-fix benchmark](../benchmarks/cvefixes.md#phase-1-the-web-stack-tuning-numbers-2026-10-23)); its held-out `test3` is not yet run. Phases 2 to 5 are plans. Nothing is shipped as "measured" until its phase passes the measurement gate below.
+Status: Phase 1 (web stack) implemented 2026-10-23 and measured on tuning data only (see [the Phase 1 section of the CVE-fix benchmark](../benchmarks/cvefixes.md#phase-1-the-web-stack-tuning-numbers-2026-10-23)); its held-out `test3` is not yet run. Phase 3 (infrastructure as code and CI) implemented 2026-10-23 and measured on real files (see the Phase 3 section). Phases 2, 4 and 5 are plans. Nothing is shipped as "measured" until its phase passes the measurement gate below.
 
 ## Why
 
@@ -58,6 +58,8 @@ Baselines for the measurement: PHP has strong OSS analyzers (for example Psalm's
 use one whose licence allows it.
 
 ### Phase 3: infrastructure as code and CI (high value, easy to judge)
+
+**Status: shipped in `kestrix-scan` (unreleased), measured as false alarms and tool agreement on real files (development numbers; there is no CVE-fix data for these formats and no held-out run).** 24 rules (`gha.*`, `docker.*`, `sh.*`, `tf.*`, `k8s.*`), a bounded YAML subset reader (no PyYAML), and the Claude plugin hook scans the new names. On 16,157 files of 1,090 public repositories plus 61 Terraform and Kubernetes projects the rules fire at, for example, 4.5 (`gha.action.unpinned`), 0.05 (`gha.pr_target.checkout_head`) and 0.03 (`gha.injection.untrusted_context`) findings per KLOC, and agree with zizmor, hadolint and checkov on 94% to 100% of the tool's files where the checks mean the same thing. Terraform is thin in the sample (no `0.0.0.0/0` in 309 files) so its three rules are checked mostly by tests and fixtures. Details: [Infrastructure and CI](../modules/code.md#infrastructure-and-ci). Not done: AWS-only Terraform (no Azure or Google), Helm templates, Docker Compose, CloudFormation.
 
 | Target | What the rules look for (examples) |
 | --- | --- |

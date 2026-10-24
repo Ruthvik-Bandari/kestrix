@@ -341,7 +341,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
       how: [
         "Walk the paths you give, skipping `.gitignore`d, vendored and build paths.",
         "Parse Python with the standard-library `ast`, split JavaScript and TypeScript with a bounded tokenizer, and read text files for secrets. Nothing is imported or executed.",
-        "Apply 76 rules, with taint analysis within one function from Flask, Django, FastAPI, Express, Next.js and LLM-client sources.",
+        "Apply 100 rules, with taint analysis within one function from Flask, Django, FastAPI, Express, Next.js and LLM-client sources.",
         "After `kestrix-scan db update`, match lockfile versions against the local OSV index.",
         "Report each finding with its rule id, CWE and fix, and exit 1 when one meets `--fail-on` (default `high`).",
       ],

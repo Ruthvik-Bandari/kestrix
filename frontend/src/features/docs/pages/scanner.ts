@@ -27,6 +27,11 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     prefixes: ["vue.", "svelte.", "web.", "html.", "css.", "next."],
     intro: "Run on `.vue`, `.svelte`, `.html`, `.htm`, `.css` and `.scss` files with a bounded tag scanner, and on `next.config.*`. Mostly low severity; a missing Content-Security-Policy is not reported.",
   },
+  {
+    heading: "CI and infrastructure (gha.*, docker.*, sh.*, tf.*, k8s.*)",
+    prefixes: ["gha.", "docker.", "sh.", "tf.", "k8s."],
+    intro: "Run on GitHub Actions workflows and `action.yml`, Dockerfiles and Containerfiles, `.sh` and `.bash` scripts (and `run:` blocks and `RUN` lines), `.tf` files and Kubernetes manifests, read with a bounded YAML subset reader and line scanners. Nothing is run or planned; only literal values are judged. Suppress with `# kestrix: ignore[id] reason`.",
+  },
   { heading: "Secrets (secret.*)", prefixes: ["secret."], intro: "Run on every text file. Findings show only the kind of secret and its first four characters, never the value." },
   {
     heading: "Claude Code and MCP configuration (config.*)",

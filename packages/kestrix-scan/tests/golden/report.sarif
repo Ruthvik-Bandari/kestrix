@@ -1984,6 +1984,630 @@
                   "CWE-918"
                 ]
               }
+            },
+            {
+              "id": "gha.pr_target.checkout_head",
+              "name": "GhaPrTargetCheckoutHead",
+              "shortDescription": {
+                "text": "pull_request_target or workflow_run workflow that checks out the pull request's head"
+              },
+              "fullDescription": {
+                "text": "A pull_request_target or workflow_run workflow runs from the base repository with its secrets and a token that can write. Checking out the pull request's head (a fork's code) in such a workflow and then building, testing or running anything from it hands that code the secrets and the token."
+              },
+              "help": {
+                "text": "Run untrusted code in a pull_request workflow, which has no secrets and a read-only token. If a privileged workflow must act on a pull request, check out only the base branch, never run the head's code, and pass results between two workflows as an artifact that the privileged one only reads as data.",
+                "markdown": "**Why:** A pull_request_target or workflow_run workflow runs from the base repository with its secrets and a token that can write. Checking out the pull request's head (a fork's code) in such a workflow and then building, testing or running anything from it hands that code the secrets and the token.\n\n**Fix:** Run untrusted code in a pull_request workflow, which has no secrets and a read-only token. If a privileged workflow must act on a pull request, check out only the base branch, never run the head's code, and pass results between two workflows as an artifact that the privileged one only reads as data."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-829"
+                ]
+              }
+            },
+            {
+              "id": "gha.injection.untrusted_context",
+              "name": "GhaInjectionUntrustedContext",
+              "shortDescription": {
+                "text": "Untrusted ${{ github.event.* }} value written into a run: script"
+              },
+              "fullDescription": {
+                "text": "GitHub replaces ${{ ... }} in a run: script before the shell starts, so a pull request title, branch name, issue body or commit message containing shell syntax becomes part of the command. In an actions/github-script script: the same text becomes JavaScript (CWE-94)."
+              },
+              "help": {
+                "text": "Pass the value through an environment variable and read it as a shell variable: env: TITLE: ${{ github.event.pull_request.title }} and then \"$TITLE\" in run:. For github-script, read it from process.env or context.payload instead of writing it into the script.",
+                "markdown": "**Why:** GitHub replaces ${{ ... }} in a run: script before the shell starts, so a pull request title, branch name, issue body or commit message containing shell syntax becomes part of the command. In an actions/github-script script: the same text becomes JavaScript (CWE-94).\n\n**Fix:** Pass the value through an environment variable and read it as a shell variable: env: TITLE: ${{ github.event.pull_request.title }} and then \"$TITLE\" in run:. For github-script, read it from process.env or context.payload instead of writing it into the script."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "gha.action.unpinned",
+              "name": "GhaActionUnpinned",
+              "shortDescription": {
+                "text": "Third-party action not pinned to a full commit SHA"
+              },
+              "fullDescription": {
+                "text": "A tag or branch such as @v3 or @main can be moved by the action's owner, or by whoever takes over their account, so the next run executes different code with the workflow's secrets. Only a full 40-character commit SHA is immutable. Actions owned by actions/ and github/ are not reported."
+              },
+              "help": {
+                "text": "Pin the action to the commit SHA of the release you reviewed and keep the tag in a comment: uses: owner/action@<40-character sha> # v3.1.0. Dependabot can update pinned SHAs.",
+                "markdown": "**Why:** A tag or branch such as @v3 or @main can be moved by the action's owner, or by whoever takes over their account, so the next run executes different code with the workflow's secrets. Only a full 40-character commit SHA is immutable. Actions owned by actions/ and github/ are not reported.\n\n**Fix:** Pin the action to the commit SHA of the release you reviewed and keep the tag in a comment: uses: owner/action@<40-character sha> # v3.1.0. Dependabot can update pinned SHAs."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-829"
+                ]
+              }
+            },
+            {
+              "id": "gha.permissions.write_all",
+              "name": "GhaPermissionsWriteAll",
+              "shortDescription": {
+                "text": "Workflow or job with permissions: write-all"
+              },
+              "fullDescription": {
+                "text": "permissions: write-all gives the job's GITHUB_TOKEN write access to contents, packages, issues, pull requests and every other scope. A compromised step or action can then rewrite the repository."
+              },
+              "help": {
+                "text": "List only the scopes the job needs, for example permissions: { contents: read }, and add write scopes on the one job that needs them.",
+                "markdown": "**Why:** permissions: write-all gives the job's GITHUB_TOKEN write access to contents, packages, issues, pull requests and every other scope. A compromised step or action can then rewrite the repository.\n\n**Fix:** List only the scopes the job needs, for example permissions: { contents: read }, and add write scopes on the one job that needs them."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "gha.permissions.missing",
+              "name": "GhaPermissionsMissing",
+              "shortDescription": {
+                "text": "Workflow that uses secrets and sets no permissions"
+              },
+              "fullDescription": {
+                "text": "Without a permissions: key the GITHUB_TOKEN gets the repository's default, which is read and write for repositories and organizations that kept the old default. A workflow that handles secrets deserves a token limited to what it uses. Reported only when the workflow references a secret other than GITHUB_TOKEN and neither the top level nor every job sets permissions."
+              },
+              "help": {
+                "text": "Add a top-level permissions: contents: read and widen it per job where a job needs more.",
+                "markdown": "**Why:** Without a permissions: key the GITHUB_TOKEN gets the repository's default, which is read and write for repositories and organizations that kept the old default. A workflow that handles secrets deserves a token limited to what it uses. Reported only when the workflow references a secret other than GITHUB_TOKEN and neither the top level nor every job sets permissions.\n\n**Fix:** Add a top-level permissions: contents: read and widen it per job where a job needs more."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "gha.secrets.echoed",
+              "name": "GhaSecretsEchoed",
+              "shortDescription": {
+                "text": "Secret written to the job log with echo or printf"
+              },
+              "fullDescription": {
+                "text": "echo \"${{ secrets.NAME }}\" prints the secret to a log that anyone with read access to the repository can open. GitHub masks the exact value, but a transformed copy (base64, a substring, split across lines) is not masked."
+              },
+              "help": {
+                "text": "Do not print secrets. Pass one to the command that needs it through env: or a file with restricted permissions, and add ::add-mask:: for any derived value.",
+                "markdown": "**Why:** echo \"${{ secrets.NAME }}\" prints the secret to a log that anyone with read access to the repository can open. GitHub masks the exact value, but a transformed copy (base64, a substring, split across lines) is not masked.\n\n**Fix:** Do not print secrets. Pass one to the command that needs it through env: or a file with restricted permissions, and add ::add-mask:: for any derived value."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-532"
+                ]
+              }
+            },
+            {
+              "id": "docker.user.root",
+              "name": "DockerUserRoot",
+              "shortDescription": {
+                "text": "Dockerfile whose final stage runs as root"
+              },
+              "fullDescription": {
+                "text": "With no USER instruction (or USER root or 0) the container's main process runs as root. A bug in the application then gives an attacker root inside the container, which makes escaping it, writing to mounted volumes or reaching the network much easier. Images named nonroot, rootless or unprivileged, bitnami images and FROM scratch are not reported."
+              },
+              "help": {
+                "text": "Create an unprivileged user and switch to it before the entrypoint: RUN useradd --system --uid 10001 app, then USER 10001:10001.",
+                "markdown": "**Why:** With no USER instruction (or USER root or 0) the container's main process runs as root. A bug in the application then gives an attacker root inside the container, which makes escaping it, writing to mounted volumes or reaching the network much easier. Images named nonroot, rootless or unprivileged, bitnami images and FROM scratch are not reported.\n\n**Fix:** Create an unprivileged user and switch to it before the entrypoint: RUN useradd --system --uid 10001 app, then USER 10001:10001."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "docker.add.remote_url",
+              "name": "DockerAddRemoteUrl",
+              "shortDescription": {
+                "text": "ADD of a remote URL without a checksum"
+              },
+              "fullDescription": {
+                "text": "ADD http(s)://... downloads whatever the server returns at build time and keeps no record of what it was, so a changed or hijacked file ends up in the image unnoticed."
+              },
+              "help": {
+                "text": "Download with curl or wget in a RUN step and verify a SHA-256 checksum, or use ADD --checksum=sha256:<digest> <url> <dest>.",
+                "markdown": "**Why:** ADD http(s)://... downloads whatever the server returns at build time and keeps no record of what it was, so a changed or hijacked file ends up in the image unnoticed.\n\n**Fix:** Download with curl or wget in a RUN step and verify a SHA-256 checksum, or use ADD --checksum=sha256:<digest> <url> <dest>."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-494"
+                ]
+              }
+            },
+            {
+              "id": "docker.run.pipe_to_shell",
+              "name": "DockerRunPipeToShell",
+              "shortDescription": {
+                "text": "RUN that pipes curl or wget into a shell"
+              },
+              "fullDescription": {
+                "text": "curl ... | sh runs a script the moment it is downloaded, with no chance to check it. A compromised or changed server, or a connection that is not verified, runs attacker code during the build and in every image built from it."
+              },
+              "help": {
+                "text": "Download the file, verify a pinned SHA-256 checksum (sha256sum -c), and only then run it. Prefer the distribution's package manager.",
+                "markdown": "**Why:** curl ... | sh runs a script the moment it is downloaded, with no chance to check it. A compromised or changed server, or a connection that is not verified, runs attacker code during the build and in every image built from it.\n\n**Fix:** Download the file, verify a pinned SHA-256 checksum (sha256sum -c), and only then run it. Prefer the distribution's package manager."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-494"
+                ]
+              }
+            },
+            {
+              "id": "docker.from.latest",
+              "name": "DockerFromLatest",
+              "shortDescription": {
+                "text": "Base image with the latest tag, or no tag and no digest"
+              },
+              "fullDescription": {
+                "text": "FROM image:latest (or FROM image) follows whatever the registry publishes next, so a rebuild can change the operating system, libraries and behavior without any change in the repository, and a poisoned tag reaches the next build."
+              },
+              "help": {
+                "text": "Pin a version tag, and for production a digest: FROM python:3.12-slim@sha256:<digest>.",
+                "markdown": "**Why:** FROM image:latest (or FROM image) follows whatever the registry publishes next, so a rebuild can change the operating system, libraries and behavior without any change in the repository, and a poisoned tag reaches the next build.\n\n**Fix:** Pin a version tag, and for production a digest: FROM python:3.12-slim@sha256:<digest>."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-1357"
+                ]
+              }
+            },
+            {
+              "id": "docker.env.secret",
+              "name": "DockerEnvSecret",
+              "shortDescription": {
+                "text": "ENV or ARG with a credential-like name and a literal value"
+              },
+              "fullDescription": {
+                "text": "A value set with ENV or ARG is stored in the image's layers and history, where anyone who can pull the image can read it (docker history, docker inspect). The value is never shown in the finding."
+              },
+              "help": {
+                "text": "Do not bake credentials into the image. Pass them at run time (environment variable, mounted file, orchestrator secret) or use a BuildKit secret mount: RUN --mount=type=secret,id=token ...",
+                "markdown": "**Why:** A value set with ENV or ARG is stored in the image's layers and history, where anyone who can pull the image can read it (docker history, docker inspect). The value is never shown in the finding.\n\n**Fix:** Do not bake credentials into the image. Pass them at run time (environment variable, mounted file, orchestrator secret) or use a BuildKit secret mount: RUN --mount=type=secret,id=token ..."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "sh.pipe_to_shell",
+              "name": "ShPipeToShell",
+              "shortDescription": {
+                "text": "curl or wget piped into a shell or interpreter"
+              },
+              "fullDescription": {
+                "text": "Piping a download into sh or bash runs it before anyone can read it, and a partial download can run a truncated command. A compromised server or a mistaken URL runs attacker code with the script's privileges."
+              },
+              "help": {
+                "text": "Download to a file, verify a pinned checksum or signature, read it, then run it. Prefer the package manager.",
+                "markdown": "**Why:** Piping a download into sh or bash runs it before anyone can read it, and a partial download can run a truncated command. A compromised server or a mistaken URL runs attacker code with the script's privileges.\n\n**Fix:** Download to a file, verify a pinned checksum or signature, read it, then run it. Prefer the package manager."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-494"
+                ]
+              }
+            },
+            {
+              "id": "sh.eval.variable",
+              "name": "ShEvalVariable",
+              "shortDescription": {
+                "text": "eval of text that contains a variable"
+              },
+              "fullDescription": {
+                "text": "eval parses its argument as shell code, so any shell syntax in the variable (; $( ) backticks) runs. If the value comes from the caller, the environment, a file or the network, that is command injection. eval \"$(tool init)\" with a fixed command is not reported."
+              },
+              "help": {
+                "text": "Avoid eval. Use arrays and \"${cmd[@]}\", a case statement over known values, or declare -n and printf %q to build a safe command.",
+                "markdown": "**Why:** eval parses its argument as shell code, so any shell syntax in the variable (; $( ) backticks) runs. If the value comes from the caller, the environment, a file or the network, that is command injection. eval \"$(tool init)\" with a fixed command is not reported.\n\n**Fix:** Avoid eval. Use arrays and \"${cmd[@]}\", a case statement over known values, or declare -n and printf %q to build a safe command."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "sh.rm_rf.unguarded_variable",
+              "name": "ShRmRfUnguardedVariable",
+              "shortDescription": {
+                "text": "rm -rf of a path that is only a variable, with no guard"
+              },
+              "fullDescription": {
+                "text": "When the variable is empty or unset, rm -rf $DIR expands to rm -rf with no path (a no-op) but rm -rf \"$DIR/\" and rm -rf $DIR/* expand to / and /*, which delete the machine. Scripts that build the variable from user input or a failed command have done this in the wild."
+              },
+              "help": {
+                "text": "Guard the expansion so the script stops when it is empty: rm -rf \"${DIR:?}/\" or rm -rf -- \"${DIR:?}\"/*, or test it first with [ -n \"$DIR\" ] and set -u.",
+                "markdown": "**Why:** When the variable is empty or unset, rm -rf $DIR expands to rm -rf with no path (a no-op) but rm -rf \"$DIR/\" and rm -rf $DIR/* expand to / and /*, which delete the machine. Scripts that build the variable from user input or a failed command have done this in the wild.\n\n**Fix:** Guard the expansion so the script stops when it is empty: rm -rf \"${DIR:?}/\" or rm -rf -- \"${DIR:?}\"/*, or test it first with [ -n \"$DIR\" ] and set -u."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-73"
+                ]
+              }
+            },
+            {
+              "id": "sh.chmod.world_writable",
+              "name": "ShChmodWorldWritable",
+              "shortDescription": {
+                "text": "chmod to a world-writable mode"
+              },
+              "fullDescription": {
+                "text": "A file or directory that every user can write lets any local account (or a compromised service) replace a script, binary or configuration file that a more privileged process later reads or runs."
+              },
+              "help": {
+                "text": "Grant only what is needed: 755 or 750 for programs and directories, 644 or 640 for data, 1777 only for a shared sticky directory such as /tmp, and a group when several accounts must write.",
+                "markdown": "**Why:** A file or directory that every user can write lets any local account (or a compromised service) replace a script, binary or configuration file that a more privileged process later reads or runs.\n\n**Fix:** Grant only what is needed: 755 or 750 for programs and directories, 644 or 640 for data, 1777 only for a shared sticky directory such as /tmp, and a group when several accounts must write."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-732"
+                ]
+              }
+            },
+            {
+              "id": "tf.s3.public_access",
+              "name": "TfS3PublicAccess",
+              "shortDescription": {
+                "text": "S3 bucket with a public ACL or a public access block turned off"
+              },
+              "fullDescription": {
+                "text": "A public-read, public-read-write or authenticated-read ACL, or block_public_acls, block_public_policy, ignore_public_acls or restrict_public_buckets set to false, lets anyone (or any AWS account holder) read or change the bucket's objects. Public buckets are a leading cause of data leaks."
+              },
+              "help": {
+                "text": "Use acl = \"private\" and set all four flags of aws_s3_bucket_public_access_block to true. Serve public files through CloudFront with an origin access control.",
+                "markdown": "**Why:** A public-read, public-read-write or authenticated-read ACL, or block_public_acls, block_public_policy, ignore_public_acls or restrict_public_buckets set to false, lets anyone (or any AWS account holder) read or change the bucket's objects. Public buckets are a leading cause of data leaks.\n\n**Fix:** Use acl = \"private\" and set all four flags of aws_s3_bucket_public_access_block to true. Serve public files through CloudFront with an origin access control."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-732"
+                ]
+              }
+            },
+            {
+              "id": "tf.sg.open_admin_port",
+              "name": "TfSgOpenAdminPort",
+              "shortDescription": {
+                "text": "Security group open to the internet on an admin or database port"
+              },
+              "fullDescription": {
+                "text": "An ingress rule from 0.0.0.0/0 or ::/0 on SSH (22), RDP (3389), PostgreSQL (5432), MySQL (3306), Redis (6379) or MongoDB (27017), or on all ports, exposes a login or database service to every scanner on the internet. Only literal ports are judged; a variable is not resolved."
+              },
+              "help": {
+                "text": "Allow the port only from your own addresses (an office or VPN CIDR, a bastion's security group) or remove the rule and use SSM Session Manager or a private network.",
+                "markdown": "**Why:** An ingress rule from 0.0.0.0/0 or ::/0 on SSH (22), RDP (3389), PostgreSQL (5432), MySQL (3306), Redis (6379) or MongoDB (27017), or on all ports, exposes a login or database service to every scanner on the internet. Only literal ports are judged; a variable is not resolved.\n\n**Fix:** Allow the port only from your own addresses (an office or VPN CIDR, a bastion's security group) or remove the rule and use SSM Session Manager or a private network."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-284"
+                ]
+              }
+            },
+            {
+              "id": "tf.storage.unencrypted",
+              "name": "TfStorageUnencrypted",
+              "shortDescription": {
+                "text": "Storage resource with encryption explicitly turned off"
+              },
+              "fullDescription": {
+                "text": "encrypted = false or storage_encrypted = false leaves the volume, database or cluster unencrypted at rest, so a copied snapshot or a recycled disk exposes the data. Only an explicit false is reported; an omitted flag is not."
+              },
+              "help": {
+                "text": "Set encrypted = true (and a kms_key_id where you manage the key), or storage_encrypted = true for RDS and Aurora.",
+                "markdown": "**Why:** encrypted = false or storage_encrypted = false leaves the volume, database or cluster unencrypted at rest, so a copied snapshot or a recycled disk exposes the data. Only an explicit false is reported; an omitted flag is not.\n\n**Fix:** Set encrypted = true (and a kms_key_id where you manage the key), or storage_encrypted = true for RDS and Aurora."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-311"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.privileged",
+              "name": "K8sPodPrivileged",
+              "shortDescription": {
+                "text": "Kubernetes container with privileged: true"
+              },
+              "fullDescription": {
+                "text": "A privileged container has all of the node's capabilities and access to its devices, so code running in it can usually take over the node and every other pod on it."
+              },
+              "help": {
+                "text": "Remove privileged: true. Add only the specific capability the workload needs under securityContext.capabilities.add, and drop ALL others.",
+                "markdown": "**Why:** A privileged container has all of the node's capabilities and access to its devices, so code running in it can usually take over the node and every other pod on it.\n\n**Fix:** Remove privileged: true. Add only the specific capability the workload needs under securityContext.capabilities.add, and drop ALL others."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.host_path",
+              "name": "K8sPodHostPath",
+              "shortDescription": {
+                "text": "Kubernetes pod with a hostPath volume"
+              },
+              "fullDescription": {
+                "text": "A hostPath volume mounts part of the node's filesystem into the pod. Mounting /, /var/run/docker.sock, /etc or the kubelet directory lets the pod read node secrets or start containers on the node. Node agents sometimes need it."
+              },
+              "help": {
+                "text": "Use an emptyDir, a PersistentVolumeClaim or a ConfigMap/Secret volume. If a hostPath is unavoidable, mount the narrowest path read-only.",
+                "markdown": "**Why:** A hostPath volume mounts part of the node's filesystem into the pod. Mounting /, /var/run/docker.sock, /etc or the kubelet directory lets the pod read node secrets or start containers on the node. Node agents sometimes need it.\n\n**Fix:** Use an emptyDir, a PersistentVolumeClaim or a ConfigMap/Secret volume. If a hostPath is unavoidable, mount the narrowest path read-only."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-668"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.privilege_escalation",
+              "name": "K8sPodPrivilegeEscalation",
+              "shortDescription": {
+                "text": "Kubernetes container with allowPrivilegeEscalation: true"
+              },
+              "fullDescription": {
+                "text": "allowPrivilegeEscalation: true lets a process gain more privileges than its parent (setuid binaries, file capabilities), which turns a code-execution bug in the container into root in it."
+              },
+              "help": {
+                "text": "Set allowPrivilegeEscalation: false in the container's securityContext.",
+                "markdown": "**Why:** allowPrivilegeEscalation: true lets a process gain more privileges than its parent (setuid binaries, file capabilities), which turns a code-execution bug in the container into root in it.\n\n**Fix:** Set allowPrivilegeEscalation: false in the container's securityContext."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.run_as_root",
+              "name": "K8sPodRunAsRoot",
+              "shortDescription": {
+                "text": "Kubernetes pod or container that is set to run as root"
+              },
+              "fullDescription": {
+                "text": "runAsUser: 0 or runAsNonRoot: false makes the container's process root inside the container, so a bug in the application starts from the strongest position in it and a container escape starts from root."
+              },
+              "help": {
+                "text": "Set runAsNonRoot: true and a non-zero runAsUser in the securityContext, and build the image to run as that user.",
+                "markdown": "**Why:** runAsUser: 0 or runAsNonRoot: false makes the container's process root inside the container, so a bug in the application starts from the strongest position in it and a container escape starts from root.\n\n**Fix:** Set runAsNonRoot: true and a non-zero runAsUser in the securityContext, and build the image to run as that user."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.no_run_as_nonroot",
+              "name": "K8sPodNoRunAsNonroot",
+              "shortDescription": {
+                "text": "Kubernetes container that does not require a non-root user"
+              },
+              "fullDescription": {
+                "text": "Without runAsNonRoot: true or a non-zero runAsUser, the container runs as whatever user the image says, which is root for many images. It is reported at low severity and low confidence because the image may already use a non-root user, which this scan cannot see."
+              },
+              "help": {
+                "text": "Set runAsNonRoot: true and runAsUser to a non-zero id in the pod or container securityContext.",
+                "markdown": "**Why:** Without runAsNonRoot: true or a non-zero runAsUser, the container runs as whatever user the image says, which is root for many images. It is reported at low severity and low confidence because the image may already use a non-root user, which this scan cannot see.\n\n**Fix:** Set runAsNonRoot: true and runAsUser to a non-zero id in the pod or container securityContext."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "security-severity": "3.0",
+                "precision": "low",
+                "tags": [
+                  "security",
+                  "CWE-250"
+                ]
+              }
+            },
+            {
+              "id": "k8s.pod.host_namespace",
+              "name": "K8sPodHostNamespace",
+              "shortDescription": {
+                "text": "Kubernetes pod that shares the node's network, PID or IPC namespace"
+              },
+              "fullDescription": {
+                "text": "hostNetwork: true puts the pod on the node's network (it can reach node-local services and sniff traffic); hostPID: true lets it see and signal every process on the node; hostIPC: true shares the node's shared memory. Each removes an isolation boundary."
+              },
+              "help": {
+                "text": "Remove hostNetwork, hostPID and hostIPC. Expose the pod through a Service, and use a dedicated node agent for node-level work.",
+                "markdown": "**Why:** hostNetwork: true puts the pod on the node's network (it can reach node-local services and sniff traffic); hostPID: true lets it see and signal every process on the node; hostIPC: true shares the node's shared memory. Each removes an isolation boundary.\n\n**Fix:** Remove hostNetwork, hostPID and hostIPC. Expose the pod through a Service, and use a dedicated node agent for node-level work."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "security-severity": "5.5",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-668"
+                ]
+              }
             }
           ]
         }
@@ -2028,7 +2652,7 @@
           "ruleIndex": 37,
           "level": "error",
           "message": {
-            "text": "Possible github token hard-coded in the file (github_token:ghp_\u2026). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."
+            "text": "Possible github token hard-coded in the file (github_token:ghp_…). Fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets."
           },
           "locations": [
             {
@@ -2042,7 +2666,7 @@
                   "startColumn": 14,
                   "endLine": 1,
                   "snippet": {
-                    "text": "github_token:ghp_\u2026"
+                    "text": "github_token:ghp_…"
                   }
                 }
               }

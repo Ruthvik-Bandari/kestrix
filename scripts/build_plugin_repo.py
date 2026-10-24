@@ -68,10 +68,12 @@ RELATIVE_LINK = re.compile(r"\[([^\]]+)\]\((?!https?://|#|mailto:)[^)]*\)")
 WEB_PREFIXES = frozenset(
     {"vue", "svelte", "web", "html", "css", "next"}
 )  # rule ids of HTML, Vue, Svelte, CSS, next.config
+IAC_PREFIXES = frozenset({"gha", "docker", "sh", "tf", "k8s"})  # rule ids of CI and infrastructure files
 RULE_FAMILIES = (
     ("py", "Python"),
     ("js", "JS/TS"),
     ("web", "web-file"),
+    ("iac", "infrastructure"),
     ("secret", "secret"),
     ("dep", "dependency"),
     ("config", "agent-config"),
@@ -79,11 +81,11 @@ RULE_FAMILIES = (
 
 
 def rule_counts() -> tuple[int, str]:
-    """(total, "28 Python, 15 JS/TS, 12 web-file, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
+    """(total, "28 Python, 15 JS/TS, 12 web-file, 24 infrastructure, 11 secret, 2 dependency, 5 agent-config rules"), counted from the registry."""
     counts: dict[str, int] = {}
     for rule in rules():
         family = rule.id.split(".")[0]
-        family = "web" if family in WEB_PREFIXES else family
+        family = "web" if family in WEB_PREFIXES else "iac" if family in IAC_PREFIXES else family
         counts[family] = counts.get(family, 0) + 1
     known = {prefix for prefix, _ in RULE_FAMILIES}
     if set(counts) != known:
@@ -237,7 +239,8 @@ def audit(tree: list[tuple[PurePosixPath, bytes]]) -> list[str]:
     if "userConfig" in manifest:
         problems.append("plugin.json declares userConfig; this plugin takes no credentials or options")
     for path, data in files.items():
-        if b"{{" in data and path.suffix == ".md" and str(path).split("/")[0] != "evals":
+        # a GitHub Actions ${{ expression }} in the CI rules' examples is not a template placeholder
+        if b"{{" in data.replace(b"${{", b"") and path.suffix == ".md" and str(path).split("/")[0] != "evals":
             problems.append(f"{path} still holds a {{{{...}}}} placeholder")
     readme = files.get(PurePosixPath("README.md"))
     if readme is None or _readme_words(readme.decode("utf-8")) < MIN_README_WORDS:
