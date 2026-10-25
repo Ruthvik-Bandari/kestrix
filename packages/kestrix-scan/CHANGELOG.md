@@ -5,6 +5,25 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Phase 5 of the language roadmap: C and C++, Rust and Swift, narrow on purpose (13 rules, 146 in all; measured with a held-out run).**
+  - New files read: `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`, `.rs`, `.swift` and `.plist` (`c_tokens.py` now also lexes C and C++,
+    Rust and Swift; `systems_rules.py`). `.build`, `Pods`, `Carthage` and `DerivedData` directories are skipped. The Claude plugin hooks scan the new
+    extensions. `Cargo.lock` was already checked against OSV (tests pass) and is documented.
+  - Rules: `c.buffer.gets` (CWE-242), `c.buffer.unbounded_copy` (CWE-120), `c.exec.command` (CWE-78), `c.format.nonliteral` (CWE-134),
+    `c.input.scanf_string` (CWE-120), `c.random.rand` (CWE-338), `c.tempfile.insecure` (CWE-377); `rust.exec.shell` (CWE-78), `rust.tls.disabled`
+    (CWE-295), `rust.unsafe.input` (CWE-119); `swift.tls.trust_all` (CWE-295), `swift.ats.arbitrary_loads` (CWE-319), `swift.storage.userdefaults_secret`
+    (CWE-312). Only lexically obvious patterns: they cannot judge memory safety.
+  - Measured on a new CVEfixes benchmark (dev 6,463 pairs from 584 projects; held-out 1,653 from 241) next to flawfinder 2.0.19 (GPL-2.0-or-later,
+    run as an external program) and Opengrep 1.32.0 with opengrep-rules. **Held-out, run once, C and C++: Kestrix 3.4% [0.7, 6.7] of 412 in-scope
+    pairs at 0.34 alerts per KLOC; flawfinder 19.4% [13.9, 24.9] at 6.13 (difference −16.0 [−21.8, −11.2]); Opengrep 4.6% [1.1, 8.6] at 0.62
+    (−1.2 [−4.9, +1.9]).** Dev: 1.6% [0.7, 3.4] at 0.08; the claim that alerts would stay in the dev interval did not hold. Rust (14 held-out pairs)
+    and Swift (1) are too small to measure. Clean projects: 0 to 0.07 findings per KLOC, reqwest 0.36 and Alamofire 0.11 (their own tests and
+    examples of the disabled-TLS APIs).
+  - Kept because requested, with no dev detection: `c.format.nonliteral` (it detected one held-out pair), `c.random.rand`, `c.tempfile.insecure`,
+    `c.buffer.gets` and every Rust and Swift rule. Measured and rejected: format strings followed by arguments (345 alerts per extra detected pair)
+    and copies into any destination (93).
+  - `kestrixcodebench`: `php-dump --label-set p5`, `--only-language p5`, the `flawfinder` and `opengrep-sys` scan tools, `p5-corpus`, the `overflow`
+    and `formatstring` families, Phase 5 language subsets; `codebench_p4_ablate.sh` takes `PHASE=p5`.
 - **Phase 4 of the language roadmap: Go, Java, Kotlin, C# and Ruby (21 rules, 133 in all; measured with a held-out run).**
   - New files read: `.go`, `.java`, `.kt`, `.kts`, `.cs`, `.rb`, `.erb` (`c_tokens.py`, one bounded stdlib tokenizer for Go, Java, Kotlin and C#;
     `ruby_tokens.py`; `server_index.py`, in-function taint with request sources for `net/http`, gin, echo, fiber, chi, Gitea, servlets, Spring,

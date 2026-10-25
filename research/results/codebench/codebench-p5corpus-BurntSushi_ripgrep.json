@@ -1,0 +1,16 @@
+{
+  "all_rules_per_kloc": 0.0,
+  "files_scanned": {
+    ".rs": 102
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".rs": 55.4
+  },
+  "label": "final-BurntSushi_ripgrep",
+  "roots": [
+    "BurntSushi_ripgrep"
+  ],
+  "rules": {},
+  "schema_version": 1
+}

@@ -1,0 +1,28 @@
+{
+  "all_rules_per_kloc": 0.1135,
+  "files_scanned": {
+    ".plist": 7,
+    ".swift": 101
+  },
+  "files_skipped": {
+    ".plist:duplicate": 1
+  },
+  "kloc": {
+    ".plist": 0.2,
+    ".swift": 43.8
+  },
+  "label": "final-Alamofire_Alamofire",
+  "roots": [
+    "Alamofire_Alamofire"
+  ],
+  "rules": {
+    "swift.tls.trust_all": {
+      "by_extension": {
+        ".swift": 5
+      },
+      "findings": 5,
+      "per_kloc": 0.1135
+    }
+  },
+  "schema_version": 1
+}

@@ -1,0 +1,53 @@
+{
+  "all_rules_per_kloc": 0.0565,
+  "files_scanned": {
+    ".c": 504,
+    ".cpp": 7,
+    ".h": 343,
+    ".hpp": 1
+  },
+  "files_skipped": {
+    ".c:duplicate": 1
+  },
+  "kloc": {
+    ".c": 355.6,
+    ".cpp": 0.5,
+    ".h": 69.0,
+    ".hpp": 0.0
+  },
+  "label": "final-redis_redis",
+  "roots": [
+    "redis_redis"
+  ],
+  "rules": {
+    "c.buffer.unbounded_copy": {
+      "by_extension": {
+        ".c": 14
+      },
+      "findings": 14,
+      "per_kloc": 0.0329
+    },
+    "c.exec.command": {
+      "by_extension": {
+        ".c": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0024
+    },
+    "c.format.nonliteral": {
+      "by_extension": {
+        ".c": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0024
+    },
+    "c.random.rand": {
+      "by_extension": {
+        ".c": 8
+      },
+      "findings": 8,
+      "per_kloc": 0.0188
+    }
+  },
+  "schema_version": 1
+}

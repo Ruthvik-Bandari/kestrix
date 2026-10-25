@@ -896,3 +896,126 @@ Per rule on the held-out split (`codebench-rates-p4-locked.json`): `rb.xss.html_
   unit tests and the clean-corpus counts and are kept because requested.
 - The shipped tree differs from the frozen one (`69d9390+aa6ca8f0`) only in comments and formatting; scanned on every dev file it gives the same
   findings byte for byte (job 11358463).
+
+## Phase 5: C and C++, Rust and Swift (2026-10-25)
+
+Phase 5 of the [language roadmap](../research/language-roadmap.md) is narrow by design: 13 rules that flag only lexically obvious patterns
+(`c.*` 7 for C and C++, `rust.*` 3, `swift.*` 3), read with the shared bounded tokenizer (`c_tokens.py`, extended to these languages). Memory-safety
+bugs need a compiler front-end and a real analyser; these rules do not judge them, and the numbers below show how little of a C fix history a
+lexical scanner sees. The rules were tuned on a development split and then run **once** on the held-out split next to flawfinder and Opengrep.
+Aggregates: [`research/results/codebench/`](../../research/results/codebench/README.md).
+
+### Data and method
+
+- **Source:** the C, C++, Rust and Swift file changes of the CVEfixes v1.0.8 fix commits (CC BY 4.0), plus any file whose path ends in `.rs` or
+  `.swift`. `kestrixcodebench php-dump --label-set p5` streamed the pinned archive once more (job 11358633, 11 minutes). **No advisory pairs and no
+  unchanged files**, as for PHP and Phase 4; false alarms are counted on the fixed files and on the clean corpora below.
+- **Filters and split:** the benchmark's own (`codebench_p5_build.sbatch`, `--only-language p5`, job 11358701): 8,776 changed files read; 286 test,
+  63 oversized, 10 generated, 8 minified, 8 vendored files, 232 files whose extension is not one of these languages' and 33 duplicates dropped (`p5-manifest.json`). A `.h` header counts as C. Project-disjoint seeded split as in every other benchmark.
+
+| Split | Pairs (C / C++ / Rust / Swift) | In scope (C / C++ / Rust / Swift) | Projects | CVEs | KLOC of fixed files |
+| --- | --- | --- | --- | --- | --- |
+| dev | 6,463 (5,049 / 1,221 / 166 / 27) | 1,437 (1,031 / 386 / 17 / 3) | 584 | 3,416 | 9,722 |
+| held-out | 1,653 (1,399 / 162 / 76 / 16) | 427 (362 / 50 / 14 / 1) | 241 | 907 | 2,577 |
+
+- **Two families were added** to the CWE table for this benchmark: `overflow` (writes past a buffer: CWE-119, 120, 121, 122, 131, 193, 242, 676,
+  680, 785, 787, 805, 806) and `formatstring` (CWE-134). Out-of-bounds reads (125), use after free (416), NULL dereference (476) and integer overflow
+  (190) stay out of scope: no rule here targets them, and they are 1,689 of the dev CWE labels. Pair families are fixed when a benchmark is built,
+  so the earlier benchmarks' roots are unchanged. In scope on dev: overflow 1,176 pairs, TLS 56, command injection 34, format string 15, weak
+  randomness 12, path traversal 82 (no rule here), others a handful. Rust has 17 in-scope dev pairs and Swift 3: **too few to measure anything**.
+- **Metrics and keep rule:** as above (detection within 3 lines of a changed line, 95% bootstrap over whole repositories; a change must buy
+  detection near the usual 11 alerts per extra detected pair; a rule with alerts and no dev detection is kept only when it is a requested family,
+  marked "kept because requested").
+- **Comparison tools.** **flawfinder 2.0.19** (GPL-2.0-or-later), run as an external program from its unpacked wheel, `flawfinder --csv .` per
+  shard at its default level, mapped by the CWEs it reports. **Opengrep 1.32.0** with **opengrep-rules** `f1d2b562b414` (as in Phase 4), every rule
+  of the `c`, `rust` and `swift` folders; its C rules target C, not C++, so it reports nothing on `.cpp` files. cppcheck was not run in this phase
+  (flawfinder is the established lexical C analyser and the closer comparison); Clippy and cargo-audit do not apply to single files
+  (Clippy needs a compiling crate; cargo-audit reads `Cargo.lock`, which Kestrix already checks against OSV). Licences:
+  [`dataset-licenses.md`](../research/dataset-licenses.md).
+- Rounds (dev only): `r1` the first scanner, which is also the frozen tree; two widenings measured against it and rejected (below). Jobs (account
+  `aai6610.202610`, partition `short`): dump 11358633, build 11358701, flawfinder dev 11358847, Opengrep dev 11358848, Kestrix dev `r1` 11358850,
+  dev metrics 11358976, widenings 11358999 and 11359001 (compares 11359000, 11359002), held-out 11359570, speed 11359571, clean corpora 11359572;
+  scripts `research/hpc/codebench/codebench_p5_*` and `codebench_p4_ablate.sh` with `PHASE=p5`.
+
+### Tuning on dev
+
+| Change against `r1` | Extra detected pairs (C/C++) | Alerts it adds on fixed files | Alerts per extra pair | Decision |
+| --- | --- | --- | --- | --- |
+| report a non-literal `printf` format even when arguments follow it | +2 (+0.14 points [0.00, +0.43]) | +690 (+0.072 per KLOC) | 345 | **rejected** |
+| report `strcpy`/`strcat`/`sprintf` into any destination, not only arrays declared with a size | +13 (+0.92 points [+0.34, +1.81]) | +1,209 (+0.126 per KLOC) | 93 | **rejected** |
+
+### The scanner on dev (run `r1`, 6,463 pairs, 1,437 in scope)
+
+| Tool | Language | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Files per second |
+| --- | --- | --- | --- | --- | --- | --- |
+| kestrix-scan | C and C++ (1,417) | 1.6 [0.7, 3.4] | 1.5 [0.6, 3.1] | 2.0 [0.9, 4.1] | 0.08 [0.05, 0.14] | 17.8 (all languages) |
+| flawfinder 2.0.19 | C and C++ | 13.5 [9.6, 19.1] | 2.8 [1.7, 4.4] | 14.9 [11.3, 20.2] | 3.51 [2.87, 5.10] | 46.7 |
+| Opengrep | C and C++ | 1.6 [0.7, 2.9] | 0.5 [0.1, 1.2] | 1.8 [0.7, 3.6] | 0.30 [0.22, 0.54] | 2.5 |
+| kestrix-scan | Rust (17) | 0.0 | 0.0 | 0.0 | 0.14 [0.01, 0.40] | |
+| Opengrep | Rust | 5.9 [0.0, 30.0] (1 pair) | 0.0 | 14.3 | 1.63 [0.46, 3.45] | |
+| both | Swift (3) | 0.0 | 0.0 | 0.0 | 0.00 | |
+
+Kestrix minus flawfinder on C and C++: −11.9 points [−16.8, −8.3] (both 22, only Kestrix 1, only flawfinder 170, neither 1,224). Kestrix minus
+Opengrep: +0.1 [−1.0, +1.3] (both 8, only Kestrix 15, only Opengrep 14). flawfinder's lead comes from reporting every `strcpy`, `memcpy`, `sprintf`
+and fixed `char` array at level 1 or more, near which many overflow fixes land, at 44 times Kestrix's alerts and a precision proxy of 1.5%.
+
+Per rule (`codebench-rates-p5-r1.json`; alerts on the 9,722 KLOC of fixed files):
+
+| Rule | Detected pairs | Alerts on fixed files | Note |
+| --- | --- | --- | --- |
+| `c.buffer.unbounded_copy` | 12 (C) | 511 | 43 per detected pair: weak; kept because requested |
+| `c.input.scanf_string` | 9 | 38 | 4 per detected pair |
+| `c.exec.command` | 2 | 79 | 40 per detected pair: weak; kept because requested |
+| `c.format.nonliteral` | 0 of 15 format-string pairs | 74 | **no dev detection; kept because requested** |
+| `c.random.rand` | 0 of 12 weak-randomness pairs | 35 | **kept because requested** |
+| `c.tempfile.insecure` | 0 (no CWE-377 pair) | 9 | **kept because requested** |
+| `c.buffer.gets` | no finding | 0 | no `gets` call left in the data; unit tests only |
+| `rust.exec.shell`, `rust.unsafe.input`, `rust.tls.disabled` | 0 | 2, 5, 0 | **no data** (17 Rust pairs; none TLS or command injection); kept because requested |
+| `swift.*` | 0 | 0 | **no data** (3 Swift pairs, no `.plist` files); unit tests and clean corpora only |
+
+### Clean code (no CVE fix touched it)
+
+Findings per KLOC of the final scanner on current source of popular projects (shallow clones on the cluster, every file including tests and
+`.plist` files, counts only; an upper bound on false alarms): curl 303 KLOC, 4 findings (0.013, all `c.input.scanf_string`); Redis 425 KLOC, 24
+(0.057: 14 `c.buffer.unbounded_copy`, 8 `c.random.rand`, 1 each `c.exec.command` and `c.format.nonliteral`); nginx 258 KLOC, 0; libuv 117 KLOC, 8
+(0.069); LevelDB 29 KLOC, 0; fmt 71 KLOC, 0; Bitcoin Core 415 KLOC, 1 (0.002); ripgrep 55 KLOC, 0; Tokio 190 KLOC, 5 (0.026: 3 `rust.exec.shell`, 2
+`rust.unsafe.input`); Alacritty 34 KLOC, 0; reqwest 28 KLOC, 10 (0.36, all `rust.tls.disabled`: the library's own tests and examples of
+`danger_accept_invalid_certs(true)`); Alamofire 44 KLOC, 5 (0.11, `swift.tls.trust_all` uses of its `DisabledTrustEvaluator`); SwiftNIO 222 KLOC, 0;
+Kingfisher 43 KLOC, 1 (0.023).
+
+### Speed
+
+SPEED_PLACEHOLDER
+
+### Held-out run (`p5-v1`)
+
+Run once on the 1,653-pair test split (427 in scope, 241 projects, 2,577 KLOC of fixed files), after the claim file
+[`p5-heldout-claim.json`](../../research/results/codebench/p5-heldout-claim.json) was committed and the lock (`LOCKED_EVAL.json`, scanner tree
+`4609f8c+754f9bad`, the same scanner as the dev run) was claimed by job 11359570. Scanner frozen; nothing changed in response.
+
+| Tool | Language (in-scope pairs) | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Precision % (proxy) |
+| --- | --- | --- | --- | --- | --- | --- |
+| kestrix-scan | C and C++ (412) | 3.4 [0.7, 6.7] | 1.7 [0.6, 3.1] | 4.2 [1.0, 7.3] | 0.34 [0.10, 0.57] | 2.4 [1.3, 5.8] |
+| flawfinder 2.0.19 | C and C++ | 19.4 [13.9, 24.9] | 4.9 [1.9, 8.5] | 21.0 [16.5, 25.9] | 6.13 [4.59, 7.38] | 1.0 [0.7, 1.8] |
+| Opengrep | C and C++ | 4.6 [1.1, 8.6] | 1.5 [0.0, 3.5] | 3.5 [0.8, 6.2] | 0.62 [0.27, 0.93] | 3.6 [0.8, 10.1] |
+| kestrix-scan | Rust (14) | 0.0 | 0.0 | 0.0 | 0.05 [0.00, 0.13] | |
+| Opengrep | Rust | 0.0 | 0.0 | 0.0 | 2.33 [0.09, 6.46] | |
+| both | Swift (1) | 0.0 | 0.0 | 0.0 | 0.00 | |
+
+Kestrix minus flawfinder: **−16.0 points [−21.8, −11.2]** (both 14, only Kestrix 0, only flawfinder 66, neither 332). Kestrix minus Opengrep:
+**−1.2 points [−4.9, +1.9]** (both 5, only Kestrix 9, only Opengrep 14). Claims in the claim file: flawfinder detects far more (held); Kestrix's alerts
+per KLOC are below flawfinder's and Opengrep's (held); **Kestrix's alerts per KLOC stay within the dev interval [0.05, 0.14]: did not hold** (0.34);
+Rust and Swift too small (as stated). Kestrix detected 12 overflow, 1 command-injection and 1 format-string pair (the format rule's first detection).
+
+Per rule on the held-out split (`codebench-rates-p5-locked.json`): `c.buffer.unbounded_copy` 9 pairs with 667 alerts on fixed files (0.27 per KLOC,
+most of the rise), `c.input.scanf_string` 3 with 51, `c.exec.command` 1 with 25, `c.format.nonliteral` 1 with 101 (43 of them in C++ files),
+`c.random.rand` 0 with 17, `c.tempfile.insecure` 0 with 3, `rust.unsafe.input` 0 with 3.
+
+### What this does not show
+
+- Memory safety. Use after free, out-of-bounds reads, integer overflow and most overflow fixes (bounds computed wrongly, a length checked in the
+  wrong place) are invisible to a lexical scanner; the absolute rates are what single-file pattern matching sees in a C fix history, not coverage.
+- Only CVEfixes: no advisory pairs, no unchanged files; 584 dev and 241 held-out projects, and large projects hold many pairs.
+- Rust (17 dev, 14 held-out in-scope pairs) and Swift (3 and 1) say nothing about their rules; the Swift and `.plist` rules are covered by unit tests
+  and the clean corpora only.
+- flawfinder and Opengrep ran with their defaults; a project that tunes flawfinder's minimum level would see fewer alerts and less detection.

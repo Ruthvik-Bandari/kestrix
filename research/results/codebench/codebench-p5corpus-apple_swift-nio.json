@@ -1,0 +1,22 @@
+{
+  "all_rules_per_kloc": 0.0,
+  "files_scanned": {
+    ".c": 21,
+    ".h": 16,
+    ".swift": 543
+  },
+  "files_skipped": {
+    ".swift:duplicate": 13
+  },
+  "kloc": {
+    ".c": 12.8,
+    ".h": 2.3,
+    ".swift": 206.7
+  },
+  "label": "final-apple_swift-nio",
+  "roots": [
+    "apple_swift-nio"
+  ],
+  "rules": {},
+  "schema_version": 1
+}

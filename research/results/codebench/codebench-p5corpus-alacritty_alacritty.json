@@ -1,0 +1,18 @@
+{
+  "all_rules_per_kloc": 0.0,
+  "files_scanned": {
+    ".plist": 1,
+    ".rs": 88
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".plist": 0.1,
+    ".rs": 33.8
+  },
+  "label": "final-alacritty_alacritty",
+  "roots": [
+    "alacritty_alacritty"
+  ],
+  "rules": {},
+  "schema_version": 1
+}

@@ -58,6 +58,21 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     intro: "Run on `.rb` files and `.erb` templates with a bounded Ruby tokenizer. `params`, `cookies` and `request` are followed inside one method to Active Record SQL, `html_safe`/`raw`, `constantize`, `send`, `system` and backticks, and file paths.",
   },
   {
+    heading: "C and C++ (c.*)",
+    prefixes: ["c."],
+    intro: "Run on `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx` files with the shared bounded tokenizer. Only lexically obvious patterns: `gets`, copies into arrays declared with a size, `system`/`popen` with a built command, non-literal `printf` formats, `scanf` `%s` without a width, `rand()` next to security values, `tmpnam`/`mktemp`. Memory safety needs a real analyser; a clean scan says nothing about it.",
+  },
+  {
+    heading: "Rust (rust.*)",
+    prefixes: ["rust."],
+    intro: "Run on `.rs` files. `Command` running a shell with a built script, TLS verification turned off (reqwest, native-tls, OpenSSL, a trust-all rustls verifier), and unchecked memory operations in `unsafe` blocks on values that come from input in the same function.",
+  },
+  {
+    heading: "Swift (swift.*)",
+    prefixes: ["swift."],
+    intro: "Run on `.swift` files and `.plist` property lists. Trust-all `URLSession` challenge handlers and Alamofire's disabled evaluator, `NSAllowsArbitraryLoads`, and secrets stored in `UserDefaults`.",
+  },
+  {
     heading: "CI and infrastructure (gha.*, docker.*, sh.*, tf.*, k8s.*)",
     prefixes: ["gha.", "docker.", "sh.", "tf.", "k8s."],
     intro: "Run on GitHub Actions workflows and `action.yml`, Dockerfiles and Containerfiles, `.sh` and `.bash` scripts (and `run:` blocks and `RUN` lines), `.tf` files and Kubernetes manifests, read with a bounded YAML subset reader and line scanners. Nothing is run or planned; only literal values are judged. Suppress with `# kestrix: ignore[id] reason`.",
@@ -382,6 +397,22 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
         list(
           "Overall Kestrix and Opengrep detect about the same (+0.2 points, paired interval −2.8 to +3.2) and Kestrix raises about half the false alarms. On Java and Kotlin Kestrix is ahead (+5.1 points, +1.7 to +10.1); on Ruby Opengrep is ahead (−6.5, −15.1 to +1.0); on Go gosec is ahead through untainted file-path and command checks at six times the alerts.",
           "Development figures overstated two families: Java XXE fell from 77.5% to 17.9% and Ruby SQL injection from 29.1% to 10.0%. C# and Kotlin have too few pairs to judge.",
+        ),
+      ),
+      section(
+        "C, C++, Rust and Swift (held-out, run once)",
+        p("Phase 5 is deliberately narrow: lexically obvious patterns only, because memory-safety bugs need a real analyser. It was tuned on a development split of CVEfixes fix commits in these languages and run once on its held-out split (427 in-scope file pairs from 241 projects), next to flawfinder 2.0.19 (GPL, run as an external program) and Opengrep 1.32.0 with the C, Rust and Swift rules of the LGPL Semgrep-rules fork."),
+        table(
+          ["Tool", "Language", "Detection", "False alarms per KLOC (fixed files)"],
+          [
+            ["kestrix-scan", "C and C++", "3.4% [0.7, 6.7]", "0.34 [0.10, 0.57]"],
+            ["flawfinder 2.0.19", "C and C++", "19.4% [13.9, 24.9]", "6.13 [4.59, 7.38]"],
+            ["Opengrep", "C and C++", "4.6% [1.1, 8.6]", "0.62 [0.27, 0.93]"],
+          ],
+        ),
+        list(
+          "flawfinder detects far more (−16.0 points, paired interval −21.8 to −11.2) because it reports every risky call, at eighteen times the false alarms; Kestrix and Opengrep are level (−1.2 points, −4.9 to +1.9).",
+          "Kestrix's false alarms rose from 0.08 per KLOC on dev to 0.34 here, above the dev interval: the claim made before the run did not hold. Rust (14 pairs) and Swift (1) are too small to judge; no tool detected any.",
         ),
       ),
       section(

@@ -1,0 +1,44 @@
+{
+  "all_rules_per_kloc": 0.0686,
+  "files_scanned": {
+    ".c": 331,
+    ".h": 38,
+    ".plist": 1
+  },
+  "files_skipped": {
+    ".plist:binary": 1
+  },
+  "kloc": {
+    ".c": 102.2,
+    ".h": 14.5,
+    ".plist": 0.0
+  },
+  "label": "final-libuv_libuv",
+  "roots": [
+    "libuv_libuv"
+  ],
+  "rules": {
+    "c.buffer.unbounded_copy": {
+      "by_extension": {
+        ".c": 5
+      },
+      "findings": 5,
+      "per_kloc": 0.0429
+    },
+    "c.exec.command": {
+      "by_extension": {
+        ".c": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0171
+    },
+    "c.input.scanf_string": {
+      "by_extension": {
+        ".c": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0086
+    }
+  },
+  "schema_version": 1
+}

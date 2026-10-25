@@ -1,0 +1,171 @@
+{
+  "files": {
+    "c:after": 1399,
+    "c:before": 1399,
+    "cpp:after": 162,
+    "cpp:before": 162,
+    "rust:after": 76,
+    "rust:before": 76,
+    "swift:after": 16,
+    "swift:before": 16
+  },
+  "kloc": {
+    "c:after": 2347.5,
+    "c:before": 2338.0,
+    "cpp:after": 165.8,
+    "cpp:before": 164.9,
+    "rust:after": 55.3,
+    "rust:before": 54.5,
+    "swift:after": 8.3,
+    "swift:before": 8.2
+  },
+  "rules": [
+    {
+      "after": 658,
+      "after_alerts": 658,
+      "before_any": 659,
+      "before_near_change": 19,
+      "clean_alerts_per_kloc": 0.2803,
+      "detected_pairs": 9,
+      "language": "c",
+      "rule": "c.buffer.unbounded_copy",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 19,
+      "after_alerts": 19,
+      "before_any": 20,
+      "before_near_change": 1,
+      "clean_alerts_per_kloc": 0.0081,
+      "detected_pairs": 1,
+      "language": "c",
+      "rule": "c.exec.command",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 58,
+      "after_alerts": 58,
+      "before_any": 60,
+      "before_near_change": 2,
+      "clean_alerts_per_kloc": 0.0247,
+      "detected_pairs": 1,
+      "language": "c",
+      "rule": "c.format.nonliteral",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 47,
+      "after_alerts": 47,
+      "before_any": 52,
+      "before_near_change": 5,
+      "clean_alerts_per_kloc": 0.02,
+      "detected_pairs": 3,
+      "language": "c",
+      "rule": "c.input.scanf_string",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 10,
+      "after_alerts": 10,
+      "before_any": 9,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0043,
+      "detected_pairs": 0,
+      "language": "c",
+      "rule": "c.random.rand",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 3,
+      "after_alerts": 3,
+      "before_any": 3,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0013,
+      "detected_pairs": 0,
+      "language": "c",
+      "rule": "c.tempfile.insecure",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 9,
+      "after_alerts": 9,
+      "before_any": 9,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0543,
+      "detected_pairs": 0,
+      "language": "cpp",
+      "rule": "c.buffer.unbounded_copy",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 6,
+      "after_alerts": 6,
+      "before_any": 6,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0362,
+      "detected_pairs": 0,
+      "language": "cpp",
+      "rule": "c.exec.command",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 43,
+      "after_alerts": 43,
+      "before_any": 42,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.2594,
+      "detected_pairs": 0,
+      "language": "cpp",
+      "rule": "c.format.nonliteral",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 4,
+      "after_alerts": 4,
+      "before_any": 4,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0241,
+      "detected_pairs": 0,
+      "language": "cpp",
+      "rule": "c.input.scanf_string",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 7,
+      "after_alerts": 7,
+      "before_any": 7,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0422,
+      "detected_pairs": 0,
+      "language": "cpp",
+      "rule": "c.random.rand",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    },
+    {
+      "after": 3,
+      "after_alerts": 3,
+      "before_any": 2,
+      "before_near_change": 0,
+      "clean_alerts_per_kloc": 0.0543,
+      "detected_pairs": 0,
+      "language": "rust",
+      "rule": "rust.unsafe.input",
+      "unchanged": 0,
+      "unchanged_alerts": 0
+    }
+  ],
+  "run": "locked-p5-v1",
+  "schema_version": 1,
+  "split": "test"
+}

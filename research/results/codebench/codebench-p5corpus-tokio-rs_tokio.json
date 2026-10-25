@@ -1,0 +1,33 @@
+{
+  "all_rules_per_kloc": 0.0263,
+  "files_scanned": {
+    ".rs": 813
+  },
+  "files_skipped": {
+    ".rs:duplicate": 1
+  },
+  "kloc": {
+    ".rs": 190.2
+  },
+  "label": "final-tokio-rs_tokio",
+  "roots": [
+    "tokio-rs_tokio"
+  ],
+  "rules": {
+    "rust.exec.shell": {
+      "by_extension": {
+        ".rs": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0158
+    },
+    "rust.unsafe.input": {
+      "by_extension": {
+        ".rs": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0105
+    }
+  },
+  "schema_version": 1
+}

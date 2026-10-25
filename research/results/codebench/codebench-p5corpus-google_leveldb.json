@@ -1,0 +1,20 @@
+{
+  "all_rules_per_kloc": 0.0,
+  "files_scanned": {
+    ".c": 1,
+    ".cc": 76,
+    ".h": 56
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".c": 0.4,
+    ".cc": 22.9,
+    ".h": 5.8
+  },
+  "label": "final-google_leveldb",
+  "roots": [
+    "google_leveldb"
+  ],
+  "rules": {},
+  "schema_version": 1
+}

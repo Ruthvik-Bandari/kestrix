@@ -1,0 +1,28 @@
+{
+  "all_rules_per_kloc": 0.0132,
+  "files_scanned": {
+    ".c": 813,
+    ".cpp": 2,
+    ".h": 258
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".c": 271.0,
+    ".cpp": 0.3,
+    ".h": 31.8
+  },
+  "label": "final-curl_curl",
+  "roots": [
+    "curl_curl"
+  ],
+  "rules": {
+    "c.input.scanf_string": {
+      "by_extension": {
+        ".c": 4
+      },
+      "findings": 4,
+      "per_kloc": 0.0132
+    }
+  },
+  "schema_version": 1
+}

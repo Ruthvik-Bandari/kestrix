@@ -6,6 +6,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **`kestrix-scan` language phase 5: C and C++, Rust and Swift** (13 rules, 146 in all), lexically obvious patterns only
+  (`gets`, unbounded copies into fixed arrays, `system`/`popen` and shell `Command` with built input, non-literal format
+  strings, `scanf` `%s`, `rand()` for security, `tmpnam`, disabled TLS in Rust and Swift, `unsafe` blocks on input,
+  `NSAllowsArbitraryLoads`, secrets in `UserDefaults`). Held-out on CVEfixes C/C++: 3.4% detection at 0.34 alerts per
+  KLOC, against flawfinder 19.4% at 6.13 and Opengrep 4.6% at 0.62. Details in
+  [packages/kestrix-scan/CHANGELOG.md](packages/kestrix-scan/CHANGELOG.md) and
+  [docs/benchmarks/cvefixes.md](docs/benchmarks/cvefixes.md#phase-5-c-and-c-rust-and-swift-2026-10-25).
 - **Mailbox connector (local mode only)** ([ADR 0009](docs/adr/0009-mailbox-connector.md)). The Email check page gains a
   **Check from your mailbox** tab: connect Gmail (`gmail.readonly`) or Microsoft 365 / Outlook.com (`Mail.Read`) with
   your own OAuth app, search or browse, and check single messages you pick; the report is the normal one and nothing

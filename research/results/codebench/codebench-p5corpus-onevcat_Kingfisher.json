@@ -1,0 +1,31 @@
+{
+  "all_rules_per_kloc": 0.0233,
+  "files_scanned": {
+    ".h": 31,
+    ".plist": 11,
+    ".swift": 174
+  },
+  "files_skipped": {
+    ".plist:duplicate": 2,
+    ".swift:duplicate": 1
+  },
+  "kloc": {
+    ".h": 0.4,
+    ".plist": 0.4,
+    ".swift": 42.2
+  },
+  "label": "final-onevcat_Kingfisher",
+  "roots": [
+    "onevcat_Kingfisher"
+  ],
+  "rules": {
+    "swift.tls.trust_all": {
+      "by_extension": {
+        ".swift": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0233
+    }
+  },
+  "schema_version": 1
+}
