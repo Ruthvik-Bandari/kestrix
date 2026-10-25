@@ -869,7 +869,7 @@ The claims, checked:
 - **Kestrix alerts within the dev interval and below Opengrep's: holds.** 0.50 per KLOC on fixed files (dev interval [0.23, 0.74]) against 0.93.
 - **gosec detects more Go than Kestrix: as expected.** 6.7% against 1.1%, difference -5.6 points [-22.7, -0.7]; gosec's lead is again its untainted
   file-path and command checks (path traversal 36.4% of 11 pairs, command injection 22.2% of 9), at 0.78 alerts per KLOC against 0.13.
-- By language, Kestrix minus Opengrep: **Java and Kotlin +5.1 [+1.7, +10.1]**; Ruby -6.5 [-15.1, +1.0] (Opengrep's deserialization and XSS rules
+- By language, Kestrix minus Opengrep: **Java and Kotlin +5.1 [+1.7, +10.1]** (10.9% against 5.8%); Ruby -6.5 [-15.1, +1.0] (4.7% against 11.2%) (Opengrep's deserialization and XSS rules
   found 4 and 5 pairs); Go -1.1 [-10.5, +3.5]; C# +2.4 [0.0, +16.7] (one pair).
 
 By family (pairs; Kestrix, Opengrep): Java deserialization 16: 37.5% and 37.5%; Java XXE 28: 17.9% and 7.1%; Java path traversal 24: 16.7% and 0%; Java
