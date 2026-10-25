@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""C and C++ (``c.*``), Rust (``rust.*``) and Swift (``swift.*``) rules over ``systems_tokens.py``. Source is never run.
+"""C and C++ (``c.*``), Rust (``rust.*``) and Swift (``swift.*``) rules over ``c_tokens.py``. Source is never run.
 
 The scope is narrow on purpose. Memory-safety bugs (overflows computed from sizes, use after free, integer overflow,
 races) need a compiler front-end and a real analyser; these rules only flag patterns that are visible in the tokens of
