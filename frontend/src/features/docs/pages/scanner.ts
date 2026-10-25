@@ -38,6 +38,26 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     intro: "Run on `.sql` files: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`.",
   },
   {
+    heading: "Go (go.*)",
+    prefixes: ["go."],
+    intro: "Run on `.go` files with a bounded tokenizer shared with Java, Kotlin and C#. Request data from `net/http`, gin, echo, fiber, chi and Gitea-style contexts is followed inside one function to `exec.Command`, SQL and `template.HTML`; `InsecureSkipVerify: true` needs no request data.",
+  },
+  {
+    heading: "Java and Kotlin (java.*)",
+    prefixes: ["java."],
+    intro: "Run on `.java`, `.kt` and `.kts` files. Servlet, Spring, JAX-RS, Stapler and Ktor request data is followed inside one method to JDBC and JPA SQL, `Runtime.exec` and `ProcessBuilder`, file paths, outbound URLs and the response writer; unsafe deserializers and XML parser factories without DOCTYPE protection need no request data.",
+  },
+  {
+    heading: "C# (cs.*)",
+    prefixes: ["cs."],
+    intro: "Run on `.cs` files. ASP.NET request data (`Request.Query`, `[FromQuery]` and other bound parameters, string parameters of controller actions) is followed inside one method to ADO.NET, Entity Framework and Dapper SQL, `Process.Start` and file paths; `BinaryFormatter` and Json.NET `TypeNameHandling` need no request data.",
+  },
+  {
+    heading: "Ruby and Rails (rb.*)",
+    prefixes: ["rb."],
+    intro: "Run on `.rb` files and `.erb` templates with a bounded Ruby tokenizer. `params`, `cookies` and `request` are followed inside one method to Active Record SQL, `html_safe`/`raw`, `constantize`, `send`, `system` and backticks, and file paths.",
+  },
+  {
     heading: "CI and infrastructure (gha.*, docker.*, sh.*, tf.*, k8s.*)",
     prefixes: ["gha.", "docker.", "sh.", "tf.", "k8s."],
     intro: "Run on GitHub Actions workflows and `action.yml`, Dockerfiles and Containerfiles, `.sh` and `.bash` scripts (and `run:` blocks and `RUN` lines), `.tf` files and Kubernetes manifests, read with a bounded YAML subset reader and line scanners. Nothing is run or planned; only literal values are judged. Suppress with `# kestrix: ignore[id] reason`.",

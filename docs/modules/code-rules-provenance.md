@@ -853,3 +853,170 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://www.postgresql.org/docs/current/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY>
 - Documentation: <https://wiki.postgresql.org/wiki/A_Guide_to_CVE-2018-1058:_Protect_Your_Search_Path>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `go.exec.command`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://pkg.go.dev/os/exec#Command>
+- Documentation: <https://pkg.go.dev/os/exec#hdr-Executables_in_the_current_directory>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `go.sql.injection`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://go.dev/doc/database/sql-injection>
+- Documentation: <https://pkg.go.dev/database/sql#DB.Query>
+- Documentation: <https://gorm.io/docs/security.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `go.xss.unescaped`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://pkg.go.dev/html/template#HTML>
+- Documentation: <https://pkg.go.dev/html/template#hdr-Security_Model>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `go.tls.insecure_skip_verify`
+
+- CWE: [CWE-295](https://cwe.mitre.org/data/definitions/295.html)
+- Documentation: <https://pkg.go.dev/crypto/tls#Config>
+- Documentation: <https://cwe.mitre.org/data/definitions/295.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.sql.injection`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html>
+- Documentation: <https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/java/sql/PreparedStatement.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.exec.command`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ProcessBuilder.html>
+- Documentation: <https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Runtime.html#exec(java.lang.String%5B%5D)>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.deserialize.unsafe`
+
+- CWE: [CWE-502](https://cwe.mitre.org/data/definitions/502.html)
+- Documentation: <https://docs.oracle.com/en/java/javase/21/core/serialization-filtering1.html>
+- Documentation: <https://x-stream.github.io/security.html>
+- Documentation: <https://github.com/FasterXML/jackson-docs/wiki/JacksonPolymorphicDeserialization>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.xxe.parser`
+
+- CWE: [CWE-611](https://cwe.mitre.org/data/definitions/611.html)
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html#java>
+- Documentation: <https://docs.oracle.com/en/java/javase/21/security/java-api-xml-processing-jaxp-security-guide.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.path.traversal`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/Path.html#normalize()>
+- Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
+- Documentation: <https://snyk.io/research/zip-slip-vulnerability>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.ssrf.request`
+
+- CWE: [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
+- Documentation: <https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/URI.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `java.xss.response`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://owasp.org/www-project-java-encoder/>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `cs.sql.injection`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/framework/data/adonet/configuring-parameters-and-parameter-data-types>
+- Documentation: <https://learn.microsoft.com/en-us/ef/core/querying/sql-queries#passing-parameters>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `cs.exec.process`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist>
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.start>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `cs.deserialize.unsafe`
+
+- CWE: [CWE-502](https://cwe.mitre.org/data/definitions/502.html)
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide>
+- Documentation: <https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_TypeNameHandling.htm>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html#net-csharp>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `cs.path.traversal`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/api/system.io.path.getfullpath>
+- Documentation: <https://learn.microsoft.com/en-us/dotnet/api/system.io.path.combine>
+- Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.sql.injection`
+
+- CWE: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+- Documentation: <https://guides.rubyonrails.org/security.html#sql-injection>
+- Documentation: <https://guides.rubyonrails.org/active_record_querying.html#pure-string-conditions>
+- Documentation: <https://rails-sqli.org/>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Ruby_on_Rails_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.xss.html_safe`
+
+- CWE: [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
+- Documentation: <https://guides.rubyonrails.org/security.html#cross-site-scripting-xss>
+- Documentation: <https://api.rubyonrails.org/classes/String.html#method-i-html_safe>
+- Documentation: <https://api.rubyonrails.org/classes/ActionView/Helpers/SanitizeHelper.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.reflection.constantize`
+
+- CWE: [CWE-470](https://cwe.mitre.org/data/definitions/470.html)
+- Documentation: <https://api.rubyonrails.org/classes/ActiveSupport/Inflector.html#method-i-constantize>
+- Documentation: <https://cwe.mitre.org/data/definitions/470.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Ruby_on_Rails_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.reflection.send`
+
+- CWE: [CWE-470](https://cwe.mitre.org/data/definitions/470.html)
+- Documentation: <https://docs.ruby-lang.org/en/master/Object.html#method-i-public_send>
+- Documentation: <https://cwe.mitre.org/data/definitions/470.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.exec.command`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://docs.ruby-lang.org/en/master/Kernel.html#method-i-system>
+- Documentation: <https://docs.ruby-lang.org/en/master/command_injection_rdoc.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rb.path.traversal`
+
+- CWE: [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
+- Documentation: <https://guides.rubyonrails.org/security.html#file-uploads>
+- Documentation: <https://docs.ruby-lang.org/en/master/File.html#method-c-expand_path>
+- Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

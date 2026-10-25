@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (112 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (133 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -106,9 +106,9 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["k8s.pod.run_as_root", "medium", "CWE-250", "Kubernetes pod or container that is set to run as root"],
   ["k8s.pod.no_run_as_nonroot", "low", "CWE-250", "Kubernetes container that does not require a non-root user"],
   ["k8s.pod.host_namespace", "medium", "CWE-668", "Kubernetes pod that shares the node's network, PID or IPC namespace"],
-  ["php.exec.command", "high", "CWE-78", "Command run with a value built from request data (or with a non-literal)"],
+  ["php.exec.command", "high", "CWE-78", "Command run with a value built from request data"],
   ["php.include.dynamic", "high", "CWE-98", "include or require of a path built from request data"],
-  ["php.sql.injection", "high", "CWE-89", "SQL text built from request data (or by concatenation or interpolation)"],
+  ["php.sql.injection", "high", "CWE-89", "SQL text built from request data (or built from a value that is not a literal)"],
   ["php.xss.echo", "high", "CWE-79", "echo or print of request data without escaping"],
   ["php.ssrf.request", "high", "CWE-918", "Server-side request to a URL built from request data"],
   ["php.path.traversal", "high", "CWE-22", "File path built from request data"],
@@ -118,4 +118,25 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["sql.grant.all", "medium", "CWE-250", "GRANT ALL in a SQL file"],
   ["sql.credentials.plaintext", "high", "CWE-798", "Plaintext account password in a SQL file"],
   ["sql.function.security_definer_path", "medium", "CWE-427", "PostgreSQL SECURITY DEFINER function without a fixed search_path"],
+  ["go.exec.command", "high", "CWE-78", "exec.Command with a program or arguments from request data"],
+  ["go.sql.injection", "high", "CWE-89", "SQL text built from request data (or built from a value that is not a literal)"],
+  ["go.xss.unescaped", "high", "CWE-79", "Request data marked as safe HTML, JavaScript or URL (template.HTML and its relatives)"],
+  ["go.tls.insecure_skip_verify", "high", "CWE-295", "TLS certificate verification turned off (InsecureSkipVerify: true)"],
+  ["java.sql.injection", "high", "CWE-89", "SQL text built from request data (or built from a value that is not a literal), Java and Kotlin"],
+  ["java.exec.command", "high", "CWE-78", "Runtime.exec or ProcessBuilder with request data, Java and Kotlin"],
+  ["java.deserialize.unsafe", "high", "CWE-502", "Deserialization that lets the data choose the class (ObjectInputStream, XMLDecoder, XStream, Jackson default typing, SnakeYAML), Java and Kotlin"],
+  ["java.xxe.parser", "high", "CWE-611", "XML parser created without disabling DOCTYPEs or external entities, Java and Kotlin"],
+  ["java.path.traversal", "high", "CWE-22", "File path built from request data, Java and Kotlin"],
+  ["java.ssrf.request", "high", "CWE-918", "Outbound request to a URL from request data, Java and Kotlin"],
+  ["java.xss.response", "high", "CWE-79", "Request data written into the response unescaped, Java and Kotlin"],
+  ["cs.sql.injection", "high", "CWE-89", "SQL text built from request data (or built from a value that is not a literal), C#"],
+  ["cs.exec.process", "high", "CWE-78", "Process.Start or ProcessStartInfo with request data, C#"],
+  ["cs.deserialize.unsafe", "high", "CWE-502", "Deserializer that lets the data choose the type (BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter, ObjectStateFormatter, Json.NET TypeNameHandling), C#"],
+  ["cs.path.traversal", "high", "CWE-22", "File path built from request data, C#"],
+  ["rb.sql.injection", "high", "CWE-89", "SQL text built from request data (or built from a value that is not a literal), Ruby on Rails"],
+  ["rb.xss.html_safe", "high", "CWE-79", "html_safe, raw or <%== %> of a value that is not a literal, Ruby on Rails"],
+  ["rb.reflection.constantize", "high", "CWE-470", "constantize or const_get of request data, Ruby on Rails"],
+  ["rb.reflection.send", "high", "CWE-470", "send, public_send or try with a method name from request data, Ruby"],
+  ["rb.exec.command", "high", "CWE-78", "Shell command built from request data, Ruby"],
+  ["rb.path.traversal", "high", "CWE-22", "File path built from request data, Ruby"],
 ];

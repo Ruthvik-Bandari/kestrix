@@ -243,7 +243,7 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 112 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 133 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, Jinja2 environments without autoescape, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
@@ -260,7 +260,14 @@ handlers, `target="_blank"` without `noopener`, forms and subresources over `htt
 `js.*` rules), PHP and Blade (9 `php.*` rules for `.php`, `.phtml` and `.blade.php`: request values from `$_GET`, `$_POST`, `$_REQUEST`,
 `$_COOKIE`, `php://input` and Laravel/Symfony request objects reaching commands, `include`, SQL, `echo`, URLs and file paths inside one
 function, `extract($_REQUEST)`, `md5`/`sha1` of passwords and Blade `{!! !!}`), SQL files
-(3 `sql.*` rules for `.sql`: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`), CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
+(3 `sql.*` rules for `.sql`: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`), Go (4 `go.*` rules for `.go`:
+request data from `net/http`, gin, echo, fiber or chi reaching `exec.Command`, SQL or `template.HTML`, and `InsecureSkipVerify: true`), Java and Kotlin
+(7 `java.*` rules for `.java`, `.kt` and `.kts`: servlet, Spring, JAX-RS, Stapler and Ktor request data reaching JDBC and JPA SQL, `Runtime.exec` and
+`ProcessBuilder`, file paths, outbound URLs and the response writer, plus `ObjectInputStream`, XStream, Jackson default typing and SnakeYAML
+deserialization and XML parser factories without DOCTYPE protection), C# (4 `cs.*` rules for `.cs`: ASP.NET request data reaching `SqlCommand`, Entity
+Framework and Dapper SQL, `Process.Start` and file paths, and `BinaryFormatter` and Json.NET `TypeNameHandling`), Ruby on Rails (6 `rb.*` rules for `.rb`
+and `.erb`: `params` reaching `where`/`find_by_sql`/`order`, `html_safe`/`raw`/`<%== %>`, `constantize`, `send`, `system` and backticks, and file
+paths), CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
 workflows, Dockerfiles, `.sh` and `.bash` scripts, Terraform and Kubernetes manifests: `pull_request_target` checking out the PR head,
 `${{ github.event.* }}` in `run:`, unpinned third-party actions, `permissions: write-all`, running as root, `ADD` of a URL,
 `curl | sh`, `latest` images, secrets in `ENV`/`ARG`, `eval` and `rm -rf` of variables, `chmod 777`, public S3 buckets, admin

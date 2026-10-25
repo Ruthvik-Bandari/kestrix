@@ -226,9 +226,13 @@ def test_hook_scans_php_and_sql_files(tmp_path: Path) -> None:
 def test_hook_scans_go_java_csharp_and_ruby_files(tmp_path: Path) -> None:
     for name, text, rule in (
         ("main.go", "func f() {\n\tc := &tls.Config{InsecureSkipVerify: true}\n}\n", "go.tls.insecure_skip_verify"),
-        ("A.java", "class A { void f() { Object o = new ObjectInputStream(in).readObject(); } }\n", "java.deserialize.unsafe"),
+        (
+            "A.java",
+            "class A { void f() { Object o = new ObjectInputStream(in).readObject(); } }\n",
+            "java.deserialize.unsafe",
+        ),
         ("C.cs", "class C { void F() { var b = new BinaryFormatter(); } }\n", "cs.deserialize.unsafe"),
-        ("app.rb", "def f\n  system(\"ls #{params[:d]}\")\nend\n", "rb.exec.command"),
+        ("app.rb", 'def f\n  system("ls #{params[:d]}")\nend\n', "rb.exec.command"),
     ):
         target = tmp_path / name
         target.write_text(text)

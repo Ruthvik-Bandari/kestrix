@@ -305,7 +305,8 @@ class Scope:
     hi: int  # token index of the body's last token
     parent: int
     closure: bool  # a Go function literal: names of the enclosing function are visible
-    params: dict[str, str] = field(default_factory=dict)  # name -> "object" (a request), "value" (request data), "number"
+    # name -> "object" (a request), "value" (request data) or "number" (a numeric type)
+    params: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
