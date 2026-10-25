@@ -17,10 +17,10 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator
 
+from .c_tokens import tokenize
 from .models import Confidence, Severity, SkipReason, clip_snippet
 from .php_tokens import ISTR, NAME, PUNCT, STR, Token
 from .registry import Hit
-from .systems_tokens import tokenize
 
 C_SUFFIXES = frozenset({".c", ".h", ".cc", ".cpp", ".cxx", ".c++", ".hpp", ".hh", ".hxx"})
 RUST_SUFFIXES = frozenset({".rs"})

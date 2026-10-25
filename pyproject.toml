@@ -159,7 +159,6 @@ modules = [
     "kestrix_scan.skill",
     "kestrix_scan.sql_rules",
     "kestrix_scan.systems_rules",
-    "kestrix_scan.systems_tokens",
     "kestrix_scan.taint",
     "kestrix_scan.versions",
     "kestrix_scan.walk",

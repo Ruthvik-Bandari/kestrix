@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""One bounded tokenizer for Go, Java, Kotlin and C# in pure Python. Source is read as text, never run.
+"""One bounded tokenizer for Go, Java, Kotlin, C#, C and C++, Rust and Swift in pure Python. Source is read as text,
+never run.
 
-It is not a parser. It produces the token stream the structural matcher in ``server_index.py`` needs, with the same
+It is not a parser. It produces the token stream the structural matchers in ``server_index.py`` and ``systems_rules.py`` need, with the same
 ``Token`` as the PHP tokenizer:
 
 - **Comments** (``//`` and ``/* */``; Kotlin's nest) are dropped.
@@ -14,6 +15,12 @@ It is not a parser. It produces the token stream the structural matcher in ``ser
   (``"..."``) or of the file (raw and verbatim forms).
 - **Names** (``[A-Za-z_]\\w*``, Unicode letters included); a C# ``@name`` and a Kotlin ```name``` are names.
   Annotations and attributes are ordinary ``@`` and ``[`` punctuation followed by names.
+- **C and C++** (``c``): ``u8``, ``u``, ``U`` and ``L`` prefixes and C++ raw strings ``R"delim(...)delim"``; preprocessor
+  lines are ordinary tokens (``#``, ``include``, ``<`` ...). **Rust**: block comments nest; ``"..."`` may span lines;
+  byte, C and raw strings (``b"..."``, ``c"..."``, ``r#"..."#``) are plain strings, ``'x'`` and ``b'x'`` character
+  literals, and a lifetime (``'a``) is the punctuation ``'`` followed by a name. **Swift**: block comments nest;
+  ``"..."``, ``\"\"\"...\"\"\"`` and raw ``#"..."#`` strings; an interpolation (``\\(expr)``, ``\\#(expr)`` in a raw string)
+  that uses a name makes an ``istr`` token; ``#if`` and the like are ``#`` followed by a name.
 - ``<`` and ``>`` are always single tokens (``List<List<String>>`` closes twice), so shifts read as two operators.
 
 Malformed input never raises. More than ``MAX_TOKENS`` tokens, more than ``MAX_NESTING`` open brackets, or text over
@@ -31,7 +38,8 @@ from .php_tokens import ISTR, NAME, NUM, PUNCT, STR, Token
 MAX_TOKENS = 500_000
 MAX_NESTING = 512
 MAX_CHARS = 4_000_000
-LANGUAGES = ("go", "java", "kotlin", "csharp")
+LANGUAGES = ("go", "java", "kotlin", "csharp", "c", "rust", "swift")
+_NESTED_COMMENTS = frozenset({"kotlin", "rust", "swift"})
 
 _WS = re.compile(r"\s+")
 _LINE_COMMENT = re.compile(r"[^\n\r]*")
@@ -48,6 +56,53 @@ _PUNCT = re.compile(
     r"\?\?=|\.\.\.|:=|::|->|=>|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|/=|%=|&=|\|=|\^=|<-|\?\.|\?:|\?\?|!!|\.\."
     r"|[(){}\[\];,<>+\-*/%&|^!~?:=.@#\\$]"
 )
+_C_PREFIXED = re.compile(r"(?:u8|[uUL])(?=[\"'])|(?:u8|[uUL])?R(?=\")")
+_C_RAW_OPEN = re.compile(r'"([^()\\\s"]{0,16})\(')
+_C_CHAR = re.compile(r"'(?:[^'\\\n\r]|\\[^\n\r])*'?")
+_RUST_PREFIX = re.compile(r"(?:b|c)?r(#*)\"|[bc]\"|b'")
+_RUST_STRING = re.compile(r'"(?:[^"\\]|\\[\s\S])*"?')
+_RUST_CHAR = re.compile(r"'(?:[^'\\\n\r]|\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]{1,6}\}|[^\n\r]))'")
+_SWIFT_OPEN = re.compile(r'(#*)("""|")')
+
+
+def _swift_end(text: str, start: int, hashes: int, triple: bool) -> tuple[int, list[str]]:
+    """(offset after the closing delimiter, interpolated expressions) of a Swift string whose body starts at ``start``.
+    An interpolation's parentheses may hold nested strings; the end of the file (or of the line, for ``"..."``) ends it."""
+    close = ('"""' if triple else '"') + "#" * hashes
+    escape = "\\" + "#" * hashes
+    n = len(text)
+    k = start
+    holes: list[str] = []
+    while k < n:
+        char = text[k]
+        if char in "\n\r" and not triple:
+            return k, holes
+        if text.startswith(escape, k):
+            after = k + len(escape)
+            if after < n and text[after] == "(":
+                depth = 1
+                j = after + 1
+                while j < n and depth:
+                    c = text[j]
+                    if c == '"':
+                        match = _DOUBLE.match(text, j)
+                        j = match.end() if match and match.end() > j else j + 1
+                        continue
+                    if c in "\n\r" and not triple:
+                        break
+                    depth += 1 if c == "(" else -1 if c == ")" else 0
+                    j += 1
+                holes.append(text[after + 1 : j - 1] if depth == 0 else text[after + 1 : j])
+                k = j
+                continue
+            k = after + 1
+            continue
+        if text.startswith(close, k):
+            return k + len(close), holes
+        k += 1
+    return n, holes
+
+
 _ROOT = re.compile(r"(?<![\w.$])[A-Za-z_][\w]*")
 _OPENERS = frozenset("([{")
 _CLOSERS = frozenset(")]}")
@@ -200,12 +255,12 @@ class _Lexer:
             return max(match.end() if match else pos, pos + 2)
         if not text.startswith("/*", pos):
             return None
-        if self.lang != "kotlin":
+        if self.lang not in _NESTED_COMMENTS:
             match = _BLOCK_COMMENT.match(text, pos)
             return match.end() if match else self.n
         depth = 0
         k = pos
-        while k < self.n:  # Kotlin block comments nest
+        while k < self.n:  # Kotlin, Rust and Swift block comments nest
             if text.startswith("/*", k):
                 depth += 1
                 k += 2
@@ -274,6 +329,12 @@ class _Lexer:
         text = self.text
         char = text[pos]
         lang = self.lang
+        if lang == "c":
+            return self._c_string(pos)
+        if lang == "rust":
+            return self._rust_string(pos)
+        if lang == "swift":
+            return self._swift_string(pos)
         if char == "'":
             return self._plain(_CHAR, pos, 1, "'")
         if lang == "go":
@@ -331,7 +392,95 @@ class _Lexer:
         self.emit(ISTR if names else STR, body, pos, end, names)
         return end
 
+    def _emit_str(self, start: int, end: int, body: str) -> int:
+        self.emit(STR, body, start, end)
+        return end
+
+    def _c_string(self, pos: int) -> int | None:
+        text = self.text
+        char = text[pos]
+        k = pos
+        if char in "uULR":
+            prefix = _C_PREFIXED.match(text, pos)
+            if prefix is None:
+                return None
+            k = prefix.end()
+            if text[k - 1] == "R":
+                raw = _C_RAW_OPEN.match(text, k)
+                if raw is None:
+                    return None
+                closing = ")" + raw.group(1) + '"'
+                found = text.find(closing, raw.end())
+                end = found + len(closing) if found >= 0 else self.n
+                return self._emit_str(pos, end, text[raw.end() : found if found >= 0 else self.n])
+            char = text[k]
+        if char == '"':
+            match = _DOUBLE.match(text, k)
+            end = match.end() if match and match.end() > k else k + 1
+        elif char == "'":
+            match = _C_CHAR.match(text, k)
+            end = match.end() if match and match.end() > k else k + 1
+        else:
+            return None
+        raw_text = text[k + 1 : end]
+        return self._emit_str(pos, end, raw_text[:-1] if raw_text.endswith(text[k]) else raw_text)
+
+    def _rust_string(self, pos: int) -> int | None:
+        text = self.text
+        char = text[pos]
+        if char == "'":
+            match = _RUST_CHAR.match(text, pos)
+            if match is None:  # a lifetime or a loop label: the quote, then the name as usual
+                self.emit(PUNCT, "'", pos, pos + 1)
+                return pos + 1
+            return self._emit_str(pos, match.end(), match.group(0)[1:-1])
+        if char in "bcr":
+            prefix = _RUST_PREFIX.match(text, pos)
+            if prefix is None:
+                return None
+            if prefix.group(0).endswith("'"):
+                match = _RUST_CHAR.match(text, prefix.end() - 1)
+                if match is None:
+                    return None
+                return self._emit_str(pos, match.end(), match.group(0)[1:-1])
+            if prefix.group(1) is not None:  # raw: no escapes, closed by a quote and as many hashes
+                closing = '"' + prefix.group(1)
+                found = text.find(closing, prefix.end())
+                end = found + len(closing) if found >= 0 else self.n
+                return self._emit_str(pos, end, text[prefix.end() : found if found >= 0 else self.n])
+            pos_quote = prefix.end() - 1
+        elif char == '"':
+            pos_quote = pos
+        else:
+            return None
+        match = _RUST_STRING.match(text, pos_quote)
+        end = match.end() if match and match.end() > pos_quote else pos_quote + 1
+        body = text[pos_quote + 1 : end]
+        return self._emit_str(pos, end, body[:-1] if body.endswith('"') and end - pos_quote > 1 else body)
+
+    def _swift_string(self, pos: int) -> int | None:
+        text = self.text
+        if text[pos] not in '#"':
+            return None
+        match = _SWIFT_OPEN.match(text, pos)
+        if match is None:
+            return None
+        hashes = len(match.group(1))
+        triple = match.group(2) == '"""'
+        end, holes = _swift_end(text, match.end(), hashes, triple)
+        close_len = (3 if triple else 1) + hashes
+        closing = ('"""' if triple else '"') + "#" * hashes
+        body = (
+            text[match.end() : end - close_len]
+            if text.startswith(closing, end - close_len)
+            else text[match.end() : end]
+        )
+        names = _roots(holes)
+        self.emit(ISTR if names else STR, body, pos, max(end, pos + 1), names)
+        return max(end, pos + 1)
+
 
 def tokenize(text: str, language: str) -> list[Token] | None:
-    """Tokens of ``text`` in ``language`` (go, java, kotlin or csharp), or None when a bound is exceeded."""
+    """Tokens of ``text`` in ``language`` (go, java, kotlin, csharp, c for C and C++, rust or swift), or None when a
+    bound is exceeded."""
     return _Lexer(text, language).run()

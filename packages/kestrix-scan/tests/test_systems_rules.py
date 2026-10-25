@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from kestrix_scan import systems_tokens
+from kestrix_scan import c_tokens
 from kestrix_scan.analyze import scan_text
 from kestrix_scan.php_tokens import ISTR, NAME, PUNCT, STR
 from kestrix_scan.registry import RULES
@@ -32,7 +32,7 @@ def rule_ids(source: str, rel: str) -> set[str]:
 
 
 def kinds(source: str, language: str) -> list[tuple[str, str]]:
-    tokens = systems_tokens.tokenize(source, language)
+    tokens = c_tokens.tokenize(source, language)
     assert tokens is not None
     return [(t.kind, t.value) for t in tokens]
 
@@ -62,7 +62,7 @@ def test_rust_multiline_and_byte_strings() -> None:
 
 
 def test_swift_interpolation_raw_and_multiline_strings() -> None:
-    toks = systems_tokens.tokenize(
+    toks = c_tokens.tokenize(
         'let a = "x \\(user.name) \\(d["k"]) y"\nlet r = #"raw \\(no) \\#(yes)"#\nlet m = """\nm \\(z)\n"""', "swift"
     )
     assert toks is not None
@@ -74,16 +74,16 @@ def test_swift_hash_directives_are_punctuation() -> None:
     assert kinds("#if DEBUG\n#endif", "swift")[:2] == [(PUNCT, "#"), (NAME, "if")]
 
 
-@pytest.mark.parametrize("language", systems_tokens.LANGUAGES)
+@pytest.mark.parametrize("language", ("c", "rust", "swift"))
 def test_tokenizer_never_raises_on_unterminated_input(language: str) -> None:
     for source in ('"abc', "'", "/* x", 'r#"x', '#"""x', 'R"x(abc', "\\(", 'u8"', "b'", '"\\(x'):
-        assert systems_tokens.tokenize(source, language) is not None
+        assert c_tokens.tokenize(source, language) is not None
 
 
 def test_tokenizer_bounds() -> None:
-    assert systems_tokens.tokenize("(" * (systems_tokens.MAX_NESTING + 2), "c") is None
-    assert systems_tokens.tokenize("x " * (systems_tokens.MAX_TOKENS + 2), "rust") is None
-    assert systems_tokens.tokenize("x" * (systems_tokens.MAX_CHARS + 1), "swift") is None
+    assert c_tokens.tokenize("(" * (c_tokens.MAX_NESTING + 2), "c") is None
+    assert c_tokens.tokenize("x " * (c_tokens.MAX_TOKENS + 2), "rust") is None
+    assert c_tokens.tokenize("x" * (c_tokens.MAX_CHARS + 1), "swift") is None
 
 
 # ----- C and C++
@@ -345,7 +345,7 @@ def test_suppression_with_reason(tmp_path: Path) -> None:
 
 def test_minified_and_too_complex_are_skipped() -> None:
     assert check_systems("x" * 2000, "a.c") == "minified"
-    assert check_systems("(\n" * (systems_tokens.MAX_NESTING + 2), "a.rs") == "too_complex"
+    assert check_systems("(\n" * (c_tokens.MAX_NESTING + 2), "a.rs") == "too_complex"
 
 
 @pytest.mark.parametrize(
