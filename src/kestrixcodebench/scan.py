@@ -178,8 +178,8 @@ def _run(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> float
     return seconds
 
 
-def _version(args: list[str]) -> str:
-    proc = subprocess.run(args, capture_output=True, text=True, check=True)  # noqa: S603
+def _version(args: list[str], env: dict[str, str] | None = None) -> str:
+    proc = subprocess.run(args, capture_output=True, text=True, check=True, env=env)  # noqa: S603
     return proc.stdout.strip().splitlines()[0]
 
 
@@ -433,7 +433,7 @@ def _run_opengrep(shard_dir: Path, report: Path) -> tuple[str, float, list[Recor
     if proc.returncode not in (0, 1) or not report.is_file():
         raise CodeBenchError(f"opengrep exited {proc.returncode}: {proc.stderr.strip()[-1500:]}")
     found, failed = reduce_opengrep(json.loads(report.read_text(encoding="utf-8")))
-    version = "opengrep " + _version([str(exe), "--version"])
+    version = "opengrep " + _version([str(exe), "--version"], env)
     return version, seconds, found, failed
 
 
