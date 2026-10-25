@@ -51,6 +51,10 @@ SKIP_DIRS = frozenset(
         ".output",
         ".angular",
         ".terraform",
+        ".build",
+        "Pods",
+        "Carthage",
+        "DerivedData",
     }
 )
 _GIT_TIMEOUT_S = 10
