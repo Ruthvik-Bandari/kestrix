@@ -7,6 +7,8 @@ report path tells the file kind and id. Each tool runs with the shard as its wor
 
 * **kestrix**: ``python -m kestrix_scan scan . --no-config --fail-on none --format json`` from the checked-out code;
 * **bandit**: ``bandit -r . -f json --exit-zero`` (every test, every severity and confidence), the pin of ``kestrixscanbench``;
+* **flawfinder** (GPL-2.0, run as an external program, never vendored): ``flawfinder --csv .`` at its default level
+  on the C and C++ files; **opengrep-sys**: Opengrep with the ``c``, ``rust`` and ``swift`` folders of opengrep-rules;
 * **eslint**: ESLint with ``eslint-plugin-security`` (all its rules at the plugin's ``recommended`` setting), parsing
   JavaScript and TypeScript with typescript-eslint's parser. It runs on Node from the cluster module, offline.
 
@@ -16,6 +18,8 @@ The reduced records hold file kind and id, rule id, line range and families; raw
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import re
@@ -26,9 +30,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .common import (
+    C_EXTENSIONS,
     EXTENSIONS,
     KINDS,
     LOCK_NAME,
+    P5_EXTENSIONS,
     PHP_EXTENSIONS,
     WEB_EXTENSIONS,
     CodeBenchError,
@@ -37,10 +43,10 @@ from .common import (
     write_json,
     write_jsonl,
 )
-from .families import bandit_families, eslint_families, kestrix_families, psalm_families
+from .families import bandit_families, eslint_families, families_for_cwes, kestrix_families, parse_cwes, psalm_families
 
 TOOLS = ("kestrix", "bandit", "eslint")
-SCAN_TOOLS = (*TOOLS, "psalm")  # psalm runs on the PHP benchmark only, from the Phase 2 root
+SCAN_TOOLS = (*TOOLS, "psalm", "flawfinder", "opengrep-sys")  # psalm: the PHP root; the other two: the Phase 5 root
 TUNING = "tuning"  # round-1 dev plus the round-1 test, which is spent (LOCKED_EVAL.json) and so usable for tuning
 TUNING_PARTS = ("dev", "test")
 
@@ -188,7 +194,11 @@ def count_files(directory: Path, tool: str) -> dict[str, int]:
         "kestrix": tuple(EXTENSIONS),
         "bandit": (".py",),
         "psalm": PHP_EXTENSIONS,
-        "eslint": tuple(e for e in EXTENSIONS if e != ".py" and e not in WEB_EXTENSIONS and e not in PHP_EXTENSIONS),
+        "flawfinder": C_EXTENSIONS,
+        "opengrep-sys": P5_EXTENSIONS,
+        "eslint": tuple(
+            e for e in EXTENSIONS if e != ".py" and e not in (*WEB_EXTENSIONS, *PHP_EXTENSIONS, *P5_EXTENSIONS)
+        ),
     }[base_tool(tool)]
     return {kind: sum(1 for p in (directory / kind).glob("*") if p.suffix in wanted) for kind in KINDS}
 
@@ -241,6 +251,10 @@ def run_tool(
         )
     if tool == "psalm":
         return _run_psalm(shard_dir)
+    if tool == "flawfinder":
+        return _run_flawfinder(shard_dir)
+    if tool == "opengrep-sys":
+        return _run_opengrep_sys(shard_dir, report)
     raise CodeBenchError(f"unknown tool {tool!r}; choose from {', '.join(SCAN_TOOLS)}")
 
 
@@ -300,6 +314,92 @@ def _run_psalm(shard_dir: Path) -> tuple[str, float, list[Record], dict[str, int
             found += records
             failed[kind] = failed.get(kind, 0) + bad
     return version, total, found, {k: v for k, v in failed.items() if v}
+
+
+P5_TOOLS_HOME = "KESTRIX_P5_TOOLS"  # environment variable: directory with flawfinder/, opengrep, opengrep-rules/
+OPENGREP_SYS_FOLDERS = ("c", "rust", "swift")
+
+
+def _p5_home() -> Path:
+    return Path(os.environ.get(P5_TOOLS_HOME, f"/scratch/{os.environ.get('USER', '')}/kestrix-sys/tools"))
+
+
+def reduce_flawfinder(text: str) -> list[Record]:
+    """Findings of flawfinder's ``--csv`` output (one row per hit; the CWEs column maps to families)."""
+    out = []
+    for row in csv.DictReader(io.StringIO(text)):
+        line = int(row.get("Line") or 1)
+        families = families_for_cwes(parse_cwes([row.get("CWEs") or ""]))
+        rec = record(row.get("File") or "", f"flawfinder.{row.get('Name') or ''}", line, line, families)
+        if rec:
+            out.append(rec)
+    return out
+
+
+def _run_flawfinder(shard_dir: Path) -> tuple[str, float, list[Record], dict[str, int]]:
+    """flawfinder (GPL-2.0), every C and C++ file of the shard in one run, default minimum level 1, offline."""
+    script = _p5_home() / "flawfinder" / "flawfinder.py"
+    env = {**os.environ, "LC_ALL": "C.UTF-8", "LANG": "C.UTF-8", "PYTHONUTF8": "1"}
+    start = time.perf_counter()
+    proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
+        [sys.executable, str(script), "--csv", "."],
+        cwd=shard_dir,
+        capture_output=True,
+        text=True,
+        timeout=TOOL_TIMEOUT_S,
+        check=False,
+        env=env,
+    )
+    seconds = time.perf_counter() - start
+    if proc.returncode != 0:
+        raise CodeBenchError(f"flawfinder exited {proc.returncode}: {proc.stderr.strip()[-1500:]}")
+    version = "flawfinder " + _version([sys.executable, str(script), "--version"])
+    return version, seconds, reduce_flawfinder(proc.stdout), {}
+
+
+def reduce_opengrep_sys(report: dict[str, Any]) -> tuple[list[Record], dict[str, int]]:
+    out = []
+    for item in report.get("results", []):
+        metadata = (item.get("extra") or {}).get("metadata") or {}
+        cwe = metadata.get("cwe") or []
+        families = families_for_cwes(parse_cwes(cwe if isinstance(cwe, list) else [cwe]))
+        rule = str(item.get("check_id", "")).rpartition("opengrep-rules.")[2]
+        rec = record(item.get("path", ""), rule, item["start"]["line"], item["end"]["line"], families)
+        if rec:
+            out.append(rec)
+    failed: dict[str, int] = {}
+    for err in report.get("errors", []):
+        located = locate(str(err.get("path", "")))
+        if located and re.search(r"syntax|lexical|parse", str(err.get("type", "")), re.IGNORECASE):
+            failed[located[0]] = failed.get(located[0], 0) + 1
+    return out, failed
+
+
+def _run_opengrep_sys(shard_dir: Path, report: Path) -> tuple[str, float, list[Record], dict[str, int]]:
+    """Opengrep (LGPL-2.1) with the C, Rust and Swift folders of opengrep-rules (LGPL-2.1 with the Commons Clause; the
+    README says the rules are for research, testing and benchmarking), offline, one run per shard directory."""
+    home = _p5_home()
+    exe = home / "opengrep"
+    configs = [arg for folder in OPENGREP_SYS_FOLDERS for arg in ("--config", str(home / "opengrep-rules" / folder))]
+    cache = home / "home"
+    env = {**os.environ, "HOME": str(cache), "XDG_CACHE_HOME": str(cache / ".cache")}
+    args = [str(exe), "scan", *configs, "--json", "--output", str(report), "--quiet", "--no-git-ignore"]
+    args += ["--timeout", "30", "--max-target-bytes", "1000000", "-j", "1", "."]
+    start = time.perf_counter()
+    proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
+        args, cwd=shard_dir, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False, env=env
+    )
+    seconds = time.perf_counter() - start
+    if proc.returncode not in (0, 1) or not report.is_file():
+        raise CodeBenchError(f"opengrep exited {proc.returncode}: {proc.stderr.strip()[-1500:]}")
+    found, failed = reduce_opengrep_sys(json.loads(report.read_text(encoding="utf-8")))
+    version = "opengrep " + _version_env([str(exe), "--version"], env)
+    return version, seconds, found, failed
+
+
+def _version_env(args: list[str], env: dict[str, str]) -> str:
+    proc = subprocess.run(args, capture_output=True, text=True, check=True, env=env)  # noqa: S603
+    return proc.stdout.strip().splitlines()[0]
 
 
 def scan_shard(

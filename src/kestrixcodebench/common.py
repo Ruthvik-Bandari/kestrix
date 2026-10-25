@@ -40,11 +40,28 @@ EXTENSIONS = {
     # PHP (kestrix-scan Phase 2): built in its own root from a CVEfixes PHP working database (`php-dump`)
     ".php": "php",
     ".phtml": "php",
+    # C, C++, Rust and Swift (kestrix-scan Phase 5): built in one root of their own from a CVEfixes working database of
+    # those languages (`php-dump --label-set p5`); each language is scored on its own (a .h header counts as C)
+    ".c": "c",
+    ".h": "c",
+    ".cc": "cpp",
+    ".cpp": "cpp",
+    ".cxx": "cpp",
+    ".c++": "cpp",
+    ".hpp": "cpp",
+    ".hh": "cpp",
+    ".hxx": "cpp",
+    ".rs": "rust",
+    ".swift": "swift",
 }
 WEB_LANGUAGE = "web"
 WEB_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language == WEB_LANGUAGE)
 PHP_LANGUAGE = "php"
 PHP_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language == PHP_LANGUAGE)
+P5_LANGUAGES = ("c", "cpp", "rust", "swift")
+P5_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language in P5_LANGUAGES)
+C_EXTENSIONS = tuple(ext for ext, language in EXTENSIONS.items() if language in ("c", "cpp"))
+LANGUAGE_GROUPS = {"p5": P5_LANGUAGES}  # --only-language p5 keeps every Phase 5 language
 
 
 class CodeBenchError(RuntimeError):

@@ -4,7 +4,7 @@
 
 ``php-dump`` streams the PHP files of the CVEfixes archive into a working database; ``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
 into dev and a locked test and writes the files. ``scan`` runs one tool on dev shards (a Slurm array task);
-``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus`` and ``php-corpus`` scan directory trees of web files or of PHP and SQL files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
+``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus``, ``php-corpus`` and ``p5-corpus`` scan directory trees of web files, of PHP and SQL files or of C, C++, Rust, Swift and property-list files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
 ``table`` prints Markdown tables from a report; ``locked-test`` claims the lock and evaluates the test split once.
 Reports hold counts, rates, intervals and rule ids only. Exit status is 1 on failure.
 """
@@ -29,6 +29,7 @@ COMMANDS = (
     "bandit-gap",
     "web-corpus",
     "php-corpus",
+    "p5-corpus",
     "examples",
     "table",
     "locked-test",
@@ -59,11 +60,14 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--root", type=Path, help="benchmark root, for example /scratch/$USER/kestrix/codebench")
     p.add_argument("--cvefixes-zip", type=Path, help="php-dump: the CVEfixes_v1.0.8.zip archive")
     p.add_argument("--out", type=Path, help="php-dump: the working database to write")
+    p.add_argument("--label-set", choices=("php", "p5"), default="php", help="php-dump: PHP, or the Phase 5 languages")
     p.add_argument("--cvefixes-db", type=Path, help="build: kestrixvul's work/cvefixes.sqlite")
     p.add_argument("--vul-root", type=Path, help="build: kestrixvul's root (work/ghsa.jsonl, mine/)")
     p.add_argument("--limit", type=int, help="build: at most this many changed files per source (smoke runs)")
     p.add_argument(
-        "--only-language", choices=("python", "javascript", "typescript", "web", "php"), help="build: keep one language"
+        "--only-language",
+        choices=("python", "javascript", "typescript", "web", "php", "p5"),
+        help="build: keep one language (p5: C, C++, Rust and Swift)",
     )
     p.add_argument("--corpus-dir", type=Path, action="append", help="web-corpus: a directory tree to scan (repeat)")
     p.add_argument("--tools", help="dev-metrics, locked-test: comma-separated tools (default kestrix,bandit,eslint)")
@@ -173,7 +177,7 @@ def _run(args: argparse.Namespace) -> int:
         from .phpsource import load_php
 
         _need(args.cvefixes_zip and args.out, "--cvefixes-zip and --out")
-        print(json.dumps(load_php(args.cvefixes_zip, args.out), sort_keys=True))
+        print(json.dumps(load_php(args.cvefixes_zip, args.out, args.label_set), sort_keys=True))
         return 0
     _need(args.root, "--root")
     layout = Layout(args.root)
@@ -214,11 +218,12 @@ def _run(args: argparse.Namespace) -> int:
 
         print(compare_runs(layout, args.base_run, args.run, args.label, reps=args.bootstrap, split=args.split))
         return 0
-    if args.command in ("web-corpus", "php-corpus"):
-        from .corpus import php_corpus, web_corpus
+    if args.command in ("web-corpus", "php-corpus", "p5-corpus"):
+        from .corpus import p5_corpus, php_corpus, web_corpus
 
         _need(args.corpus_dir, "--corpus-dir")
-        print((php_corpus if args.command == "php-corpus" else web_corpus)(layout, args.corpus_dir, args.label))
+        scanner = {"php-corpus": php_corpus, "p5-corpus": p5_corpus}.get(args.command, web_corpus)
+        print(scanner(layout, args.corpus_dir, args.label))
         return 0
     if args.command == "rule-rates":
         from .rates import rule_rates

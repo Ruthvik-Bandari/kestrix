@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from .common import LANGUAGES, CodeBenchError, Layout, read_jsonl
+from .common import LANGUAGES, P5_LANGUAGES, CodeBenchError, Layout, read_jsonl
 from .diff import map_old_line, near
 
 MARGIN = 3
@@ -51,6 +51,13 @@ SUBSETS: dict[str, tuple[str, ...]] = {
     "js_ts": ("javascript", "typescript"),
     "web": ("web",),  # .vue, .svelte, .html, .css: only kestrix-scan reads them
     "php": ("php",),  # .php, .phtml
+    # Phase 5 (built in their own root): each language on its own, and C with C++
+    "c": ("c",),
+    "cpp": ("cpp",),
+    "c_cpp": ("c", "cpp"),
+    "rust": ("rust",),
+    "swift": ("swift",),
+    "p5": P5_LANGUAGES,
 }
 
 Finding = tuple[str, int, int, tuple[str, ...]]  # rule, line, end line, families

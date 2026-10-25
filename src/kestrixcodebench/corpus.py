@@ -23,7 +23,7 @@ from typing import Any
 from kestrix_scan.analyze import scan_text
 from kestrix_scan.walk import MAX_FILE_BYTES, Candidate, Unreadable, read_text
 
-from .common import PHP_EXTENSIONS, WEB_EXTENSIONS, Layout, write_json
+from .common import P5_EXTENSIONS, PHP_EXTENSIONS, WEB_EXTENSIONS, Layout, write_json
 
 MAX_FILES = 200_000
 
@@ -37,6 +37,12 @@ def php_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
     """Scan every PHP, PHTML and SQL file under ``roots`` (third-party libraries, no CVE fix touched them) and write
     ``reports/codebench-phpcorpus-LABEL.json``: findings per KLOC per rule, an upper bound on false alarms."""
     return corpus_scan(layout, roots, label, (*PHP_EXTENSIONS, ".sql"), "phpcorpus")
+
+
+def p5_corpus(layout: Layout, roots: list[Path], label: str) -> Path:
+    """Scan every C, C++, Rust, Swift and property-list file under ``roots`` (shallow clones of popular projects, no CVE
+    fix touched them) and write ``reports/codebench-p5corpus-LABEL.json``: findings per KLOC per rule and extension."""
+    return corpus_scan(layout, roots, label, (*P5_EXTENSIONS, ".plist"), "p5corpus")
 
 
 def corpus_scan(layout: Layout, roots: list[Path], label: str, extensions: tuple[str, ...], prefix: str) -> Path:

@@ -27,6 +27,23 @@ EXTRA_CWE_FAMILY: dict[int, str] = {
     208: "timing",
     942: "cors",
     98: "fileinclusion",  # PHP include/require of a request-chosen path (added with the PHP benchmark)
+    # Added with the C, C++, Rust and Swift benchmark (Phase 5): writes past a buffer and format strings. Out-of-bounds
+    # reads (CWE-125), use after free (416), NULL dereference (476) and integer overflow (190) stay out of scope: no
+    # lexical rule targets them. Pair families are fixed at build time, so the earlier benchmarks' roots do not change.
+    119: "overflow",
+    120: "overflow",
+    121: "overflow",
+    122: "overflow",
+    131: "overflow",
+    193: "overflow",
+    242: "overflow",
+    676: "overflow",
+    680: "overflow",
+    785: "overflow",
+    787: "overflow",
+    805: "overflow",
+    806: "overflow",
+    134: "formatstring",
 }
 FAMILY_OF_CWE: dict[int, str] = CWE_CATEGORY | EXTRA_CWE_FAMILY
 
@@ -57,6 +74,8 @@ FAMILY_NAMES: dict[str, str] = {
     "timing": "Timing side channel",
     "cors": "Permissive CORS",
     "fileinclusion": "File inclusion",
+    "overflow": "Buffer overflow (write)",
+    "formatstring": "Format string",
 }
 
 # eslint-plugin-security rule -> CWE of the weakness the rule documents. Rules with no entry map to no family.
