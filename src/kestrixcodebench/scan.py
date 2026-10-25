@@ -29,6 +29,7 @@ from .common import (
     EXTENSIONS,
     KINDS,
     LOCK_NAME,
+    P4_EXTENSIONS,
     PHP_EXTENSIONS,
     WEB_EXTENSIONS,
     CodeBenchError,
@@ -188,7 +189,9 @@ def count_files(directory: Path, tool: str) -> dict[str, int]:
         "kestrix": tuple(EXTENSIONS),
         "bandit": (".py",),
         "psalm": PHP_EXTENSIONS,
-        "eslint": tuple(e for e in EXTENSIONS if e != ".py" and e not in WEB_EXTENSIONS and e not in PHP_EXTENSIONS),
+        "eslint": tuple(
+            e for e in EXTENSIONS if e != ".py" and e not in (*WEB_EXTENSIONS, *PHP_EXTENSIONS, *P4_EXTENSIONS)
+        ),
     }[base_tool(tool)]
     return {kind: sum(1 for p in (directory / kind).glob("*") if p.suffix in wanted) for kind in KINDS}
 

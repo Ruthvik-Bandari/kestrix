@@ -25,6 +25,8 @@ from kestrixvul.split import UnionFind
 from .common import (
     EXTENSIONS,
     KINDS,
+    LANGUAGE_GROUPS,
+    P4_LANGUAGES,
     PHP_LANGUAGE,
     SEED,
     SHARDS,
@@ -74,9 +76,11 @@ def _language_ok(path: str, only: str | None) -> bool:
     found = language_of(path)
     if found is None:
         return False
-    if only is None:  # PHP has a root of its own (a different working database), so the default build leaves it out
-        return found[0] != PHP_LANGUAGE
-    return found[0] == only
+    if (
+        only is None
+    ):  # PHP and Phase 4 have roots of their own (other working databases): the default build leaves them out
+        return found[0] != PHP_LANGUAGE and found[0] not in P4_LANGUAGES
+    return found[0] in LANGUAGE_GROUPS.get(only, (only,))
 
 
 def pair_reason(pair: RawPair, only: str | None = None) -> str | None:
@@ -273,7 +277,7 @@ def build(
 ) -> dict[str, Any]:
     """Read both sources, filter, de-duplicate, split and write the files and the manifest.
 
-    ``only_language`` ("web") keeps only that language's files: the web-file benchmark is built in its own root, so the
+    ``only_language`` ("web", "php", or "p4" for every Phase 4 language) keeps only that language's files: the web-file benchmark is built in its own root, so the
     ids and the split of the Python, JavaScript and TypeScript benchmark are untouched.
     """
     if not cvefixes_db.is_file():

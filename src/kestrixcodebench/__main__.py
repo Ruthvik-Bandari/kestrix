@@ -59,11 +59,14 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--root", type=Path, help="benchmark root, for example /scratch/$USER/kestrix/codebench")
     p.add_argument("--cvefixes-zip", type=Path, help="php-dump: the CVEfixes_v1.0.8.zip archive")
     p.add_argument("--out", type=Path, help="php-dump: the working database to write")
+    p.add_argument("--label-set", choices=("php", "p4"), default="php", help="php-dump: PHP, or the Phase 4 languages")
     p.add_argument("--cvefixes-db", type=Path, help="build: kestrixvul's work/cvefixes.sqlite")
     p.add_argument("--vul-root", type=Path, help="build: kestrixvul's root (work/ghsa.jsonl, mine/)")
     p.add_argument("--limit", type=int, help="build: at most this many changed files per source (smoke runs)")
     p.add_argument(
-        "--only-language", choices=("python", "javascript", "typescript", "web", "php"), help="build: keep one language"
+        "--only-language",
+        choices=("python", "javascript", "typescript", "web", "php", "p4"),
+        help="build: keep one language (p4: Go, Java, Kotlin, C#, Ruby and ERB)",
     )
     p.add_argument("--corpus-dir", type=Path, action="append", help="web-corpus: a directory tree to scan (repeat)")
     p.add_argument("--tools", help="dev-metrics, locked-test: comma-separated tools (default kestrix,bandit,eslint)")
@@ -173,7 +176,7 @@ def _run(args: argparse.Namespace) -> int:
         from .phpsource import load_php
 
         _need(args.cvefixes_zip and args.out, "--cvefixes-zip and --out")
-        print(json.dumps(load_php(args.cvefixes_zip, args.out), sort_keys=True))
+        print(json.dumps(load_php(args.cvefixes_zip, args.out, args.label_set), sort_keys=True))
         return 0
     _need(args.root, "--root")
     layout = Layout(args.root)
