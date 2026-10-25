@@ -733,6 +733,13 @@ def test_bash_source_like_names() -> None:
         "t.phtml",
         "v.blade.php",
         "x.SQL",
+        "main.go",
+        "A.java",
+        "B.kt",
+        "build.gradle.kts",
+        "C.cs",
+        "app.rb",
+        "show.html.erb",
     ):
         assert module.source_like(name), name
     for name in (

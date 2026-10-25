@@ -53,6 +53,14 @@ def test_keeps_php_and_sql_files_and_skips_composer_vendor(tmp_path: Path) -> No
 
 
 @pytest.mark.usefixtures("no_git")
+def test_keeps_go_jvm_dotnet_and_ruby_files_and_skips_their_build_dirs(tmp_path: Path) -> None:
+    kept = ("cmd/main.go", "src/main/java/A.java", "app/B.kt", "build.gradle.kts", "Api/C.cs", "app/x.rb", "app/v.html.erb")
+    for rel in (*kept, "vendor/github.com/x/y.go", "target/classes/A.java", "Api/obj/Debug/g.cs", ".gradle/x.kts"):
+        write(tmp_path, rel)
+    assert names(tmp_path) == sorted(kept)
+
+
+@pytest.mark.usefixtures("no_git")
 def test_big_file_is_reported_as_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(walk, "MAX_FILE_BYTES", 10)
     write(tmp_path, "big.py", "x = '" + "a" * 20 + "'\n")

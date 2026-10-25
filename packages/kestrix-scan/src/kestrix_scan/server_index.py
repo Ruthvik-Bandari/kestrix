@@ -182,8 +182,10 @@ _ROOT_VALUES: dict[str, frozenset[str]] = {  # names that are request data unles
     "ruby": frozenset({"params", "cookies"}),
 }
 _WRITER_TYPES = re.compile(r"ResponseWriter\b|HttpServletResponse\b|ServletResponse\b|StaplerResponse\w*\b")
-_ARCHIVE_ENTRY = re.compile(r"(?i)^(?:zip|tar|jar|archive)?_?entry$|^(?:zip|tar|jar)?entry$")
-_ARCHIVE_MEMBERS = frozenset({"FullName", "getName", "Name", "name", "full_name"})
+_ARCHIVE_ENTRY = re.compile(r"(?i)^(?:zip|tar|jar|archive)?_?(?:entry|header|hdr)$")
+_ARCHIVE_MEMBERS = frozenset({"FullName", "getName", "Name", "name", "full_name", "Linkname", "getLinkName"})
+_UPLOAD = re.compile(r"(?i)file|upload|attachment|posted|part")
+_UPLOAD_MEMBERS = frozenset({"Filename", "getOriginalFilename", "getSubmittedFileName", "original_filename", "FileName"})
 _SOURCE_CALLS = frozenset({"mux.Vars", "chi.URLParam", "chi.URLParamFromCtx", "pat.Param", "vars.Get"})
 
 # Calls that pass their arguments' data on, by the callee's last name; every other call returns clean data.
@@ -939,12 +941,10 @@ class Index:
             return self._postfix(origins, "value" if origins else "clean", close + 1, hi, depth, path=name)
         if self.lang == "kotlin" and self.punct(lo + 1, "<") and name.startswith("receive"):
             return []
-        if (
-            _ARCHIVE_ENTRY.match(name)
-            and self.punct(lo + 1, ".", "?.")
-            and lo + 2 < hi
-            and self.toks[lo + 2].value in _ARCHIVE_MEMBERS
-        ):  # the name of an archive entry is chosen by whoever made the archive (zip slip)
+        member = self.toks[lo + 2].value if lo + 2 < hi and self.punct(lo + 1, ".", "?.", "&.") else ""
+        if (_ARCHIVE_ENTRY.match(name) and member in _ARCHIVE_MEMBERS) or (
+            member in _UPLOAD_MEMBERS and _UPLOAD.search(name)
+        ):  # names chosen by whoever made the archive (zip slip) or uploaded the file
             end = lo + 3
             if self.punct(end, "(") and self.match[end] > end:
                 end = self.match[end] + 1
