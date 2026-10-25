@@ -19,6 +19,7 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
     (−1.2 [−4.9, +1.9]).** Dev: 1.6% [0.7, 3.4] at 0.08; the claim that alerts would stay in the dev interval did not hold. Rust (14 held-out pairs)
     and Swift (1) are too small to measure. Clean projects: 0 to 0.07 findings per KLOC, reqwest 0.36 and Alamofire 0.11 (their own tests and
     examples of the disabled-TLS APIs).
+    No slowdown on the Python/JavaScript/TypeScript files (41.0 and 42.4 files per second, identical findings).
   - Kept because requested, with no dev detection: `c.format.nonliteral` (it detected one held-out pair), `c.random.rand`, `c.tempfile.insecure`,
     `c.buffer.gets` and every Rust and Swift rule. Measured and rejected: format strings followed by arguments (345 alerts per extra detected pair)
     and copies into any destination (93).

@@ -985,7 +985,12 @@ Kingfisher 43 KLOC, 1 (0.023).
 
 ### Speed
 
-SPEED_PLACEHOLDER
+One core, every dev file of the Python, JavaScript and TypeScript benchmark (39,420 files), all eight shards in turn, two repetitions, the
+scanner of `main` after Phase 4 (`794d4a3`) against the final scanner, same job (11359571): baseline 39.5 and 42.4 files per second (mean 41.0),
+final 42.2 and 42.5 (mean 42.4); **the findings are identical** (8,593 in both, every shard byte for byte). The new code costs those files nothing
+(the limit was 10%). On the Phase 5 benchmark Kestrix reads 17.8 files per second on dev (C files are long: 1.5 KLOC on average), flawfinder 46.7
+and Opengrep 2.5. Pathological inputs (quote, raw-string, comment, lifetime and interpolation floods, 400 nested calls, 20,000-line copy and `let`
+chains, 20,000 `.arg()` calls, 20,000 property-list keys) are bounded and tested; a bound is reported as `too_complex`.
 
 ### Held-out run (`p5-v1`)
 
