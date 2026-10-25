@@ -1,0 +1,46 @@
+{
+  "name": "p5-v1",
+  "written_before_the_held_out_run": true,
+  "date": "2026-10-25",
+  "scanner": {
+    "package": "kestrix-scan 0.1.0 (unreleased)",
+    "code_tree": "the commit of this file, synced to /scratch/$USER/kestrix-sys/code-final (scanner identical to dev run r1, df9248d)",
+    "rules": {"c_and_cpp": 7, "rust": 3, "swift": 3},
+    "frozen": "no scanner change after this file; tuned on dev only (two widenings measured and rejected: format strings followed by arguments, +2 pairs for +677 alerts; copies into any destination, +13 pairs for +1,209 alerts)"
+  },
+  "comparison_tools": [
+    {"name": "flawfinder", "version": "2.0.19", "licence": "GPL-2.0-or-later, run as an external program, never vendored", "languages": ["c", "cpp"], "mode": "flawfinder --csv . on each shard, default minimum level 1, offline"},
+    {"name": "opengrep with opengrep-rules", "version": "opengrep 1.32.0, opengrep-rules f1d2b562b414", "licence": "engine LGPL-2.1; rules LGPL-2.1 with the Commons Clause", "languages": ["c", "rust", "swift"], "mode": "every rule of the c, rust and swift folders, one run per shard, offline (its C rules do not read C++ files)"}
+  ],
+  "data": {
+    "source": "CVEfixes v1.0.8 (CC BY 4.0), C, C++, Rust and Swift file changes of fix commits, filters of the code benchmark",
+    "split": "project-disjoint, seeded hash kestrixcodebench-v1, 30% of groups to test",
+    "split_manifest_sha256": "6a056926981351d1c15821430fb62bb35b770f18342d8c1b0e87cda036affc70",
+    "test_pairs": 1653,
+    "test_pairs_in_scope": 427,
+    "test_projects": 241,
+    "test_in_scope_by_language": {"c": 362, "cpp": 50, "rust": 14, "swift": 1},
+    "dev_pairs": 6463,
+    "dev_pairs_in_scope": 1437,
+    "dev_projects": 584,
+    "unchanged_files": 0
+  },
+  "dev_numbers_for_reference": {
+    "kestrix_detection_percent": {"c": 2.0, "cpp": 0.5, "c_cpp": 1.6, "rust": 0.0, "swift": 0.0, "all": 1.6},
+    "kestrix_detection_ci95_c_cpp": [0.7, 3.4],
+    "kestrix_alerts_per_kloc_after": {"c_cpp": 0.08, "rust": 0.14, "all": 0.08},
+    "kestrix_alerts_per_kloc_after_ci95_c_cpp": [0.05, 0.14],
+    "flawfinder_detection_percent_c_cpp": 13.5,
+    "flawfinder_alerts_per_kloc_after_c_cpp": 3.51,
+    "opengrep_detection_percent": {"c_cpp": 1.6, "rust": 5.9},
+    "opengrep_alerts_per_kloc_after_c_cpp": 0.30
+  },
+  "claims_to_check": [
+    "C and C++: flawfinder is expected to detect far more than Kestrix (it reports every risky call at its default level); Kestrix's alerts per KLOC on fixed files are expected to be below flawfinder's and opengrep's.",
+    "C and C++: Kestrix alerts per KLOC on fixed files stay within the dev interval [0.05, 0.14].",
+    "C and C++: Kestrix detection is reported next to opengrep's with the paired bootstrap interval; no direction is claimed (equal on dev).",
+    "Rust (14 in-scope test pairs) and Swift (1) are too small to support any claim; their numbers are reported as measured.",
+    "Reported as measured whatever the outcome; no rule or threshold changes follow this run."
+  ],
+  "metrics": "detection (family match within 3 lines of a changed line), fix-aware, fix-weighted, alerts per KLOC on after-files; 95% percentile bootstrap, 1000 resamples of whole repositories"
+}
