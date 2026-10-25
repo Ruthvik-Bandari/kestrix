@@ -27,8 +27,8 @@ Read on 2026-10-20. Re-read them before submitting; the portal's rules change.
 `uv run python scripts/build_plugin_repo.py` writes 112 files (about 260 KB) to `dist/claude-plugin-repo/`:
 
 ```text
-.claude-plugin/plugin.json        1,013 B   manifest (name kestrix, displayName Kestrix, 0.1.0, Apache-2.0)
-.claude-plugin/marketplace.json     970 B   self-hosted marketplace "kestrix", source "./"
+.claude-plugin/plugin.json        1,278 B   manifest (name kestrix, displayName Kestrix, 0.1.0, Apache-2.0)
+.claude-plugin/marketplace.json   1,143 B   self-hosted marketplace "kestrix", source "./"
 .gitignore                           83 B   evals/results/
 CHANGELOG.md  LICENSE  NOTICE  PRIVACY.md  README.md  SECURITY.md
 benchmarks/                                 scorecard and A/B report (text)
@@ -58,10 +58,10 @@ change one, edit `packages/kestrix-scan/plugin-repo/` or the packaged `plugin.js
 | Branch or tag | `main`, or the release tag `kestrix--v0.1.0` to publish only tagged releases |
 | Name | `kestrix` |
 | Display name | `Kestrix` |
-| Short description | `Kestrix security for Claude Code: scans every file Claude writes with the local kestrix-scan scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Runs locally; needs the kestrix-scan (or kestrix) command on PATH.` (from `plugin.json`) |
+| Short description | `Security checks for the code Claude writes: after every edit, the local kestrix-scan scanner checks the changed file for insecure code in 13 languages and hard-coded secrets, and Claude fixes the findings. Also checks package installs against a local OSV index (denies known-malicious packages), plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Runs locally; needs the kestrix-scan (or kestrix) command on PATH.` (from `plugin.json`) |
 | Long description | `README.md` (the directory shows the README as the listing's description) |
 | Category | `security` (the marketplace entry's `category`; the portal docs list no separate category field) |
-| Keywords | `security`, `sast`, `secrets`, `code-review`, `cwe`, `hooks`, `kestrix` |
+| Keywords | `security`, `sast`, `static-analysis`, `security-review`, `code-review`, `secrets`, `secret-scanning`, `dependency-scanning`, `osv`, `supply-chain`, `cwe`, `hooks`, `kestrix` |
 | Homepage | `https://github.com/Ruthvik-Bandari/kestrix-claude-plugin` |
 | Documentation | `https://github.com/Ruthvik-Bandari/kestrix-claude-plugin#readme` (`documentationUrl`) |
 | Support | `https://github.com/Ruthvik-Bandari/kestrix-claude-plugin/issues` (`supportUrl`) |

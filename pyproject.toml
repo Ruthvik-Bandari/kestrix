@@ -7,18 +7,33 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Ruthvik Bandari", email = "bandari.ru@northeastern.edu" }]
 requires-python = ">=3.10"
-keywords = ["security", "sigma", "detection-engineering", "forensics", "bitcoin", "post-quantum"]
+keywords = [
+    "security", "security workbench", "phishing", "email security", "eml", "sigma", "detection engineering",
+    "forensics", "file forensics", "url analysis", "website security", "security headers", "tls",
+    "sast", "static analysis", "secret scanning", "dependency scanning", "osv", "sarif", "claude code",
+    "bitcoin", "post-quantum",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
+    "Environment :: Console",
     "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Topic :: Internet :: WWW/HTTP",
     "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
 ]
 dependencies = [
     # The code scanner and the Claude Code plugin (ADR 0006); versioned together with kestrix below 1.0.
@@ -49,7 +64,11 @@ research = [
 kestrix = "kestrix.cli:app"
 
 [project.urls]
+Homepage = "https://github.com/Ruthvik-Bandari/kestrix"
+Documentation = "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/README.md"
 Repository = "https://github.com/Ruthvik-Bandari/kestrix"
+Issues = "https://github.com/Ruthvik-Bandari/kestrix/issues"
+Changelog = "https://github.com/Ruthvik-Bandari/kestrix/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["uv_build>=0.11.16,<0.12.0"]

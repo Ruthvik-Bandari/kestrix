@@ -9,14 +9,21 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Ruthvik Bandari", email = "bandari.ru@northeastern.edu" }]
 requires-python = ">=3.10"
-keywords = ["security", "sast", "sca", "osv", "secrets", "static-analysis", "cwe", "sarif", "pre-commit", "claude-code", "javascript", "typescript"]
+keywords = [
+    "security", "sast", "static analysis", "security scanner", "vulnerability scanner", "secret scanning",
+    "dependency scanning", "sca", "osv", "cwe", "sarif", "pre-commit", "pytest", "claude code", "claude-code",
+    "ai coding assistant", "python", "javascript", "typescript", "php", "go", "java", "kotlin", "c#", "ruby",
+    "c", "c++", "rust", "swift",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -35,8 +42,10 @@ kestrix-scan = "kestrix_scan.cli:main"
 kestrix = "kestrix_scan.pytest_plugin"
 
 [project.urls]
-Repository = "https://github.com/Ruthvik-Bandari/kestrix"
+Homepage = "https://github.com/Ruthvik-Bandari/kestrix/tree/main/packages/kestrix-scan"
 Documentation = "https://github.com/Ruthvik-Bandari/kestrix/blob/main/packages/kestrix-scan/README.md"
+Repository = "https://github.com/Ruthvik-Bandari/kestrix"
+Issues = "https://github.com/Ruthvik-Bandari/kestrix/issues"
 Changelog = "https://github.com/Ruthvik-Bandari/kestrix/blob/main/packages/kestrix-scan/CHANGELOG.md"
 
 [build-system]

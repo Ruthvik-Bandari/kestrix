@@ -4,20 +4,26 @@
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-**Security checks for your code, and a local-first security workbench.** Everything runs on your own machine.
-
-### Scan your code: `kestrix-scan`
-
-A small, fast scanner for insecure code in 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust, Swift), web, SQL, CI and infrastructure files, hard-coded secrets and vulnerable or malicious dependencies, measured on real security fixes ([results](#code-security-scanning)), with **no dependencies** on Python
-3.11 and newer (only `tomli` on 3.10). It works in the terminal, CI, pre-commit and pytest, and inside Claude
-Code, where it has Claude fix what it finds as it writes code.
+**`kestrix-scan` is a security scanner for developers and anyone coding with an AI assistant: it runs locally with
+no dependencies, finds insecure code in 13 languages, hard-coded secrets and vulnerable or malicious dependencies,
+checks each file Claude Code writes as Claude writes it, and is measured on real CVE fixes
+([accuracy table](#code-security-scanning)).**
 
 ```bash
 pip install kestrix-scan
-kestrix-scan src                          # exit 1 on high or critical findings
+kestrix-scan src                      # exit 1 on high or critical findings
+kestrix-scan install-claude-plugin    # the Claude Code plugin; enable it as in "Claude Code plugin" below
+```
+
+### Scan your code: `kestrix-scan`
+
+The 13 languages are Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift; it also
+reads web, SQL, CI and infrastructure files. It has no dependencies on Python 3.11 and newer (only `tomli` on 3.10),
+and works in the terminal, CI (SARIF), pre-commit and pytest as well as in Claude Code.
+
+```bash
 kestrix-scan init --ci github --pre-commit   # [tool.kestrix] config, SARIF upload workflow, pre-commit hook
-kestrix-scan install-claude-plugin        # the Claude Code plugin: scan every file Claude writes
-kestrix-scan db update                    # download the OSV data once (the only network step); lockfiles are then checked offline
+kestrix-scan db update                       # download the OSV data once (the only network step); lockfiles are then checked offline
 ```
 
 Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](packages/kestrix-scan/README.md).

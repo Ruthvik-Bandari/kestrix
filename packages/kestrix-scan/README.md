@@ -1,9 +1,22 @@
 # kestrix-scan
 
-**Local security checks for code in 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift), web files (HTML, Vue, Svelte, CSS), SQL files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies in 9 lockfile ecosystems. 146 rules, each measured on real security fixes where data exists ([numbers below](#languages-and-measured-accuracy)).**
-`kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
-randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
-pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
+**A security scanner for developers and anyone coding with an AI assistant: it runs locally with no dependencies,
+checks each file Claude Code writes as Claude writes it, and is measured on real CVE fixes
+([accuracy table](#languages-and-measured-accuracy)).**
+
+```bash
+pip install kestrix-scan          # or: uv tool install kestrix-scan / pipx install kestrix-scan
+kestrix-scan src                  # text report; exit 1 on high or critical findings
+kestrix-scan install-claude-plugin   # the Claude Code plugin; enable it as in "Claude Code plugin" below
+```
+
+It covers code in 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift),
+web files (HTML, Vue, Svelte, CSS), SQL files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded
+secrets and dependencies in 9 lockfile ecosystems. It finds shell and SQL injection, XSS sinks, unsafe deserialization,
+disabled TLS checks, weak hashes and randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or
+reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for
+GitHub code scanning, in pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it
+writes code.
 
 - **No dependencies** on Python 3.11 and newer (only `tomli` on 3.10). Python 3.10 to 3.13.
 - **Nothing leaves your machine.** Files are read as data: never imported, executed or uploaded. Scans open no
@@ -14,11 +27,6 @@ pre-commit and pytest, and inside Claude Code, where it has Claude fix what it f
 Part of [Kestrix](https://github.com/Ruthvik-Bandari/kestrix) by Ruthvik Bandari. Apache-2.0.
 
 ## Quick start
-
-```bash
-pip install kestrix-scan          # or: uv tool install kestrix-scan / pipx install kestrix-scan
-kestrix-scan src                  # text report; exit 1 on high or critical findings
-```
 
 Before the first PyPI release, install it from GitHub:
 `pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.

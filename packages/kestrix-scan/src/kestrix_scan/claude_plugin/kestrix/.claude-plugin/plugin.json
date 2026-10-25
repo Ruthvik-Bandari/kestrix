@@ -2,7 +2,7 @@
   "name": "kestrix",
   "displayName": "Kestrix",
   "version": "0.1.0",
-  "description": "Kestrix security for Claude Code: scans every file Claude writes with the local kestrix-scan scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Runs locally; needs the kestrix-scan (or kestrix) command on PATH.",
+  "description": "Security checks for the code Claude writes: after every edit, the local kestrix-scan scanner checks the changed file for insecure code in 13 languages and hard-coded secrets, and Claude fixes the findings. Also checks package installs against a local OSV index (denies known-malicious packages), plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Runs locally; needs the kestrix-scan (or kestrix) command on PATH.",
   "author": {
     "name": "Ruthvik Bandari",
     "url": "https://github.com/Ruthvik-Bandari"
@@ -13,5 +13,5 @@
   "supportUrl": "https://github.com/Ruthvik-Bandari/kestrix-claude-plugin/issues",
   "privacyPolicyUrl": "https://github.com/Ruthvik-Bandari/kestrix-claude-plugin/blob/main/PRIVACY.md",
   "license": "Apache-2.0",
-  "keywords": ["security", "sast", "secrets", "code-review", "cwe", "hooks", "kestrix"]
+  "keywords": ["security", "sast", "static-analysis", "security-review", "code-review", "secrets", "secret-scanning", "dependency-scanning", "osv", "supply-chain", "cwe", "hooks", "kestrix"]
 }

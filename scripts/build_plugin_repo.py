@@ -136,14 +136,22 @@ def marketplace() -> bytes:
     entry = {
         "name": plugin.PLUGIN_NAME,
         "source": "./",
-        "description": "Scans every file Claude writes with the local kestrix-scan scanner and has Claude fix the findings, plus secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Offline; hooks open no network connections.",
+        "description": "Scans every file Claude writes for insecure code and hard-coded secrets with the local kestrix-scan scanner and has Claude fix the findings; checks package installs against a local OSV index; secure-review skills and /kestrix:scan, /kestrix:fix and /kestrix:review. Offline; hooks open no network connections.",
         "version": __version__,
         "author": {"name": __author__},
         "homepage": REPO_URL,
         "repository": REPO_URL,
         "license": manifest["license"],
         "category": "security",
-        "tags": ["security", "sast", "secrets", "code-review"],
+        "tags": [
+            "security",
+            "sast",
+            "static-analysis",
+            "security-review",
+            "secrets",
+            "dependency-scanning",
+            "supply-chain",
+        ],
     }
     data = {
         "name": MARKETPLACE_NAME,

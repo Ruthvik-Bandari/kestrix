@@ -105,6 +105,26 @@ Several `kestrix-scan` rules ship with thin evidence; [the list](docs/modules/co
 
 Rules change on test evidence like this, and every benchmark rerun reports the new numbers. Do not paste private or proprietary code.
 
+To report a rule result without a fix, open an issue with the **Scanner rule: false positive or missed finding** template.
+
+## Good first contributions
+
+Small, self-contained tasks that need only `uv sync --all-extras` and `uv run pytest packages/kestrix-scan/tests`:
+
+- **A negative test for a rule kept without evidence.** `c.random.rand`, `c.format.nonliteral` and
+  `html.inline.event_handler` are kept because they were requested, with no measured detection
+  ([code.md](docs/modules/code.md#limits), [CVE-fix benchmark](docs/benchmarks/cvefixes.md)). Each has only a few
+  negative cases. Add a safe snippet the rule must not flag, next to its tests in
+  `packages/kestrix-scan/tests/test_systems_rules.py` or `test_web_rules.py`; if the rule flags it, that is a false
+  positive to fix or report.
+- **A positive test from a public fix** for a rule in the [Limits](docs/modules/code.md#limits) list, such as
+  `go.exec.command` or a `cs.*` rule: the vulnerable lines from a public advisory or fix commit, with its link.
+- **A docs fix.** A command, flag or output in `docs/modules/*.md` or a README that no longer matches what the CLI
+  prints. Change the doc in the same pull request as a test, if the behavior is testable.
+- **"When to use" and "When not to use" sections** in the `secure-code-review` skill
+  (`packages/kestrix-scan/src/kestrix_scan/claude_plugin/kestrix/skills/secure-code-review/SKILL.md`), which the
+  [plugin submission notes](docs/plugin-submission.md) list as missing.
+
 ## Commits and pull requests
 
 Use a short area prefix and an imperative summary, loosely following Conventional Commits:

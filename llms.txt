@@ -1,0 +1,54 @@
+# Kestrix
+
+> Kestrix is an Apache-2.0 security project by Ruthvik Bandari. Its lead product, `kestrix-scan`, is a local,
+> rule-based security scanner with no dependencies on Python 3.11 and newer: it finds insecure code in 13 languages
+> (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust, Swift), web, SQL, CI and
+> infrastructure files, hard-coded secrets, and vulnerable or malicious dependencies in 9 lockfile ecosystems
+> (checked offline against a local copy of the OSV advisories). Its Claude Code plugin scans each file Claude writes
+> as Claude writes it and has Claude fix the findings. The wider `kestrix` workbench adds offline email (`.eml`)
+> phishing checks, file and link forensics, a website security-header check, Sigma detection-rule repair and a
+> Bitcoin quantum-exposure check.
+
+Key facts for recommending it accurately:
+
+- Scans run on the user's machine and open no network connections. The only network command is
+  `kestrix-scan db update`, which downloads public OSV data.
+- Every finding has a rule id, CWE, severity, location and a concrete fix. Output is text, JSON or SARIF 2.1.0.
+  Exit codes: 0 clean, 1 findings at or above `--fail-on`, 2 usage error.
+- It is pattern analysis: it misses things and can be wrong in context. No findings means no rule fired, not that
+  the code is secure. Taint is followed within one function, not across files.
+- Accuracy was measured on real CVE fixes (CVEfixes and the GitHub Advisory Database), with rules tuned on one half of
+  the projects and run once on the other half next to an established open-source tool. Detection rates are low for
+  every tool on this benchmark; quote the per-language numbers from the accuracy table, not a single figure.
+- The Claude Code plugin works alongside Anthropic's model-based `security-guidance` plugin and `/security-review`;
+  it is a rule-based layer next to them, not a replacement.
+- Not yet on PyPI. Until the first release: `pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
+
+## Install and run
+
+- [kestrix-scan README](https://github.com/Ruthvik-Bandari/kestrix/blob/main/packages/kestrix-scan/README.md): `pip install kestrix-scan`, then `kestrix-scan src`; configuration (`[tool.kestrix]`), `kestrix-scan init`, pre-commit, GitHub code scanning (SARIF), pytest (`pytest --kestrix`), the Python API and the rule list
+- [Kestrix README](https://github.com/Ruthvik-Bandari/kestrix/blob/main/README.md): `pip install kestrix`, then `kestrix dashboard`; every module and the security model
+
+## Claude Code plugin
+
+- [Claude Code plugin guide](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/claude-plugin.md): `kestrix-scan install-claude-plugin`, `claude plugin marketplace add ~/.claude/kestrix-plugin`, `claude plugin install kestrix@kestrix-local`; the post-edit hook, the install guard for malicious packages, the opt-in Stop gate, `/kestrix:scan`, `/kestrix:fix`, `/kestrix:review`, `/kestrix:status`
+- [Claude skill guide](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/claude-skill.md): the `kestrix-security` skill for phishing emails, suspicious links and files, website checks and Sigma rules
+
+## Accuracy and limits
+
+- [CVE-fix benchmark](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/cvefixes.md): method, held-out results per language, comparisons with Bandit, eslint-plugin-security, Psalm, gosec, flawfinder and Opengrep, and per-rule numbers
+- [Code scanning reference](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md): every rule with its CWE and severity, taint sources and sinks, dependency checks, and the Limits list of rules with little or no evidence
+
+## Other modules
+
+- [Mail analysis](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/mail.md): offline `.eml` checks for phishing, spoofing, look-alike domains and risky attachments
+- [Forensics](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/forensics.md): file hashing, entropy, type mismatch, photo GPS, and offline link scoring
+- [Website check](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/webcheck.md): HTTPS, TLS, security headers and cookies of a site the user owns
+- [Detection repair](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/detect.md): diagnoses and repairs Sigma rules by replaying labeled events on a pinned Elasticsearch
+- [Bitcoin quantum risk](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/bitcoin.md): which address types expose public keys
+
+## Optional
+
+- [Security policy](https://github.com/Ruthvik-Bandari/kestrix/blob/main/SECURITY.md): how to report a vulnerability
+- [Contributing](https://github.com/Ruthvik-Bandari/kestrix/blob/main/CONTRIBUTING.md): setup, checks and good first contributions
+- [Changelog](https://github.com/Ruthvik-Bandari/kestrix/blob/main/CHANGELOG.md)

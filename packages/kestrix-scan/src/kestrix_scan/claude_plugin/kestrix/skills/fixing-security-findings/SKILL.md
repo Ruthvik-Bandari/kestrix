@@ -1,6 +1,6 @@
 ---
 name: fixing-security-findings
-description: Per-rule fix playbook for Kestrix code findings (py.*, js.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, gha.*, docker.*, sh.*, tf.*, k8s.*, config.*, secret.* and dep.* rule ids) with before and after code. Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id.
+description: Per-rule fix playbook for Kestrix security findings, with before and after code for every rule id (py.*, js.*, php.*, go.*, java.*, cs.*, rb.*, c.*, rust.*, swift.*, sql.*, vue.*, svelte.*, html.*, css.*, web.*, next.*, gha.*, docker.*, sh.*, tf.*, k8s.*, config.*, secret.* and dep.*). Use when a Kestrix scan or hook reports a finding and you need the concrete fix for that rule id, such as SQL or shell injection, XSS, unsafe deserialization, disabled TLS checks, a hard-coded secret, or a vulnerable or malicious dependency.
 ---
 
 # Fixing Kestrix findings, rule by rule

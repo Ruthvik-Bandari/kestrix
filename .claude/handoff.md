@@ -44,6 +44,15 @@ publishing (the wheel must bundle the built dashboard); making repos public; plu
 missing); TREC 2007 application; the paid plugin A/B eval; check repo visibility (a gitdiagram.com diagram of the
 repo was generated).
 
+**Discoverability (branch `chore/discoverability`, 2026-10-25, not merged):** PyPI `keywords`, `classifiers` and
+`[project.urls]` (Homepage, Documentation, Repository, Issues, Changelog) in both `pyproject.toml` files; README first
+screens lead with `kestrix-scan` (one sentence, 3-line install, link to the accuracy table); `llms.txt` at the root
+(not copied into the plugin repository, whose build takes only `plugin-repo/` and LICENSE); plugin `description`,
+`keywords` and marketplace `tags`; the `fixing-security-findings` description now names every rule family; dashboard
+description, Open Graph and Twitter tags (no image, no canonical, no JSON-LD under the CSP); Markdown issue templates
+(bug, scanner-rule false positive/miss, config linking SECURITY.md) and a pull request template; "Good first
+contributions" in CONTRIBUTING.md; the owner's launch checklist is "Discoverability at launch" in `docs/release.md`.
+
 **Commands run at the end of the session:** `uv run pytest` 3155 passed, 1 skipped (RLIMIT_AS, Linux only);
 `ruff check`, `mypy` clean; `scripts/check_claude_pack.py` 177/177; frontend lint, typecheck, 292 tests, build;
 browser sweep 390 page loads with no overflow, console errors or CSP violations.
