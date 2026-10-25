@@ -353,6 +353,25 @@ class _Checker:
             k += 1
         return ix.n
 
+    def call_open(self, i: int) -> int | None:
+        """Index of the ``(`` that calls the name at ``i``, past generic arguments (``Query<User>(``), or None."""
+        ix = self.ix
+        if ix.punct(i + 1, "(") and ix.match[i + 1] > i:
+            return i + 1
+        if not ix.punct(i + 1, "<"):
+            return None
+        depth = 0
+        for k in range(i + 1, min(ix.n, i + 24)):
+            if ix.punct(k, "<"):
+                depth += 1
+            elif ix.punct(k, ">"):
+                depth -= 1
+                if depth == 0:
+                    return k + 1 if ix.punct(k + 1, "(") and ix.match[k + 1] > k else None
+            elif not (self.toks[k].kind == NAME or ix.punct(k, ".", ",", "?", "[", "]")):
+                return None
+        return None
+
     def literal(self, lo: int, hi: int) -> bool:
         return hi == lo + 1 and self.toks[lo].kind in (STR, NUM)
 
@@ -771,9 +790,10 @@ def _csharp(c: _Checker, i: int, tok: Token, prev: Token | None) -> None:
                 f"TypeNameHandling.{ix.name(i + 2)} lets the JSON name the .NET type to create; no SerializationBinder is set in this file.",
             )
         return
-    if not ix.punct(i + 1, "(") or ix.match[i + 1] < 0:
+    open_ = c.call_open(i)
+    if open_ is None:
         return
-    args = ix.args(i + 1)
+    args = ix.args(open_)
     names = c.chain(i)
     qualified = ".".join(names[-2:])
     if created:
@@ -784,7 +804,7 @@ def _csharp(c: _Checker, i: int, tok: Token, prev: Token | None) -> None:
                 f"{word} deserializes any type the payload names; Microsoft says it cannot be made safe.",
             )
         elif word == "JavaScriptSerializer" and any(
-            t.value == "SimpleTypeResolver" for t in c.toks[i + 1 : ix.match[i + 1]]
+            t.value == "SimpleTypeResolver" for t in c.toks[open_ : ix.match[open_]]
         ):
             c.hit(
                 "cs.deserialize.unsafe",
