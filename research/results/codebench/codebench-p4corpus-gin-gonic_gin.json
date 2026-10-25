@@ -1,0 +1,24 @@
+{
+  "all_rules_per_kloc": 0.1622,
+  "files_scanned": {
+    ".go": 99
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".go": 24.7
+  },
+  "label": "gin-gonic_gin",
+  "roots": [
+    "gin-gonic_gin"
+  ],
+  "rules": {
+    "go.tls.insecure_skip_verify": {
+      "by_extension": {
+        ".go": 4
+      },
+      "findings": 4,
+      "per_kloc": 0.1622
+    }
+  },
+  "schema_version": 1
+}

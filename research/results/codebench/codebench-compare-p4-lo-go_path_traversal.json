@@ -1,0 +1,664 @@
+{
+  "base": "q3",
+  "bootstrap": {
+    "resamples": 1000,
+    "unit": "repository"
+  },
+  "new": "lo-go_path_traversal",
+  "schema_version": 1,
+  "split": "dev",
+  "subsets": {
+    "all": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "csharp": {
+      "alerts_per_kloc": {
+        "base": 0.081116,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 9.0,
+        "k_new": 9.0,
+        "new": 0.081116
+      },
+      "detection": {
+        "base": 0.005848,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.005848
+      },
+      "detection_fix_weighted": {
+        "base": 0.02862,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.02862
+      },
+      "fix_aware_detection": {
+        "base": 0.005848,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.005848
+      }
+    },
+    "erb": {
+      "alerts_per_kloc": {
+        "base": 2.150868,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 14.0,
+        "k_new": 14.0,
+        "new": 2.150868
+      },
+      "detection": {
+        "base": 0.235294,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 8.0,
+        "k_new": 8.0,
+        "new": 0.235294
+      },
+      "detection_fix_weighted": {
+        "base": 0.26935,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 3.0000000000000004,
+        "k_new": 3.0000000000000004,
+        "new": 0.26935
+      },
+      "fix_aware_detection": {
+        "base": 0.235294,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 8.0,
+        "k_new": 8.0,
+        "new": 0.235294
+      }
+    },
+    "go": {
+      "alerts_per_kloc": {
+        "base": 0.345595,
+        "ci95": [
+          -0.140499,
+          0.0
+        ],
+        "delta": -0.038879,
+        "k_base": 160.0,
+        "k_new": 142.0,
+        "new": 0.306715
+      },
+      "detection": {
+        "base": 0.021834,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 5.0,
+        "k_new": 5.0,
+        "new": 0.021834
+      },
+      "detection_fix_weighted": {
+        "base": 0.034188,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 3.111111111111111,
+        "k_new": 3.111111111111111,
+        "new": 0.034188
+      },
+      "fix_aware_detection": {
+        "base": 0.008734,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 2.0,
+        "k_new": 2.0,
+        "new": 0.008734
+      }
+    },
+    "java": {
+      "alerts_per_kloc": {
+        "base": 0.318855,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 173.0,
+        "k_new": 173.0,
+        "new": 0.318855
+      },
+      "detection": {
+        "base": 0.124658,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 91.0,
+        "k_new": 91.0,
+        "new": 0.124658
+      },
+      "detection_fix_weighted": {
+        "base": 0.149366,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 24.48103099730458,
+        "k_new": 24.48103099730458,
+        "new": 0.149366
+      },
+      "fix_aware_detection": {
+        "base": 0.112329,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 82.0,
+        "k_new": 82.0,
+        "new": 0.112329
+      }
+    },
+    "javascript": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "js_ts": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "jvm": {
+      "alerts_per_kloc": {
+        "base": 0.311366,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 174.0,
+        "k_new": 174.0,
+        "new": 0.311366
+      },
+      "detection": {
+        "base": 0.124493,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 92.0,
+        "k_new": 92.0,
+        "new": 0.124493
+      },
+      "detection_fix_weighted": {
+        "base": 0.152216,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 25.48103099730458,
+        "k_new": 25.48103099730458,
+        "new": 0.152216
+      },
+      "fix_aware_detection": {
+        "base": 0.112314,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 83.0,
+        "k_new": 83.0,
+        "new": 0.112314
+      }
+    },
+    "kotlin": {
+      "alerts_per_kloc": {
+        "base": 0.061497,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.061497
+      },
+      "detection": {
+        "base": 0.111111,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.111111
+      },
+      "detection_fix_weighted": {
+        "base": 0.285714,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.285714
+      },
+      "fix_aware_detection": {
+        "base": 0.111111,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 1.0,
+        "k_new": 1.0,
+        "new": 0.111111
+      }
+    },
+    "p4": {
+      "alerts_per_kloc": {
+        "base": 0.414718,
+        "ci95": [
+          -0.051036,
+          0.0
+        ],
+        "delta": -0.014165,
+        "k_base": 527.0,
+        "k_new": 509.0,
+        "new": 0.400553
+      },
+      "detection": {
+        "base": 0.095238,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 134.0,
+        "k_new": 134.0,
+        "new": 0.095238
+      },
+      "detection_fix_weighted": {
+        "base": 0.109328,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 41.653800564901736,
+        "k_new": 41.653800564901736,
+        "new": 0.109328
+      },
+      "fix_aware_detection": {
+        "base": 0.071073,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 100.0,
+        "k_new": 100.0,
+        "new": 0.071073
+      }
+    },
+    "php": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "python": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "rails": {
+      "alerts_per_kloc": {
+        "base": 1.333382,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 184.0,
+        "k_new": 184.0,
+        "new": 1.333382
+      },
+      "detection": {
+        "base": 0.134328,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 36.0,
+        "k_new": 36.0,
+        "new": 0.134328
+      },
+      "detection_fix_weighted": {
+        "base": 0.137598,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 12.061658456486043,
+        "k_new": 12.061658456486043,
+        "new": 0.137598
+      },
+      "fix_aware_detection": {
+        "base": 0.052239,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 14.0,
+        "k_new": 14.0,
+        "new": 0.052239
+      }
+    },
+    "ruby": {
+      "alerts_per_kloc": {
+        "base": 1.292913,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 170.0,
+        "k_new": 170.0,
+        "new": 1.292913
+      },
+      "detection": {
+        "base": 0.119658,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 28.0,
+        "k_new": 28.0,
+        "new": 0.119658
+      },
+      "detection_fix_weighted": {
+        "base": 0.118421,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 9.061658456486043,
+        "k_new": 9.061658456486043,
+        "new": 0.118421
+      },
+      "fix_aware_detection": {
+        "base": 0.025641,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "delta": 0.0,
+        "k_base": 6.0,
+        "k_new": 6.0,
+        "new": 0.025641
+      }
+    },
+    "typescript": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    },
+    "web": {
+      "alerts_per_kloc": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "detection_fix_weighted": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      },
+      "fix_aware_detection": {
+        "base": 0.0,
+        "ci95": null,
+        "delta": null,
+        "k_base": 0.0,
+        "k_new": 0.0,
+        "new": 0.0
+      }
+    }
+  }
+}

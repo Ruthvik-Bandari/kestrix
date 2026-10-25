@@ -364,6 +364,27 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
         ),
       ),
       section(
+        "Go, Java, Kotlin, C# and Ruby (held-out, run once)",
+        p("Phase 4 was tuned on a development split of CVEfixes fix commits in these languages and run once on its held-out split (409 in-scope file pairs from 223 projects), next to gosec 2.30.0 for Go and Opengrep 1.32.0 with the LGPL fork of the Semgrep rules for every language. Brakeman was not run: its licence allows non-commercial use only."),
+        table(
+          ["Tool", "Language", "Detection", "False alarms per KLOC (fixed files)"],
+          [
+            ["kestrix-scan", "all five", "9.0% [4.8, 14.5]", "0.50 [0.13, 1.00]"],
+            ["Opengrep", "all but ERB", "8.8% [4.5, 14.8]", "0.93 [0.55, 1.31]"],
+            ["kestrix-scan", "Java and Kotlin", "10.9% [5.9, 18.4]", "0.20 [0.10, 0.35]"],
+            ["Opengrep", "Java and Kotlin", "5.8% [1.8, 11.6]", "0.34 [0.17, 0.52]"],
+            ["kestrix-scan", "Ruby", "4.7% [1.0, 10.0]", "1.55 [0.11, 2.32]"],
+            ["Opengrep", "Ruby", "11.2% [3.0, 20.3]", "1.91 [1.25, 3.11]"],
+            ["kestrix-scan", "Go", "1.1% [0.0, 6.7]", "0.13 [0.03, 0.26]"],
+            ["gosec 2.30.0", "Go", "6.7% [1.5, 26.5]", "0.78 [0.45, 1.24]"],
+          ],
+        ),
+        list(
+          "Overall Kestrix and Opengrep detect about the same (+0.2 points, paired interval −2.8 to +3.2) and Kestrix raises about half the false alarms. On Java and Kotlin Kestrix is ahead (+5.1 points, +1.7 to +10.1); on Ruby Opengrep is ahead (−6.5, −15.1 to +1.0); on Go gosec is ahead through untainted file-path and command checks at six times the alerts.",
+          "Development figures overstated two families: Java XXE fell from 77.5% to 17.9% and Ruby SQL injection from 29.1% to 10.0%. C# and Kotlin have too few pairs to judge.",
+        ),
+      ),
+      section(
         "What is not claimed",
         list(
           "Not a detection rate for real-world code: a pair is a changed file of a fix commit, many of which hold no instance of the CVE's weakness, and a vulnerability can sit in a file the fix did not change. A \"miss\" is often not a miss.",

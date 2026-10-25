@@ -1,0 +1,60 @@
+{
+  "all_rules_per_kloc": 2.5324,
+  "files_scanned": {
+    ".erb": 129,
+    ".rb": 12878
+  },
+  "files_skipped": {
+    ".erb:duplicate": 1,
+    ".erb:minified": 2,
+    ".rb:duplicate": 28,
+    ".rb:minified": 1
+  },
+  "kloc": {
+    ".erb": 4.6,
+    ".rb": 1533.5
+  },
+  "label": "discourse_discourse",
+  "roots": [
+    "discourse_discourse"
+  ],
+  "rules": {
+    "rb.path.traversal": {
+      "by_extension": {
+        ".rb": 8
+      },
+      "findings": 8,
+      "per_kloc": 0.0052
+    },
+    "rb.reflection.constantize": {
+      "by_extension": {
+        ".rb": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0007
+    },
+    "rb.reflection.send": {
+      "by_extension": {
+        ".rb": 6
+      },
+      "findings": 6,
+      "per_kloc": 0.0039
+    },
+    "rb.sql.injection": {
+      "by_extension": {
+        ".rb": 178
+      },
+      "findings": 178,
+      "per_kloc": 0.1157
+    },
+    "rb.xss.html_safe": {
+      "by_extension": {
+        ".erb": 69,
+        ".rb": 3633
+      },
+      "findings": 3702,
+      "per_kloc": 2.4069
+    }
+  },
+  "schema_version": 1
+}

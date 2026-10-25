@@ -1,0 +1,32 @@
+{
+  "all_rules_per_kloc": 0.0065,
+  "files_scanned": {
+    ".java": 1,
+    ".kt": 2404,
+    ".kts": 160
+  },
+  "files_skipped": {
+    ".kt:binary": 1,
+    ".kt:duplicate": 30,
+    ".kts:duplicate": 11
+  },
+  "kloc": {
+    ".java": 0.1,
+    ".kt": 300.6,
+    ".kts": 5.6
+  },
+  "label": "ktorio_ktor",
+  "roots": [
+    "ktorio_ktor"
+  ],
+  "rules": {
+    "java.deserialize.unsafe": {
+      "by_extension": {
+        ".kt": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0065
+    }
+  },
+  "schema_version": 1
+}

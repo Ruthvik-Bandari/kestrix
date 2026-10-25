@@ -1,0 +1,44 @@
+{
+  "all_rules_per_kloc": 0.4156,
+  "files_scanned": {
+    ".erb": 405,
+    ".rb": 3428
+  },
+  "files_skipped": {
+    ".erb:duplicate": 110,
+    ".rb:duplicate": 53
+  },
+  "kloc": {
+    ".erb": 3.3,
+    ".rb": 591.0
+  },
+  "label": "rails_rails",
+  "roots": [
+    "rails_rails"
+  ],
+  "rules": {
+    "rb.path.traversal": {
+      "by_extension": {
+        ".rb": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0017
+    },
+    "rb.sql.injection": {
+      "by_extension": {
+        ".rb": 56
+      },
+      "findings": 56,
+      "per_kloc": 0.0942
+    },
+    "rb.xss.html_safe": {
+      "by_extension": {
+        ".erb": 4,
+        ".rb": 186
+      },
+      "findings": 190,
+      "per_kloc": 0.3197
+    }
+  },
+  "schema_version": 1
+}

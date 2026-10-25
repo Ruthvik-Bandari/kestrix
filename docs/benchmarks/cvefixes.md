@@ -2,7 +2,7 @@
 
 This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`research/results/codebench/`](../../research/results/codebench/).
 
-Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm.
+Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm. Phase 4 (Go, Java, Kotlin, C# and Ruby) has its own [section](#phase-4-go-java-kotlin-c-and-ruby-2026-10-24) with a held-out run next to gosec and Opengrep.
 
 The ground truth is approximate. Read [What is not claimed](#what-is-not-claimed) before quoting any rate.
 
@@ -701,3 +701,198 @@ The held-out run scanned with the 15-rule tree; the shipped tree has 12 rules.
   view Kestrix has, and the fair comparison for this file-pair benchmark.
 - The three removed rules were removed after the held-out run had started (the lock was already claimed) on dev evidence alone; the held-out numbers
   describe the scanner with those rules, and their held-out contribution is stated next to them.
+
+## Phase 4: Go, Java, Kotlin, C# and Ruby (2026-10-24)
+
+Phase 4 of the [language roadmap](../research/language-roadmap.md) adds Go, Java, Kotlin, C# and Ruby on Rails: one bounded tokenizer for
+Go, Java, Kotlin and C#, one for Ruby, a shared in-function taint index, and 21 rules (`go.*` 4, `java.*` 7 for Java and Kotlin, `cs.*` 4,
+`rb.*` 6 for Ruby and ERB templates). The rules were tuned on a development split of a new benchmark and then run **once** on its
+held-out split next to gosec (Go) and Opengrep with the opengrep-rules fork of the LGPL Semgrep rules (all five languages). Aggregates:
+[`research/results/codebench/`](../../research/results/codebench/README.md).
+
+### Data and method
+
+- **Source:** the Go, Java, C# and Ruby file changes of the CVEfixes v1.0.8 fix commits (CC BY 4.0), plus any file whose path ends in
+  `.kt`, `.kts` or `.erb` (CVEfixes has no Kotlin or ERB label). `kestrixcodebench php-dump --label-set p4` streamed the pinned archive once
+  more and kept 7,068 file changes (job 11353597, 15 minutes). **As for PHP, the advisory-database miner fetches Python, JavaScript and
+  TypeScript only, so there are no advisory pairs and no unchanged files** in this benchmark; false alarms are counted on the fixed files and
+  on the clean corpora below.
+- **Filters and split:** the benchmark's own (`research/hpc/codebench/codebench_p4_build.sbatch`, `--only-language p4`, job 11353598): 6,215
+  changed files read; 1,013 test, 91 generated, 24 bundled, 13 minified, 6 vendored files, 636 files of another language (such as `.jsp` or
+  `.gradle`) and 35 duplicates dropped (see `p4-manifest.json`). The split is the seeded hash of connected components of repositories, CVEs
+  and file contents, so no project, CVE or file is on both sides.
+
+| Split | Pairs (Go / Java / Kotlin / C# / Ruby / ERB) | In scope (Go / Java / Kotlin / C# / Ruby / ERB) | Projects | CVEs | KLOC of fixed files |
+| --- | --- | --- | --- | --- | --- |
+| dev | 3,097 (898 / 1,349 / 66 / 289 / 448 / 47) | 1,407 (229 / 730 / 9 / 171 / 234 / 34) | 530 | 968 | 1,271 |
+| held-out | 1,278 (461 / 377 / 20 / 65 / 328 / 27) | 409 (89 / 156 / 0 / 41 / 107 / 16) | 223 | 426 | 457 |
+
+  Kotlin (9 in-scope dev pairs, none held out) and C# (171 and 41) are too small to support a claim of their own; a few projects hold many
+  pairs (the largest Java project 176 dev pairs, the largest Ruby project 111).
+- **Which families.** The rules follow the owner's list (roadmap) and the highest-volume weakness families of each ecosystem in the reviewed
+  GitHub Advisory Database (CC BY 4.0, archive of 2026-10-25, `codebench-p4-advisory-families.json`; one advisory can count in several
+  families): Go (4,884 advisories) path traversal 387, XSS 274, SSRF 158, command injection 122, SQL injection 78, TLS 74; Maven (7,081)
+  XSS 981, deserialization 412, CSRF 380, path traversal 367, XXE 295, code injection 194, SSRF 147, SQL injection 112; NuGet (1,141) XSS
+  107, path traversal 46, deserialization 24; RubyGems (1,092) XSS 193, path traversal 55, code injection 48, command injection 47. Most
+  advisories (3,450 Go, 3,766 Maven, 865 NuGet, 566 RubyGems) map to no family: authorization, denial of service, information exposure,
+  memory safety.
+- **Metrics, intervals, keep rule:** as above (detection within 3 lines of a changed line, 95% bootstrap over whole repositories). A change is
+  kept when it buys detection at a price near the scanner's usual 11 alerts per extra detected pair; a rule with alerts and no dev detection is
+  not shipped unless the owner asked for that family, and then it is marked "kept because requested".
+- **Comparison tools.** **gosec 2.30.0** (Apache-2.0), one file at a time in a module of its own (so a before-file and its after-file cannot
+  see each other), with the pinned Go 1.27.3 toolchain: standard-library imports resolve, third-party imports do not (offline), and gosec reports
+  them and goes on. gosec reports a CWE per finding. **Opengrep 1.32.0** (LGPL-2.1) with **opengrep-rules** `f1d2b562b414` (the fork of the
+  LGPL-2.1 Semgrep rules taken before their licence changed; LGPL-2.1 with the Commons Clause, which forbids selling the rules; the rules'
+  README says they are for research, testing and benchmarking): every rule of the `go`, `java`, `kotlin`, `csharp` and `ruby` folders, one run
+  per shard directory, mapped by the CWEs in each rule's metadata. Opengrep does not read ERB. **Brakeman was not run:** its licence allows
+  non-commercial use only. Both tools were downloaded on the transfer node and run offline; licences are in
+  [`dataset-licenses.md`](../research/dataset-licenses.md). Opengrep's rule text was never read into Kestrix's rules.
+- Rounds (dev only): `q1` first scanner; `q2` archive-entry and upload names as sources; `q3` a lookup such as `map.get(key)` stops taint;
+  the leave-one-out measurements on `q3` decided the removals below; `q4` is the tuned scanner (the frozen tree of the held-out run,
+  `69d9390+aa6ca8f0`). Jobs (account `aai6610.202610`, partition `short`): dump 11353597, build 11353598, gosec dev 11357210, Opengrep dev
+  11357211, final dev scan `q4` 11357920, leave-one-out 11357973 to 11357987 (and 11357846 on `q3`), clean corpora 11357989, speed 11357988, held-out 11358007;
+  scripts `research/hpc/codebench/codebench_p4_*`.
+
+### Tuning on dev
+
+Leave-one-out against the tuned scanner `q4` (the scanner against itself without one change; paired intervals; all five languages):
+
+| Change | Detection it adds, points | Extra pairs | Alerts it adds on fixed files | Alerts per extra pair | Decision |
+| --- | --- | --- | --- | --- | --- |
+| untainted built SQL (all four languages) | +2.99 [+0.67, +6.63] | +42 | +223 (+0.175 per KLOC) | 5.3 | kept |
+| ... a lone query name followed to its value | +1.00 [+0.20, +2.05] | +14 | +98 | 7.0 | kept |
+| ... parameters counted as not literal | +1.21 [+0.07, +3.00] | +17 | +82 | 4.8 | kept (unlike PHP, where it cost 50 per pair) |
+| `html_safe`/`raw`/`<%== %>` of a non-literal (low) | +0.85 [+0.07, +2.25] | +12 | +68 | 5.7 | kept |
+| archive-entry and uploaded-file names as sources | +0.36 [+0.08, +0.78] | +5 | +28 | 5.6 | kept |
+
+Measured on `q3` and **removed** (no detection, only alerts): `go.path.traversal` (0 of 41 Go path-traversal pairs, 18 alerts),
+`go.ssrf.request` and `cs.ssrf.request` (no finding at all), Go request data written to the `http.ResponseWriter` (0 pairs, 11 alerts) and
+`template.HTML` of a non-literal without request data (0 pairs, 14 alerts). Go's path-traversal and SSRF fixes in this data are mostly
+archive extraction and webhook URL validation spread over several functions, which a single-function taint pass does not see.
+
+### The tuned scanner on dev (run `q4`, 3,097 pairs, 1,407 in scope)
+
+| Tool | Language | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files | Files per second |
+| --- | --- | --- | --- | --- | --- | --- |
+| kestrix-scan | Go | 2.2 [0.4, 4.8] | 1.3 [0.0, 3.1] | 3.4 [0.1, 7.3] | 0.26 [0.09, 0.53] | |
+| gosec 2.30.0 | Go | 6.6 [2.9, 11.9] | 1.7 [0.4, 3.8] | 9.9 [3.7, 18.7] | 1.07 [0.69, 1.65] | 0.5 |
+| Opengrep | Go | 2.2 [0.0, 5.9] | 1.3 [0.0, 3.2] | 4.8 [0.0, 12.8] | 0.82 [0.51, 1.27] | |
+| kestrix-scan | Java and Kotlin | 12.9 [4.8, 27.7] | 11.6 [3.9, 26.2] | 15.6 [9.9, 22.6] | 0.33 [0.18, 0.55] | |
+| Opengrep | Java and Kotlin | 9.7 [4.4, 19.0] | 8.0 [3.1, 16.8] | 11.3 [6.8, 17.3] | 0.53 [0.33, 0.70] | |
+| kestrix-scan | C# | 0.6 [0.0, 2.5] | 0.6 [0.0, 2.5] | 2.9 [0.0, 10.0] | 0.08 [0.02, 0.17] | |
+| Opengrep | C# | 0.0 | 0.0 | 0.0 | 0.07 [0.02, 0.17] | |
+| kestrix-scan | Ruby | 17.9 [4.1, 24.3] | 3.4 [1.0, 9.4] | 13.3 [6.1, 21.1] | 1.81 [0.49, 2.54] | |
+| Opengrep | Ruby | 6.4 [3.4, 13.4] | 2.1 [0.4, 6.7] | 11.7 [4.6, 19.6] | 3.99 [1.18, 5.70] | |
+| kestrix-scan | ERB | 23.5 [0.0, 64.9] | 23.5 [0.0, 64.9] | 26.9 [0.0, 60.0] | 2.15 [0.00, 5.40] | |
+| **kestrix-scan** | **all** | **10.7 [5.0, 17.9]** | 7.5 [3.4, 14.7] | 11.4 [7.9, 15.3] | **0.45 [0.23, 0.74]** | 53.3 |
+| **Opengrep** | **all but ERB** | **7.3 [4.1, 12.1]** | 5.3 [2.5, 9.8] | 9.6 [6.4, 13.7] | **1.01 [0.62, 1.57]** | 3.4 |
+
+Paired differences in detection: Kestrix minus gosec on Go **-4.4 points [-9.3, -0.8]** (both 3 pairs, only gosec 12, only Kestrix 2: gosec's
+lead is its file-path rule G304/G305, 19.5% of 41 path-traversal pairs, which fires on any non-constant path at 1.07 alerts per KLOC); Kestrix
+minus Opengrep: all +3.4 [-0.7, +8.0] (both 72, only Kestrix 79, only Opengrep 31; union 12.9%), Java and Kotlin +3.1 [-1.8, +10.2], Ruby
++11.5 [-4.1, +18.8], Go 0.0 [-2.9, +2.7], C# +0.6 [0.0, +2.5]. By family (pairs; Kestrix, Opengrep): Java XXE 89: **77.5%** and 44.9%; Java SQL
+injection 87: 12.6% and 20.7%; Java deserialization 207: 3.4% and 3.4%; Java path traversal 90: 4.4% and 2.2%; Java SSRF 102: 2.9% and 0%; Java
+XSS 80: 1.2% and 0%; Java code injection 23: 0% and 17.4%; Go SQL injection 36: 11.1% for all three tools; Go TLS 15: 6.7% (gosec 6.7%,
+Opengrep 0%); Ruby SQL injection 127: 29.1% and 4.7%; Ruby XSS 59: 6.8% and 6.8%; C# path traversal 64:
+1.6% and 0%. Ruby's fix-aware rate (3.4%) is far below its detection: most Ruby detections are the untainted built-SQL finding, which stays on
+the fixed file when the fix quotes or casts the value without changing how the text is built.
+
+Per rule on the tuned scanner (`codebench-rates-p4-final.json`; alerts on 1,271 KLOC of fixed files):
+
+| Rule | Detected pairs | Alerts (per KLOC of its language) | Note |
+| --- | --- | --- | --- |
+| `java.xxe.parser` | 69 (68 Java, 1 Kotlin) | 7 (0.013) | the fix adds the secure feature next to the factory the rule points at |
+| `rb.sql.injection` | 37 | 168 (1.28) | 4.5 alerts per detected pair; most findings are the untainted built reading |
+| `java.sql.injection` | 11 | 44 (0.081) | |
+| `rb.xss.html_safe` | 12 (4 Ruby, 8 ERB) | 68 (54 Ruby, 14 ERB) | all 12 from the low-confidence non-literal reading |
+| `java.deserialize.unsafe` | 7 | 77 (0.14) | 11 alerts per detected pair |
+| `go.sql.injection` | 4 | 23 (0.050) | |
+| `java.path.traversal` | 4 | 32 (0.059) | |
+| `java.ssrf.request` | 3 | 21 (0.039) | |
+| `go.tls.insecure_skip_verify` | 1 | 54 (0.117) | 54 per detected pair: weak; kept because requested (many are test or internal clients) |
+| `java.xss.response` | 1 | 1 | |
+| `cs.path.traversal` | 1 | 2 | |
+| `rb.path.traversal` | 1 | 11 (0.084) | 11 per detected pair |
+| `cs.deserialize.unsafe` | 0 | 6 (0.054) | kept because requested (`BinaryFormatter`) |
+| `cs.sql.injection` | 0 | 1 | kept because requested; dev holds 3 C# SQL-injection pairs |
+| `rb.exec.command` | 0 | 1 | kept because requested; dev holds 5 Ruby command-injection pairs |
+| `go.exec.command`, `go.xss.unescaped`, `java.exec.command`, `cs.exec.process` | 0 | 0 | kept because requested; no finding on dev |
+| `rb.reflection.constantize`, `rb.reflection.send` | 0 | 0 family alerts (CWE-470 maps to no family); 2 and 3 findings on fixed files | kept because requested; no unsafe-reflection pairs to score |
+
+### Clean code (no CVE fix touched it)
+
+Findings per KLOC of the tuned scanner on current source of popular projects (shallow clones on the cluster, every file including tests, counts
+only; an upper bound on false alarms, the findings may be real): Gitea 509 KLOC of Go, 31 findings (0.061: 29 `go.sql.injection`, all the
+untainted reading, 2 `go.tls.insecure_skip_verify`); gin 25 KLOC, 4 (0.16, all `InsecureSkipVerify` in tests and examples); Prometheus 404 KLOC,
+5 (0.012); Jenkins 341 KLOC of Java, 85 (0.25: 80 `java.deserialize.unsafe`, 71 of them in tests); Keycloak 1,289 KLOC, 38 (0.029); Ktor 306 KLOC
+of Kotlin, 2 (0.007); OkHttp 148 KLOC, 1 (0.007); Jellyfin 368 KLOC of C#, 36 `cs.path.traversal` (0.098; controller parameters joined into file
+paths); Bitwarden server 2,111 KLOC, 7 (0.003); Mastodon 199 KLOC of Ruby, 44 (0.22: 36 `rb.xss.html_safe` low, 8 `rb.sql.injection` built); Rails
+594 KLOC, 247 (0.42: 190 `rb.xss.html_safe` low, 116 of them in tests, 56 `rb.sql.injection`, 54 in tests); **Discourse 1,538 KLOC, 3,895
+(2.53): 3,702 `rb.xss.html_safe`, all the low-confidence non-literal reading and 3,139 of them in specs** (`"...#{x}...".html_safe` in test
+helpers), 178 `rb.sql.injection` (170 the built reading), 8 `rb.path.traversal`, 6 `rb.reflection.send`, 1 `rb.reflection.constantize`. Outside
+Discourse's specs the Ruby rules give 0.2 to 0.4 findings per KLOC; the low-confidence `html_safe` finding is the noisiest part of the phase.
+
+### Speed
+
+One core, every dev file of the Python, JavaScript and TypeScript benchmark (39,420 files), all eight shards in turn, two repetitions, the
+scanner of the commit this phase started from (`6b0dfef`) against the tuned scanner, same job (11357988): baseline 41.3 and 43.4 files per second
+(mean 42.4), tuned 43.2 and 43.7 (mean 43.4); **the findings are identical** (8,593 in both, every shard byte for byte). The new code costs those files
+nothing (the limit was 10%). On the Phase 4 benchmark itself Kestrix reads 53 files per second on dev, Opengrep 3.4 and gosec 0.5 (one file per run,
+with type checking). Pathological inputs (quote, interpolation, heredoc, percent-literal, comment and backslash floods, 400 nested blocks,
+20,000-line assignment chains in Java, Go and Ruby) are bounded and tested; a bound is reported as `too_complex`.
+
+### Held-out run (`p4-v1`)
+
+Run once on the 1,278-pair test split (409 in scope, 223 projects, 457 KLOC of fixed files), after the claim file
+[`p4-heldout-claim.json`](../../research/results/codebench/p4-heldout-claim.json) was committed and the lock (`LOCKED_EVAL.json`, scanner tree
+`69d9390+aa6ca8f0`) was claimed by job 11358007. Scanner frozen; no rule or threshold changed in response.
+
+| Tool | Language (in-scope pairs) | Detection % | Fix-aware % | Fix-weighted % | Alerts per KLOC on fixed files |
+| --- | --- | --- | --- | --- | --- |
+| kestrix-scan | Go (89 in scope) | 1.1 [0.0, 6.7] | 0.0 | 1.9 [0.0, 6.2] | 0.13 [0.03, 0.26] |
+| gosec 2.30.0 | Go | 6.7 [1.5, 26.5] | 3.4 [0.0, 18.2] | 19.4 [5.6, 32.3] | 0.78 [0.45, 1.24] |
+| Opengrep | Go | 2.2 [0.0, 12.5] | 2.2 [0.0, 12.5] | 11.1 [0.0, 29.4] | 0.60 [0.34, 0.95] |
+| kestrix-scan | Java and Kotlin (156) | 10.9 [5.9, 18.4] | 8.3 [4.2, 14.8] | 14.6 [7.0, 24.6] | 0.20 [0.10, 0.35] |
+| Opengrep | Java and Kotlin | 5.8 [1.8, 11.6] | 5.1 [1.3, 10.7] | 4.8 [1.1, 9.5] | 0.34 [0.17, 0.52] |
+| kestrix-scan | C# (41) | 2.4 [0.0, 16.7] | 2.4 [0.0, 16.7] | 8.3 [0.0, 33.3] | 0.15 [0.00, 0.43] |
+| Opengrep | C# | 0.0 | 0.0 | 0.0 | 0.05 [0.00, 0.20] |
+| kestrix-scan | Ruby (107) | 4.7 [1.0, 10.0] | 0.9 [0.0, 3.5] | 7.6 [1.1, 15.3] | 1.55 [0.11, 2.32] |
+| Opengrep | Ruby | 11.2 [3.0, 20.3] | 4.7 [0.0, 12.7] | 14.6 [5.4, 24.8] | 1.91 [1.25, 3.11] |
+| kestrix-scan | ERB (16) | 81.2 [0.0, 100.0] (13 pairs) | 81.2 | 60.0 | 5.19 (7 alerts on 1.3 KLOC) |
+| **kestrix-scan** | **all (409)** | **9.0 [4.8, 14.5]** | 6.8 [3.0, 11.8] | 11.4 [6.7, 16.7] | **0.50 [0.13, 1.00]** |
+| **Opengrep** | **all but ERB** | **8.8 [4.5, 14.8]** | 6.8 [2.8, 11.8] | 10.0 [5.5, 15.1] | **0.93 [0.55, 1.31]** |
+
+The claims, checked:
+
+- **Kestrix at or above Opengrep over all Phase 4 pairs: holds as a point estimate only.** 9.0% against 8.8%, difference **+0.2 points
+  [-2.8, +3.2]** (paired); both detect 26 pairs, only Kestrix 11, only Opengrep 10, neither 362 (union 11.5%). The dev lead (+3.4) did not carry over.
+- **Kestrix alerts within the dev interval and below Opengrep's: holds.** 0.50 per KLOC on fixed files (dev interval [0.23, 0.74]) against 0.93.
+- **gosec detects more Go than Kestrix: as expected.** 6.7% against 1.1%, difference -5.6 points [-22.7, -0.7]; gosec's lead is again its untainted
+  file-path and command checks (path traversal 36.4% of 11 pairs, command injection 22.2% of 9), at 0.78 alerts per KLOC against 0.13.
+- By language, Kestrix minus Opengrep: **Java and Kotlin +5.1 [+1.7, +10.1]**; Ruby -6.5 [-15.1, +1.0] (Opengrep's deserialization and XSS rules
+  found 4 and 5 pairs); Go -1.1 [-10.5, +3.5]; C# +2.4 [0.0, +16.7] (one pair).
+
+By family (pairs; Kestrix, Opengrep): Java deserialization 16: 37.5% and 37.5%; Java XXE 28: 17.9% and 7.1%; Java path traversal 24: 16.7% and 0%; Java
+SQL injection 20: 10.0% and 5.0%; Java XSS 34 and SSRF 14: 0% for both; Ruby SQL injection 10: 10.0% and 0%; Ruby XSS 31: 12.9% and 16.1%;
+Ruby and ERB XSS 46: 37.0%; Go SQL injection 48: 0% for all three tools (gosec and Opengrep too); C# path traversal 5: 20.0% and 0%. **Java XXE fell
+from 77.5% on dev to 17.9% here and Ruby SQL injection from 29.1% to 10.0%** (1 of 10 pairs): the dev figures lean on a few projects with many
+such fixes; read them as somewhere between the two.
+
+Per rule on the held-out split (`codebench-rates-p4-locked.json`): `rb.xss.html_safe` detects 17 pairs (4 Ruby, 13 ERB) with 57 alerts on fixed files;
+`java.deserialize.unsafe` 6 with 3; `java.xxe.parser` 5 with 6; `java.path.traversal` 4 with 17; `java.sql.injection` 2 with 2; `rb.sql.injection` 1 with
+67; `cs.path.traversal` 1 with 3; `go.exec.command` 1 with 1 (no detection on dev); `go.sql.injection` 0 with 13; `go.tls.insecure_skip_verify` 0 with 2;
+`java.ssrf.request` 0 with 1; `rb.path.traversal` 0 with 1; the other rules 0 with 0.
+
+### What this does not show
+
+- Only CVEfixes: no advisory pairs, no unchanged files; 530 dev and 223 held-out projects, a handful of which hold many pairs. Kotlin and C# are too
+  small to say anything per language; ERB has 34 dev pairs.
+- Most fix lines are not a request-to-sink flow inside one function: CSRF, authorization, denial of service and the Go archive and webhook fixes
+  are out of reach of every tool here. The absolute rates describe what single-file analysis can see.
+- gosec and Opengrep ran with their defaults on one file at a time (gosec without third-party modules), so they see less than in a project with its
+  dependencies; that is the same view Kestrix has, and the fair comparison for this file-pair benchmark.
+- `go.exec.command`, `go.xss.unescaped`, `java.exec.command`, `cs.exec.process`, `cs.sql.injection`, `cs.deserialize.unsafe`, `rb.exec.command`,
+  `rb.reflection.constantize` and `rb.reflection.send` have no detection on dev (`go.exec.command` detected one held-out pair); they are covered by
+  unit tests and the clean-corpus counts and are kept because requested.
+- The shipped tree differs from the frozen one (`69d9390+aa6ca8f0`) only in comments and formatting; scanned on every dev file it gives the same
+  findings byte for byte (job 11358463).
