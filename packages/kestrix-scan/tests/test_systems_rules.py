@@ -186,6 +186,28 @@ def test_rand_next_to_security_word() -> None:
     assert "c.random.rand" not in rule_ids("void keyboard_jitter(void) { int d = rand(); }", "a.c")
 
 
+def test_rand_for_games_shuffles_and_test_seeds_is_not_flagged() -> None:
+    for safe in (
+        "int roll_die(void) { return rand() % 6 + 1; }",
+        "void spawn_enemy(struct enemy *e) { e->x = random() % WIDTH; e->y = random() % HEIGHT; }",
+        "void shuffle(int *deck, int n) {\n"
+        "    for (int i = n - 1; i > 0; i--) {\n"
+        "        int j = rand() % (i + 1);\n"
+        "        int tmp = deck[i];\n"
+        "        deck[i] = deck[j];\n"
+        "        deck[j] = tmp;\n"
+        "    }\n"
+        "}",
+        "void test_sort_random_input(void) {\n"
+        "    srand(42);\n"
+        "    int values[100];\n"
+        "    for (int i = 0; i < 100; i++) values[i] = rand();\n"
+        "}",
+        "double backoff_delay(int attempt) { return (1 << attempt) + drand48(); }",
+    ):
+        assert "c.random.rand" not in rule_ids(safe, "a.c"), safe
+
+
 def test_temp_name_functions() -> None:
     assert "c.tempfile.insecure" in rule_ids(c_fn("    char *t = tmpnam(NULL);"), "a.c")
     assert "c.tempfile.insecure" in rule_ids(c_fn("    mktemp(buf);"), "a.cc")
