@@ -222,13 +222,10 @@ def test_go_sql_injection() -> None:
 
 def test_go_xss_unescaped() -> None:
     assert "go.xss.unescaped" in go('t := template.HTML(r.FormValue("bio"))')
-    assert "go.xss.unescaped" in go('fmt.Fprintf(w, "<p>%s</p>", r.URL.Query().Get("q"))')
-    assert "go.xss.unescaped" in go('w.Write([]byte(r.FormValue("q")))')
-    low = found(GO_HANDLER.format(body="\tt := template.HTML(user.Bio)"), "a.go")["go.xss.unescaped"][0]
-    assert (low.severity, low.confidence) == ("low", "low")
+    assert "go.xss.unescaped" in go('u := template.URL(r.URL.Query().Get("next"))')
     assert "go.xss.unescaped" not in go('t := template.HTML("<b>fixed</b>")')
-    assert "go.xss.unescaped" not in go('fmt.Fprintf(w, "%s", html.EscapeString(r.FormValue("q")))')
-    assert "go.xss.unescaped" not in go('fmt.Fprintf(os.Stdout, "%s", r.FormValue("q"))')
+    assert "go.xss.unescaped" not in go("t := template.HTML(user.Bio)")  # not request data: measured as noise
+    assert "go.xss.unescaped" not in go('fmt.Fprintf(w, "<p>%s</p>", r.FormValue("q"))')  # writes: measured as noise
 
 
 def test_go_insecure_skip_verify() -> None:
@@ -236,20 +233,6 @@ def test_go_insecure_skip_verify() -> None:
     assert "go.tls.insecure_skip_verify" in go("cfg.InsecureSkipVerify = true")
     assert "go.tls.insecure_skip_verify" not in go("cfg := &tls.Config{InsecureSkipVerify: false}")
     assert "go.tls.insecure_skip_verify" not in go("cfg := &tls.Config{InsecureSkipVerify: insecure}")
-
-
-def test_go_path_traversal() -> None:
-    assert "go.path.traversal" in go('f, _ := os.Open(filepath.Join("/data", r.FormValue("f")))')
-    assert "go.path.traversal" in go('http.ServeFile(w, r, "static/"+r.URL.Path)')
-    assert "go.path.traversal" in go("for _, entry := range zr.File {\n\tos.Create(filepath.Join(dst, entry.Name))\n}")
-    assert "go.path.traversal" not in go('os.Open(filepath.Join("/data", filepath.Base(r.FormValue("f"))))')
-    assert "go.path.traversal" not in go('os.Open("/etc/app.conf")')
-
-
-def test_go_ssrf_request() -> None:
-    assert "go.ssrf.request" in go('http.Get(r.FormValue("url"))')
-    assert "go.ssrf.request" in go('req, _ := http.NewRequest("GET", r.Header.Get("X-Target"), nil)')
-    assert "go.ssrf.request" not in go('http.Get("https://example.com/health")')
 
 
 def test_go_frameworks_and_closures() -> None:
@@ -468,14 +451,10 @@ def test_csharp_path_traversal() -> None:
     assert "cs.path.traversal" not in cs("var text = File.ReadAllText(Path.Combine(root, Path.GetFileName(name)));")
 
 
-def test_csharp_ssrf_request() -> None:
-    assert "cs.ssrf.request" in cs('var body = await client.GetStringAsync(Request.Query["url"]);')
-    assert "cs.ssrf.request" not in cs('var body = await client.GetStringAsync("https://example.com/");')
-
-
 def test_csharp_sources_need_a_web_context() -> None:
     plain = 'class Repo {\n    public void Find(string name) {\n        var cmd = new SqlCommand("SELECT * FROM U WHERE N = \'" + name + "\'", conn);\n    }\n}\n'
-    assert ids(plain, "Repo.cs") == set()
+    (built,) = hits(plain, "Repo.cs")  # a parameter outside a web action is not request data: only the built finding
+    assert (built.rule_id, built.severity, built.confidence) == ("cs.sql.injection", "medium", "low")
     bound = "class Api {\n    public void Find([FromQuery] string name) {\n        Process.Start(name);\n    }\n}\n"
     assert ids(bound, "Api.cs") == {"cs.exec.process"}
 

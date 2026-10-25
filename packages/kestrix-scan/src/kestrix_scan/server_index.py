@@ -181,11 +181,12 @@ _ROOT_OBJECTS: dict[str, frozenset[str]] = {  # names that are request objects u
 _ROOT_VALUES: dict[str, frozenset[str]] = {  # names that are request data unless the code assigns them
     "ruby": frozenset({"params", "cookies"}),
 }
-_WRITER_TYPES = re.compile(r"ResponseWriter\b|HttpServletResponse\b|ServletResponse\b|StaplerResponse\w*\b")
 _ARCHIVE_ENTRY = re.compile(r"(?i)^(?:zip|tar|jar|archive)?_?(?:entry|header|hdr)$")
 _ARCHIVE_MEMBERS = frozenset({"FullName", "getName", "Name", "name", "full_name", "Linkname", "getLinkName"})
 _UPLOAD = re.compile(r"(?i)file|upload|attachment|posted|part")
-_UPLOAD_MEMBERS = frozenset({"Filename", "getOriginalFilename", "getSubmittedFileName", "original_filename", "FileName"})
+_UPLOAD_MEMBERS = frozenset(
+    {"Filename", "getOriginalFilename", "getSubmittedFileName", "original_filename", "FileName"}
+)
 _SOURCE_CALLS = frozenset({"mux.Vars", "chi.URLParam", "chi.URLParamFromCtx", "pat.Param", "vars.Get"})
 
 # Calls that pass their arguments' data on, by the callee's last name; every other call returns clean data.
@@ -228,7 +229,18 @@ _QUALIFIED_PROPAGATE = frozenset({"Paths.get"})  # a lookup such as map.get(key)
 _GO_PROPAGATING_PACKAGES = frozenset({"strings", "fmt", "filepath", "path", "url", "bytes", "base64"})
 _GO_SANITIZERS = frozenset(
     {"Base", "EscapeString", "QueryEscape", "PathEscape", "HTMLEscapeString", "JSEscapeString", "QuoteMeta", "Quote"}
-    | {"EncodeToString", "Contains", "HasPrefix", "HasSuffix", "Index", "Count", "Compare", "EqualFold", "IsAbs", "Match"}
+    | {
+        "EncodeToString",
+        "Contains",
+        "HasPrefix",
+        "HasSuffix",
+        "Index",
+        "Count",
+        "Compare",
+        "EqualFold",
+        "IsAbs",
+        "Match",
+    }
 )
 # Methods that make a tainted receiver clean (lengths, tests, numbers), by language family.
 _CLEAN_METHODS = frozenset(
@@ -293,7 +305,7 @@ class Scope:
     hi: int  # token index of the body's last token
     parent: int
     closure: bool  # a Go function literal: names of the enclosing function are visible
-    params: dict[str, str] = field(default_factory=dict)  # name -> "object" (a request) or "value" (request data)
+    params: dict[str, str] = field(default_factory=dict)  # name -> "object" (a request), "value" (request data), "number"
 
 
 @dataclass(frozen=True, slots=True)
@@ -556,6 +568,7 @@ class Index:
             param = self.toks[at].value
             type_names = [self.toks[j].value for j in names if j != at]
             if any(t.lower() in _NUMERIC_TYPES for t in type_names):
+                out[param] = "number"  # a number: never request text, never part of built SQL text
                 continue
             if notes & _ANNOTATED_SOURCES:
                 out[param] = "value"
@@ -565,8 +578,6 @@ class Index:
             ).replace("?", "")
             if types is not None and types.search(type_text):
                 out[param] = "object"
-            elif _WRITER_TYPES.search(type_text):
-                out[param] = "writer"
             elif mapped and type_names and _STRINGISH.match("".join(type_names[-1:]).lower()):
                 out[param] = "value"
         return out

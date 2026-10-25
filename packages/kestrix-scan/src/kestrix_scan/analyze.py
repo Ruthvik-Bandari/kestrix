@@ -244,7 +244,15 @@ def _suppressions(text: str, rel: str) -> tuple[dict[int, frozenset[str]], list[
         if match is None:
             continue
         ids = frozenset(part.strip() for part in match.group(1).split(",") if part.strip())
-        reason = match.group(2).strip().removesuffix("-->").removesuffix("*/").removesuffix("--}}").removesuffix("%>").strip()
+        reason = (
+            match.group(2)
+            .strip()
+            .removesuffix("-->")
+            .removesuffix("*/")
+            .removesuffix("--}}")
+            .removesuffix("%>")
+            .strip()
+        )
         if any(char.isalnum() for char in reason):
             by_line[number] = ids
         else:

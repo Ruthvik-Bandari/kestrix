@@ -38,11 +38,9 @@ SERVER_SUFFIXES: dict[str, str] = {
 MAX_AVERAGE_LINE = 500
 DATA = "data"  # the one sink class: sanitizers make a value clean for every sink, so no class is cleared alone
 
-# The untainted "built" SQL finding counts a part that is not a literal only under this strict reading: a local
-# variable assigned in the function (followed to its value when the SQL argument is a lone name), a call result or a
-# member; parameters, constants and names that read as a table, column or sort key do not count.
-_BUILT_FOLLOW = True
-_BUILT_PARAMS = False
+# The untainted "built" SQL finding counts a part that is not a literal: a parameter, a call result, a member or a local
+# variable (a lone query name is followed to its value); constants and names that read as a table, column or sort key do
+# not count. Each reading was measured on the development data (docs/benchmarks/cvefixes.md, Phase 4).
 _IDENTIFIER_NAME = re.compile(
     r"(?i)table|tbl|prefix|column|field|schema|database|^(?:db|col|cols|order|sort|dir|limit|offset)(?:_|$)|"
     r"(?:Table|Column|Order|Sort|Limit|Offset|Prefix|Schema)$"
@@ -57,35 +55,6 @@ _GO_SQL = frozenset(
 )
 _GO_SQL_FRAGMENTS = frozenset({"Where", "Order", "Having", "Joins", "Group", "Or", "Not"})
 _GO_TEMPLATE_TYPES = frozenset({"HTML", "JS", "HTMLAttr", "URL", "CSS", "JSStr", "Srcset"})
-_GO_FILE_CALLS: dict[str, tuple[int, ...]] = {
-    "os.Open": (0,),
-    "os.OpenFile": (0,),
-    "os.ReadFile": (0,),
-    "os.Create": (0,),
-    "os.WriteFile": (0,),
-    "os.Remove": (0,),
-    "os.RemoveAll": (0,),
-    "os.Mkdir": (0,),
-    "os.MkdirAll": (0,),
-    "os.Rename": (0, 1),
-    "os.ReadDir": (0,),
-    "os.Chmod": (0,),
-    "ioutil.ReadFile": (0,),
-    "ioutil.WriteFile": (0,),
-    "ioutil.ReadDir": (0,),
-    "http.ServeFile": (2,),
-    "os.DirFS": (0,),
-}
-_GO_URL_CALLS: dict[str, int] = {
-    "http.Get": 0,
-    "http.Head": 0,
-    "http.Post": 0,
-    "http.PostForm": 0,
-    "http.NewRequest": 1,
-    "http.NewRequestWithContext": 2,
-    "net.Dial": 1,
-    "net.DialTimeout": 1,
-}
 _JAVA_SQL = frozenset(
     {"executeQuery", "execute", "executeUpdate", "executeLargeUpdate", "addBatch", "prepareStatement", "prepareCall"}
     | {"nativeSQL", "createQuery", "createNativeQuery", "createSQLQuery", "queryForObject", "queryForList"}
@@ -139,10 +108,6 @@ _CS_FILE = re.compile(
     r"|EnumerateFiles|GetDirectories|Move)|PhysicalFile|ExtractToFile)$"
 )
 _CS_FILE_NEW = frozenset({"FileStream", "StreamReader", "StreamWriter", "FileInfo", "DirectoryInfo"})
-_CS_URL = re.compile(
-    r"^(?:WebRequest\.Create|HttpWebRequest\.Create|GetAsync|GetStringAsync|GetStreamAsync|GetByteArrayAsync"
-    r"|PostAsync|PutAsync|DeleteAsync|SendAsync|DownloadString|DownloadData|DownloadFile|OpenRead|UploadString)$"
-)
 _RB_SQL = frozenset(
     {"find_by_sql", "where", "order", "reorder", "pluck", "select", "joins", "group", "having", "from", "exists?"}
     | {"execute", "exec_query", "select_all", "select_one", "select_value", "select_values", "select_rows", "lock"}
@@ -414,7 +379,7 @@ class _Checker:
     # ----- SQL (every language)
 
     def sql_arg(self, i: int, sink: str, rule: str, span: tuple[int, int], *, keyword: bool, raw: bool = False) -> bool:
-        """Report SQL built from request data, or text built from a value that is not a literal (strict reading).
+        """Report SQL built from request data, or text built from a value that is not a literal.
 
         ``keyword``: only text that reads as SQL counts for the untainted finding. ``raw``: a fragment such as
         ``where("id = #{id}")``, which has no SQL keyword to look for."""
@@ -436,7 +401,7 @@ class _Checker:
         return False
 
     def _dynamic_name(self, name: str, pos: int, depth: int) -> bool:
-        """Is the name at ``pos`` a part that counts as not literal under the strict reading?"""
+        """Is the name at ``pos`` a part that counts as not literal (a parameter, a local built from one, ...)?"""
         if (
             _IDENTIFIER_NAME.search(name)
             or _CONSTANT.match(name)
@@ -445,7 +410,7 @@ class _Checker:
             return False
         binds = self.ix.effective(name, pos)
         if not binds:
-            return _BUILT_PARAMS and self.ix.param_kind(name, pos) is None and name[:1].islower()
+            return self.ix.param_kind(name, pos) != "number" and name[:1].islower()
         return any(not self._literal_value(b.lo, b.hi, depth + 1) for b in binds)
 
     def _literal_value(self, lo: int, hi: int, depth: int) -> bool:
@@ -485,7 +450,7 @@ class _Checker:
             return False, tok.value
         if tok.kind == ISTR:
             return any(self._dynamic_name(name, lo, depth) for name in tok.vars) or self._has_call(tok), tok.value
-        if tok.kind == NAME and hi == lo + 1 and top and _BUILT_FOLLOW:
+        if tok.kind == NAME and hi == lo + 1 and top:
             binds = ix.effective(tok.value, lo)
             dynamic = False
             texts = []
@@ -580,58 +545,13 @@ def _go(c: _Checker, i: int, tok: Token, prev: Token | None) -> None:
         span = args[1] if word.endswith("Context") and len(args) > 1 else args[0]
         c.sql_arg(i, f".{word}()", "go.sql.injection", span, keyword=word in _GO_SQL, raw=word in _GO_SQL_FRAGMENTS)
     elif len(names) >= 2 and names[-2] == "template" and word in _GO_TEMPLATE_TYPES and len(args) == 1:
-        lo, hi = args[0]
-        if c.flow(
+        c.flow(
             "go.xss.unescaped",
             i,
             args,
             f"template.{word}()",
             f"template.{word}() marks request data as safe, so html/template does not escape it.",
-        ):
-            return
-        if not c.literal(lo, hi) and not c._literal_value(lo, hi, 0):
-            c.hit(
-                "go.xss.unescaped",
-                i,
-                f"template.{word}() marks a value that is not a literal as safe, so html/template does not escape it.",
-                severity="low",
-                confidence="low",
-            )
-    elif qualified in ("fmt.Fprintf", "fmt.Fprint", "fmt.Fprintln", "io.WriteString") and len(args) >= 2:
-        if _is_writer(c, args[0]):
-            c.flow(
-                "go.xss.unescaped",
-                i,
-                args[1:],
-                f"{qualified}()",
-                f"{qualified}() writes request data into the HTTP response without escaping it.",
-            )
-    elif word == "Write" and len(names) == 2 and _is_writer(c, (i - 2, i - 1)) and args:
-        c.flow(
-            "go.xss.unescaped",
-            i,
-            args,
-            "ResponseWriter.Write()",
-            "The handler writes request data into the HTTP response without escaping it.",
         )
-    elif qualified in _GO_FILE_CALLS:
-        spans = [args[k] for k in _GO_FILE_CALLS[qualified] if k < len(args)]
-        c.flow("go.path.traversal", i, spans, f"{qualified}()", f"{qualified}() uses a path built from request data.")
-    elif qualified in _GO_URL_CALLS:
-        k = _GO_URL_CALLS[qualified]
-        if k < len(args):
-            c.flow(
-                "go.ssrf.request",
-                i,
-                [args[k]],
-                f"{qualified}()",
-                f"{qualified}() connects to an address that the request controls.",
-            )
-
-
-def _is_writer(c: _Checker, span: tuple[int, int]) -> bool:
-    lo, hi = span
-    return hi == lo + 1 and c.toks[lo].kind == NAME and c.ix.param_kind(c.toks[lo].value, lo) == "writer"
 
 
 # ----- Java and Kotlin
@@ -850,10 +770,6 @@ def _csharp(c: _Checker, i: int, tok: Token, prev: Token | None) -> None:
     elif _CS_FILE.match(qualified) or _CS_FILE.match(word):
         spans = args[:2] if word in ("Copy", "Move", "Replace") else args[:1]
         c.flow("cs.path.traversal", i, spans, f"{qualified}()", f"{qualified}() uses a path built from request data.")
-    elif _CS_URL.match(qualified) or (_CS_URL.match(word) and len(names) >= 2):
-        c.flow(
-            "cs.ssrf.request", i, args[:1], f"{qualified}()", f"{qualified}() requests a URL that the request controls."
-        )
 
 
 def _is_connection_arg(c: _Checker, span: tuple[int, int]) -> bool:
@@ -915,10 +831,8 @@ def _ruby(c: _Checker, i: int, tok: Token, prev: Token | None) -> None:
                 severity="low",
                 confidence="low",
             )
-    elif (
-        (word in ("send", "public_send", "__send__", "try")
-        and member)
-        or (word in ("send", "public_send") and not member)
+    elif (word in ("send", "public_send", "__send__", "try") and member) or (
+        word in ("send", "public_send") and not member
     ):
         c.flow("rb.reflection.send", i, args[:1], f"{word}()", f"{word}() calls the method that request data names.")
     elif word == "const_get":

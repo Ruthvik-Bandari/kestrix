@@ -4,7 +4,7 @@
 """Make leave-one-out scanner trees for the Phase 4 per-change measurement (run on the cluster, login node, light).
 
 ``python3 research/hpc/codebench/codebench_p4_variants.py FINAL_TREE OUT_DIR [VARIANT ...]`` copies the synced tree once
-per change and switches that one change off (or, for ``wideParams``, on) by editing the copy; each edit must match
+per change and switches that one change off by editing the copy; each edit must match
 exactly once, so a changed source file fails loudly instead of measuring nothing. Rules that are only dropped need no
 tree: ``codebench_p4_ablate.sh`` filters their findings out of the final run instead.
 """
@@ -19,8 +19,20 @@ RULES = "packages/kestrix-scan/src/kestrix_scan/server_rules.py"
 INDEX = "packages/kestrix-scan/src/kestrix_scan/server_index.py"
 VARIANTS: dict[str, list[tuple[str, str, str]]] = {
     "noBuilt": [(RULES, "        if dynamic and (raw or _SQL.search(text)):", "        if False:")],
-    "noFollow": [(RULES, "_BUILT_FOLLOW = True", "_BUILT_FOLLOW = False")],
-    "wideParams": [(RULES, "_BUILT_PARAMS = False", "_BUILT_PARAMS = True")],
+    "noFollow": [
+        (
+            RULES,
+            "        if tok.kind == NAME and hi == lo + 1 and top:",
+            "        if False:",
+        )
+    ],
+    "noParams": [
+        (
+            RULES,
+            "            return self.ix.param_kind(name, pos) != \"number\" and name[:1].islower()",
+            "            return False",
+        )
+    ],
     "noLowXss": [
         (RULES, "        if not c.literal(lo, hi) and not c._literal_value(lo, hi, 0):", "        if False:"),
         (
