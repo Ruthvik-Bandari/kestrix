@@ -17,7 +17,9 @@ SPOOFED = "p\N{CYRILLIC SMALL LETTER A}ypal.com"
 
 
 def ids(report: MailReport) -> list[str]:
-    return [finding.id for finding in report.findings]
+    """Finding ids, without ``mail.auth.unverified``: every message read without a trusted authserv-id carries
+    that info finding (its own tests are in ``test_mail_analyze.py``)."""
+    return [finding.id for finding in report.findings if finding.id != "mail.auth.unverified"]
 
 
 def severity_of(report: MailReport, finding_id: str) -> str:
@@ -31,8 +33,11 @@ def link_report(html: str) -> MailReport:
 # --- verdicts -------------------------------------------------------------------------------
 
 
+PROVIDER = frozenset({"mx.example.net"})  # the authserv-id that pass_all() stamps
+
+
 def test_clean_message() -> None:
-    report = analyze(message())
+    report = analyze(message(), trusted_authserv_ids=PROVIDER)
     assert report.verdict == "clean"
     assert report.findings == []
     assert report.heuristic_score == 0
@@ -82,7 +87,7 @@ def test_findings_are_ordered_by_severity() -> None:
             attachments=[("run.exe", MZ, "application/octet-stream")],
         )
     )
-    assert [finding.severity for finding in report.findings] == ["high", "medium", "low"]
+    assert [finding.severity for finding in report.findings] == ["high", "medium", "low", "info"]
 
 
 # --- auth -----------------------------------------------------------------------------------
@@ -150,6 +155,28 @@ def test_trusted_authserv_id_selects_a_lower_header() -> None:
     assert analyze(raw).verdict == "clean"
     trusted = analyze(raw, trusted_authserv_ids=frozenset({"MX.trusted.example"}))
     assert ids(trusted) == ["mail.auth.dmarc_fail"]
+
+
+def test_without_a_trusted_authserv_id_the_topmost_header_is_read_but_unverified() -> None:
+    report = analyze(message())
+    assert report.verdict == "clean"
+    assert report.heuristic_score == 0
+    assert [(f.id, f.severity) for f in report.findings] == [("mail.auth.unverified", "info")]
+    assert report.findings[0].evidence == "topmost header, authserv-id mx.example.net: spf=pass dkim=pass dmarc=pass"
+    assert "a pass does not lower" in report.findings[0].explanation
+    empty = analyze(message(auth=("mx.example.net",)))
+    assert [f.evidence for f in empty.findings] == ["topmost header, authserv-id mx.example.net: no results"]
+
+
+def test_a_trusted_header_is_not_reported_as_unverified() -> None:
+    assert "mail.auth.unverified" not in [f.id for f in analyze(message(), trusted_authserv_ids=PROVIDER).findings]
+
+
+def test_a_failure_in_an_unverified_header_still_raises() -> None:
+    """Raising is the safe direction: an unverified dmarc=fail is still reported, next to the unverified note."""
+    report = analyze(message(auth=("mx.example.net; dmarc=fail header.from=example.com",)))
+    assert [f.id for f in report.findings] == ["mail.auth.dmarc_fail", "mail.auth.unverified"]
+    assert report.verdict == "suspicious"
 
 
 def test_untrusted_headers_only_count_as_missing() -> None:
@@ -311,7 +338,7 @@ def test_link_findings_are_deduplicated_and_capped() -> None:
     same = link_report('<a href="https://bit.ly/a">x</a><a href="https://bit.ly/b">y</a>')
     assert ids(same) == ["mail.links.shortener"]
     many = "".join(f'<a href="https://10.0.{i // 250}.{i % 250}/">x</a>' for i in range(MAX_LINK_FINDINGS + 20))
-    assert len(link_report(many).findings) == MAX_LINK_FINDINGS
+    assert len([f for f in link_report(many).findings if f.analyzer == "links"]) == MAX_LINK_FINDINGS
 
 
 # --- attachments ----------------------------------------------------------------------------

@@ -139,7 +139,7 @@ def test_credential_request_with_urgency_is_suspicious_not_bec() -> None:
 def test_cue_evidence_is_compact_and_bounded() -> None:
     report = text_report("Please keep\n\n   this \t confidential.")
     assert evidence(report, "mail.intent.secrecy") == "keep this confidential"
-    assert all(len(f.evidence or "") <= MAX_CUE_CHARS for f in report.findings)
+    assert all(len(f.evidence or "") <= MAX_CUE_CHARS for f in report.findings if f.analyzer == "intent")
 
 
 def test_gift_card_mentions_that_are_not_requests_do_not_fire() -> None:
@@ -151,11 +151,38 @@ def test_html_text_is_searched_but_scripts_are_not() -> None:
     assert intent(analyze(raw)) == [("mail.intent.secrecy", "low")]
 
 
+ALERT = "We noticed an unusual sign-in. Verify your account."
+PROVIDER = frozenset({"mx.example.net"})  # the authserv-id that pass_all() stamps
+
+
 def test_credential_request_from_a_dmarc_proven_sender_is_low() -> None:
-    """A genuine provider alert ("unusual sign-in") must not make its own mail suspicious."""
-    report = analyze(message(text="We noticed an unusual sign-in. Verify your account."))
+    """A genuine provider alert ("unusual sign-in") must not make its own mail suspicious when the
+    DMARC pass comes from the header of a trusted authserv-id."""
+    report = analyze(message(text=ALERT), trusted_authserv_ids=PROVIDER)
     assert intent(report) == [("mail.intent.credential_request", "low")]
+    assert "trusted authserv-id" in next(f.explanation for f in report.findings if f.analyzer == "intent")
     assert report.verdict == "clean"
+
+
+def test_an_unverified_dmarc_pass_does_not_lower_a_credential_request() -> None:
+    """Without a trusted authserv-id the topmost header could be the sender's own: its pass lowers nothing."""
+    report = analyze(message(text=ALERT))
+    assert intent(report) == [("mail.intent.credential_request", "medium")]
+    assert report.verdict == "suspicious"
+
+
+def test_a_forged_topmost_header_does_not_clear_a_phishing_message() -> None:
+    """The outside-review case: a header naming the attacker's own authserv-id on top of a credential lure."""
+    forged = "attacker.invalid; dmarc=pass header.from=example.com"
+    raw = message(text=ALERT, auth=(forged,))
+    report = analyze(raw)
+    assert intent(report) == [("mail.intent.credential_request", "medium")]
+    assert report.verdict == "suspicious"
+    unverified = next(f for f in report.findings if f.id == "mail.auth.unverified")
+    assert unverified.evidence == "topmost header, authserv-id attacker.invalid: dmarc=pass"
+    # Also when the forged header sits above the provider's real one and the provider is trusted.
+    trusted = analyze(message(text=ALERT, auth=(forged, "mx.example.net; dmarc=none")), trusted_authserv_ids=PROVIDER)
+    assert trusted.verdict == "suspicious"
 
 
 @pytest.mark.parametrize(

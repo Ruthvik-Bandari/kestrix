@@ -144,7 +144,11 @@ def test_synthetic_modern_is_reproducible_and_clean() -> None:
 
     first = generate("s", 2)
     assert first == generate("s", 2) and len({d for _, d in first}) == len(first)
-    assert all(analyze(d).verdict == "clean" for _, d in first)
+    # Clean when the synthetic provider's authserv-id is trusted. Without it, the DMARC pass of the security
+    # alert is unverified and no longer lowers its credential request, so that family alone is suspicious.
+    assert all(analyze(d, trusted_authserv_ids=frozenset({"mx.example.net"})).verdict == "clean" for _, d in first)
+    flagged = {family for family, d in first if analyze(d).verdict != "clean"}
+    assert flagged == {"security_alert"}
 
 
 def _html(body: str, extra: str = "") -> bytes:
@@ -188,3 +192,58 @@ def test_diag_shapes_hold_no_private_values() -> None:
     out = shape("text shows secret.person.example; link goes to evil@corp.example/path?token=abc and github.com/x")
     assert "secret" not in out and "person" not in out and "corp" not in out and "token" not in out
     assert "github.com" in out
+
+
+FORGED_LURE = (
+    b"Authentication-Results: attacker.invalid; dmarc=pass header.from=sender.example\n"
+    b"From: Alice <alice@sender.example>\nTo: bob@example.org\nSubject: hello there\n"
+    b"Date: Mon, 04 Mar 2024 10:00:00 +0000\nMessage-ID: <1@sender.example>\n\n"
+    b"We noticed an unusual sign-in. Verify your account.\n"
+)
+
+
+def test_before_auth_fix_variant_restores_the_old_rule_and_the_module() -> None:
+    """The bench variant reproduces the pre-fix rule (an unverified topmost pass lowered the credential request)."""
+    from kestrix.mail import analyze
+    from kestrix.mail.analyzers import dmarc_passed
+    from kestrixmailbench import modern_proposals as mp
+
+    assert analyze(FORGED_LURE).verdict == "suspicious"
+    assert mp.analyze_variant(FORGED_LURE, "base") == "suspicious"
+    assert mp.analyze_variant(FORGED_LURE, "before_auth_fix") == "clean"
+    assert mp.analyze_module.dmarc_passed is dmarc_passed  # the patch was removed
+    assert mp.variant_names("before_auth_fix") == ("base", "before_auth_fix")
+    assert mp.variant_names(None) == tuple(mp.VARIANTS)
+    with pytest.raises(MailBenchError):
+        mp.variant_names("nope")
+
+
+def test_variants_report_counts_changed_verdicts(tmp_path: Path) -> None:
+    from kestrixmailbench.common import write_jsonl
+    from kestrixmailbench.modern_proposals import variants_report
+    from kestrixmailbench.modern_report import variants_tag
+
+    layout = Layout(tmp_path, shards=2)
+    layout.features.mkdir(parents=True)
+
+    def row(i: int, source: str, label: str, base: str, before: str) -> dict[str, object]:
+        return {"id": f"m{i}", "source": source, "subset": "s", "label": label, "year": 2024, "group": f"g{i % 3}",
+                "origin": "old", "v": {"base": base, "before_auth_fix": before}}  # fmt: skip
+
+    rows = [
+        row(0, "nazario", "phishing", "suspicious", "clean"),
+        row(1, "nazario", "phishing", "malicious", "malicious"),
+    ]
+    write_jsonl(layout.features / "modern-variants-auth-shard-00.jsonl", rows)
+    write_jsonl(layout.features / "modern-variants-auth-shard-01.jsonl", [row(2, "enron", "ham", "clean", "clean")])
+    out = variants_report(layout, 20, variants_tag("auth"))
+    before = out["variants"]["before_auth_fix"]
+    assert before["old_phishing"]["flagged"]["k"] == 1
+    assert out["variants"]["base"]["old_phishing"]["flagged"]["k"] == 2
+    assert before["changed_vs_base"]["old_phishing"] == {
+        "messages": 1,
+        "transitions_base_to_variant": {"suspicious->clean": 1},
+    }
+    assert before["changed_vs_base"]["old_enron_ham"]["messages"] == 0
+    with pytest.raises(MailBenchError):
+        variants_tag("Bad/tag")
