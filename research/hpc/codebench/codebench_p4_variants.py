@@ -29,12 +29,11 @@ VARIANTS: dict[str, list[tuple[str, str, str]]] = {
     "noParams": [
         (
             RULES,
-            "            return self.ix.param_kind(name, pos) != \"number\" and name[:1].islower()",
+            '            return self.ix.param_kind(name, pos) != "number" and name[:1].islower()',
             "            return False",
         )
     ],
     "noLowXss": [
-        (RULES, "        if not c.literal(lo, hi) and not c._literal_value(lo, hi, 0):", "        if False:"),
         (
             RULES,
             "            if not c.literal(lo, i - 1) and not c._literal_value(lo, i - 1, 0) and c.toks[lo].kind != STR:",
@@ -45,18 +44,6 @@ VARIANTS: dict[str, list[tuple[str, str, str]]] = {
             RULES,
             "        tainted = bool(_ERB_REQUEST.search(expr))\n",
             "        tainted = bool(_ERB_REQUEST.search(expr))\n        if not tainted:\n            continue\n",
-        ),
-    ],
-    "noGoWrite": [
-        (
-            RULES,
-            '    elif qualified in ("fmt.Fprintf", "fmt.Fprint", "fmt.Fprintln", "io.WriteString") and len(args) >= 2:',
-            "    elif False:",
-        ),
-        (
-            RULES,
-            '    elif word == "Write" and len(names) == 2 and _is_writer(c, (i - 2, i - 1)) and args:',
-            "    elif False:",
         ),
     ],
     "noUpload": [
