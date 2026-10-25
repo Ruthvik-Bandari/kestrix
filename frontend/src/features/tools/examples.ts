@@ -35,7 +35,7 @@ export const examples: Record<ToolPage, Example> = {
     text: `$ kestrix mail analyze sample.eml
 From:     alerts@notice.example
 Subject:  Quarterly update
-SHA-256:  837cdce0d7529d6a502dd9e26c5fbea70f9750ed621ff92aa358dbd29ff6e016
+SHA-256:  e47c7c75cf954f41944828d8e23d003e665eb2d4527242689e083e76a441b857
 Verdict:  malicious (heuristic score 100/100)
 Parts:    5, links 1, attachments 1
 
@@ -51,7 +51,9 @@ Findings:
   [MEDIUM] Replies go to a different domain than the sender
       evidence: From domain notice.example; Reply-To domain other.example
   [LOW] SPF soft-failed
-      evidence: authserv-id mx.example.net: spf=softfail`,
+      evidence: authserv-id mx.example.net: spf=softfail
+  [INFO] Authentication results are unverified
+      evidence: topmost header, authserv-id mx.example.net: spf=softfail dkim=pass dmarc=pass`,
     source:
       "From docs/modules/mail.md: a synthetic message built by the test helpers. Each finding's plain-language explanation is omitted.",
   },

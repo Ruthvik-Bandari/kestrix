@@ -61,7 +61,7 @@ def test_options(tmp_path: Path) -> None:
 def test_clean_message_without_findings(tmp_path: Path) -> None:
     path = tmp_path / "clean.eml"
     path.write_bytes(message())
-    result = runner.invoke(cli.app, ["analyze", str(path)])
+    result = runner.invoke(cli.app, ["analyze", str(path), "--trusted-authserv-id", "mx.example.net"])
     assert result.exit_code == 0
     assert "No findings." in result.stdout
 

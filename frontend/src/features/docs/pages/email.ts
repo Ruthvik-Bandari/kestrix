@@ -22,7 +22,7 @@ export const emailPages: DocPage[] = [
       section(
         "Which authentication results are trusted",
         p(
-          "The `auth` analyzer reads `Authentication-Results` headers (RFC 8601). Anyone can write such a header, including the sender, so only one is trusted: by default the topmost one, which your provider adds last on delivery, or with `--trusted-authserv-id` the first one whose `authserv-id` matches. If none matches, the results count as missing. `ARC` results are not judged.",
+          "The `auth` analyzer reads one `Authentication-Results` header (RFC 8601). Anyone can write such a header, including the sender. With `--trusted-authserv-id`, the first header whose `authserv-id` matches is read and trusted; if none matches, the results count as missing. Use it only for messages saved from your own mailbox: whoever hands you an `.eml` can put a header with any `authserv-id` on top. Without it, the topmost header, which your provider adds last on delivery, is read but unverified: in a saved or forwarded message, or a sample someone sent you, anyone could have written it. Its failures are still reported, because raising severity is the safe direction, but a pass lowers no finding and no verdict, and the info finding `mail.auth.unverified` names the header that was read. `ARC` results are not judged.",
         ),
       ),
       section(
@@ -247,6 +247,7 @@ export const emailPages: DocPage[] = [
             ["`mail.auth.dkim_fail`", "medium", "Every DKIM result is `fail` or `permerror`. One passing signature outweighs a broken one, which mailing lists often cause."],
             ["`mail.auth.dkim_not_aligned`", "low", "DKIM passed, but no passing signature's domain is in the From domain's organization."],
             ["`mail.auth.missing`", "info", "No trusted `Authentication-Results` header. The checks cannot be judged; this leads to `insufficient_evidence`, never to a worse verdict."],
+            ["`mail.auth.unverified`", "info", "No `--trusted-authserv-id` was given and the topmost `Authentication-Results` header was read. The evidence names its `authserv-id` and results. A pass in it lowers nothing."],
           ],
         ),
       ),
@@ -321,7 +322,7 @@ export const emailPages: DocPage[] = [
           [
             ["`mail.intent.payment_change`", "medium", "\"bank details have changed\", \"new account number\", \"wire transfer\", \"update your payment\"; also \"invoice attached\" when an urgency cue is present."],
             ["`mail.intent.gift_cards`", "medium", "A request: \"buy some gift cards\", \"gift card codes\", \"scratch off the back\". A mention such as \"our gift cards never expire\" does not fire."],
-            ["`mail.intent.credential_request`", "medium (low when DMARC passes)", "\"verify your account\", \"confirm your password\", \"sign in to continue\", \"suspicious activity\", \"click here to verify\"."],
+            ["`mail.intent.credential_request`", "medium (low when a trusted authserv-id records DMARC pass)", "\"verify your account\", \"confirm your password\", \"sign in to continue\", \"suspicious activity\", \"click here to verify\"."],
             ["`mail.intent.urgency`", "low", "\"urgent\", \"immediately\", \"within 24 hours\", \"account will be suspended\", \"final notice\"."],
             ["`mail.intent.secrecy`", "low", "\"keep this confidential\", \"don't tell anyone\", \"be discreet\"."],
             ["`mail.intent.gambling_offer`", "medium", "\"free spins\", \"no deposit bonus\", \"casino bonus\"; also in Russian."],
@@ -331,7 +332,7 @@ export const emailPages: DocPage[] = [
             ["`mail.intent.bec_pattern`", "high", "`payment_change` or `gift_cards` together with `urgency` or `secrecy`. The evidence names the families."],
           ],
         ),
-        note("Ordinary mail can use the same words, and the lists miss paraphrases and other languages. Genuine provider alerts use credential wording, which is why that finding drops to low when DMARC proves the From domain sent the message.", "caution"),
+        note("Ordinary mail can use the same words, and the lists miss paraphrases and other languages. Genuine provider alerts use credential wording, which is why that finding drops to low when the header of your trusted authserv-id records DMARC pass. Without a trusted authserv-id it stays medium.", "caution"),
       ),
     ],
   },

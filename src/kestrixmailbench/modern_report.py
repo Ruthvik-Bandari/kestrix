@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from collections import Counter
 from typing import Any
 
@@ -206,13 +207,23 @@ def run_report(args: argparse.Namespace, layout: Layout) -> int:
     if args.command == "variants-report":
         from .modern_proposals import variants_report
 
-        write_json(layout.reports / "modern-variants.json", variants_report(layout, args.bootstrap))
+        tag = variants_tag(args.tag)
+        write_json(layout.reports / f"modern-variants{tag}.json", variants_report(layout, args.bootstrap, tag))
         return 0
     if args.command == "variants":
-        from .modern_proposals import run_variants
+        from .modern_proposals import run_variants, variant_names
 
-        return run_variants(layout, args.shard)
+        return run_variants(layout, args.shard, names=variant_names(args.variants), tag=variants_tag(args.tag))
     raise MailBenchError(f"unknown command {args.command}")
+
+
+def variants_tag(tag: str | None) -> str:
+    """File-name suffix for a variants run: ``""`` or ``-<tag>`` (lower-case letters, digits and hyphens)."""
+    if not tag:
+        return ""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", tag):
+        raise MailBenchError("--tag takes lower-case letters, digits and hyphens")
+    return f"-{tag}"
 
 
 def heldout(layout: Layout, reps: int) -> int:

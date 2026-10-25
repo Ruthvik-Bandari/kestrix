@@ -12,7 +12,9 @@ from kestrix.mail.parse import parse_message
 
 
 def ids(report: MailReport) -> list[str]:
-    return [finding.id for finding in report.findings]
+    """Finding ids, without ``mail.auth.unverified``: every message read without a trusted authserv-id carries
+    that info finding (its own tests are in ``test_mail_analyze.py``)."""
+    return [finding.id for finding in report.findings if finding.id != "mail.auth.unverified"]
 
 
 def severity_of(report: MailReport, finding_id: str) -> str:
@@ -48,7 +50,8 @@ def test_reply_to_the_list_itself_is_not_a_mismatch() -> None:
                 ("Reply-To", "dev@lists.example.org"),
                 ("List-Id", "<dev.lists.example.org>"),
             ]
-        )
+        ),
+        trusted_authserv_ids=frozenset({"mx.example.net"}),
     )
     assert ids(report) == ["mail.sender.reply_to_mailing_list"]
     assert severity_of(report, "mail.sender.reply_to_mailing_list") == "info"
@@ -122,7 +125,7 @@ def test_three_low_findings_from_different_analyzers_make_a_message_suspicious()
 
 
 def test_low_findings_from_one_analyzer_do_not_combine() -> None:
-    report = analyze(message(html=THREE_LINKS))
+    report = analyze(message(html=THREE_LINKS), trusted_authserv_ids=frozenset({"mx.example.net"}))
     assert {finding.analyzer for finding in report.findings} == {"links"}
     assert [f.severity for f in report.findings] == ["low", "low", "low"]
     assert report.verdict == "clean"

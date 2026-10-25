@@ -54,7 +54,8 @@ def analyze(
     ``protected_domains``: domains whose name in a display name, or whose look-alike in the From
     domain or a link host, is flagged.
     ``trusted_authserv_ids``: authserv-ids of your own provider; when set, the first
-    Authentication-Results header stamped by one of them is trusted instead of the topmost one.
+    Authentication-Results header stamped by one of them is read and trusted. When empty, the topmost
+    header is read but unverified (``mail.auth.unverified``): its failures are reported, its pass lowers nothing.
     """
     protected = validate_protected_domains(protected_domains)
     trusted = validate_authserv_ids(trusted_authserv_ids)
@@ -95,8 +96,9 @@ def analyze(
 
 def _authenticated_alerts(findings: list[Finding], authenticated: bool) -> list[Finding]:
     """Genuine account alerts ("unusual sign-in", "verify your account") come from the provider's
-    own domain. When DMARC proves the From domain sent the message, a credential request alone is
-    low: the risk that remains is the link, which the links and lookalike analyzers judge."""
+    own domain. When the header from a trusted authserv-id records DMARC pass, the From domain sent the
+    message and a credential request alone is low: the risk that remains is the link, which the links
+    and lookalike analyzers judge. An unverified header never gets here (``dmarc_passed``)."""
     if not authenticated:
         return findings
     return [
@@ -104,7 +106,8 @@ def _authenticated_alerts(findings: list[Finding], authenticated: bool) -> list[
             update={
                 "severity": "low",
                 "explanation": finding.explanation
-                + " DMARC passed, so the sender's domain is genuine; check where the links go before signing in.",
+                + " DMARC passed in the header from your trusted authserv-id, so the From domain sent this message; "
+                "check where the links go before signing in.",
             }
         )
         if finding.id == "mail.intent.credential_request" and finding.severity == "medium"

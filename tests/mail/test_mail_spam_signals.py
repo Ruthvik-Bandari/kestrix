@@ -15,7 +15,9 @@ ZWNJ = "‌"
 
 
 def ids(report: MailReport) -> list[str]:
-    return [finding.id for finding in report.findings]
+    """Finding ids, without ``mail.auth.unverified``: every message read without a trusted authserv-id carries
+    that info finding (its own tests are in ``test_mail_analyze.py``)."""
+    return [finding.id for finding in report.findings if finding.id != "mail.auth.unverified"]
 
 
 def evidence(report: MailReport, finding_id: str) -> str | None:

@@ -30,6 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--splits", default="dev", help="features: dev and/or synthetic (held-out only via heldout)")
     p.add_argument("--bootstrap", type=int, default=1000)
     p.add_argument("--limit", type=int, help="build: at most this many messages per file (smoke)")
+    p.add_argument("--variants", help="variants: comma-separated variant names (base is always run); default all")
+    p.add_argument("--tag", help="variants and variants-report: suffix of the output file names")
     args = p.parse_args(argv)
     os.umask(0o077)
     layout = Layout(args.root)

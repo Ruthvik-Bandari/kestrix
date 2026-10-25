@@ -357,9 +357,22 @@ def post_list_freemail_reply(msg: ParsedMessage, findings: list[Finding]) -> lis
     return [f.model_copy(update={"severity": "low"}) if _freemail_reply(f) else f for f in findings]
 
 
+def topmost_dmarc_passed(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> bool:
+    """The rule before the 2026-10-25 fix: without a trusted authserv-id, the topmost header's ``dmarc=pass`` was
+    believed and lowered ``mail.intent.credential_request`` to low. Kept to measure what the fix changed."""
+    from kestrix.mail.analyzers import trusted_results
+
+    chosen = trusted_results(msg, trusted_authserv_ids)
+    return chosen is not None and any(r.method == "dmarc" and r.result == "pass" for r in chosen.results)
+
+
+# name -> names in ``kestrix.mail.analyze`` replaced for that variant (besides the link and sender wrappers)
+PATCHES: dict[str, dict[str, Callable[..., Any]]] = {"before_auth_fix": {"dmarc_passed": topmost_dmarc_passed}}
+
 # name -> (link pre-processors, link post-processors, sender post-processors)
 VARIANTS: dict[str, tuple[tuple[LinkPre, ...], tuple[FindingsPost, ...], tuple[FindingsPost, ...]]] = {
     "base": ((), (), ()),
+    "before_auth_fix": ((), (), ()),
     "p1_unwrap_rewriters": ((pre_unwrap_rewriters,), (), ()),
     "p3_private_ip": ((), (post_private_ip,), ()),
     "p4_tracker_text": ((pre_tracker_text,), (), ()),
@@ -389,7 +402,7 @@ def analyze_variant(raw: bytes, name: str) -> str:
             found = post(msg, found)
         return found
 
-    with patched(analyze_links=links, analyze_sender=sender):
+    with patched(analyze_links=links, analyze_sender=sender, **PATCHES.get(name, {})):
         return str(analyze_module.analyze(raw).verdict)
 
 
@@ -409,8 +422,24 @@ def _old_dev_rows(layout: Layout, shard: int) -> Iterator[tuple[dict[str, Any], 
             yield info, base64.b64decode(item["b64"])
 
 
-def run_variants(layout: Layout, shard: int | None, with_old: bool = True) -> int:
-    """Verdicts of every variant for the modern dev and synthetic messages (and the old dev corpora) of a shard."""
+def variant_names(spec: str | None) -> tuple[str, ...]:
+    """``base`` plus the comma-separated variants in ``spec``, or every variant when ``spec`` is empty."""
+    if not spec:
+        return tuple(VARIANTS)
+    names = ("base", *(name for name in spec.split(",") if name and name != "base"))
+    unknown = [name for name in names if name not in VARIANTS]
+    if unknown:
+        from .common import MailBenchError
+
+        raise MailBenchError(f"unknown variants: {', '.join(unknown)}")
+    return names
+
+
+def run_variants(
+    layout: Layout, shard: int | None, with_old: bool = True, names: tuple[str, ...] = tuple(VARIANTS), tag: str = ""
+) -> int:
+    """Verdicts of the variants for the modern dev and synthetic messages (and the old dev corpora) of a shard,
+    written to ``modern-variants{tag}-shard-NN.jsonl``."""
     import base64
 
     meta = {m["id"]: m for m in read_jsonl(layout.meta)}
@@ -418,7 +447,7 @@ def run_variants(layout: Layout, shard: int | None, with_old: bool = True) -> in
 
     def record(info: dict[str, Any], data: bytes, origin: str) -> None:
         keep = {k: info[k] for k in ("id", "source", "subset", "label", "year", "group")}
-        rows.append({**keep, "origin": origin, "v": {name: analyze_variant(data, name) for name in VARIANTS}})
+        rows.append({**keep, "origin": origin, "v": {name: analyze_variant(data, name) for name in names}})
 
     for item in read_jsonl(layout.raw_shard(shard if shard is not None else 0)):
         info = meta[item["id"]]
@@ -429,7 +458,7 @@ def run_variants(layout: Layout, shard: int | None, with_old: bool = True) -> in
             record(info, data, "old")
     from .common import write_jsonl
 
-    write_jsonl(layout.features / f"modern-variants-shard-{shard:02d}.jsonl", rows)
+    write_jsonl(layout.features / f"modern-variants{tag}-shard-{shard:02d}.jsonl", rows)
     return 0
 
 
@@ -446,15 +475,16 @@ def patched(**replacements: Callable[..., Any]) -> Iterator[None]:
             setattr(analyze_module, name, fn)
 
 
-def variants_report(layout: Layout, reps: int) -> dict[str, Any]:
-    """Per variant: flagged and malicious rates on the modern dev lists and on the old dev corpora, with CIs."""
+def variants_report(layout: Layout, reps: int, tag: str = "") -> dict[str, Any]:
+    """Per variant: flagged and malicious rates on the modern dev lists and on the old dev corpora, with CIs, and
+    how many verdicts differ from ``base`` (counts per cohort and per verdict transition)."""
     import numpy as np
 
     from .metrics import Frame, rate
 
     rows: list[dict[str, Any]] = []
     for shard in range(layout.shards):
-        rows.extend(read_jsonl(layout.features / f"modern-variants-shard-{shard:02d}.jsonl"))
+        rows.extend(read_jsonl(layout.features / f"modern-variants{tag}-shard-{shard:02d}.jsonl"))
     rows.sort(key=lambda r: (r["origin"], r["id"]))
     frame = Frame(rows)
     src, lab = frame.source, frame.label
@@ -477,12 +507,30 @@ def variants_report(layout: Layout, reps: int) -> dict[str, Any]:
         "variants": {},
     }
     synth = src == SYNTHETIC
-    for name in VARIANTS:
+    cohorts_changed = cohorts | {"synthetic_modern": synth}
+    base = np.array([r["v"]["base"] for r in rows], dtype=object)
+    for name in rows[0]["v"] if rows else ():
         verdict = np.array([r["v"][name] for r in rows], dtype=object)
         flagged = np.asarray((verdict == "suspicious") | (verdict == "malicious"), dtype=bool)
         malicious = np.asarray(verdict == "malicious", dtype=bool)
+        changed = np.asarray(verdict != base, dtype=bool)
         out["variants"][name] = {
             cohort: {"flagged": rate(frame, mask, flagged, reps, 0), "malicious": rate(frame, mask, malicious, reps, 0)}
             for cohort, mask in cohorts.items()
-        } | {"synthetic_modern_flagged": int((flagged & synth).sum())}
+        } | {
+            "synthetic_modern_flagged": int((flagged & synth).sum()),
+            "changed_vs_base": {
+                cohort: {
+                    "messages": int((changed & mask).sum()),
+                    "transitions_base_to_variant": dict(
+                        sorted(
+                            Counter(
+                                f"{b}->{v}" for b, v in zip(base[changed & mask], verdict[changed & mask], strict=True)
+                            ).items()
+                        )
+                    ),
+                }
+                for cohort, mask in cohorts_changed.items()
+            },
+        }
     return out

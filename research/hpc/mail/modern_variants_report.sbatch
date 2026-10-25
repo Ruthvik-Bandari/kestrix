@@ -8,7 +8,7 @@
 #SBATCH --mem=8G
 #SBATCH --time=01:00:00
 #SBATCH --output=/scratch/%u/kestrix/mailmodern/logs/%x-%j.out
-# Aggregates the variant verdicts (reports/modern-variants.json). Dev only.
+# Aggregates the variant verdicts (reports/modern-variants${TAG:+-$TAG}.json). Dev only.
 set -euo pipefail
-source "/scratch/$USER/kestrix/mailmodern-code/research/hpc/mail/modern_env.sh"
-mm variants-report variants-report
+source "${KESTRIX_CODE:-/scratch/$USER/kestrix/mailmodern-code}/research/hpc/mail/modern_env.sh"
+mm variants-report variants-report ${TAG:+--tag "$TAG"}

@@ -201,7 +201,7 @@ def _split_outside_quotes(value: str, separator: str | None) -> list[str]:
 
 
 def trusted_results(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> AuthResults | None:
-    """The one Authentication-Results header to trust: the first from a trusted authserv-id, else the topmost."""
+    """The one Authentication-Results header to read: the first from a trusted authserv-id, else the topmost."""
     parsed = [parse_authentication_results(value) for value in msg.authentication_results]
     if trusted_authserv_ids:
         return next((item for item in parsed if item.authserv_id in trusted_authserv_ids), None)
@@ -209,17 +209,24 @@ def trusted_results(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = f
 
 
 def dmarc_passed(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> bool:
-    """True when the trusted header records ``dmarc=pass``: the From domain itself sent the message."""
+    """True when a header from a configured trusted authserv-id records ``dmarc=pass``.
+
+    Without a trusted authserv-id the topmost header is only read, never believed: in a saved or forwarded
+    message anyone could have written it, so its pass must not lower another finding or the verdict.
+    """
+    if not trusted_authserv_ids:
+        return False
     chosen = trusted_results(msg, trusted_authserv_ids)
     return chosen is not None and any(r.method == "dmarc" and r.result == "pass" for r in chosen.results)
 
 
 def analyze_auth(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = frozenset()) -> list[Finding]:
-    """Judge SPF, DKIM and DMARC from one trusted Authentication-Results header.
+    """Judge SPF, DKIM and DMARC from one Authentication-Results header.
 
-    Only the topmost header is trusted (the receiving provider stamps it last), or, when
-    ``trusted_authserv_ids`` is given, the first header whose authserv-id is in it. Headers
-    lower down can be written by anyone, including the sender.
+    With ``trusted_authserv_ids``, the first header whose authserv-id is in it is read and trusted. Without, the
+    topmost header (the receiving provider stamps it last) is read but unverified: anyone, including the sender,
+    can write such a header into a message, so ``mail.auth.unverified`` says which header was read, failures are
+    still reported (raising severity is the safe direction), and a pass lowers nothing.
     """
     chosen = trusted_results(msg, trusted_authserv_ids)
     if trusted_authserv_ids:
@@ -237,7 +244,22 @@ def analyze_auth(msg: ParsedMessage, trusted_authserv_ids: frozenset[str] = froz
                 None,
             )
         ]
-    return _auth_findings(chosen, msg.from_.domain if msg.from_ else None)
+    findings = _auth_findings(chosen, msg.from_.domain if msg.from_ else None)
+    if not trusted_authserv_ids:
+        recorded = " ".join(f"{result.method}={result.result}" for result in chosen.results) or "no results"
+        findings.append(
+            _finding(
+                "mail.auth.unverified",
+                "info",
+                "Authentication results are unverified",
+                "No trusted authserv-id was given, so these results come from the topmost Authentication-Results "
+                "header. Your provider adds it on delivery, but in a saved or forwarded message anyone could have "
+                "written it, including the sender. Failures are still reported; a pass does not lower any other "
+                "finding or the verdict. Give your provider's authserv-id to use its passes.",
+                f"topmost header, authserv-id {chosen.authserv_id or '(none)'}: {recorded}",
+            )
+        )
+    return findings
 
 
 def _auth_findings(chosen: AuthResults, from_domain: str | None) -> list[Finding]:

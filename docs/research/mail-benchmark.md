@@ -562,6 +562,25 @@ All numbers below are dev. Variants are applied by monkeypatch in `src/kestrixma
 
 Synthetic modern cohort: the 120 messages (receipts, password resets, shipping, ESP newsletters, security alerts, invites, bank statements, code notifications) are all clean under every variant; their only findings are low (`return_path_mismatch`, `dkim_not_aligned`, and `credential_request` on the DMARC-passing security alert). That is a regression check on shapes I wrote after reading the dev causes, not evidence about real mail.
 
+### Authentication provenance fix (2026-10-25, dev only)
+
+An outside review found that without `trusted_authserv_ids` the analyzer believed the topmost `Authentication-Results` header, so a forged `dmarc=pass` placed on top of a saved message lowered `mail.intent.credential_request` from medium to low and could turn `suspicious` into `clean`. Now that header is read as unverified: its failures still count, its pass lowers nothing, and the info finding `mail.auth.unverified` names it (`docs/modules/mail.md`, Authentication). Measured with the variants harness: `base` is the fixed code, `before_auth_fix` patches back the old rule (`modern_proposals.topmost_dmarc_passed`); same messages, same run (jobs 11363895 and 11363896, `--variants before_auth_fix --tag authfix`). Dev splits only; no held-out or locked set was read. Aggregates: [`modern-variants-authfix.json`](../../research/results/mail/modern-variants-authfix.json).
+
+| Dev cohort | Messages | Flagged before | Flagged after | Verdicts changed |
+| --- | --- | --- | --- | --- |
+| Old phishing (Nazario) | 6,070 | 68.45% (61.81-74.09) | 69.00% (62.85-74.21) | 33, all `clean` to `suspicious` |
+| Old spam (SpamAssassin) | 1,546 | 43.86% (msg 41.46-46.44) | 43.86% | 0 |
+| Old normal mail, SpamAssassin ham | 2,757 | 4.46% (msg 3.70-5.26) | 4.46% | 0 |
+| Old normal mail, Enron | 13,986 | 0.71% (0.51-0.98) | 0.71% | 0 |
+| Modern list mail (ASF + GNU) | 23,303 | 0.49% (0.19-0.89) | 0.49% | 0 |
+| Synthetic modern (written, not real) | 120 | 0 | 15 | 15, all `clean` to `suspicious` |
+
+The `before` column reproduces the applied P1 + P3 + P6 rerun above to the message. Malicious rates did not move in any cohort. Intervals are the grouped bootstrap (`msg`: message-level, fewer than 8 groups).
+
+- **The fix costs no measured false alarms and catches 33 more phishing messages (+0.54 points).** Those 33 carry `dmarc=pass` in their topmost header together with credential wording; they were `clean` only because of the downgrade. That the old corpus has such headers on phishing is the point of the fix: a pass the analyzer cannot verify is not evidence.
+- **The cost is on genuine provider alerts checked without a trusted authserv-id.** All 15 synthetic security alerts (a sign-in notice with a credential cue and a real DMARC pass) are now `suspicious` instead of `clean`; with `trusted_authserv_ids={"mx.example.net"}` they are `clean` again (tested). The modern dev lists have no such alerts, so the real-world size of this cost is not measured.
+- Modern list mail has almost no `dmarc=pass` in its topmost stamp (2 dev messages, see above), so no modern verdict changed.
+
 ### Held-out claim
 
 `reports/LOCKED_EVAL.json` on the cluster was claimed once (job 11346774, rules unmodified, features of the held-out lists computed in that job) and is copied to [`modern-locked-eval.json`](../../research/results/mail/modern-locked-eval.json). The held-out measurement was run for the current rules only; no variant was run on it. Anything further on those five lists is no longer a held-out measurement.
@@ -582,5 +601,6 @@ Code sync to `/scratch/$USER/kestrix/mailmodern-code` (home was over quota), dat
 ssh explorer-xfer 'cd /scratch/$USER/kestrix/mailmodern-code && PYTHONPATH=src uv run --no-project --python 3.12 python -m kestrixmailbench.modern acquire --root /scratch/$USER/kestrix/mailmodern'
 sbatch research/hpc/mail/modern_build.sbatch; sbatch research/hpc/mail/modern_features.sbatch; sbatch research/hpc/mail/modern_report.sbatch; sbatch research/hpc/mail/modern_diag.sbatch
 sbatch research/hpc/mail/modern_variants.sbatch; sbatch research/hpc/mail/modern_variants_report.sbatch   # dev only
+sbatch --export=ALL,VARIANTS=before_auth_fix,TAG=authfix research/hpc/mail/modern_variants.sbatch   # then the report job with the same --export
 sbatch research/hpc/mail/modern_heldout.sbatch                                              # once; claims LOCKED_EVAL.json
 ```

@@ -20,7 +20,7 @@ Rejections print `Rejected (<reason>): <detail>` to stderr. The file size is che
 $ kestrix mail analyze sample.eml
 From:     alerts@notice.example
 Subject:  Quarterly update
-SHA-256:  837cdce0d7529d6a502dd9e26c5fbea70f9750ed621ff92aa358dbd29ff6e016
+SHA-256:  e47c7c75cf954f41944828d8e23d003e665eb2d4527242689e083e76a441b857
 Verdict:  malicious (heuristic score 100/100)
 Parts:    5, links 1, attachments 1
 
@@ -37,6 +37,8 @@ Findings:
       evidence: From domain notice.example; Reply-To domain other.example
   [LOW] SPF soft-failed
       evidence: authserv-id mx.example.net: spf=softfail
+  [INFO] Authentication results are unverified
+      evidence: topmost header, authserv-id mx.example.net: spf=softfail dkim=pass dmarc=pass
 ```
 
 The sample is a synthetic message built by the test helpers. Each finding is also followed by a plain-language explanation, omitted here.
@@ -74,10 +76,10 @@ The rules are applied in this order ([`analyze.py`](../../src/kestrix/mail/analy
 
 ## Authentication
 
-The `auth` analyzer reads `Authentication-Results` headers (RFC 8601). Anyone can write such a header, including the sender, so only one is trusted:
+The `auth` analyzer reads one `Authentication-Results` header (RFC 8601). Anyone can write such a header, including the sender, so which one is read, and whether it is believed, depends on `--trusted-authserv-id`:
 
-- by default, the topmost one, which your provider adds last on delivery;
-- with `--trusted-authserv-id`, the first one whose `authserv-id` matches. If none matches, the results count as missing.
+- **With `--trusted-authserv-id`**, the first header whose `authserv-id` matches is read and trusted. If none matches, the results count as missing. A `dmarc=pass` in it lowers `mail.intent.credential_request` to low (see [Intent](#intent)). Use it only for messages saved from your own mailbox: whoever hands you an `.eml` can put a header with any `authserv-id` on top.
+- **Without it**, the topmost header is read, which your provider adds last on delivery. In a saved or forwarded `.eml`, or a sample someone sent you, that header could have been written by anyone, so it is **unverified**: its failures are still reported (raising severity is the safe direction), but a pass lowers no finding and no verdict, and the info finding `mail.auth.unverified` names the header that was read. A forged failure can therefore still make a genuine message look worse; the evidence shows which header said so.
 
 Comments in parentheses and quoted strings are handled. `ARC` results are not judged in this slice.
 
@@ -90,6 +92,7 @@ Comments in parentheses and quoted strings are handled. `ARC` results are not ju
 | `mail.auth.dkim_fail` | medium | Every DKIM result is `fail` or `permerror`. One passing signature outweighs a broken one, which mailing lists often cause. |
 | `mail.auth.dkim_not_aligned` | low | DKIM passed, but no passing signature's domain (`header.d`, or the domain of `header.i`) is in the From domain's organization. |
 | `mail.auth.missing` | info | No trusted `Authentication-Results` header. The checks cannot be judged; this leads to `insufficient_evidence`, never to a worse verdict. |
+| `mail.auth.unverified` | info | No `--trusted-authserv-id` was given and the topmost `Authentication-Results` header was read. The evidence names its `authserv-id` and the results it records (for example `topmost header, authserv-id mx.example.net: spf=pass dkim=pass dmarc=pass`). A pass in it lowers nothing. |
 
 ## Sender
 
@@ -166,7 +169,7 @@ The `intent` analyzer ([`intent.py`](../../src/kestrix/mail/intent.py)) looks fo
 | --- | --- | --- |
 | `mail.intent.payment_change` | medium | "bank details have changed", "new account number", "wire transfer", "update your payment"; also "invoice attached" when an urgency cue is present (evidence `invoice attached + <urgency cue>`). |
 | `mail.intent.gift_cards` | medium | A request: "buy some gift cards", "gift card codes", "iTunes cards", "scratch off the back". A mention such as "our gift cards never expire" does not fire. |
-| `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in", and looser wording: "update your billing information", "restore your account", "your account has been limited", "suspicious activity", "click here to verify". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
+| `mail.intent.credential_request` | medium (low when a trusted authserv-id records DMARC pass) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in", and looser wording: "update your billing information", "restore your account", "your account has been limited", "suspicious activity", "click here to verify". Genuine provider alerts use these words, so when the header of a trusted authserv-id (`--trusted-authserv-id`) records DMARC pass it is low and the links decide. Without a trusted authserv-id it stays medium, so a genuine provider alert checked that way is `suspicious`. |
 | `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
 | `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
 | `mail.intent.gambling_offer` | medium | "free spins", "no deposit bonus", "100 FS" (upper case only), "casino bonus"; in Russian "фриспины", "бесплатные спины", "без депозита", "бонус на депозит". |
@@ -198,6 +201,7 @@ On a local dashboard (`kestrix dashboard`) the **Email check** page has a second
 - **What is kept.** The refresh token and the app settings, in the `0600` `secrets.json`. Access tokens stay in memory. The message list is shown in the page only. A checked message's raw MIME is fetched into memory, analyzed and dropped; the normal report goes to Recent results like any check (its list summary holds the verdict and finding count, no subject or address).
 - **What it contacts.** Only `accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `login.microsoftonline.com` and `graph.microsoft.com` over HTTPS, after you press a connect button. Redirects are refused, answers are size-capped, and every request passes `netguard`.
 - **Hosted service.** Not available there: the routes do not exist and the page does not show the tab.
+- **Authentication.** A message fetched this way is judged like an uploaded file: without the authserv-id in Advanced options its `Authentication-Results` are unverified, so a DMARC pass lowers nothing.
 
 | Command | What it does |
 | --- | --- |

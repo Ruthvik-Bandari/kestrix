@@ -24,5 +24,6 @@ Modern normal mail (section "Modern normal mail (2022-2026)" of the research pag
 | `modern-dev.json` | Dev metrics for the current rules: flagged and malicious rates by source, list, year and source-year with group-bootstrap intervals, finding frequencies and flagging id sets, the auth-header analysis, the Reply-To exemption counts, the synthetic cohort |
 | `modern-diag.json` | Dev-only structural shapes of the evidence behind the false alarms (hosts and addresses reduced to placeholders; shapes under 5 suppressed), per-list flagging ids, text/href mismatch link classes |
 | `modern-variants.json` | Dev verdict rates of each proposed rule change on the modern dev lists and the old dev corpora |
+| `modern-variants-authfix.json` | Dev verdict rates before (`before_auth_fix`) and after (`base`) the 2026-10-25 authentication provenance fix, with verdict-change counts per cohort |
 | `modern-heldout.json`, `modern-locked-eval.json` | The one-time held-out measurement of the current rules and its claim file |
 

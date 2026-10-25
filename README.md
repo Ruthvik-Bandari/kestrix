@@ -218,7 +218,7 @@ kestrix mail analyze message.eml --protected-domain example-bank.com
 Save a message as `.eml` from your mail client and Kestrix checks it without sending anything anywhere:
 
 - **Authentication:** SPF, DKIM and DMARC from the `Authentication-Results` header your provider added
-  (only the topmost one, or one from an `authserv-id` you trust).
+  (one from an `authserv-id` you trust; otherwise the topmost one, read as unverified so a pass lowers nothing).
 - **Sender:** Reply-To or Return-Path on another domain, and display names that show a different address
   or the name of a domain you protect.
 - **Links:** link text that shows one site while the link opens another, credentials before `@`,

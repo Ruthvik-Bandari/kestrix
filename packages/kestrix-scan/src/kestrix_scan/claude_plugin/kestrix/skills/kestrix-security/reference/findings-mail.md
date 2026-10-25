@@ -19,8 +19,11 @@ characters). The ids below are stable reason codes. Source: `src/kestrix/mail/`.
 
 ## Authentication (`auth`)
 
-Only the topmost `Authentication-Results` header is trusted, or the first one whose `authserv-id`
-matches `--trusted-authserv-id`.
+With `--trusted-authserv-id`, the first `Authentication-Results` header whose `authserv-id` matches is
+read and trusted. Without it, the topmost header is read but unverified (`mail.auth.unverified`): anyone,
+including the sender, can write it into a saved message, so its failures are reported but a pass lowers
+nothing. Do not tell the user a sender is genuine from an unverified pass, and suggest
+`--trusted-authserv-id` only for messages saved from the user's own mailbox, not for a sample someone sent.
 
 | `id` | Severity | Raised when |
 | --- | --- | --- |
@@ -31,6 +34,7 @@ matches `--trusted-authserv-id`.
 | `mail.auth.dkim_fail` | medium | Every DKIM result is `fail` or `permerror`. One passing signature outweighs a broken one, which mailing lists often cause. |
 | `mail.auth.dkim_not_aligned` | low | DKIM passed, but no passing signature's domain (`header.d`, or the domain of `header.i`) is in the From domain's organization. |
 | `mail.auth.missing` | info | No trusted `Authentication-Results` header. The checks cannot be judged; this leads to `insufficient_evidence`, never to a worse verdict. |
+| `mail.auth.unverified` | info | No `--trusted-authserv-id`; the topmost header was read. The evidence names its `authserv-id` and results. A pass in it lowers nothing. |
 
 ## Sender (`sender`)
 
@@ -95,7 +99,7 @@ Attachments are hashed and sniffed, never opened or extracted.
 | --- | --- | --- |
 | `mail.intent.payment_change` | medium | "bank details have changed", "new account number", "wire transfer", "update your payment"; also "invoice attached" when an urgency cue is present (evidence `invoice attached + <urgency cue>`). |
 | `mail.intent.gift_cards` | medium | A request: "buy some gift cards", "gift card codes", "iTunes cards", "scratch off the back". A mention such as "our gift cards never expire" does not fire. |
-| `mail.intent.credential_request` | medium (low when DMARC passes) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in", and looser wording: "update your billing information", "restore your account", "your account has been limited", "suspicious activity", "click here to verify". Genuine provider alerts use these words, so when DMARC proves the From domain sent the message it is low and the links decide. |
+| `mail.intent.credential_request` | medium (low when a trusted authserv-id records DMARC pass) | "verify your account", "confirm your password", "sign in to continue", "unusual sign-in", and looser wording: "update your billing information", "restore your account", "your account has been limited", "suspicious activity", "click here to verify". Genuine provider alerts use these words, so when the header of a trusted authserv-id records DMARC pass it is low and the links decide; without one it stays medium. |
 | `mail.intent.urgency` | low | "urgent", "immediately", "within 24 hours", "account will be suspended", "as soon as possible", "final notice". |
 | `mail.intent.secrecy` | low | "keep this confidential", "don't tell anyone", "be discreet". |
 | `mail.intent.gambling_offer` | medium | "free spins", "no deposit bonus", "100 FS" (upper case only), "casino bonus"; in Russian "фриспины", "бесплатные спины", "без депозита", "бонус на депозит". |
