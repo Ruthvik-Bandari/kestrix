@@ -197,7 +197,7 @@ _PROPAGATE: dict[str, frozenset[str]] = {
         | {"string", "Join", "SplitN", "Map", "NewReader", "ReadAll", "Concat", "Expand", "ExpandEnv", "ToValidUTF8"}
     ),
     "java": frozenset(
-        {"format", "formatted", "join", "concat", "valueOf", "toString", "get", "of", "decode", "copyOf", "asList"}
+        {"format", "formatted", "join", "concat", "valueOf", "toString", "of", "decode", "copyOf", "asList"}
         | {"trim", "strip", "replace", "replaceAll", "substring", "toLowerCase", "toUpperCase", "append", "resolve"}
         | {"normalize", "getCanonicalPath", "getAbsolutePath", "toPath", "toFile", "toURI", "create", "parse", "listOf"}
         | {"mutableListOf", "joinToString", "buildString", "plus", "unescape", "unescapeJava", "toArray", "split"}
@@ -206,12 +206,11 @@ _PROPAGATE: dict[str, frozenset[str]] = {
         {"Format", "Concat", "Join", "Combine", "GetFullPath", "Trim", "TrimStart", "TrimEnd", "Replace", "Substring"}
         | {"ToLower", "ToUpper", "ToLowerInvariant", "ToUpperInvariant", "ToString", "UrlDecode", "UnescapeDataString"}
         | {"Append", "AppendFormat", "AppendLine", "Insert", "Split", "GetString", "ReadToEnd", "ReadToEndAsync"}
-        | {"FromBase64String", "Normalize", "First", "FirstOrDefault", "Single", "SingleOrDefault", "ElementAt"}
+        | {"FromBase64String", "Normalize"}
     ),
     "ruby": frozenset(
         {"join", "format", "sprintf", "expand_path", "unescape", "decode", "decode64", "strip", "gsub", "sub"}
-        | {"downcase", "upcase", "squish", "chomp", "to_s", "to_sym", "first", "last", "dig", "fetch", "values"}
-        | {"require", "permit", "slice", "except", "merge", "to_h", "to_unsafe_h", "presence", "underscore"}
+        | {"downcase", "upcase", "squish", "chomp", "to_s", "to_sym", "underscore"}
         | {
             "camelize",
             "classify",
@@ -225,6 +224,7 @@ _PROPAGATE: dict[str, frozenset[str]] = {
     ),
 }
 _PROPAGATE["kotlin"] = _PROPAGATE["java"]
+_QUALIFIED_PROPAGATE = frozenset({"Paths.get"})  # a lookup such as map.get(key) returns stored data, not the key
 _GO_PROPAGATING_PACKAGES = frozenset({"strings", "fmt", "filepath", "path", "url", "bytes", "base64"})
 _GO_SANITIZERS = frozenset(
     {"Base", "EscapeString", "QueryEscape", "PathEscape", "HTMLEscapeString", "JSEscapeString", "QuoteMeta", "Quote"}
@@ -989,7 +989,9 @@ class Index:
             elif call and qualified in _SOURCE_CALLS:
                 origins, state = [self._source(f"{qualified}()", toks[k + 1].line)], "value"
             elif call and (
-                member in _PROPAGATE[self.family] or (self.lang == "go" and path in _GO_PROPAGATING_PACKAGES)
+                member in _PROPAGATE[self.family]
+                or qualified in _QUALIFIED_PROPAGATE
+                or (self.lang == "go" and path in _GO_PROPAGATING_PACKAGES)
             ):
                 if member in _NUMERIC_CALLS or member in _CLEAN_METHODS or member in _GO_SANITIZERS:
                     return []
