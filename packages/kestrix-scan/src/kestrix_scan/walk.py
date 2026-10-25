@@ -51,6 +51,9 @@ SKIP_DIRS = frozenset(
         ".output",
         ".angular",
         ".terraform",
+        "target",
+        ".gradle",
+        "obj",
     }
 )
 _GIT_TIMEOUT_S = 10

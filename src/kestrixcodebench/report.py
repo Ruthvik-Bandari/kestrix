@@ -36,15 +36,29 @@ from .scan import TOOLS, TUNING, base_tool, scan_shard
 VARIANT = "eslint-no-object-injection"
 VARIANT_DROPS = frozenset({"security/detect-object-injection"})
 
+P4_SUBSETS = ("go", "java", "kotlin", "jvm", "csharp", "ruby", "erb", "rails", "p4")
 # Which language subsets a tool is run on (a baseline is scored only where it applies).
 TOOL_SUBSETS: dict[str, tuple[str, ...]] = {
-    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web", "php"),
+    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web", "php", *P4_SUBSETS),
     "bandit": ("python",),
     "psalm": ("php",),
+    "gosec": ("go",),
+    "opengrep": ("go", "java", "kotlin", "jvm", "csharp", "ruby", "p4"),  # it does not read ERB
     "eslint": ("javascript", "typescript", "js_ts"),
     VARIANT: ("javascript", "typescript", "js_ts"),
 }
-OVERLAPS = (("kestrix", "bandit", "python"), ("kestrix", "eslint", "js_ts"), ("kestrix", "psalm", "php"))
+OVERLAPS = (
+    ("kestrix", "bandit", "python"),
+    ("kestrix", "eslint", "js_ts"),
+    ("kestrix", "psalm", "php"),
+    ("kestrix", "gosec", "go"),
+    ("kestrix", "opengrep", "go"),
+    ("kestrix", "opengrep", "jvm"),
+    ("kestrix", "opengrep", "csharp"),
+    ("kestrix", "opengrep", "ruby"),
+    ("kestrix", "opengrep", "p4"),
+)
+FAMILY_SUBSETS = ("python", "js_ts", "php", "go", "jvm", "csharp", "ruby", "rails")
 DEV_REPORT = "codebench-dev-{label}.json"
 LOCKED_REPORT = "codebench-locked-{name}.json"
 
@@ -98,9 +112,7 @@ def evaluate_report(
             wanted = TOOL_SUBSETS[base_tool(name)]
             subsets = {sub: metrics_for(frame, ev, SUBSETS[sub]) for sub in wanted}
             errors = {sub: error_analysis(frame, ev, SUBSETS[sub]) for sub in wanted if sub != "js_ts"}
-            families = {
-                sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in ("python", "js_ts", "php") if sub in wanted
-            }
+            families = {sub: family_metrics(frame, ev, SUBSETS[sub]) for sub in FAMILY_SUBSETS if sub in wanted}
             tools[name] = {
                 **tool_summary(reports),
                 "run": run,

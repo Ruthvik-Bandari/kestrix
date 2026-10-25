@@ -10,6 +10,7 @@ findings whose fingerprint is in the baseline.
 JavaScript and TypeScript files (``JS_SUFFIXES``) get the ``js.*`` rules where Python files get the ``py.*`` rules.
 HTML, Vue, Svelte and Angular templates take ``<!-- kestrix: ignore[...] reason -->``; CSS takes ``/* ... */``.
 PHP files take ``//``, ``#`` and ``/* ... */`` comments (Blade also ``{{-- kestrix: ignore[...] reason --}}``); SQL files take ``-- ...``.
+Go, Java, Kotlin and C# files (``SERVER_SUFFIXES``) take ``//`` and ``/* ... */``; Ruby files ``#``; ERB templates ``<%# ... %>``.
 GitHub Actions, Dockerfile, shell, Terraform and Kubernetes files (``iac.py``) take ``# kestrix: ignore[...] reason``.
 A ``/* kestrix: ignore[...] reason */`` block comment (``{/* ... */}`` in JSX) suppresses like a line comment.
 
@@ -41,6 +42,7 @@ from .php_rules import PHP_SUFFIXES, check_php
 from .python_rules import check_python
 from .registry import RULES, Hit
 from .secrets import check_secrets, redact
+from .server_rules import SERVER_SUFFIXES, check_server
 from .sql_rules import SQL_SUFFIXES, check_sql
 from .walk import MAX_FILE_BYTES, Candidate, Unreadable, collect, file_limit, git_executable, is_within, read_text
 from .web_rules import WEB_SUFFIXES, check_web
@@ -197,6 +199,8 @@ def _language_hits(text: str, candidate: Candidate) -> list[Hit] | SkipReason | 
         return check_php(text, candidate.rel)
     if lowered in SQL_SUFFIXES:
         return check_sql(text, candidate.rel)
+    if lowered in SERVER_SUFFIXES:
+        return check_server(text, candidate.rel)
     checker = _structured_checker(candidate.rel, text)
     return checker(text, candidate.rel) if checker is not None else None
 
@@ -240,7 +244,7 @@ def _suppressions(text: str, rel: str) -> tuple[dict[int, frozenset[str]], list[
         if match is None:
             continue
         ids = frozenset(part.strip() for part in match.group(1).split(",") if part.strip())
-        reason = match.group(2).strip().removesuffix("-->").removesuffix("*/").removesuffix("--}}").strip()
+        reason = match.group(2).strip().removesuffix("-->").removesuffix("*/").removesuffix("--}}").removesuffix("%>").strip()
         if any(char.isalnum() for char in reason):
             by_line[number] = ids
         else:

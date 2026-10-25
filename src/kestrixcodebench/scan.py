@@ -38,10 +38,10 @@ from .common import (
     write_json,
     write_jsonl,
 )
-from .families import bandit_families, eslint_families, kestrix_families, psalm_families
+from .families import bandit_families, eslint_families, families_for_cwes, kestrix_families, parse_cwes, psalm_families
 
 TOOLS = ("kestrix", "bandit", "eslint")
-SCAN_TOOLS = (*TOOLS, "psalm")  # psalm runs on the PHP benchmark only, from the Phase 2 root
+SCAN_TOOLS = (*TOOLS, "psalm", "gosec", "opengrep")  # psalm: the PHP root only; gosec and opengrep: the Phase 4 root
 TUNING = "tuning"  # round-1 dev plus the round-1 test, which is spent (LOCKED_EVAL.json) and so usable for tuning
 TUNING_PARTS = ("dev", "test")
 
@@ -189,6 +189,8 @@ def count_files(directory: Path, tool: str) -> dict[str, int]:
         "kestrix": tuple(EXTENSIONS),
         "bandit": (".py",),
         "psalm": PHP_EXTENSIONS,
+        "gosec": (".go",),
+        "opengrep": tuple(e for e in P4_EXTENSIONS if e != ".erb"),
         "eslint": tuple(
             e for e in EXTENSIONS if e != ".py" and e not in (*WEB_EXTENSIONS, *PHP_EXTENSIONS, *P4_EXTENSIONS)
         ),
@@ -244,6 +246,10 @@ def run_tool(
         )
     if tool == "psalm":
         return _run_psalm(shard_dir)
+    if tool == "gosec":
+        return _run_gosec(shard_dir, scratch)
+    if tool == "opengrep":
+        return _run_opengrep(shard_dir, report)
     raise CodeBenchError(f"unknown tool {tool!r}; choose from {', '.join(SCAN_TOOLS)}")
 
 
@@ -303,6 +309,132 @@ def _run_psalm(shard_dir: Path) -> tuple[str, float, list[Record], dict[str, int
             found += records
             failed[kind] = failed.get(kind, 0) + bad
     return version, total, found, {k: v for k, v in failed.items() if v}
+
+
+P4_TOOLS_HOME = "KESTRIX_P4_TOOLS"  # environment variable: directory with go/, gosec/, opengrep, opengrep-rules/
+GOSEC_TIMEOUT_S = 300
+OPENGREP_LANGUAGES = ("go", "java", "kotlin", "csharp", "ruby")
+
+
+def _p4_home() -> Path:
+    return Path(os.environ.get(P4_TOOLS_HOME, f"/scratch/{os.environ.get('USER', '')}/kestrix/p4/tools"))
+
+
+def reduce_gosec(report: dict[str, Any], rel: str) -> tuple[list[Record], int]:
+    """Findings of one file (``rel`` is its path in the shard) and 1 when gosec reports a syntax error for it."""
+    out = []
+    for item in report.get("Issues") or []:
+        first, _, last = str(item.get("line", "1")).partition("-")
+        cwe = (item.get("cwe") or {}).get("id")
+        families = families_for_cwes([int(cwe)]) if cwe and str(cwe).isdigit() else frozenset()
+        rec = record(rel, item.get("rule_id", ""), int(first or 1), int(last or first or 1), families)
+        if rec:
+            out.append(rec)
+    errors = report.get("Golang errors") or {}
+    syntax = any(
+        "expected" in str(err.get("error", "")) or "syntax" in str(err.get("error", ""))
+        for errs in errors.values()
+        for err in errs
+    )
+    return out, int(syntax)
+
+
+def _run_gosec(shard_dir: Path, scratch: Path) -> tuple[str, float, list[Record], dict[str, int]]:
+    """gosec (Apache-2.0) on one file at a time, each alone in a module, so a before-file and its after-file cannot see
+    each other. Standard-library imports resolve from the pinned Go toolchain; other imports do not (offline)."""
+    home = _p4_home()
+    exe = home / "gosec" / "gosec"
+    work = scratch / "gosec-one"
+    env = {
+        **os.environ,
+        "PATH": f"{home / 'go' / 'bin'}:{os.environ.get('PATH', '')}",
+        "GOPATH": str(home / "gopath"),
+        "GOCACHE": str(home / "gocache"),
+        "GOFLAGS": "-mod=mod",
+        "GOPROXY": "off",
+        "GOTOOLCHAIN": "local",
+        "GOTELEMETRY": "off",
+    }
+    version = "gosec " + _version([str(exe), "-version"]).split()[-1]
+    found: list[Record] = []
+    failed: dict[str, int] = {}
+    total = 0.0
+    for kind in KINDS:
+        for path in sorted((shard_dir / kind).glob("*.go")):
+            if work.exists():
+                for leftover in work.iterdir():
+                    leftover.unlink()
+            work.mkdir(parents=True, exist_ok=True)
+            (work / "go.mod").write_text("module kestrixbench\n\ngo 1.22\n", encoding="utf-8")
+            (work / path.name).write_bytes(path.read_bytes())
+            out = scratch / "gosec.json"
+            start = time.perf_counter()
+            try:
+                subprocess.run(  # noqa: S603 - fixed argument list, no shell
+                    [str(exe), "-fmt", "json", "-out", str(out), "-quiet", "-no-fail", "./..."],
+                    cwd=work,
+                    capture_output=True,
+                    text=True,
+                    timeout=GOSEC_TIMEOUT_S,
+                    check=False,
+                    env=env,
+                )
+                report = json.loads(out.read_text(encoding="utf-8")) if out.is_file() else {}
+            except (subprocess.TimeoutExpired, ValueError):
+                failed[kind] = failed.get(kind, 0) + 1
+                continue
+            finally:
+                out.unlink(missing_ok=True)
+            total += time.perf_counter() - start
+            records, bad = reduce_gosec(report, f"{kind}/{path.name}")
+            found += records
+            failed[kind] = failed.get(kind, 0) + bad
+    if work.exists():
+        for leftover in work.iterdir():
+            leftover.unlink()
+        work.rmdir()
+    return version, total, found, {k: v for k, v in failed.items() if v}
+
+
+def reduce_opengrep(report: dict[str, Any]) -> tuple[list[Record], dict[str, int]]:
+    out = []
+    for item in report.get("results", []):
+        metadata = (item.get("extra") or {}).get("metadata") or {}
+        cwe = metadata.get("cwe") or []
+        families = families_for_cwes(parse_cwes(cwe if isinstance(cwe, list) else [cwe]))
+        rule = str(item.get("check_id", "")).rpartition("opengrep-rules.")[2]
+        rec = record(item.get("path", ""), rule, item["start"]["line"], item["end"]["line"], families)
+        if rec:
+            out.append(rec)
+    failed: dict[str, int] = {}
+    for err in report.get("errors", []):
+        located = locate(str(err.get("path", "")))
+        if located and re.search(r"syntax|lexical|parse", str(err.get("type", "")), re.IGNORECASE):
+            failed[located[0]] = failed.get(located[0], 0) + 1
+    return out, failed
+
+
+def _run_opengrep(shard_dir: Path, report: Path) -> tuple[str, float, list[Record], dict[str, int]]:
+    """Opengrep (LGPL-2.1) with the opengrep-rules fork of the LGPL semgrep-rules (licence: LGPL-2.1 with the Commons
+    Clause; the README says the rules are for research, testing and benchmarking), every rule of the Go, Java, Kotlin,
+    C# and Ruby folders, offline, one run per shard directory."""
+    home = _p4_home()
+    exe = home / "opengrep"
+    configs = [arg for lang in OPENGREP_LANGUAGES for arg in ("--config", str(home / "opengrep-rules" / lang))]
+    cache = home.parent / "home"
+    env = {**os.environ, "HOME": str(cache), "XDG_CACHE_HOME": str(cache / ".cache")}
+    args = [str(exe), "scan", *configs, "--json", "--output", str(report), "--quiet", "--no-git-ignore"]
+    args += ["--timeout", "30", "--max-target-bytes", "1000000", "-j", "1", "."]
+    start = time.perf_counter()
+    proc = subprocess.run(  # noqa: S603 - fixed argument list, no shell
+        args, cwd=shard_dir, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False, env=env
+    )
+    seconds = time.perf_counter() - start
+    if proc.returncode not in (0, 1) or not report.is_file():
+        raise CodeBenchError(f"opengrep exited {proc.returncode}: {proc.stderr.strip()[-1500:]}")
+    found, failed = reduce_opengrep(json.loads(report.read_text(encoding="utf-8")))
+    version = "opengrep " + _version([str(exe), "--version"])
+    return version, seconds, found, failed
 
 
 def scan_shard(

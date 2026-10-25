@@ -4,7 +4,7 @@
 
 ``php-dump`` streams the PHP files of the CVEfixes archive into a working database; ``build`` reads the data ``kestrixvul`` acquired (CVEfixes working database, mined advisory commits), filters, splits
 into dev and a locked test and writes the files. ``scan`` runs one tool on dev shards (a Slurm array task);
-``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus`` and ``php-corpus`` scan directory trees of web files or of PHP and SQL files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
+``dev-metrics`` writes the dev report; ``compare`` writes the paired change between two kestrix runs; ``rule-rates`` writes per-rule firing counts of one run; ``bandit-gap`` counts the pairs Bandit detects and kestrix does not, by Bandit test id; ``web-corpus``, ``php-corpus`` and ``p4-corpus`` scan directory trees of web files, of PHP and SQL files or of Go, Java, Kotlin, C#, Ruby and ERB files; ``examples`` lists ids of missed pairs for hand analysis on the cluster;
 ``table`` prints Markdown tables from a report; ``locked-test`` claims the lock and evaluates the test split once.
 Reports hold counts, rates, intervals and rule ids only. Exit status is 1 on failure.
 """
@@ -29,6 +29,7 @@ COMMANDS = (
     "bandit-gap",
     "web-corpus",
     "php-corpus",
+    "p4-corpus",
     "examples",
     "table",
     "locked-test",
@@ -217,11 +218,12 @@ def _run(args: argparse.Namespace) -> int:
 
         print(compare_runs(layout, args.base_run, args.run, args.label, reps=args.bootstrap, split=args.split))
         return 0
-    if args.command in ("web-corpus", "php-corpus"):
-        from .corpus import php_corpus, web_corpus
+    if args.command in ("web-corpus", "php-corpus", "p4-corpus"):
+        from .corpus import p4_corpus, php_corpus, web_corpus
 
         _need(args.corpus_dir, "--corpus-dir")
-        print((php_corpus if args.command == "php-corpus" else web_corpus)(layout, args.corpus_dir, args.label))
+        scanner = {"php-corpus": php_corpus, "p4-corpus": p4_corpus}.get(args.command, web_corpus)
+        print(scanner(layout, args.corpus_dir, args.label))
         return 0
     if args.command == "rule-rates":
         from .rates import rule_rates
