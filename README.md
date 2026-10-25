@@ -8,7 +8,7 @@
 
 ### Scan your code: `kestrix-scan`
 
-A small, fast scanner for insecure Python, JavaScript and TypeScript code, hard-coded secrets and vulnerable or malicious dependencies, with **no dependencies** on Python
+A small, fast scanner for insecure code in 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust, Swift), web, SQL, CI and infrastructure files, hard-coded secrets and vulnerable or malicious dependencies, measured on real security fixes ([results](#code-security-scanning)), with **no dependencies** on Python
 3.11 and newer (only `tomli` on 3.10). It works in the terminal, CI, pre-commit and pytest, and inside Claude
 Code, where it has Claude fix what it finds as it writes code.
 
@@ -41,7 +41,7 @@ kestrix dashboard            # opens http://localhost:8765
 | **File and URL forensics** | Students, everyday users, incident responders | Hashes a file, measures entropy to spot packed or encrypted content, detects disguised file types, flags GPS data in photos, and scores links for phishing signs without opening them. |
 | **Website check** | Small site owners, developers | Grades the HTTPS, TLS, security headers and cookie settings of a site you own, and gives a concrete fix for each problem. |
 | **Mail analysis** | Everyday users, help desks, incident responders | Checks a saved email (`.eml`) offline: sender authentication results, mismatched sender addresses, look-alike domains, deceptive links, risky attachments and scam wording, with a reason for every finding. |
-| **Code security scanning** | Developers, reviewers, people coding with AI assistants | Finds shell and SQL injection, unsafe deserialization, disabled TLS checks, weak hashes and randomness, and hard-coded secrets in source code, with a CWE and a fix for every finding; exits non-zero for CI. |
+| **Code security scanning** | Developers, reviewers, people coding with AI assistants | Finds shell and SQL injection, XSS, unsafe deserialization, disabled TLS checks, weak hashes and randomness, risky CI and container settings, and hard-coded secrets in 13 languages, with a CWE and a fix for every finding; exits non-zero for CI. |
 | **Bitcoin quantum risk** | Bitcoin holders | Explains which address types reveal public keys that a future quantum computer could attack, and how to move funds to a safer address. |
 
 > Use Kestrix only on systems, files and websites you own or are authorized to assess.
@@ -231,7 +231,7 @@ domains, and read the verdict and findings. The file goes only to the local Kest
 
 The verdict is `clean`, `suspicious`, `malicious` or `insufficient_evidence`, with every finding explained.
 HTML is never rendered, links are never visited and attachments are never opened. The score is a heuristic,
-not a probability, and no detection rates are claimed yet. Details: [docs/modules/mail.md](docs/modules/mail.md).
+not a probability. On a one-time test of 10,897 public messages never used for tuning it flagged 61.2% of phishing, 50.0% of spam and 1.2% of normal mail; that normal mail is old, and on recent public mailing-list mail the false-alarm rate was 0.49% on tuning data. Details: [docs/modules/mail.md](docs/modules/mail.md).
 
 ## Code security scanning
 
@@ -244,7 +244,32 @@ kestrix-scan . --diff origin/main --fail-on medium
 The scanner is the `kestrix-scan` package; inside the workbench, `kestrix code scan` runs the same command
 with the same options.
 
-Kestrix reads your code as data (Python through the standard-library `ast`, never imported or run) and reports:
+Kestrix reads your code as data (Python through the standard-library `ast`, every other language through its own bounded tokenizer; never imported or run). It covers:
+
+**What the numbers mean.** Each language was measured on real security fixes from [CVEfixes](https://github.com/secureIT-project/CVEfixes) and the GitHub Advisory Database: does a rule fire on the vulnerable version of a file a fix changed? Rules were tuned on one half of the projects, then run **once** on the other half, which they had never seen, next to an established open-source tool on the same files. *Caught* is the share of in-scope vulnerable files flagged, with a 95% confidence interval; *false alarms* are alerts per 1,000 lines of the fixed (safe) code. Every tool catches a small share on this benchmark: many CVEs are logic or authorization flaws no pattern rule sees, and a fix commit often changes files that never held the bug. Method, per-rule numbers and limits: [CVE-fix benchmark](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/cvefixes.md).
+
+| Language or files | Rules | Caught (held-out) | Compared on the same files | False alarms per 1,000 lines |
+| --- | --- | --- | --- | --- |
+| Python | 30 `py.*` | 7.7% [4.2, 12.0] | Bandit 1.9.4: 10.2% at 0.99 false alarms | **0.23** |
+| JavaScript, TypeScript (JSX, TSX) | 16 `js.*` | 10.3% [7.2, 13.9] | eslint-plugin-security: 12.4% at 16.9 false alarms | **0.43** |
+| PHP and Blade | 9 `php.*` | **5.4% [2.8, 10.2]** | Psalm 6.20 taint: 3.3% at 0.66 | 0.80 |
+| Java and Kotlin | 7 `java.*` | **10.9% [5.9, 18.4]** | Opengrep: 5.8% at 0.34 | **0.20** |
+| Ruby and ERB | 6 `rb.*` | 4.7% [1.0, 10.0] (ERB views: 13 of 16) | Opengrep: 11.2% at 1.91 | 1.55 |
+| Go | 4 `go.*` | 1.1% [0.0, 6.7] | gosec 2.30: 6.7% at 0.78 | **0.13** |
+| C# | 4 `cs.*` | 2.4% [0.0, 16.7] (41 files) | Opengrep: 0.0% at 0.05 | 0.15 |
+| C and C++ | 7 `c.*` | 3.4% [0.7, 6.7] | flawfinder 2.0.19: 19.4% at 6.13; Opengrep: 4.6% at 0.62 | **0.34** |
+| Rust | 3 `rust.*` | not measurable: 14 fixes, no tool caught any | Opengrep: 0.0% at 2.33 | 0.05 |
+| Swift | 3 `swift.*` | not measurable: 1 fix | | 0 to 0.11 on 3 clean projects |
+| HTML, Vue, Svelte, CSS, `next.config` | 12 `html.*` `vue.*` `svelte.*` `web.*` `css.*` `next.*` | tuning data only: 27.4% [7.4, 50.9] of 73 files; held-out run waits for new advisories | no licensed tool | 0.47 on clean web files |
+| SQL files | 3 `sql.*` | no `.sql` files in the fix data | | |
+| GitHub Actions, Dockerfile, shell, Terraform (AWS), Kubernetes | 24 `gha.*` `docker.*` `sh.*` `tf.*` `k8s.*` | no CVE-fix data for these formats; agrees with zizmor, hadolint and checkov on 94% to 100% of the files where the checks mean the same | | on 16,157 real files: 4.5 for unpinned actions, 0.03 for workflow script injection |
+| Claude Code and MCP settings | 5 `config.*` | not benchmarked | | |
+| Secrets in any text file | 11 `secret.*` | not on this benchmark; shapes are high-precision on purpose | | |
+| Dependencies (9 lockfile ecosystems) | 2 `dep.*` | exact version match against OSV advisories, not a heuristic | | |
+
+Bold marks where Kestrix is ahead of the compared tool. Python and JavaScript/TypeScript are from the second held-out run (`test2`); the Python rules added later were measured on tuning data only. Some rules ship with little or no evidence; the [Limits](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#limits) list names them.
+
+For example, it reports:
 
 - **Python:** `eval`/`exec` of non-literals, `shell=True` and `os.system` with built commands, pickle and
   unsafe YAML loading, SQL built with f-strings or concatenation, `verify=False` and other disabled TLS
@@ -269,7 +294,7 @@ Settings live in `[tool.kestrix]` in `pyproject.toml` (or `.kestrix.toml`): `fai
 `rules.enable` / `rules.disable` and `baseline`, with command-line flags taking precedence.
 `kestrix-scan init` writes them, a pre-commit entry and a GitHub workflow that uploads SARIF;
 `pytest --kestrix` adds a scan to a test run. From Python: `kestrix_scan.scan(["src"])` (`kestrix.code` still
-works). The rules are pattern analysis and miss things; no detection rates are claimed. Details:
+works). The rules are pattern analysis and miss things. Details:
 [docs/modules/code.md](docs/modules/code.md).
 
 ## Bitcoin quantum risk

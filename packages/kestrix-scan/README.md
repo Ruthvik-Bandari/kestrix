@@ -1,6 +1,6 @@
 # kestrix-scan
 
-**Local security checks for Python, JavaScript and TypeScript code (and PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift), HTML, Vue, Svelte and CSS files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies.**
+**Local security checks for code in 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift), web files (HTML, Vue, Svelte, CSS), SQL files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies in 9 lockfile ecosystems. 146 rules, each measured on real security fixes where data exists ([numbers below](#languages-and-measured-accuracy)).**
 `kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
 randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
@@ -235,11 +235,36 @@ settings. The package is typed (`py.typed`).
 ## Privacy
 
 `kestrix-scan` reads files as bytes, decodes them as text, parses Python with the standard-library `ast` and
-splits JavaScript and TypeScript with its own bounded tokenizer.
+splits every other language with its own bounded, standard-library tokenizer.
 It never imports or runs the code it scans, never follows symbolic links out of the scan root, and caps
 file size and count. Scans, the plugin hooks and the install guard make no network requests; the test suite
 proves they work with every socket call refused. The one exception is `kestrix-scan db update`, which you run
 explicitly: it downloads the public OSV exports over HTTPS and sends nothing about your project. `--diff` and directory walks run the local `git` binary.
+
+## Languages and measured accuracy
+
+**What the numbers mean.** Each language was measured on real security fixes from [CVEfixes](https://github.com/secureIT-project/CVEfixes) and the GitHub Advisory Database: does a rule fire on the vulnerable version of a file a fix changed? Rules were tuned on one half of the projects, then run **once** on the other half, which they had never seen, next to an established open-source tool on the same files. *Caught* is the share of in-scope vulnerable files flagged, with a 95% confidence interval; *false alarms* are alerts per 1,000 lines of the fixed (safe) code. Every tool catches a small share on this benchmark: many CVEs are logic or authorization flaws no pattern rule sees, and a fix commit often changes files that never held the bug. Method, per-rule numbers and limits: [CVE-fix benchmark](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/cvefixes.md).
+
+| Language or files | Rules | Caught (held-out) | Compared on the same files | False alarms per 1,000 lines |
+| --- | --- | --- | --- | --- |
+| Python | 30 `py.*` | 7.7% [4.2, 12.0] | Bandit 1.9.4: 10.2% at 0.99 false alarms | **0.23** |
+| JavaScript, TypeScript (JSX, TSX) | 16 `js.*` | 10.3% [7.2, 13.9] | eslint-plugin-security: 12.4% at 16.9 false alarms | **0.43** |
+| PHP and Blade | 9 `php.*` | **5.4% [2.8, 10.2]** | Psalm 6.20 taint: 3.3% at 0.66 | 0.80 |
+| Java and Kotlin | 7 `java.*` | **10.9% [5.9, 18.4]** | Opengrep: 5.8% at 0.34 | **0.20** |
+| Ruby and ERB | 6 `rb.*` | 4.7% [1.0, 10.0] (ERB views: 13 of 16) | Opengrep: 11.2% at 1.91 | 1.55 |
+| Go | 4 `go.*` | 1.1% [0.0, 6.7] | gosec 2.30: 6.7% at 0.78 | **0.13** |
+| C# | 4 `cs.*` | 2.4% [0.0, 16.7] (41 files) | Opengrep: 0.0% at 0.05 | 0.15 |
+| C and C++ | 7 `c.*` | 3.4% [0.7, 6.7] | flawfinder 2.0.19: 19.4% at 6.13; Opengrep: 4.6% at 0.62 | **0.34** |
+| Rust | 3 `rust.*` | not measurable: 14 fixes, no tool caught any | Opengrep: 0.0% at 2.33 | 0.05 |
+| Swift | 3 `swift.*` | not measurable: 1 fix | | 0 to 0.11 on 3 clean projects |
+| HTML, Vue, Svelte, CSS, `next.config` | 12 `html.*` `vue.*` `svelte.*` `web.*` `css.*` `next.*` | tuning data only: 27.4% [7.4, 50.9] of 73 files; held-out run waits for new advisories | no licensed tool | 0.47 on clean web files |
+| SQL files | 3 `sql.*` | no `.sql` files in the fix data | | |
+| GitHub Actions, Dockerfile, shell, Terraform (AWS), Kubernetes | 24 `gha.*` `docker.*` `sh.*` `tf.*` `k8s.*` | no CVE-fix data for these formats; agrees with zizmor, hadolint and checkov on 94% to 100% of the files where the checks mean the same | | on 16,157 real files: 4.5 for unpinned actions, 0.03 for workflow script injection |
+| Claude Code and MCP settings | 5 `config.*` | not benchmarked | | |
+| Secrets in any text file | 11 `secret.*` | not on this benchmark; shapes are high-precision on purpose | | |
+| Dependencies (9 lockfile ecosystems) | 2 `dep.*` | exact version match against OSV advisories, not a heuristic | | |
+
+Bold marks where Kestrix is ahead of the compared tool. Python and JavaScript/TypeScript are from the second held-out run (`test2`); the Python rules added later were measured on tuning data only. Some rules ship with little or no evidence; the [Limits](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#limits) list names them.
 
 ## Rules
 
@@ -296,8 +321,8 @@ characters) are skipped as `minified`. Vue, Svelte and HTML files are read with 
 template rules look at directives and attributes, `<script>` bodies go through the JavaScript rules with the file's line
 numbers, and a missing Content-Security-Policy is deliberately not reported.
 
-Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is
-claimed, and no findings means no rule fired, not that the code is secure. A
+Rules are pattern analysis: they miss things and can be wrong in context, and no findings means no rule fired, not
+that the code is secure. The measured rates are in [Languages and measured accuracy](#languages-and-measured-accuracy). A
 [benchmark scorecard](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/benchmarkpython.md)
 measures category coverage on synthetic code (OWASP BenchmarkPython v0.1 and the project's own labelled cases)
 against Bandit and the security-guidance regex layer, including the categories where Kestrix loses. Rule ids are stable; renaming one is a breaking

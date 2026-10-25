@@ -307,7 +307,7 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
       section(
         "Limits of the rules",
         list(
-          "Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is claimed.",
+          "Rules are pattern analysis: they miss things and can be wrong in context. What each language catches on real security fixes is on the accuracy page.",
           "JavaScript and TypeScript rules use a tokenizer, not a parser: they match fixed shapes and follow names only through simple bindings.",
           "The secret rules are high-precision on purpose and miss credentials with no recognizable shape or name.",
           "Dependency checks cover the lockfiles of nine ecosystems (PyPI, npm, Packagist, Go, crates.io, Maven, RubyGems, NuGet, Pub), not language runtimes, and need `kestrix-scan db update` first.",
@@ -320,8 +320,31 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
     path: "code-security/accuracy",
     title: "Accuracy: CVE-fix commits",
     nav: "Accuracy",
-    summary: "How kestrix-scan, Bandit and ESLint's security plugin compare on files from real CVE fix commits, and the honest reading.",
+    summary: "What kestrix-scan catches on files from real CVE fix commits in each language, next to Bandit, ESLint, Psalm, Opengrep, gosec and flawfinder, and the honest reading.",
     sections: [
+      section(
+        "At a glance",
+        p("Each language was tuned on one half of the projects and run once on the other half, next to an established open-source tool on the same files. Caught is the share of in-scope vulnerable files flagged (95% interval); false alarms are alerts per 1,000 lines of the fixed code. Every tool catches a small share here: many CVEs are logic or authorization flaws that no pattern rule sees."),
+        table(
+          ["Language or files", "Rules", "Caught (held-out)", "Compared on the same files", "False alarms per 1,000 lines"],
+          [
+            ["Python", "30", "7.7% [4.2, 12.0]", "Bandit 1.9.4: 10.2% at 0.99", "0.23"],
+            ["JavaScript, TypeScript", "16", "10.3% [7.2, 13.9]", "eslint-plugin-security: 12.4% at 16.93", "0.43"],
+            ["PHP and Blade", "9", "5.4% [2.8, 10.2]", "Psalm 6.20.1 taint: 3.3% at 0.66", "0.80"],
+            ["Java and Kotlin", "7", "10.9% [5.9, 18.4]", "Opengrep: 5.8% at 0.34", "0.20"],
+            ["Ruby and ERB", "6", "4.7% [1.0, 10.0]", "Opengrep: 11.2% at 1.91", "1.55"],
+            ["Go", "4", "1.1% [0.0, 6.7]", "gosec 2.30.0: 6.7% at 0.78", "0.13"],
+            ["C#", "4", "2.4% [0.0, 16.7] (41 files)", "Opengrep: 0.0 at 0.05", "0.15"],
+            ["C and C++", "7", "3.4% [0.7, 6.7]", "flawfinder 2.0.19: 19.4% at 6.13; Opengrep: 4.6% at 0.62", "0.34"],
+            ["Rust", "3", "Not measurable: 14 fixes, no tool caught any", "Opengrep: 0.0 at 2.33", "0.05"],
+            ["Swift", "3", "Not measurable: 1 fix", "", ""],
+            ["HTML, Vue, Svelte, CSS, next.config", "12", "Tuning data only: 13 of 73 files by v-html alone; held-out run waits for new advisories", "No licensed tool", ""],
+            ["SQL files", "3", "No .sql files in the fix data", "", ""],
+            ["GitHub Actions, Dockerfile, shell, Terraform, Kubernetes", "24", "No CVE-fix data; agrees with zizmor, hadolint and checkov on most files where the checks mean the same", "", ""],
+            ["Claude Code and MCP settings, secrets, dependencies", "18", "Not on this benchmark; dependency checks are exact matches against OSV advisories", "", ""],
+          ],
+        ),
+      ),
       section(
         "What was measured",
         p("The benchmark scans the vulnerable and the fixed version of files from real CVE fix commits, and counts a detection when a finding of the right weakness family lands within 3 lines of a changed line. It uses CVEfixes v1.0.8 and the GitHub Advisory Database's fix commits. Projects, CVEs and files never straddle the development and test halves."),
@@ -376,6 +399,21 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
           "Round 2 helped a little on unseen code: detection 8.3% to 9.1% overall (+0.8 points, paired interval +0.1 to +1.6), mostly in JavaScript and TypeScript, for 3% more alerts.",
           "Bandit still detects more Python (−2.5 points, interval −4.7 to −0.2) at about four times the false alarms. On JS/TS, full ESLint security's lead (−2.0 points, interval −6.3 to +2.8) is not established, at about forty times the false alarms.",
           "Kestrix with Bandit detects 11.8% of Python pairs. test2 is now spent too.",
+        ),
+      ),
+      section(
+        "PHP (held-out, run once)",
+        p("Phase 2 was tuned on a development split of CVEfixes fix commits in PHP and run once on its held-out split (1,121 in-scope file pairs from 210 projects), next to Psalm 6.20.1's taint analysis."),
+        table(
+          ["Tool", "Language", "Detection", "False alarms per KLOC (fixed files)"],
+          [
+            ["kestrix-scan", "PHP", "5.4% [2.8, 10.2]", "0.80 [0.52, 1.29]"],
+            ["Psalm 6.20.1 taint analysis", "PHP", "3.3% [1.5, 6.7]", "0.66 [0.34, 1.14]"],
+          ],
+        ),
+        list(
+          "Kestrix detects more than Psalm (+2.1 points, paired interval +0.8 to +4.5), mostly XSS (9.9% against 6.5%), and scans about a hundred times faster.",
+          "SQL injection fell from 10.4% on dev to 2.1% here; read it as somewhere between. CSRF, code injection and deserialization fixes: 0% for both tools. No .sql or Blade files were in the fix data.",
         ),
       ),
       section(

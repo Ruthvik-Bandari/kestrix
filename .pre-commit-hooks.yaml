@@ -14,7 +14,7 @@
 # project's pyproject.toml or .kestrix.toml; its excludes also apply to the file names passed here.
 - id: kestrix-scan
   name: kestrix-scan
-  description: Local security checks for Python, JavaScript and TypeScript code and hard-coded secrets (nothing leaves the machine).
+  description: Local security checks for code in 13 languages, web, CI and infrastructure files, hard-coded secrets and lockfiles (nothing leaves the machine).
   entry: kestrix-scan
   language: python
   types_or: [python, text]

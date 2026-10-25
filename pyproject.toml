@@ -1,7 +1,7 @@
 [project]
 name = "kestrix"
 version = "0.1.0"
-description = "Kestrix: a local-first security workbench for detection repair, file forensics, web exposure checks and Bitcoin quantum-risk scanning."
+description = "Kestrix: a local-first security workbench for code scanning, email threat analysis, detection repair, file forensics, web exposure checks and Bitcoin quantum-risk scanning."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
