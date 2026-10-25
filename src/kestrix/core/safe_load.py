@@ -74,6 +74,8 @@ def load_yaml(text: str | bytes, max_bytes: int = MAX_RULE_BYTES) -> Any:
         docs = list(yaml.load_all(raw.decode("utf-8"), Loader=_StrictLoader))
     except (yaml.YAMLError, UnicodeDecodeError) as exc:
         raise Rejected(Reason.MALFORMED_YAML, str(exc).splitlines()[0]) from None
+    except RecursionError:  # PyYAML composes recursively, so very deep nesting fails before check_depth runs
+        raise Rejected(Reason.NESTING_TOO_DEEP, f"nesting exceeds {MAX_DEPTH}") from None
     if len(docs) != 1:
         raise Rejected(Reason.UNSUPPORTED_RULE_TYPE, "exactly one YAML document is required")
     check_depth(docs[0])

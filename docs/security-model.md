@@ -11,7 +11,7 @@ Kestrix is a single-user tool that runs on your own computer. It has two front e
 - the `kestrix` CLI;
 - a FastAPI server, started by `kestrix dashboard`, that serves a bundled React dashboard and a JSON API on `127.0.0.1:8765`.
 
-There are no accounts, no database and no background jobs in the default local mode. The opt-in hosted mode, which has accounts and a database, is covered in [Hosted mode](#hosted-mode-preview). Detection repair talks to a local Elasticsearch container. Three features reach the internet, and all only when you ask: the website check contacts the site you name, the Bitcoin module contacts mempool.space and the Anthropic API, and the optional mailbox connector contacts Google or Microsoft (local mode only, [ADR 0009](adr/0009-mailbox-connector.md)).
+There are no accounts and no background jobs in the default local mode. Its only database is the result history: the last 30 days of reports, plaintext, in your `0600` config folder (turn it off in Settings). The opt-in hosted mode, which has accounts and a database, is covered in [Hosted mode](#hosted-mode-preview). Detection repair talks to a local Elasticsearch container. Three features reach the internet, and all only when you ask: the website check contacts the site you name, the Bitcoin module contacts mempool.space and the Anthropic API, and the optional mailbox connector contacts Google or Microsoft (local mode only, [ADR 0009](adr/0009-mailbox-connector.md)).
 
 ## Assets
 

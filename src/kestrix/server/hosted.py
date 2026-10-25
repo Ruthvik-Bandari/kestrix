@@ -128,7 +128,7 @@ class HostedGate(BaseHTTPMiddleware):
             "analysis": auth.settings.max_concurrent_analyses,
             "webcheck": auth.settings.max_concurrent_webchecks,
         }
-        # Only touched on the event loop, between awaits, so no lock is needed.
+        # Only touched on the event loop, and each request reserves before its first await, so no lock is needed.
         self._running = dict.fromkeys(self.caps, 0)
         self._busy_users: set[int] = set()
 
@@ -189,12 +189,13 @@ class HostedGate(BaseHTTPMiddleware):
             return _busy(429, "your previous check is still running; try again when it finishes")
         if self._running[bucket] >= self.caps[bucket]:
             return _busy(503, "the service is busy; try again in a few seconds")
-        retry = await self._hit(f"{bucket}:{user_id}", limit, window)
-        if retry is not None:
-            return _rate_limited(retry)
+        # Reserve before awaiting the limiter: a shared limiter yields, and another request must see this slot taken.
         self._busy_users.add(user_id)
         self._running[bucket] += 1
         try:
+            retry = await self._hit(f"{bucket}:{user_id}", limit, window)
+            if retry is not None:
+                return _rate_limited(retry)
             return await call_next(request)
         finally:
             self._busy_users.discard(user_id)

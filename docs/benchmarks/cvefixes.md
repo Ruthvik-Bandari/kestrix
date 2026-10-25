@@ -1,6 +1,6 @@
 # Kestrix code scanner on CVE-fix commits (CVEfixes and GitHub Advisory Database)
 
-This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set that has not been run.** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`research/results/codebench/`](../../research/results/codebench/).
+This page measures `kestrix-scan` on the vulnerable and the fixed version of files from real CVE fix commits, compares it with Bandit and with ESLint's security plugin, and records one round of rule changes judged on the development half only. **The round-1 locked test was run once (see the end of the page) and is spent; round 2 adds a second held-out set, `test2`, which was also run once and is spent ([results](#round-2-on-the-fresh-held-out-set-test2-2026-10-22)).** The numbers up to "Locked test" are development numbers. Code: `src/kestrixcodebench/`, `research/hpc/codebench/codebench_*`; aggregates: [`research/results/codebench/`](../../research/results/codebench/).
 
 Phase 2 (PHP and SQL) has its own [section](#phase-2-php-and-sql-2026-10-24) with a held-out run next to Psalm. Phase 4 (Go, Java, Kotlin, C# and Ruby) has its own [section](#phase-4-go-java-kotlin-c-and-ruby-2026-10-24) with a held-out run next to gosec and Opengrep.
 
@@ -222,7 +222,7 @@ What the locked test shows, without spin:
 
 ## Round 2: a second held-out set (`test2`) and new rule changes
 
-The round-1 locked test is spent, so round 2 uses it as **tuning data** together with round-1 dev (17,474 file pairs, 8,806 in scope; reports label it `tuning`) and builds a new held-out set that no rule was tuned on. **The test2 evaluation has not been run.** Everything below is a tuning number.
+The round-1 locked test is spent, so round 2 uses it as **tuning data** together with round-1 dev (17,474 file pairs, 8,806 in scope; reports label it `tuning`) and builds a new held-out set that no rule was tuned on. Everything in this section up to the test2 run is a tuning number; the run itself is [reported below](#round-2-on-the-fresh-held-out-set-test2-2026-10-22).
 
 ### test2 build
 
@@ -307,7 +307,7 @@ Round 2 is a small gain: 23 more detected pairs of 8,806 in scope, for 159 more 
 
 ### The one-time test2 evaluation
 
-Not run. It claims `reports/LOCKED_EVAL_TEST2.json` in `/scratch/$USER/kestrix/codebench2/` (exclusive create; a second run is refused), scans test2 with kestrix round 2 (the code tree the job runs from), kestrix round 1 (`kestrix@r1`), Bandit and ESLint security, and writes `reports/codebench-locked-test2-v1.json` with the paired round-2-against-round-1 change and the never-scanned-repository subset:
+Run once on 2026-10-22 (job 11308164); results in the next section. The job claims `reports/LOCKED_EVAL_TEST2.json` in `/scratch/$USER/kestrix/codebench2/` (exclusive create; a second run is refused), scans test2 with kestrix round 2 (the code tree the job runs from), kestrix round 1 (`kestrix@r1`), Bandit and ESLint security, and writes `reports/codebench-locked-test2-v1.json` with the paired round-2-against-round-1 change and the never-scanned-repository subset:
 
 ```bash
 ssh explorer 'cd ~/kestrix-codebench2-locked && KESTRIX_CODE=$HOME/kestrix-codebench2-locked KESTRIX_CODEBENCH=/scratch/$USER/kestrix/codebench2 sbatch --export=ALL research/hpc/codebench/codebench2_locked.sbatch --name test2-v1 --kestrix-tree r1=$HOME/kestrix-codebench2-r1'

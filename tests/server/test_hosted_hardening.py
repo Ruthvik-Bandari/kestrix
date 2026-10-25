@@ -380,3 +380,40 @@ def test_disabled_accounts_cannot_sign_in_and_their_sessions_end(hosted, provide
 def test_operator_commands_need_hosted_settings():
     result = CliRunner().invoke(cli_app, ["hosted", "hash-host", "site.example"])
     assert result.exit_code == 2 and "not configured" in result.output
+
+
+def test_concurrency_slots_are_reserved_before_a_shared_limiter_yields():
+    import asyncio
+    from types import SimpleNamespace
+
+    from starlette.responses import Response
+
+    from kestrix.server.hosted import HostedGate
+
+    class YieldingLimiter:  # a shared (file-backed) limiter runs in a thread, so _hit yields to the event loop
+        shared = True
+
+        def hit(self, key: str, limit: int, window_s: float) -> int | None:
+            time.sleep(0.05)
+            return None
+
+    settings = SimpleNamespace(max_concurrent_analyses=2, max_concurrent_webchecks=1)
+    gate = HostedGate(object(), SimpleNamespace(settings=settings), YieldingLimiter())  # type: ignore[arg-type]
+
+    async def run() -> list[int]:
+        release = asyncio.Event()
+
+        async def call_next(_request: object) -> Response:
+            await release.wait()
+            return Response(status_code=200)
+
+        async def one(user: int) -> int:
+            return (await gate._module_work(object(), call_next, user, ("analysis", 100, 60))).status_code  # type: ignore[arg-type]
+
+        tasks = [asyncio.create_task(one(user)) for user in (1, 1, 2, 3)]
+        await asyncio.sleep(0.3)
+        release.set()
+        return sorted(await asyncio.gather(*tasks))
+
+    # User 1's second request is refused (one at a time per user), user 3 hits the global cap of 2.
+    assert asyncio.run(run()) == [200, 200, 429, 503]

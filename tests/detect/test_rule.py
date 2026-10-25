@@ -158,6 +158,7 @@ def test_hostile_yaml_is_rejected():
     assert reason("a: !custom 1") == Reason.YAML_TAG
     assert reason("x" * (MAX_RULE_BYTES + 1)) == Reason.INPUT_TOO_LARGE
     assert reason("a: [" + "[" * 40 + "]" * 40 + "]") == Reason.NESTING_TOO_DEEP
+    assert reason("a: " + "[" * 5000 + "]" * 5000) == Reason.NESTING_TOO_DEEP  # deep enough to exhaust PyYAML's recursion
     assert reason("a: [unclosed") == Reason.MALFORMED_YAML
 
 
