@@ -50,6 +50,14 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Security
 
+- **Email check: an unverified authentication pass no longer clears a message.** Without `--trusted-authserv-id`
+  the topmost `Authentication-Results` header was believed, so a forged `dmarc=pass` on top of a saved `.eml` lowered
+  `mail.intent.credential_request` to low and could turn `suspicious` into `clean`. That header is now read as
+  unverified: its failures are still reported, its pass lowers nothing, and the new info finding
+  `mail.auth.unverified` names the header read. With a trusted authserv-id nothing changes. Dev measurement: phishing
+  flagged 68.45% to 69.00% (33 messages), spam and every normal-mail cohort unchanged; genuine provider security
+  alerts checked without a trusted authserv-id are now `suspicious`
+  ([details](docs/research/mail-benchmark.md#authentication-provenance-fix-2026-10-25-dev-only)).
 - **Pre-launch hosted-server hardening** (ADR 0007 amendment 1). A rotated refresh token presented again within 10
   seconds, by the same `User-Agent` fingerprint and before its successor was used, now returns the same successor
   instead of revoking the family, so two tabs refreshing together both succeed; any other reuse still revokes it. The

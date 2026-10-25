@@ -33,7 +33,7 @@ adapters.
 
 | Analyzer | Looks at |
 | --- | --- |
-| `auth` | SPF, DKIM, DMARC and ARC results in the `Authentication-Results` header. Only the header stamped by the receiving provider is trusted: the topmost one, or one whose `authserv-id` the user configured. |
+| `auth` | SPF, DKIM, DMARC and ARC results in the `Authentication-Results` header. Only a header whose `authserv-id` the user configured is trusted. Without one, the topmost header is read but unverified (amended 2026-10-25): its failures are reported, its pass lowers nothing, because anyone can write that header into a saved message. |
 | `sender` | From vs Reply-To vs Return-Path domains; a display name that contains a different address or domain; a display name that matches a protected contact while the domain differs. |
 | `lookalike` | From and link domains against the user's protected domains: IDN or punycode, mixed scripts, confusable skeletons, and edit distance of 2 or less after homoglyph folding. |
 | `links` | The href host vs the host shown in the link text; IP-literal hosts; credentials in the URL; `javascript:` and `data:` schemes; known shorteners; redirect parameters. |
