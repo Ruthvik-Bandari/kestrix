@@ -166,6 +166,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: The bundled packages' licence texts are current
+        run: python3 ../scripts/build_third_party_licenses.py --check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test

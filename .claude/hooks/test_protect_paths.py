@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """Tests for protect_paths.py. Runs the hook as a subprocess. Stdlib unittest only.
 
 Usage: python3 .claude/hooks/test_protect_paths.py

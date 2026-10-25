@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Ruthvik Bandari
+# SPDX-License-Identifier: Apache-2.0
 """PreToolUse hook: block Write/Edit/MultiEdit/NotebookEdit on protected paths.
 
 Reads the Claude Code hook JSON from stdin, takes tool_input.file_path (or

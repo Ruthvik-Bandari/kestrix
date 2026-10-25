@@ -28,9 +28,11 @@ precedence were implemented for Kestrix from the PEP 440 text (public domain) an
 formula follows the FIRST CVSS v3.1 specification (https://www.first.org/cvss/v3.1/specification-document).
 The tests use synthetic advisories only.
 
-The dashboard's icons are Lucide icons from lucide-react 1.52.0 (https://lucide.dev), Copyright (c) 2026 Lucide
-Icons and Contributors, ISC License. They are bundled into
-the dashboard build (src/kestrix/server/static/); brand logos (Google, GitHub) are not Lucide icons.
+The dashboard build (src/kestrix/server/static/) bundles React, react-dom and scheduler, react-router,
+TanStack Query, cookie-es and @remix-run/route-pattern (MIT), Lucide icons from lucide-react (ISC; brand
+logos such as Google and GitHub are not Lucide icons) and the IBM Plex Sans and Mono fonts via Fontsource
+(SIL Open Font License 1.1). Their full licence texts ship with the build as THIRD_PARTY_LICENSES.txt,
+which scripts/build_third_party_licenses.py writes to frontend/public/ from the installed packages.
 
 Third-party notices policy: third-party code, rules or data are added to this repository only under a
 license that permits redistribution with Apache-2.0, and each addition is recorded in this file with its
