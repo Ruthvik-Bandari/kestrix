@@ -34,7 +34,6 @@ export const securityPages: DocPage[] = [
           ["Version", "Security fixes"],
           [
             ["0.1.x", "Yes"],
-            ["Earlier code in the repository (the retired CTPPO prototype)", "No"],
           ],
         ),
         p("Fixes go into the latest 0.1 release. Kestrix is not yet published to PyPI, so until then the latest commit on the main branch is what is supported."),

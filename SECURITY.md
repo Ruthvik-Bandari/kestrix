@@ -17,7 +17,6 @@ Do not open a public issue, pull request or discussion for a vulnerability. Kest
 | Version | Security fixes |
 | --- | --- |
 | 0.1.x | Yes |
-| Earlier code in this repository (the retired CTPPO prototype) | No |
 
 Fixes go into the latest 0.1 release. Upgrade with `pip install --upgrade kestrix`.
 
@@ -40,8 +39,7 @@ Out of scope:
 - the Elasticsearch container's own security settings, which `detect engine-up` disables by design for a loopback-only replay engine;
 - findings that need an attacker who already runs code as your user, or has root;
 - limitations already listed in [docs/security-model.md](docs/security-model.md#known-limitations), unless you show a way around a documented mitigation;
-- results of the heuristic checks, such as a phishing URL that scores low. These are accuracy issues; open a normal issue for them;
-- the historical CTPPO code in git history.
+- results of the heuristic checks, such as a phishing URL that scores low. These are accuracy issues; open a normal issue for them.
 
 ## Safe harbor
 

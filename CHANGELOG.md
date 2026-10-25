@@ -290,9 +290,5 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
   - dashboard lint, test and build;
   - a wheel smoke test.
 
-### Removed
-
-- The CTPPO attack-path prototype that previously lived in this repository. It remains in git history.
-
 [Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Ruthvik-Bandari/kestrix/releases/tag/v0.1.0

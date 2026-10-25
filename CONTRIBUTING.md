@@ -95,6 +95,16 @@ uv run pytest -m engine
 
 Every case must reach the `expected` outcome in its `case.yml`. All case events must stay synthetic (`provenance: synthetic`).
 
+## Improving a scanner rule
+
+Several `kestrix-scan` rules ship with thin evidence; [the list](docs/modules/code.md#limits) says which. The most useful contribution for one of them is a real case:
+
+- **A miss:** a vulnerable snippet the rule should flag (from a public fix commit or advisory, with the link), added as a positive test next to the rule's other tests in `packages/kestrix-scan/tests/`.
+- **A false alarm:** safe code the rule flags, added as a negative test.
+- **A fix:** the smallest rule change that makes the new test pass without breaking the others.
+
+Rules change on test evidence like this, and every benchmark rerun reports the new numbers. Do not paste private or proprietary code.
+
 ## Commits and pull requests
 
 Use a short area prefix and an imperative summary, loosely following Conventional Commits:

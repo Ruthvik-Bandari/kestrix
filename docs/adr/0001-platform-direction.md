@@ -18,7 +18,6 @@ changed direction:
 - The package combines four modules: Sigma detection repair (the core of the plan), file and URL
   forensics (adapted from CyberSafeX Detection Suite), passive website exposure checks, and Bitcoin
   quantum-exposure scanning (adapted from BitShield, MIT Bitcoin Expo 2026, Team ACE).
-- The earlier CTPPO attack-path code in this repository is retired. Git history keeps it.
 
 ## Decision
 
