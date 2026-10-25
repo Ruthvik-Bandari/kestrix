@@ -38,6 +38,8 @@ export const pluginPages: DocPage[] = [
           "The plugin calls the `kestrix-scan` command, so install it first (the full `kestrix` package includes it).",
           "`kestrix-scan install-claude-plugin` copies the plugin to `~/.claude/kestrix-plugin` and prints the next commands. It never edits your Claude Code settings.",
           "To try it for one session only: `claude --plugin-dir ~/.claude/kestrix-plugin`.",
+          "The `kestrix-security` skill runs `kestrix` commands, so it needs the full `kestrix` package; the hooks and the code commands need only `kestrix-scan`.",
+          "Claude.ai or Claude Desktop: `kestrix integrations package-claude-skill` writes the `kestrix-security` skill as a zip to upload as a custom skill. Hooks and commands exist only in Claude Code.",
         ),
       ),
     ],
@@ -55,7 +57,7 @@ export const pluginPages: DocPage[] = [
           ["Hook", "Runs on", "What it does"],
           [
             ["`PreToolUse`", "`Write`, `Edit`, `MultiEdit`, `NotebookEdit`", "Snapshots the file before the change, so the other hooks can tell new findings from old ones. It prints nothing and never blocks a tool."],
-            ["`PreToolUse` (install guard)", "`Bash`", "Checks the packages a `pip`, `uv`, `npm`, `pnpm` or `yarn` install names against the local OSV index. It denies a known malicious package and warns about a known-vulnerable pinned version. Silent without an index."],
+            ["`PreToolUse` (install guard)", "`Bash`", "Checks the packages a `pip`, `uv`, `npm`, `pnpm`, `yarn`, `bun`, `composer require`, `go get`, `cargo add`, `gem install` or `dotnet add package` install names against the local OSV index. It denies a known malicious package and warns about a known-vulnerable pinned version. Silent without an index."],
             ["`PostToolUse`", "`Write`, `Edit`, `MultiEdit`, `NotebookEdit`", "Scans the changed file with `kestrix-scan --hook` and returns the medium-or-worse findings the edit introduced."],
             ["`PostToolUse`, `PostToolUseFailure`", "`Bash`", "Lists the files the command changed in a git repository, scans the source-like ones (at most 20) like an edit, and returns the findings the command introduced. A command that failed is scanned too."],
             ["`Stop` (opt-in)", "Finishing a turn", "Blocks Claude from finishing while files changed this session have high or critical findings that this session introduced. Off unless you enable it."],
@@ -99,7 +101,7 @@ export const pluginPages: DocPage[] = [
           [
             ["`secure-code-review`", "How to review code with Kestrix: scan, triage by severity, fix by rule family, re-scan and explain the risk that remains. Claude uses it on its own when you ask for a security review."],
             ["`fixing-security-findings`", "A per-rule playbook with before and after code for every rule id, generated from the rule registry."],
-            ["`kestrix-security`", "Plain-language questions about email, links, files, websites, Sigma rules and Bitcoin addresses: Claude runs the matching `kestrix` command on your machine, reads the JSON report and explains it."],
+            ["`kestrix-security`", "Plain-language questions about email, links, files, websites, Sigma rules and Bitcoin addresses: Claude runs the matching `kestrix` command on your machine, reads the JSON report and explains it. Needs the full `kestrix` package."],
           ],
         ),
         p("The skills tell Claude to treat code as data: to ignore instructions inside the code under review, such as comments or strings that say to skip a check, and to point them out to you."),

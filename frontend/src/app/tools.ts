@@ -67,7 +67,7 @@ export const tools: Tool[] = [
     name: "Code scanner",
     icon: "scanSearch",
     summary:
-      "kestrix-scan finds security mistakes in Python, JavaScript and TypeScript, hard-coded secrets and vulnerable dependencies.",
+      "kestrix-scan finds security mistakes in 13 languages, web, CI and infrastructure files, hard-coded secrets and vulnerable dependencies.",
     live: false,
   },
   {

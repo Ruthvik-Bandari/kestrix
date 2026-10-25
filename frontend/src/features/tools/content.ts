@@ -335,12 +335,12 @@ export const toolContent: Record<ToolPage, ToolContent> = {
   code: {
     reference: reference({
       what: [
-        "`kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding.",
+        "`kestrix-scan` checks Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift code, HTML, Vue, Svelte, CSS and SQL files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes. It finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding.",
         "It is its own package with no dependencies on Python 3.11 and newer, and part of the `kestrix` workbench as `kestrix code scan`.",
       ],
       how: [
         "Walk the paths you give, skipping `.gitignore`d, vendored and build paths.",
-        "Parse Python with the standard-library `ast`, split JavaScript and TypeScript with a bounded tokenizer, and read text files for secrets. Nothing is imported or executed.",
+        "Parse Python with the standard-library `ast`, split every other language with a bounded tokenizer, and read text files for secrets. Nothing is imported or executed.",
         "Apply 146 rules, with taint analysis within one function from Flask, Django, FastAPI, Express, Next.js, PHP, Go net/http, Spring and servlet, ASP.NET and Rails request data, and LLM-client sources.",
         "After `kestrix-scan db update`, match lockfile versions against the local OSV index.",
         "Report each finding with its rule id, CWE and fix, and exit 1 when one meets `--fail-on` (default `high`).",
@@ -357,10 +357,10 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         "Auditing lockfiles for vulnerable or malicious packages.",
       ],
       limits: [
-        "No findings means no rule fired, not that the code is secure. No findings is not proof of security.",
-        "Rules are pattern analysis: they miss things and can be wrong in context. No real-world detection rate is claimed.",
+        "No findings means no rule fired, not that the code is secure.",
+        "Rules are pattern analysis: they miss things and can be wrong in context. On real CVE fixes they catch between 1.1% (Go) and 10.9% (Java and Kotlin) of the vulnerable files, with fewer false alarms than every compared tool; Bandit, gosec and flawfinder catch more in their languages. The Accuracy page has every language.",
         "Taint is followed within one function, never across functions or files.",
-        "JavaScript and TypeScript are matched by shape without a full parser; Vue and Svelte files are not analyzed.",
+        "Languages other than Python are matched by shape with a tokenizer, not a full parser. The C, C++, Rust and Swift rules see only lexically obvious patterns and cannot judge memory safety.",
         "Dependency checks cover nine ecosystems' lockfiles (PyPI, npm, Packagist, Go, crates.io, Maven, RubyGems, NuGet, Pub), not language runtimes, and reachability is not analyzed.",
       ],
     }),
@@ -445,7 +445,7 @@ export const toolContent: Record<ToolPage, ToolContent> = {
         heading: "Install guard",
         blocks: [
           p(
-            "Before a `pip`, `uv`, `npm`, `pnpm` or `yarn` install runs, the plugin checks the packages against the local OSV index. A known malicious package is denied; a known-vulnerable pinned version gets a warning naming the fixed version. Without an index there is no check. Turn it off with `KESTRIX_INSTALL_GUARD=0`.",
+            "Before a `pip`, `uv`, `npm`, `pnpm`, `yarn`, `bun`, `composer require`, `go get`, `cargo add`, `gem install` or `dotnet add package` install runs, the plugin checks the packages against the local OSV index. A known malicious package is denied; a known-vulnerable pinned version gets a warning naming the fixed version. Without an index there is no check. Turn it off with `KESTRIX_INSTALL_GUARD=0`.",
           ),
         ],
       },
@@ -465,7 +465,8 @@ export const toolContent: Record<ToolPage, ToolContent> = {
     local: {
       requirements: [
         "Claude Code.",
-        "kestrix-scan on PATH (the full kestrix package includes it).",
+        "kestrix-scan on PATH for the hooks and code commands (the full kestrix package includes it).",
+        "The full kestrix package, only for the kestrix-security skill: it runs kestrix mail, forensics, webcheck, detect and bitcoin commands.",
         "python3 on PATH: any Python 3.9 or later, including the macOS system Python.",
       ],
       install: [{ command: INSTALL_SCAN }],

@@ -39,11 +39,20 @@ export const gettingStartedPages: DocPage[] = [
       ),
       section(
         "Two packages",
-        list(
-          "`kestrix-scan` is the code scanner and the Claude Code plugin. It has no dependencies on Python 3.11 and newer (only `tomli` on 3.10) and works in the terminal, CI, pre-commit, pytest and Claude Code.",
-          "`kestrix` is the full workbench: every module, the `kestrix` CLI and the dashboard. It depends on `kestrix-scan`, so one install gives you both; `kestrix code scan` runs the same scanner.",
+        p("Both run on your own computer and need Python 3.10 or newer. `kestrix` depends on `kestrix-scan`, so installing it gives you both."),
+        table(
+          ["What you get", "`kestrix-scan`", "`kestrix`"],
+          [
+            ["Code scanner: 146 rules for 13 languages, web, SQL, CI and infrastructure files, and secrets", "Yes", "Yes (`kestrix code scan` is the same scanner)"],
+            ["Dependency checks against a local OSV copy, 9 lockfile ecosystems", "Yes", "Yes"],
+            ["pre-commit hook, `pytest --kestrix`, SARIF for GitHub code scanning", "Yes", "Yes"],
+            ["Claude Code plugin: scan-on-edit hooks, install guard, `/kestrix:*` commands, code-review skills", "Yes", "Yes"],
+            ["`kestrix-security` skill: Claude answers email, link, file, website, Sigma and Bitcoin questions", "Installs, but needs `kestrix` to run", "Yes"],
+            ["Email, file and link, website, detection repair and Bitcoin checks (CLI)", "No", "Yes"],
+            ["The dashboard (`kestrix dashboard`)", "No", "Yes"],
+            ["Runtime dependencies", "None on Python 3.11+ (`tomli` on 3.10)", "FastAPI, Typer, pySigma and others"],
+          ],
         ),
-        p("Both need Python 3.10 or newer."),
         see("Install them", "getting-started/installation"),
       ),
       section(
