@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (133 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (146 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -139,4 +139,17 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["rb.reflection.send", "high", "CWE-470", "send, public_send or try with a method name from request data, Ruby"],
   ["rb.exec.command", "high", "CWE-78", "Shell command built from request data, Ruby"],
   ["rb.path.traversal", "high", "CWE-22", "File path built from request data, Ruby"],
+  ["c.buffer.gets", "high", "CWE-242", "gets() call, C and C++"],
+  ["c.buffer.unbounded_copy", "high", "CWE-120", "strcpy, strcat or sprintf into a fixed-size array without a length check, C and C++"],
+  ["c.exec.command", "high", "CWE-78", "system() or popen() with a command built at run time, C and C++"],
+  ["c.format.nonliteral", "high", "CWE-134", "printf-family format string that is not a literal, C and C++"],
+  ["c.input.scanf_string", "high", "CWE-120", "scanf-family %s or %[ without a field width, C and C++"],
+  ["c.random.rand", "medium", "CWE-338", "rand() or random() used for a security value, C and C++"],
+  ["c.tempfile.insecure", "medium", "CWE-377", "tmpnam(), tempnam() or mktemp(), C and C++"],
+  ["rust.exec.shell", "high", "CWE-78", "std::process::Command runs a shell with a script built at run time"],
+  ["rust.tls.disabled", "high", "CWE-295", "TLS certificate or host-name verification turned off, Rust"],
+  ["rust.unsafe.input", "medium", "CWE-119", "Unchecked memory operation in an unsafe block on a value derived from input, Rust"],
+  ["swift.tls.trust_all", "high", "CWE-295", "Server certificate accepted without evaluation, Swift"],
+  ["swift.ats.arbitrary_loads", "medium", "CWE-319", "App Transport Security turned off in a property list (NSAllowsArbitraryLoads)"],
+  ["swift.storage.userdefaults_secret", "medium", "CWE-312", "Password, token or key stored in UserDefaults, Swift"],
 ];

@@ -1020,3 +1020,106 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://docs.ruby-lang.org/en/master/File.html#method-c-expand_path>
 - Documentation: <https://owasp.org/www-community/attacks/Path_Traversal>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.buffer.gets`
+
+- CWE: [CWE-242](https://cwe.mitre.org/data/definitions/242.html)
+- Documentation: <https://en.cppreference.com/w/c/io/gets>
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/MSC24-C.+Do+not+use+deprecated+or+obsolescent+functions>
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/STR31-C.+Guarantee+that+storage+for+strings+has+sufficient+space+for+character+data+and+the+null+terminator>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.buffer.unbounded_copy`
+
+- CWE: [CWE-120](https://cwe.mitre.org/data/definitions/120.html)
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/STR31-C.+Guarantee+that+storage+for+strings+has+sufficient+space+for+character+data+and+the+null+terminator>
+- Documentation: <https://en.cppreference.com/w/c/string/byte/strcpy>
+- Documentation: <https://en.cppreference.com/w/c/io/fprintf>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.exec.command`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/ENV33-C.+Do+not+call+system()>
+- Documentation: <https://man7.org/linux/man-pages/man3/system.3.html>
+- Documentation: <https://man7.org/linux/man-pages/man3/posix_spawn.3.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.format.nonliteral`
+
+- CWE: [CWE-134](https://cwe.mitre.org/data/definitions/134.html)
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/FIO30-C.+Exclude+user+input+from+format+strings>
+- Documentation: <https://en.cppreference.com/w/c/io/fprintf>
+- Documentation: <https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wformat-security>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.input.scanf_string`
+
+- CWE: [CWE-120](https://cwe.mitre.org/data/definitions/120.html)
+- Documentation: <https://en.cppreference.com/w/c/io/fscanf>
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/STR31-C.+Guarantee+that+storage+for+strings+has+sufficient+space+for+character+data+and+the+null+terminator>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.random.rand`
+
+- CWE: [CWE-338](https://cwe.mitre.org/data/definitions/338.html)
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/MSC30-C.+Do+not+use+the+rand()+function+for+generating+pseudorandom+numbers>
+- Documentation: <https://man7.org/linux/man-pages/man2/getrandom.2.html>
+- Documentation: <https://en.cppreference.com/w/c/numeric/random/rand>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `c.tempfile.insecure`
+
+- CWE: [CWE-377](https://cwe.mitre.org/data/definitions/377.html)
+- Documentation: <https://wiki.sei.cmu.edu/confluence/display/c/FIO21-C.+Do+not+create+temporary+files+in+shared+directories>
+- Documentation: <https://man7.org/linux/man-pages/man3/mkstemp.3.html>
+- Documentation: <https://en.cppreference.com/w/c/io/tmpnam>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rust.exec.shell`
+
+- CWE: [CWE-78](https://cwe.mitre.org/data/definitions/78.html)
+- Documentation: <https://doc.rust-lang.org/std/process/struct.Command.html>
+- Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rust.tls.disabled`
+
+- CWE: [CWE-295](https://cwe.mitre.org/data/definitions/295.html)
+- Documentation: <https://docs.rs/reqwest/latest/reqwest/struct.ClientBuilder.html#method.danger_accept_invalid_certs>
+- Documentation: <https://docs.rs/native-tls/latest/native_tls/struct.TlsConnectorBuilder.html#method.danger_accept_invalid_certs>
+- Documentation: <https://docs.rs/openssl/latest/openssl/ssl/struct.SslVerifyMode.html>
+- Documentation: <https://docs.rs/rustls/latest/rustls/client/danger/trait.ServerCertVerifier.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `rust.unsafe.input`
+
+- CWE: [CWE-119](https://cwe.mitre.org/data/definitions/119.html)
+- Documentation: <https://doc.rust-lang.org/nomicon/what-unsafe-does.html>
+- Documentation: <https://doc.rust-lang.org/std/primitive.slice.html#method.get_unchecked>
+- Documentation: <https://doc.rust-lang.org/std/vec/struct.Vec.html#method.set_len>
+- Documentation: <https://doc.rust-lang.org/std/ptr/fn.copy_nonoverlapping.html>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `swift.tls.trust_all`
+
+- CWE: [CWE-295](https://cwe.mitre.org/data/definitions/295.html)
+- Documentation: <https://developer.apple.com/documentation/foundation/url_loading_system/handling_an_authentication_challenge/performing_manual_server_trust_authentication>
+- Documentation: <https://developer.apple.com/documentation/security/sectrustevaluatewitherror(_:_:)>
+- Documentation: <https://github.com/Alamofire/Alamofire/blob/master/Documentation/AdvancedUsage.md#evaluating-server-trusts>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `swift.ats.arbitrary_loads`
+
+- CWE: [CWE-319](https://cwe.mitre.org/data/definitions/319.html)
+- Documentation: <https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity>
+- Documentation: <https://developer.apple.com/documentation/security/preventing-insecure-network-connections>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
+## `swift.storage.userdefaults_secret`
+
+- CWE: [CWE-312](https://cwe.mitre.org/data/definitions/312.html)
+- Documentation: <https://developer.apple.com/documentation/foundation/userdefaults>
+- Documentation: <https://developer.apple.com/documentation/security/keychain_services>
+- Documentation: <https://mas.owasp.org/MASVS/controls/MASVS-STORAGE-1/>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.

@@ -1,6 +1,6 @@
 # kestrix-scan
 
-**Local security checks for Python, JavaScript and TypeScript code, HTML, Vue, Svelte and CSS files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies.**
+**Local security checks for Python, JavaScript and TypeScript code (and PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust and Swift), HTML, Vue, Svelte and CSS files, GitHub Actions, Dockerfiles, shell, Terraform and Kubernetes, hard-coded secrets and dependencies.**
 `kestrix-scan` finds shell and SQL injection, XSS sinks, unsafe deserialization, disabled TLS checks, weak hashes and
 randomness, leaked API keys, and lockfile dependencies with known vulnerabilities or reported as malware, with a CWE and a concrete fix for every finding. It runs in your terminal, in CI with SARIF for GitHub code scanning, in
 pre-commit and pytest, and inside Claude Code, where it has Claude fix what it finds while it writes code.
@@ -243,7 +243,7 @@ explicitly: it downloads the public OSV exports over HTTPS and sends nothing abo
 
 ## Rules
 
-There are 133 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
+There are 146 rules. They cover Python (30 `py.*` rules: `eval`/`exec`, `shell=True` and `os.system`, pickle and
 unsafe YAML, tar extraction without a filter, SQL built from strings, disabled TLS checks, MD5/SHA-1, `random` for secrets, `tempfile.mktemp`,
 Flask debug, unverified JWTs, stdlib XML parsers, Jinja2 environments without autoescape, `assert` for access checks, and, through intraprocedural taint
 analysis from Flask (including route parameters), Django, FastAPI, Starlette, aiohttp, Tornado and LLM-client sources, path traversal, SSRF, open redirects, XSS/SSTI and
@@ -267,7 +267,12 @@ request data from `net/http`, gin, echo, fiber or chi reaching `exec.Command`, S
 deserialization and XML parser factories without DOCTYPE protection), C# (4 `cs.*` rules for `.cs`: ASP.NET request data reaching `SqlCommand`, Entity
 Framework and Dapper SQL, `Process.Start` and file paths, and `BinaryFormatter` and Json.NET `TypeNameHandling`), Ruby on Rails (6 `rb.*` rules for `.rb`
 and `.erb`: `params` reaching `where`/`find_by_sql`/`order`, `html_safe`/`raw`/`<%== %>`, `constantize`, `send`, `system` and backticks, and file
-paths), CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
+paths), C and C++ (7 `c.*` rules for `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx`: `gets`, `strcpy`/`strcat`/`sprintf` into arrays
+declared with a size, `system`/`popen` with a built command, `printf`-family formats that are not literals, `scanf` `%s` without a width, `rand()`
+next to security values and `tmpnam`/`mktemp`), Rust (3 `rust.*` rules: `Command` running a shell with a built script, TLS verification turned
+off, unchecked memory operations in `unsafe` blocks on input-derived values), Swift (3 `swift.*` rules: trust-all `URLSession` challenge handlers
+and Alamofire's disabled evaluator, `NSAllowsArbitraryLoads` in `.plist` files, secrets in `UserDefaults`); these systems-language rules flag only
+lexically obvious patterns and cannot judge memory safety, CI and infrastructure files (24 rules in `gha.*`, `docker.*`, `sh.*`, `tf.*` and `k8s.*` for GitHub Actions
 workflows, Dockerfiles, `.sh` and `.bash` scripts, Terraform and Kubernetes manifests: `pull_request_target` checking out the PR head,
 `${{ github.event.* }}` in `run:`, unpinned third-party actions, `permissions: write-all`, running as root, `ADD` of a URL,
 `curl | sh`, `latest` images, secrets in `ENV`/`ARG`, `eval` and `rm -rf` of variables, `chmod 777`, public S3 buckets, admin
