@@ -2872,3 +2872,415 @@ After:
 ```sql
 CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
 ```
+
+## C and C++, Rust and Swift rules
+
+These rules read `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx` files, `.rs` files, `.swift` files and `.plist` property lists. They flag only lexically obvious patterns: memory-safety bugs need a compiler and a real analyser, and no finding does not mean the code is memory safe. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above (`<!-- ... -->` in a property list).
+
+### `c.buffer.gets`: gets() call, C and C++
+
+CWE-242 · default severity high · confidence high
+
+**Why:** gets() reads a line into the buffer it is given with no way to say how large the buffer is, so any line longer than the buffer overwrites the memory after it (a stack or heap overflow an attacker controls through the input). It was removed from C11 and C++14.
+
+**Fix:** Use fgets(buf, sizeof buf, stdin) and strip the newline, or getline() where POSIX is available; in C++ use std::getline into a std::string.
+
+Before (`read.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    char line[128];
+    gets(line);
+    return 0;
+}
+```
+
+After:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    char line[128];
+    if (fgets(line, sizeof line, stdin) == NULL) return 1;
+    line[strcspn(line, "\n")] = 0;
+    return 0;
+}
+```
+
+### `c.buffer.unbounded_copy`: strcpy, strcat or sprintf into a fixed-size array without a length check, C and C++
+
+CWE-120 · default severity high · confidence medium
+
+**Why:** strcpy(), strcat(), wcscpy(), wcscat(), sprintf() and vsprintf() write as many bytes as the source (or the formatted text) has, whatever the size of the destination. The finding appears only when the destination is an array declared with a size in the same file (char buf[64], a struct member char name[32]) and the source is not a string literal, or the sprintf format is not a literal or holds a %s without a precision whose value is not a literal. Copies into pointers, sizes computed elsewhere and bounds checked before the call are not judged: this rule does not prove an overflow, and no finding does not prove there is none.
+
+**Fix:** Use a bounded call and check for truncation: snprintf(buf, sizeof buf, "%s", src) (check the return value), strlcpy/strlcat where available, or memcpy with a length you checked against sizeof buf. In C++ use std::string.
+
+Before (`user.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void greet(const char *name) {
+    char buf[32];
+    strcpy(buf, name);
+    puts(buf);
+}
+```
+
+After:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void greet(const char *name) {
+    char buf[32];
+    if (snprintf(buf, sizeof buf, "%s", name) >= (int)sizeof buf) return;
+    puts(buf);
+}
+```
+
+### `c.exec.command`: system() or popen() with a command built at run time, C and C++
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** system() and popen() pass their string to /bin/sh -c (cmd.exe on Windows). If any part of that string comes from input, characters such as ';', '|', '$(...)' or a newline run other commands. The finding appears when the command is not a string literal or a macro constant; execl("/bin/sh", "sh", "-c", cmd, NULL) with a built cmd is reported too. Where the string comes from is not followed.
+
+**Fix:** Run the program directly with fork() and execv()/posix_spawn() and an argument array, so no shell parses the input; check input values against an allowlist. If a shell is unavoidable, map the input to fixed strings.
+
+Before (`show.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void show(const char *file) {
+    char cmd[256];
+    snprintf(cmd, sizeof cmd, "cat %s", file);
+    system(cmd);
+}
+```
+
+After:
+
+```c
+#include <unistd.h>
+
+void show(const char *file) {
+    char *const args[] = {"cat", "--", (char *)file, NULL};
+    execv("/bin/cat", args);
+}
+```
+
+### `c.format.nonliteral`: printf-family format string that is not a literal, C and C++
+
+CWE-134 · default severity high · confidence medium
+
+**Why:** printf(), fprintf(), sprintf(), snprintf(), syslog() and their relatives read their format string for conversions. When that string is a variable holding input (printf(buf)), '%s' and '%x' read memory and '%n' writes it, which leaks data or gives control of the program. The finding appears when the format argument is not a string literal, a macro constant or a gettext call of a literal, and no argument follows it (a wrapper that forwards a format with its arguments is not reported).
+
+**Fix:** Print the value with a literal format: printf("%s", buf), fputs(buf, stdout), syslog(LOG_INFO, "%s", msg). Compile with -Wformat -Wformat-security.
+
+Before (`log.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void log_line(const char *msg) {
+    printf(msg);
+}
+```
+
+After:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void log_line(const char *msg) {
+    printf("%s", msg);
+}
+```
+
+### `c.input.scanf_string`: scanf-family %s or %[ without a field width, C and C++
+
+CWE-120 · default severity high · confidence high
+
+**Why:** scanf(), fscanf() and sscanf() store a %s or %[...] conversion into the buffer they are given until the next white space (or the end of the set), however long the input word is. Without a field width (%63s for a 64-byte buffer) a long word overflows the buffer. A width, assignment suppression (%*s) and POSIX allocation (%ms) are not reported.
+
+**Fix:** Give every %s and %[ a width one less than the buffer size (%63s for char buf[64]), or read a line with fgets() and parse it; use %ms (POSIX) to let the library allocate.
+
+Before (`ask.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    char name[64];
+    scanf("%s", name);
+    return 0;
+}
+```
+
+After:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    char name[64];
+    scanf("%63s", name);
+    return 0;
+}
+```
+
+### `c.random.rand`: rand() or random() used for a security value, C and C++
+
+CWE-338 · default severity medium · confidence medium
+
+**Why:** rand(), random() and the drand48 family are fast generators whose output can be predicted from a few values or from the seed (often the time). The finding appears when the call sits in a statement or a function whose names speak of keys, tokens, passwords, nonces, salts, sessions or similar values; other uses (simulations, games, jitter) are not reported.
+
+**Fix:** Use the operating system's generator: getrandom() or getentropy() on Linux and the BSDs, arc4random_buf() on macOS and the BSDs, BCryptGenRandom() on Windows, or your crypto library's RAND_bytes().
+
+Before (`token.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+unsigned make_token(void) {
+    return (unsigned)rand();
+}
+```
+
+After:
+
+```c
+#include <sys/random.h>
+
+unsigned make_token(void) {
+    unsigned value = 0;
+    getrandom(&value, sizeof value, 0);
+    return value;
+}
+```
+
+### `c.tempfile.insecure`: tmpnam(), tempnam() or mktemp(), C and C++
+
+CWE-377 · default severity medium · confidence high
+
+**Why:** tmpnam(), tempnam() and mktemp() return a file name that does not exist yet; the file is created in a later call. Between the two, another local user can create that name (or a symbolic link with it) in the shared temporary directory, and the program then writes to the attacker's file.
+
+**Fix:** Create and open the file in one step: mkstemp() (or mkdtemp() for a directory) returns an open descriptor; tmpfile() for an anonymous file; in C++17 combine std::filesystem::temp_directory_path() with mkstemp().
+
+Before (`tmp.c`):
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+FILE *scratch(void) {
+    char *path = tmpnam(NULL);
+    return fopen(path, "w+");
+}
+```
+
+After:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+FILE *scratch(void) {
+    char path[] = "/tmp/app-XXXXXX";
+    int fd = mkstemp(path);
+    return fd < 0 ? NULL : fdopen(fd, "w+");
+}
+```
+
+### `rust.exec.shell`: std::process::Command runs a shell with a script built at run time
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** Command::new("sh") (or bash, cmd, powershell) with -c (or /C, -Command) runs its next argument as a shell script. If that script is built with format!() or comes from a variable, characters such as ';', '|' or '$(...)' in the input run other commands. Command itself never uses a shell, so this only fires when the code starts one; the chain and later calls on the bound variable in the same function are followed.
+
+**Fix:** Run the program directly: Command::new("git").arg("log").arg(&user_ref), so each value is one argument; check values against an allowlist, and pass them after "--" when the program takes options.
+
+Before (`list.rs`):
+
+```rust
+use std::process::Command;
+
+fn list(dir: &str) {
+    Command::new("sh").arg("-c").arg(format!("ls {}", dir)).status().unwrap();
+}
+```
+
+After:
+
+```rust
+use std::process::Command;
+
+fn list(dir: &str) {
+    Command::new("ls").arg("--").arg(dir).status().unwrap();
+}
+```
+
+### `rust.tls.disabled`: TLS certificate or host-name verification turned off, Rust
+
+CWE-295 · default severity high · confidence high
+
+**Why:** reqwest and native-tls danger_accept_invalid_certs(true) and danger_accept_invalid_hostnames(true), OpenSSL SslVerifyMode::NONE and set_verify_hostname(false), and a rustls ServerCertVerifier whose verify_server_cert returns ServerCertVerified::assertion() without checking anything all accept a certificate an attacker presents. Anyone on the network path can then read and change the traffic.
+
+**Fix:** Keep verification on. For a private CA, add its certificate to the root store (reqwest add_root_certificate, rustls RootCertStore); for pinning, implement ServerCertVerifier by calling the default WebPkiServerVerifier first and then comparing the certificate.
+
+Before (`client.rs`):
+
+```rust
+fn client() -> reqwest::Result<reqwest::Client> {
+    reqwest::Client::builder().danger_accept_invalid_certs(true).build()
+}
+```
+
+After:
+
+```rust
+fn client(ca_pem: &[u8]) -> reqwest::Result<reqwest::Client> {
+    let ca = reqwest::Certificate::from_pem(ca_pem)?;
+    reqwest::Client::builder().add_root_certificate(ca).build()
+}
+```
+
+### `rust.unsafe.input`: Unchecked memory operation in an unsafe block on a value derived from input, Rust
+
+CWE-119 · default severity medium · confidence low
+
+**Why:** Inside unsafe, get_unchecked(), from_raw_parts(), set_len(), ptr::copy_nonoverlapping(), pointer add()/offset() and write_bytes() trust the index, length or pointer they are given. The finding appears when such a call takes a name that, in the same function, comes from a byte, string or reader parameter, from the environment, stdin or a read() call, or from a let binding computed from those. It is a lexical pointer to code to review, not proof of a bug: the length may well be checked before the block, and memory-safety errors elsewhere are not seen.
+
+**Fix:** Prefer the checked operation (get(), slicing, copy_from_slice(), Vec::resize/extend) and let the compiler insert the bounds check; if unsafe is needed for speed, assert the bound (assert!(len <= buf.len())) right before the block and document the invariant in a SAFETY comment.
+
+Before (`frame.rs`):
+
+```rust
+fn read_body(data: &[u8], out: &mut Vec<u8>) {
+    let len = data[0] as usize;
+    unsafe { out.set_len(len) };
+}
+```
+
+After:
+
+```rust
+fn read_body(data: &[u8], out: &mut Vec<u8>) {
+    let len = data[0] as usize;
+    out.resize(len, 0);
+}
+```
+
+### `swift.tls.trust_all`: Server certificate accepted without evaluation, Swift
+
+CWE-295 · default severity high · confidence medium
+
+**Why:** A URLSession (or WKWebView) authentication challenge handler that answers with URLCredential(trust: serverTrust) without calling SecTrustEvaluateWithError() or comparing pinned keys accepts every certificate, including one an attacker on the network presents. Alamofire's DisabledTrustEvaluator (DisabledEvaluator, .disableEvaluation in older versions) and the private allowsAnyHTTPSCertificate do the same. A handler that calls a Sec... function or a function whose name speaks of pinning, evaluation, validation or verification is not reported.
+
+**Fix:** Return .performDefaultHandling for challenges you do not handle. To pin, evaluate the trust first (SecTrustEvaluateWithError) and then compare the server's public key with your pinned keys; in Alamofire use PinnedCertificatesTrustEvaluator or PublicKeysTrustEvaluator. For a development server, add its CA to the device rather than disabling checks.
+
+Before (`Delegate.swift`):
+
+```swift
+final class Delegate: NSObject, URLSessionDelegate {
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+    }
+}
+```
+
+After:
+
+```swift
+final class Delegate: NSObject, URLSessionDelegate {
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        completionHandler(.performDefaultHandling, nil)
+    }
+}
+```
+
+### `swift.ats.arbitrary_loads`: App Transport Security turned off in a property list (NSAllowsArbitraryLoads)
+
+CWE-319 · default severity medium · confidence high
+
+**Why:** NSAllowsArbitraryLoads set to true in Info.plist lets the app load any URL over plain HTTP and over TLS older than 1.2, so traffic can be read and changed on the network. The ...InWebContent and ...ForMedia keys do the same for web views and media; NSExceptionAllowsInsecureHTTPLoads does it for one domain (reported at low severity).
+
+**Fix:** Remove the key and serve the content over HTTPS. If one host cannot use HTTPS yet, add an NSExceptionDomains entry for that host only, and plan its removal.
+
+Before (`Info.plist`):
+
+```xml
+<dict>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+  </dict>
+</dict>
+```
+
+After:
+
+```xml
+<dict>
+  <key>NSAppTransportSecurity</key>
+  <dict/>
+</dict>
+```
+
+### `swift.storage.userdefaults_secret`: Password, token or key stored in UserDefaults, Swift
+
+CWE-312 · default severity medium · confidence medium
+
+**Why:** UserDefaults (and @AppStorage) write to a property list in the app's container without encryption; it is included in unencrypted backups and readable on a jailbroken or compromised device. The finding appears when the key is a string literal that names a secret (password, token, secret, API key, private key, credential); device and push-notification tokens are not reported.
+
+**Fix:** Keep secrets in the Keychain (SecItemAdd with kSecAttrAccessibleWhenUnlockedThisDeviceOnly, or a Keychain wrapper) and store only non-secret preferences in UserDefaults.
+
+Before (`Session.swift`):
+
+```swift
+func save(token: String) {
+    UserDefaults.standard.set(token, forKey: "authToken")
+}
+```
+
+After:
+
+```swift
+func save(token: String) {
+    let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrAccount as String: "session",
+        kSecValueData as String: Data(token.utf8),
+    ]
+    SecItemAdd(query as CFDictionary, nil)
+}
+```

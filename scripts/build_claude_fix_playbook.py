@@ -369,6 +369,116 @@ PHP_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
     ),
 }
 
+C_HEAD = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n"
+TRUST_HANDLER = (
+    "final class Delegate: NSObject, URLSessionDelegate {\n"
+    "    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,\n"
+    "                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {\n"
+)
+
+# rule id -> (file name, code fence language, before, after) for the C and C++, Rust and Swift rules (Phase 5).
+SYSTEMS_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
+    "c.buffer.gets": (
+        "read.c",
+        "c",
+        C_HEAD + "int main(void) {\n    char line[128];\n    gets(line);\n    return 0;\n}\n",
+        C_HEAD
+        + "int main(void) {\n    char line[128];\n    if (fgets(line, sizeof line, stdin) == NULL) return 1;\n"
+        + '    line[strcspn(line, "\\n")] = 0;\n    return 0;\n}\n',
+    ),
+    "c.buffer.unbounded_copy": (
+        "user.c",
+        "c",
+        C_HEAD + "void greet(const char *name) {\n    char buf[32];\n    strcpy(buf, name);\n    puts(buf);\n}\n",
+        C_HEAD
+        + "void greet(const char *name) {\n    char buf[32];\n"
+        + '    if (snprintf(buf, sizeof buf, "%s", name) >= (int)sizeof buf) return;\n    puts(buf);\n}\n',
+    ),
+    "c.exec.command": (
+        "show.c",
+        "c",
+        C_HEAD
+        + 'void show(const char *file) {\n    char cmd[256];\n    snprintf(cmd, sizeof cmd, "cat %s", file);\n'
+        + "    system(cmd);\n}\n",
+        "#include <unistd.h>\n\nvoid show(const char *file) {\n"
+        + '    char *const args[] = {"cat", "--", (char *)file, NULL};\n    execv("/bin/cat", args);\n}\n',
+    ),
+    "c.format.nonliteral": (
+        "log.c",
+        "c",
+        C_HEAD + "void log_line(const char *msg) {\n    printf(msg);\n}\n",
+        C_HEAD + 'void log_line(const char *msg) {\n    printf("%s", msg);\n}\n',
+    ),
+    "c.input.scanf_string": (
+        "ask.c",
+        "c",
+        C_HEAD + 'int main(void) {\n    char name[64];\n    scanf("%s", name);\n    return 0;\n}\n',
+        C_HEAD + 'int main(void) {\n    char name[64];\n    scanf("%63s", name);\n    return 0;\n}\n',
+    ),
+    "c.random.rand": (
+        "token.c",
+        "c",
+        C_HEAD + "unsigned make_token(void) {\n    return (unsigned)rand();\n}\n",
+        "#include <sys/random.h>\n\nunsigned make_token(void) {\n    unsigned value = 0;\n"
+        + "    getrandom(&value, sizeof value, 0);\n    return value;\n}\n",
+    ),
+    "c.tempfile.insecure": (
+        "tmp.c",
+        "c",
+        C_HEAD + 'FILE *scratch(void) {\n    char *path = tmpnam(NULL);\n    return fopen(path, "w+");\n}\n',
+        C_HEAD
+        + 'FILE *scratch(void) {\n    char path[] = "/tmp/app-XXXXXX";\n    int fd = mkstemp(path);\n'
+        + '    return fd < 0 ? NULL : fdopen(fd, "w+");\n}\n',
+    ),
+    "rust.exec.shell": (
+        "list.rs",
+        "rust",
+        "use std::process::Command;\n\nfn list(dir: &str) {\n"
+        + '    Command::new("sh").arg("-c").arg(format!("ls {}", dir)).status().unwrap();\n}\n',
+        'use std::process::Command;\n\nfn list(dir: &str) {\n    Command::new("ls").arg("--").arg(dir).status().unwrap();\n}\n',
+    ),
+    "rust.tls.disabled": (
+        "client.rs",
+        "rust",
+        "fn client() -> reqwest::Result<reqwest::Client> {\n"
+        + "    reqwest::Client::builder().danger_accept_invalid_certs(true).build()\n}\n",
+        "fn client(ca_pem: &[u8]) -> reqwest::Result<reqwest::Client> {\n"
+        + "    let ca = reqwest::Certificate::from_pem(ca_pem)?;\n"
+        + "    reqwest::Client::builder().add_root_certificate(ca).build()\n}\n",
+    ),
+    "rust.unsafe.input": (
+        "frame.rs",
+        "rust",
+        "fn read_body(data: &[u8], out: &mut Vec<u8>) {\n    let len = data[0] as usize;\n"
+        + "    unsafe { out.set_len(len) };\n}\n",
+        "fn read_body(data: &[u8], out: &mut Vec<u8>) {\n    let len = data[0] as usize;\n    out.resize(len, 0);\n}\n",
+    ),
+    "swift.tls.trust_all": (
+        "Delegate.swift",
+        "swift",
+        TRUST_HANDLER
+        + "        completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))\n"
+        + "    }\n}\n",
+        TRUST_HANDLER + "        completionHandler(.performDefaultHandling, nil)\n    }\n}\n",
+    ),
+    "swift.ats.arbitrary_loads": (
+        "Info.plist",
+        "xml",
+        "<dict>\n  <key>NSAppTransportSecurity</key>\n  <dict>\n    <key>NSAllowsArbitraryLoads</key>\n    <true/>\n"
+        + "  </dict>\n</dict>\n",
+        "<dict>\n  <key>NSAppTransportSecurity</key>\n  <dict/>\n</dict>\n",
+    ),
+    "swift.storage.userdefaults_secret": (
+        "Session.swift",
+        "swift",
+        'func save(token: String) {\n    UserDefaults.standard.set(token, forKey: "authToken")\n}\n',
+        "func save(token: String) {\n    let query: [String: Any] = [\n        kSecClass as String: kSecClassGenericPassword,\n"
+        + '        kSecAttrAccount as String: "session",\n        kSecValueData as String: Data(token.utf8),\n    ]\n'
+        + "    SecItemAdd(query as CFDictionary, nil)\n}\n",
+    ),
+}
+SYSTEMS_LANGUAGES = frozenset({"c", "rust", "swift"})
+
 _POD = "apiVersion: v1\nkind: Pod\nmetadata:\n  name: app\nspec:\n  containers:\n    - name: app\n      image: registry.example/app:1.2.3\n"
 _POD_SAFE = _POD + "      securityContext:\n        runAsNonRoot: true\n"
 
@@ -647,7 +757,7 @@ def _js_section(rule: Rule) -> str:
 
 
 def _web_section(rule: Rule) -> str:
-    name, language, before, after = (WEB_EXAMPLES | PHP_EXAMPLES)[rule.id]
+    name, language, before, after = (WEB_EXAMPLES | PHP_EXAMPLES | SYSTEMS_EXAMPLES)[rule.id]
     return "\n".join(
         [
             f"### `{rule.id}`: {rule.title}",
@@ -747,9 +857,12 @@ def render() -> str:
         ("javascript", set(JS_EXAMPLES)),
         ("web", set(WEB_EXAMPLES)),
         ("iac", set(IAC_EXAMPLES)),
+        ("systems", set(SYSTEMS_EXAMPLES)),
     ):
         ids = {rule.id for rule in RULES.values() if rule.language in IAC_LANGUAGES or rule.language == language}
-        if language != "iac":
+        if language == "systems":
+            ids = {rule.id for rule in RULES.values() if rule.language in SYSTEMS_LANGUAGES}
+        elif language != "iac":
             ids = {rule.id for rule in RULES.values() if rule.language == language}
         if examples != ids:
             missing, extra = sorted(ids - examples), sorted(examples - ids)
@@ -824,6 +937,14 @@ def render() -> str:
         "`-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.\n",
     ]
     parts += [_web_section(rule) for rule in RULES.values() if rule.language == "sql"]
+    parts += [
+        "## C and C++, Rust and Swift rules\n",
+        "These rules read `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx` files, `.rs` files, `.swift` files "
+        "and `.plist` property lists. They flag only lexically obvious patterns: memory-safety bugs need a compiler and a "
+        "real analyser, and no finding does not mean the code is memory safe. Suppress a confirmed false positive with "
+        "`// kestrix: ignore[<rule-id>] <reason>` on the line or the line above (`<!-- ... -->` in a property list).\n",
+    ]
+    parts += [_web_section(rule) for rule in RULES.values() if rule.language in SYSTEMS_LANGUAGES]
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
