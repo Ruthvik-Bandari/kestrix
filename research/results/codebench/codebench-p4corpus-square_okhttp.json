@@ -1,0 +1,28 @@
+{
+  "all_rules_per_kloc": 0.0068,
+  "files_scanned": {
+    ".java": 71,
+    ".kt": 575,
+    ".kts": 44
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".java": 4.5,
+    ".kt": 141.5,
+    ".kts": 2.1
+  },
+  "label": "square_okhttp",
+  "roots": [
+    "square_okhttp"
+  ],
+  "rules": {
+    "java.ssrf.request": {
+      "by_extension": {
+        ".kt": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0068
+    }
+  },
+  "schema_version": 1
+}

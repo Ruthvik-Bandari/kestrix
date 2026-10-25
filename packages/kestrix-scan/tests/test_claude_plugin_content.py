@@ -201,6 +201,8 @@ def test_secure_code_review_covers_every_rule() -> None:
     assert web_ids <= set(re.findall(r"`((?:vue|svelte|html|css|web|next)\.[a-z_.]+)`", text))
     php_ids = {rule.id for rule in RULES.values() if rule.language in ("php", "sql")}
     assert php_ids <= set(re.findall(r"`((?:php|sql)\.[a-z_.]+)`", text))
+    server_ids = {rule.id for rule in RULES.values() if rule.language in ("go", "java", "csharp", "ruby")}
+    assert server_ids <= set(re.findall(r"`((?:go|java|cs|rb)\.[a-z_.]+)`", text))
     iac_ids = {
         r.id
         for r in RULES.values()
@@ -330,6 +332,29 @@ def test_fix_playbook_php_and_sql_examples_fire_before_and_not_after(
     assert before_skip is None and after_skip is None
     assert rule_id in {finding.rule_id for finding in before_findings}
     assert after_findings == []
+
+
+@pytest.mark.parametrize(
+    "rule_id", [rule.id for rule in RULES.values() if rule.language in ("go", "java", "csharp", "ruby")]
+)
+def test_fix_playbook_server_language_examples_fire_before_and_not_after(
+    generator: ModuleType, rule_id: str, tmp_path: Path
+) -> None:
+    name, _, before, after = generator.SERVER_EXAMPLES[rule_id]
+    candidate = Candidate(path=tmp_path / name, rel=name)
+    before_findings, _, _, before_skip = scan_text(before, candidate)
+    after_findings, _, _, after_skip = scan_text(after, candidate)
+    assert before_skip is None and after_skip is None
+    assert rule_id in {finding.rule_id for finding in before_findings}
+    assert after_findings == []
+
+
+def test_fix_playbook_refuses_a_server_language_rule_without_an_example(
+    generator: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delitem(generator.SERVER_EXAMPLES, "go.sql.injection")
+    with pytest.raises(SystemExit, match=r"missing \['go.sql.injection'\]"):
+        generator.render()
 
 
 @pytest.mark.parametrize("rule_id", [rule.id for rule in RULES.values() if rule.language in ("c", "rust", "swift")])

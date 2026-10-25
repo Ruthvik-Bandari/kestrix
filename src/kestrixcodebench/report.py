@@ -36,12 +36,15 @@ from .scan import TOOLS, TUNING, base_tool, scan_shard
 VARIANT = "eslint-no-object-injection"
 VARIANT_DROPS = frozenset({"security/detect-object-injection"})
 
+P4_SUBSETS = ("go", "java", "kotlin", "jvm", "csharp", "ruby", "erb", "rails", "p4")
 P5_SUBSETS = ("c", "cpp", "c_cpp", "rust", "swift", "p5")
 # Which language subsets a tool is run on (a baseline is scored only where it applies).
 TOOL_SUBSETS: dict[str, tuple[str, ...]] = {
-    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web", "php", *P5_SUBSETS),
+    "kestrix": ("all", "python", "javascript", "typescript", "js_ts", "web", "php", *P4_SUBSETS, *P5_SUBSETS),
     "bandit": ("python",),
     "psalm": ("php",),
+    "gosec": ("go",),
+    "opengrep": ("go", "java", "kotlin", "jvm", "csharp", "ruby", "p4"),  # it does not read ERB
     "flawfinder": ("c", "cpp", "c_cpp"),
     "opengrep-sys": P5_SUBSETS,
     "eslint": ("javascript", "typescript", "js_ts"),
@@ -51,13 +54,19 @@ OVERLAPS = (
     ("kestrix", "bandit", "python"),
     ("kestrix", "eslint", "js_ts"),
     ("kestrix", "psalm", "php"),
+    ("kestrix", "gosec", "go"),
+    ("kestrix", "opengrep", "go"),
+    ("kestrix", "opengrep", "jvm"),
+    ("kestrix", "opengrep", "csharp"),
+    ("kestrix", "opengrep", "ruby"),
+    ("kestrix", "opengrep", "p4"),
     ("kestrix", "flawfinder", "c_cpp"),
     ("kestrix", "opengrep-sys", "c_cpp"),
     ("kestrix", "opengrep-sys", "rust"),
     ("kestrix", "opengrep-sys", "swift"),
     ("kestrix", "opengrep-sys", "p5"),
 )
-FAMILY_SUBSETS = ("python", "js_ts", "php", "c_cpp", "rust", "swift")
+FAMILY_SUBSETS = ("python", "js_ts", "php", "go", "jvm", "csharp", "ruby", "rails", "c_cpp", "rust", "swift")
 DEV_REPORT = "codebench-dev-{label}.json"
 LOCKED_REPORT = "codebench-locked-{name}.json"
 

@@ -38,6 +38,26 @@ const FAMILIES: { heading: string; prefixes: string[]; intro: string }[] = [
     intro: "Run on `.sql` files: `GRANT ALL`, plaintext account passwords and PostgreSQL `SECURITY DEFINER` functions without a fixed `search_path`.",
   },
   {
+    heading: "Go (go.*)",
+    prefixes: ["go."],
+    intro: "Run on `.go` files with a bounded tokenizer shared with Java, Kotlin and C#. Request data from `net/http`, gin, echo, fiber, chi and Gitea-style contexts is followed inside one function to `exec.Command`, SQL and `template.HTML`; `InsecureSkipVerify: true` needs no request data.",
+  },
+  {
+    heading: "Java and Kotlin (java.*)",
+    prefixes: ["java."],
+    intro: "Run on `.java`, `.kt` and `.kts` files. Servlet, Spring, JAX-RS, Stapler and Ktor request data is followed inside one method to JDBC and JPA SQL, `Runtime.exec` and `ProcessBuilder`, file paths, outbound URLs and the response writer; unsafe deserializers and XML parser factories without DOCTYPE protection need no request data.",
+  },
+  {
+    heading: "C# (cs.*)",
+    prefixes: ["cs."],
+    intro: "Run on `.cs` files. ASP.NET request data (`Request.Query`, `[FromQuery]` and other bound parameters, string parameters of controller actions) is followed inside one method to ADO.NET, Entity Framework and Dapper SQL, `Process.Start` and file paths; `BinaryFormatter` and Json.NET `TypeNameHandling` need no request data.",
+  },
+  {
+    heading: "Ruby and Rails (rb.*)",
+    prefixes: ["rb."],
+    intro: "Run on `.rb` files and `.erb` templates with a bounded Ruby tokenizer. `params`, `cookies` and `request` are followed inside one method to Active Record SQL, `html_safe`/`raw`, `constantize`, `send`, `system` and backticks, and file paths.",
+  },
+  {
     heading: "CI and infrastructure (gha.*, docker.*, sh.*, tf.*, k8s.*)",
     prefixes: ["gha.", "docker.", "sh.", "tf.", "k8s."],
     intro: "Run on GitHub Actions workflows and `action.yml`, Dockerfiles and Containerfiles, `.sh` and `.bash` scripts (and `run:` blocks and `RUN` lines), `.tf` files and Kubernetes manifests, read with a bounded YAML subset reader and line scanners. Nothing is run or planned; only literal values are judged. Suppress with `# kestrix: ignore[id] reason`.",
@@ -341,6 +361,27 @@ raise SystemExit(kestrix_scan.exit_code(report))`,
           "Round 2 helped a little on unseen code: detection 8.3% to 9.1% overall (+0.8 points, paired interval +0.1 to +1.6), mostly in JavaScript and TypeScript, for 3% more alerts.",
           "Bandit still detects more Python (−2.5 points, interval −4.7 to −0.2) at about four times the false alarms. On JS/TS, full ESLint security's lead (−2.0 points, interval −6.3 to +2.8) is not established, at about forty times the false alarms.",
           "Kestrix with Bandit detects 11.8% of Python pairs. test2 is now spent too.",
+        ),
+      ),
+      section(
+        "Go, Java, Kotlin, C# and Ruby (held-out, run once)",
+        p("Phase 4 was tuned on a development split of CVEfixes fix commits in these languages and run once on its held-out split (409 in-scope file pairs from 223 projects), next to gosec 2.30.0 for Go and Opengrep 1.32.0 with the LGPL fork of the Semgrep rules for every language. Brakeman was not run: its licence allows non-commercial use only."),
+        table(
+          ["Tool", "Language", "Detection", "False alarms per KLOC (fixed files)"],
+          [
+            ["kestrix-scan", "all five", "9.0% [4.8, 14.5]", "0.50 [0.13, 1.00]"],
+            ["Opengrep", "all but ERB", "8.8% [4.5, 14.8]", "0.93 [0.55, 1.31]"],
+            ["kestrix-scan", "Java and Kotlin", "10.9% [5.9, 18.4]", "0.20 [0.10, 0.35]"],
+            ["Opengrep", "Java and Kotlin", "5.8% [1.8, 11.6]", "0.34 [0.17, 0.52]"],
+            ["kestrix-scan", "Ruby", "4.7% [1.0, 10.0]", "1.55 [0.11, 2.32]"],
+            ["Opengrep", "Ruby", "11.2% [3.0, 20.3]", "1.91 [1.25, 3.11]"],
+            ["kestrix-scan", "Go", "1.1% [0.0, 6.7]", "0.13 [0.03, 0.26]"],
+            ["gosec 2.30.0", "Go", "6.7% [1.5, 26.5]", "0.78 [0.45, 1.24]"],
+          ],
+        ),
+        list(
+          "Overall Kestrix and Opengrep detect about the same (+0.2 points, paired interval −2.8 to +3.2) and Kestrix raises about half the false alarms. On Java and Kotlin Kestrix is ahead (+5.1 points, +1.7 to +10.1); on Ruby Opengrep is ahead (−6.5, −15.1 to +1.0); on Go gosec is ahead through untainted file-path and command checks at six times the alerts.",
+          "Development figures overstated two families: Java XXE fell from 77.5% to 17.9% and Ruby SQL injection from 29.1% to 10.0%. C# and Kotlin have too few pairs to judge.",
         ),
       ),
       section(

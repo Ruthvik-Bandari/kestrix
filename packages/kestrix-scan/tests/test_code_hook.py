@@ -223,6 +223,24 @@ def test_hook_scans_php_and_sql_files(tmp_path: Path) -> None:
         assert context is not None and rule in context, name
 
 
+def test_hook_scans_go_java_csharp_and_ruby_files(tmp_path: Path) -> None:
+    for name, text, rule in (
+        ("main.go", "func f() {\n\tc := &tls.Config{InsecureSkipVerify: true}\n}\n", "go.tls.insecure_skip_verify"),
+        (
+            "A.java",
+            "class A { void f() { Object o = new ObjectInputStream(in).readObject(); } }\n",
+            "java.deserialize.unsafe",
+        ),
+        ("C.cs", "class C { void F() { var b = new BinaryFormatter(); } }\n", "cs.deserialize.unsafe"),
+        ("app.rb", 'def f\n  system("ls #{params[:d]}")\nend\n', "rb.exec.command"),
+    ):
+        target = tmp_path / name
+        target.write_text(text)
+        payload = {"tool_name": "Write", "tool_input": {"file_path": str(target)}, "cwd": str(tmp_path)}
+        context = _context({**payload, "tool_response": {"type": "create"}})
+        assert context is not None and rule in context, name
+
+
 def test_hook_context_leaves_out_low_severity_web_findings(tmp_path: Path) -> None:
     target = tmp_path / "site.css"
     target.write_text("@import url(http://example.com/a.css);\n")

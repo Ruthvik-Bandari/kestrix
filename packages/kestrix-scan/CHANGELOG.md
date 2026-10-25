@@ -5,6 +5,27 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **Phase 4 of the language roadmap: Go, Java, Kotlin, C# and Ruby (21 rules, 133 in all; measured with a held-out run).**
+  - New files read: `.go`, `.java`, `.kt`, `.kts`, `.cs`, `.rb`, `.erb` (`c_tokens.py`, one bounded stdlib tokenizer for Go, Java, Kotlin and C#;
+    `ruby_tokens.py`; `server_index.py`, in-function taint with request sources for `net/http`, gin, echo, fiber, chi, Gitea, servlets, Spring,
+    JAX-RS, Stapler, Ktor, ASP.NET and Rails/Sinatra, plus archive-entry and uploaded-file names; `server_rules.py`). `target`, `.gradle` and `obj`
+    directories are skipped. The Claude plugin hooks scan the new extensions. Go, Maven, RubyGems and NuGet lockfiles were already checked against
+    OSV (tests pass) and are documented.
+  - Rules: `go.exec.command` (CWE-78), `go.sql.injection` (CWE-89), `go.xss.unescaped` (CWE-79), `go.tls.insecure_skip_verify` (CWE-295);
+    `java.sql.injection` (CWE-89), `java.exec.command` (CWE-78), `java.deserialize.unsafe` (CWE-502), `java.xxe.parser` (CWE-611),
+    `java.path.traversal` (CWE-22), `java.ssrf.request` (CWE-918), `java.xss.response` (CWE-79), all also for Kotlin; `cs.sql.injection` (CWE-89),
+    `cs.exec.process` (CWE-78), `cs.deserialize.unsafe` (CWE-502), `cs.path.traversal` (CWE-22); `rb.sql.injection` (CWE-89), `rb.xss.html_safe`
+    (CWE-79, also ERB), `rb.reflection.constantize` (CWE-470), `rb.reflection.send` (CWE-470), `rb.exec.command` (CWE-78), `rb.path.traversal` (CWE-22).
+  - Measured on a new CVEfixes benchmark (dev 3,097 pairs from 530 projects; held-out 1,278 from 223) next to gosec 2.30.0 (Apache-2.0) and Opengrep
+    1.32.0 with opengrep-rules (LGPL-2.1; rules LGPL-2.1 with the Commons Clause). **Held-out, run once: Kestrix 9.0% [4.8, 14.5] of 409 in-scope
+    pairs at 0.50 alerts per KLOC; Opengrep 8.8% [4.5, 14.8] at 0.93 (difference +0.2 [-2.8, +3.2]); Java and Kotlin +5.1 points [+1.7, +10.1] over
+    Opengrep; gosec 6.7% against Kestrix 1.1% on Go.** Dev: 10.7% [5.0, 17.9] and 0.45. Java XXE fell from 77.5% on dev to 17.9% and Ruby SQL from
+    29.1% to 10.0%. Clean projects: 0.003 to 0.42 findings per KLOC, except Discourse at 2.53 (mostly the low-confidence `html_safe` finding in specs).
+    No slowdown on the Python/JavaScript/TypeScript files (42.4 and 43.4 files per second, identical findings).
+  - Written, tested and measured but **not shipped** (no dev detection): `go.path.traversal`, `go.ssrf.request`, `cs.ssrf.request`, Go
+    response-writer XSS and `template.HTML` of a non-literal. Untainted built SQL counts parameters and follows a lone query name (measured: 4.8 and
+    7.0 alerts per extra detected pair).
+  - `kestrixcodebench`: `php-dump --label-set p4`, `--only-language p4`, the `gosec` and `opengrep` scan tools, `p4-corpus`, Phase 4 language subsets.
 - **Phase 2 of the language roadmap: PHP and SQL (12 rules, 112 in all; measured with a held-out run).**
   - New files read: `.php`, `.phtml`, `.blade.php` (a bounded stdlib tokenizer, `php_tokens.py`, an index with in-function taint, `php_index.py`,
     and `php_rules.py`) and `.sql` (`sql_rules.py`). Request sources: `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, request fields of `$_SERVER`,

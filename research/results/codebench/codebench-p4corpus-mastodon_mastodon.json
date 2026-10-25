@@ -1,0 +1,34 @@
+{
+  "all_rules_per_kloc": 0.2211,
+  "files_scanned": {
+    ".erb": 50,
+    ".rb": 3350
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".erb": 0.5,
+    ".rb": 198.5
+  },
+  "label": "mastodon_mastodon",
+  "roots": [
+    "mastodon_mastodon"
+  ],
+  "rules": {
+    "rb.sql.injection": {
+      "by_extension": {
+        ".rb": 8
+      },
+      "findings": 8,
+      "per_kloc": 0.0402
+    },
+    "rb.xss.html_safe": {
+      "by_extension": {
+        ".erb": 6,
+        ".rb": 30
+      },
+      "findings": 36,
+      "per_kloc": 0.1809
+    }
+  },
+  "schema_version": 1
+}

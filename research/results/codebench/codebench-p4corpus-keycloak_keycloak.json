@@ -1,0 +1,40 @@
+{
+  "all_rules_per_kloc": 0.0295,
+  "files_scanned": {
+    ".java": 8624
+  },
+  "files_skipped": {
+    ".java:duplicate": 2
+  },
+  "kloc": {
+    ".java": 1289.2
+  },
+  "label": "keycloak_keycloak",
+  "roots": [
+    "keycloak_keycloak"
+  ],
+  "rules": {
+    "java.deserialize.unsafe": {
+      "by_extension": {
+        ".java": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0023
+    },
+    "java.sql.injection": {
+      "by_extension": {
+        ".java": 21
+      },
+      "findings": 21,
+      "per_kloc": 0.0163
+    },
+    "java.xxe.parser": {
+      "by_extension": {
+        ".java": 14
+      },
+      "findings": 14,
+      "per_kloc": 0.0109
+    }
+  },
+  "schema_version": 1
+}

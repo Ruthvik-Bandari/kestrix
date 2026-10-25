@@ -2920,6 +2920,552 @@
                   "CWE-427"
                 ]
               }
+            },
+            {
+              "id": "go.exec.command",
+              "name": "GoExecCommand",
+              "shortDescription": {
+                "text": "exec.Command with a program or arguments from request data"
+              },
+              "fullDescription": {
+                "text": "exec.Command runs the program it names with the arguments it is given. If a request value chooses the program, or reaches the script of 'sh -c', an attacker runs commands of their choosing; as an ordinary argument it can still add options such as '--output=/etc/...' (argument injection). The finding appears when a value of an *http.Request (FormValue, URL, Header, Body ...), a gin, echo, fiber, chi or Gitea-style context, or mux.Vars reaches exec.Command, exec.CommandContext, syscall.Exec or os.StartProcess inside one function (with a trace). A value that went through strconv.Atoi or filepath.Base is not reported."
+              },
+              "help": {
+                "text": "Run a fixed program with fixed options and pass request values only as separate arguments after '--', checked against an allowlist. Never pass a request value to 'sh -c'; when a shell is unavoidable, map the value to a fixed string.",
+                "markdown": "**Why:** exec.Command runs the program it names with the arguments it is given. If a request value chooses the program, or reaches the script of 'sh -c', an attacker runs commands of their choosing; as an ordinary argument it can still add options such as '--output=/etc/...' (argument injection). The finding appears when a value of an *http.Request (FormValue, URL, Header, Body ...), a gin, echo, fiber, chi or Gitea-style context, or mux.Vars reaches exec.Command, exec.CommandContext, syscall.Exec or os.StartProcess inside one function (with a trace). A value that went through strconv.Atoi or filepath.Base is not reported.\n\n**Fix:** Run a fixed program with fixed options and pass request values only as separate arguments after '--', checked against an allowlist. Never pass a request value to 'sh -c'; when a shell is unavoidable, map the value to a fixed string."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "go.sql.injection",
+              "name": "GoSqlInjection",
+              "shortDescription": {
+                "text": "SQL text built from request data (or built from a value that is not a literal)"
+              },
+              "fullDescription": {
+                "text": "database/sql's Query, QueryRow, Exec and Prepare (and their Context forms), sqlx's Queryx, MustExec and NamedExec, and GORM's Raw, Exec, Where, Order, Group, Having and Joins run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one function (with a trace) and medium with low confidence when the text is built with + or fmt.Sprintf from a value that is not a literal: a parameter, a call result, a member, or a variable assigned in the function (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key."
+              },
+              "help": {
+                "text": "Use placeholders and pass the values as arguments: db.Query(\"SELECT * FROM users WHERE id = $1\", id) (? for MySQL and SQLite), or GORM's db.Where(\"name = ?\", name). Names of tables and columns cannot be bound, so check them against an allowlist.",
+                "markdown": "**Why:** database/sql's Query, QueryRow, Exec and Prepare (and their Context forms), sqlx's Queryx, MustExec and NamedExec, and GORM's Raw, Exec, Where, Order, Group, Having and Joins run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one function (with a trace) and medium with low confidence when the text is built with + or fmt.Sprintf from a value that is not a literal: a parameter, a call result, a member, or a variable assigned in the function (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key.\n\n**Fix:** Use placeholders and pass the values as arguments: db.Query(\"SELECT * FROM users WHERE id = $1\", id) (? for MySQL and SQLite), or GORM's db.Where(\"name = ?\", name). Names of tables and columns cannot be bound, so check them against an allowlist."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "go.xss.unescaped",
+              "name": "GoXssUnescaped",
+              "shortDescription": {
+                "text": "Request data marked as safe HTML, JavaScript or URL (template.HTML and its relatives)"
+              },
+              "fullDescription": {
+                "text": "html/template escapes every value except those of the types template.HTML, template.JS, template.URL, template.HTMLAttr, template.CSS, template.JSStr and template.Srcset, which it trusts as already safe. Converting request data to one of them puts it into the page as markup or script (cross-site scripting). The finding appears when request data reaches the conversion inside one function (with a trace)."
+              },
+              "help": {
+                "text": "Pass plain strings to html/template and let it escape them; keep template.HTML for markup your own code built from constants, or sanitize user HTML first (for example with bluemonday).",
+                "markdown": "**Why:** html/template escapes every value except those of the types template.HTML, template.JS, template.URL, template.HTMLAttr, template.CSS, template.JSStr and template.Srcset, which it trusts as already safe. Converting request data to one of them puts it into the page as markup or script (cross-site scripting). The finding appears when request data reaches the conversion inside one function (with a trace).\n\n**Fix:** Pass plain strings to html/template and let it escape them; keep template.HTML for markup your own code built from constants, or sanitize user HTML first (for example with bluemonday)."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "go.tls.insecure_skip_verify",
+              "name": "GoTlsInsecureSkipVerify",
+              "shortDescription": {
+                "text": "TLS certificate verification turned off (InsecureSkipVerify: true)"
+              },
+              "fullDescription": {
+                "text": "With InsecureSkipVerify set to true, crypto/tls accepts any certificate the server presents and any host name in it. Anyone who can intercept the connection (on the same network, a hostile proxy, a DNS spoof) can read and change the traffic, including credentials and tokens."
+              },
+              "help": {
+                "text": "Remove InsecureSkipVerify. For a private or self-signed certificate, add its CA to a CertPool and set RootCAs; for a custom check, keep verification on and add VerifyPeerCertificate or VerifyConnection.",
+                "markdown": "**Why:** With InsecureSkipVerify set to true, crypto/tls accepts any certificate the server presents and any host name in it. Anyone who can intercept the connection (on the same network, a hostile proxy, a DNS spoof) can read and change the traffic, including credentials and tokens.\n\n**Fix:** Remove InsecureSkipVerify. For a private or self-signed certificate, add its CA to a CertPool and set RootCAs; for a custom check, keep verification on and add VerifyPeerCertificate or VerifyConnection."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "high",
+                "tags": [
+                  "security",
+                  "CWE-295"
+                ]
+              }
+            },
+            {
+              "id": "java.sql.injection",
+              "name": "JavaSqlInjection",
+              "shortDescription": {
+                "text": "SQL text built from request data (or built from a value that is not a literal), Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "JDBC's Statement.executeQuery, execute, executeUpdate and addBatch, Connection.prepareStatement and prepareCall (with text built before the call), JPA and Hibernate createQuery and createNativeQuery, Spring's JdbcTemplate query, queryForObject, queryForList and update, and Android's rawQuery and execSQL run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is built with +, a StringBuilder, String.format or a Kotlin template from a value that is not a literal: a parameter, a call result, or a variable assigned in the method (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key."
+              },
+              "help": {
+                "text": "Use a PreparedStatement with ? placeholders and setString/setInt, JPA parameters (:name with setParameter), or JdbcTemplate's query(sql, args). Names of tables and columns cannot be bound, so check them against an allowlist.",
+                "markdown": "**Why:** JDBC's Statement.executeQuery, execute, executeUpdate and addBatch, Connection.prepareStatement and prepareCall (with text built before the call), JPA and Hibernate createQuery and createNativeQuery, Spring's JdbcTemplate query, queryForObject, queryForList and update, and Android's rawQuery and execSQL run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is built with +, a StringBuilder, String.format or a Kotlin template from a value that is not a literal: a parameter, a call result, or a variable assigned in the method (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key.\n\n**Fix:** Use a PreparedStatement with ? placeholders and setString/setInt, JPA parameters (:name with setParameter), or JdbcTemplate's query(sql, args). Names of tables and columns cannot be bound, so check them against an allowlist."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "java.exec.command",
+              "name": "JavaExecCommand",
+              "shortDescription": {
+                "text": "Runtime.exec or ProcessBuilder with request data, Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "Runtime.getRuntime().exec() and new ProcessBuilder() start the program they are given. A request value that chooses the program, or reaches the script of 'sh -c' or 'cmd /c', runs commands of the attacker's choosing; Runtime.exec(String) also splits one string on spaces, so a value in it can add arguments. The finding appears when request data (a servlet or Stapler request, a @RequestParam, @PathVariable or @QueryParameter value, Ktor's call.parameters ...) reaches the call inside one method (with a trace)."
+              },
+              "help": {
+                "text": "Use ProcessBuilder with a fixed program and a list of arguments, check request values against an allowlist, and pass them after '--'. Never build a shell command string from request data.",
+                "markdown": "**Why:** Runtime.getRuntime().exec() and new ProcessBuilder() start the program they are given. A request value that chooses the program, or reaches the script of 'sh -c' or 'cmd /c', runs commands of the attacker's choosing; Runtime.exec(String) also splits one string on spaces, so a value in it can add arguments. The finding appears when request data (a servlet or Stapler request, a @RequestParam, @PathVariable or @QueryParameter value, Ktor's call.parameters ...) reaches the call inside one method (with a trace).\n\n**Fix:** Use ProcessBuilder with a fixed program and a list of arguments, check request values against an allowlist, and pass them after '--'. Never build a shell command string from request data."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "java.deserialize.unsafe",
+              "name": "JavaDeserializeUnsafe",
+              "shortDescription": {
+                "text": "Deserialization that lets the data choose the class (ObjectInputStream, XMLDecoder, XStream, Jackson default typing, SnakeYAML), Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "new ObjectInputStream() and new XMLDecoder() rebuild objects of whatever classes the stream names, and so do XStream.fromXML() without type permissions, Jackson with enableDefaultTyping/activateDefaultTyping or @JsonTypeInfo(use = Id.CLASS or MINIMAL_CLASS), and SnakeYAML's new Yaml() without a SafeConstructor (before 2.0). Bytes from an attacker can then run code through gadget classes on the class path. ObjectInputStream is not reported in a file that overrides resolveClass or sets an ObjectInputFilter, XStream not where allowTypes/addPermission is called, SnakeYAML not where a SafeConstructor or LoaderOptions appears."
+              },
+              "help": {
+                "text": "Exchange data as JSON or another data-only format mapped to fixed classes. If Java serialization is unavoidable, set an ObjectInputFilter (jdk.serialFilter or ObjectInputStream.setObjectInputFilter) that allows only the expected classes; give XStream an allowlist of types; use Jackson without default typing or with a PolymorphicTypeValidator that allows named base types; construct SnakeYAML with a SafeConstructor.",
+                "markdown": "**Why:** new ObjectInputStream() and new XMLDecoder() rebuild objects of whatever classes the stream names, and so do XStream.fromXML() without type permissions, Jackson with enableDefaultTyping/activateDefaultTyping or @JsonTypeInfo(use = Id.CLASS or MINIMAL_CLASS), and SnakeYAML's new Yaml() without a SafeConstructor (before 2.0). Bytes from an attacker can then run code through gadget classes on the class path. ObjectInputStream is not reported in a file that overrides resolveClass or sets an ObjectInputFilter, XStream not where allowTypes/addPermission is called, SnakeYAML not where a SafeConstructor or LoaderOptions appears.\n\n**Fix:** Exchange data as JSON or another data-only format mapped to fixed classes. If Java serialization is unavoidable, set an ObjectInputFilter (jdk.serialFilter or ObjectInputStream.setObjectInputFilter) that allows only the expected classes; give XStream an allowlist of types; use Jackson without default typing or with a PolymorphicTypeValidator that allows named base types; construct SnakeYAML with a SafeConstructor."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ]
+              }
+            },
+            {
+              "id": "java.xxe.parser",
+              "name": "JavaXxeParser",
+              "shortDescription": {
+                "text": "XML parser created without disabling DOCTYPEs or external entities, Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "DocumentBuilderFactory, SAXParserFactory, XMLInputFactory, TransformerFactory, SchemaFactory, XMLReaderFactory and dom4j's SAXReader or JDOM's SAXBuilder resolve DOCTYPE declarations and external entities by default. Parsing XML from outside can then read local files, reach internal URLs or exhaust memory (XML external entities). The finding appears where such a parser is created in a file that sets none of the protections: disallow-doctype-decl, the external-entity features, XMLConstants.FEATURE_SECURE_PROCESSING or ACCESS_EXTERNAL_DTD, IS_SUPPORTING_EXTERNAL_ENTITIES/SUPPORT_DTD false, or an entity resolver."
+              },
+              "help": {
+                "text": "Turn DOCTYPEs off on the factory before using it: factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true). Where DOCTYPEs are needed, turn off external-general-entities, external-parameter-entities and load-external-dtd, and set XMLConstants.ACCESS_EXTERNAL_DTD and ACCESS_EXTERNAL_SCHEMA to \"\". For StAX, set XMLInputFactory.SUPPORT_DTD and IS_SUPPORTING_EXTERNAL_ENTITIES to false.",
+                "markdown": "**Why:** DocumentBuilderFactory, SAXParserFactory, XMLInputFactory, TransformerFactory, SchemaFactory, XMLReaderFactory and dom4j's SAXReader or JDOM's SAXBuilder resolve DOCTYPE declarations and external entities by default. Parsing XML from outside can then read local files, reach internal URLs or exhaust memory (XML external entities). The finding appears where such a parser is created in a file that sets none of the protections: disallow-doctype-decl, the external-entity features, XMLConstants.FEATURE_SECURE_PROCESSING or ACCESS_EXTERNAL_DTD, IS_SUPPORTING_EXTERNAL_ENTITIES/SUPPORT_DTD false, or an entity resolver.\n\n**Fix:** Turn DOCTYPEs off on the factory before using it: factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true). Where DOCTYPEs are needed, turn off external-general-entities, external-parameter-entities and load-external-dtd, and set XMLConstants.ACCESS_EXTERNAL_DTD and ACCESS_EXTERNAL_SCHEMA to \"\". For StAX, set XMLInputFactory.SUPPORT_DTD and IS_SUPPORTING_EXTERNAL_ENTITIES to false."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-611"
+                ]
+              }
+            },
+            {
+              "id": "java.path.traversal",
+              "name": "JavaPathTraversal",
+              "shortDescription": {
+                "text": "File path built from request data, Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "new File(), new FileInputStream(), new FileOutputStream(), new FileReader(), Paths.get(), Path.of() and the Files methods use the path they are given. A request value (or the name of an archive entry, zip slip) with '../' or an absolute path in it reaches files outside the intended directory."
+              },
+              "help": {
+                "text": "Resolve the value against a fixed base directory, normalize it, and check the result still starts with the base: Path p = base.resolve(name).normalize(); if (!p.startsWith(base)) reject. For a file name, keep only Paths.get(name).getFileName() or FilenameUtils.getName().",
+                "markdown": "**Why:** new File(), new FileInputStream(), new FileOutputStream(), new FileReader(), Paths.get(), Path.of() and the Files methods use the path they are given. A request value (or the name of an archive entry, zip slip) with '../' or an absolute path in it reaches files outside the intended directory.\n\n**Fix:** Resolve the value against a fixed base directory, normalize it, and check the result still starts with the base: Path p = base.resolve(name).normalize(); if (!p.startsWith(base)) reject. For a file name, keep only Paths.get(name).getFileName() or FilenameUtils.getName()."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ]
+              }
+            },
+            {
+              "id": "java.ssrf.request",
+              "name": "JavaSsrfRequest",
+              "shortDescription": {
+                "text": "Outbound request to a URL from request data, Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "new URL(), URI.create(), Apache HttpClient's new HttpGet()/HttpPost(), Spring's RestTemplate getForObject/postForObject/exchange, OkHttp's Request.Builder().url() and Jsoup.connect() point at whatever URL they are given. If the request chooses it, the server can be made to reach internal services or cloud metadata endpoints (server-side request forgery). Form-validation endpoints that test a user-supplied URL are a common case."
+              },
+              "help": {
+                "text": "Allow only known schemes and hosts (compare the parsed URI's host with an allowlist), or map a request value to a fixed URL. When any host must be allowed, resolve it and refuse private, loopback and link-local addresses, and turn off automatic redirects. Check the permission of the user before a validation endpoint connects anywhere.",
+                "markdown": "**Why:** new URL(), URI.create(), Apache HttpClient's new HttpGet()/HttpPost(), Spring's RestTemplate getForObject/postForObject/exchange, OkHttp's Request.Builder().url() and Jsoup.connect() point at whatever URL they are given. If the request chooses it, the server can be made to reach internal services or cloud metadata endpoints (server-side request forgery). Form-validation endpoints that test a user-supplied URL are a common case.\n\n**Fix:** Allow only known schemes and hosts (compare the parsed URI's host with an allowlist), or map a request value to a fixed URL. When any host must be allowed, resolve it and refuse private, loopback and link-local addresses, and turn off automatic redirects. Check the permission of the user before a validation endpoint connects anywhere."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-918"
+                ]
+              }
+            },
+            {
+              "id": "java.xss.response",
+              "name": "JavaXssResponse",
+              "shortDescription": {
+                "text": "Request data written into the response unescaped, Java and Kotlin"
+              },
+              "fullDescription": {
+                "text": "response.getWriter().write/print/println, getOutputStream().print and a JSP-style out.print write their argument into the page as is, and Ktor's call.respondText with an HTML content type does the same. A request value in it becomes markup the browser runs as script (reflected cross-site scripting)."
+              },
+              "help": {
+                "text": "Render through a template engine that escapes (Thymeleaf, JSP with <c:out>, Jelly with escape-by-default), or escape for the context with the OWASP Java Encoder (Encode.forHtml) or Spring's HtmlUtils.htmlEscape, and send plain text as text/plain.",
+                "markdown": "**Why:** response.getWriter().write/print/println, getOutputStream().print and a JSP-style out.print write their argument into the page as is, and Ktor's call.respondText with an HTML content type does the same. A request value in it becomes markup the browser runs as script (reflected cross-site scripting).\n\n**Fix:** Render through a template engine that escapes (Thymeleaf, JSP with <c:out>, Jelly with escape-by-default), or escape for the context with the OWASP Java Encoder (Encode.forHtml) or Spring's HtmlUtils.htmlEscape, and send plain text as text/plain."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "cs.sql.injection",
+              "name": "CsSqlInjection",
+              "shortDescription": {
+                "text": "SQL text built from request data (or built from a value that is not a literal), C#"
+              },
+              "fullDescription": {
+                "text": "new SqlCommand(), SqlDataAdapter and the other ADO.NET commands (OleDb, Odbc, MySQL, Npgsql, SQLite, Oracle), CommandText, Entity Framework's ExecuteSqlRaw, FromSqlRaw and ExecuteSqlCommand, and Dapper's Query and Execute run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data (Request.Query, Request.Form, a [FromQuery]/[FromForm]/[FromRoute]/[FromBody] parameter or a string parameter of a controller action) reaches the call inside one method (with a trace), and medium with low confidence when the text is built with +, string.Format or an interpolated string from a value that is not a literal (a parameter, a call result or a local variable; not a constant or a table, column or sort-key name)."
+              },
+              "help": {
+                "text": "Use parameters: new SqlCommand(\"SELECT * FROM Users WHERE Id = @id\", conn) with cmd.Parameters.AddWithValue(\"@id\", id), Dapper's anonymous parameter object, or Entity Framework's FromSql/FromSqlInterpolated and ExecuteSql, which turn interpolated values into parameters. Never pass an interpolated string to the *Raw methods.",
+                "markdown": "**Why:** new SqlCommand(), SqlDataAdapter and the other ADO.NET commands (OleDb, Odbc, MySQL, Npgsql, SQLite, Oracle), CommandText, Entity Framework's ExecuteSqlRaw, FromSqlRaw and ExecuteSqlCommand, and Dapper's Query and Execute run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data (Request.Query, Request.Form, a [FromQuery]/[FromForm]/[FromRoute]/[FromBody] parameter or a string parameter of a controller action) reaches the call inside one method (with a trace), and medium with low confidence when the text is built with +, string.Format or an interpolated string from a value that is not a literal (a parameter, a call result or a local variable; not a constant or a table, column or sort-key name).\n\n**Fix:** Use parameters: new SqlCommand(\"SELECT * FROM Users WHERE Id = @id\", conn) with cmd.Parameters.AddWithValue(\"@id\", id), Dapper's anonymous parameter object, or Entity Framework's FromSql/FromSqlInterpolated and ExecuteSql, which turn interpolated values into parameters. Never pass an interpolated string to the *Raw methods."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "cs.exec.process",
+              "name": "CsExecProcess",
+              "shortDescription": {
+                "text": "Process.Start or ProcessStartInfo with request data, C#"
+              },
+              "fullDescription": {
+                "text": "Process.Start(), new ProcessStartInfo() and its FileName and Arguments properties start the program they are given with an argument string that the program splits itself. A request value that chooses the program, reaches 'cmd.exe /c' or 'sh -c', or adds to the argument string can run other commands or add options."
+              },
+              "help": {
+                "text": "Start a fixed program and add request values to ProcessStartInfo.ArgumentList (one item per argument), after checking them against an allowlist; keep UseShellExecute false. Never build a 'cmd /c' or 'sh -c' string from request data.",
+                "markdown": "**Why:** Process.Start(), new ProcessStartInfo() and its FileName and Arguments properties start the program they are given with an argument string that the program splits itself. A request value that chooses the program, reaches 'cmd.exe /c' or 'sh -c', or adds to the argument string can run other commands or add options.\n\n**Fix:** Start a fixed program and add request values to ProcessStartInfo.ArgumentList (one item per argument), after checking them against an allowlist; keep UseShellExecute false. Never build a 'cmd /c' or 'sh -c' string from request data."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "cs.deserialize.unsafe",
+              "name": "CsDeserializeUnsafe",
+              "shortDescription": {
+                "text": "Deserializer that lets the data choose the type (BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter, ObjectStateFormatter, Json.NET TypeNameHandling), C#"
+              },
+              "fullDescription": {
+                "text": "BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter and ObjectStateFormatter create whatever .NET types the payload names; Microsoft states BinaryFormatter cannot be made safe and removed it in .NET 9. Json.NET with TypeNameHandling other than None, and JavaScriptSerializer with a SimpleTypeResolver, do the same for JSON. A payload from an attacker can run code through gadget types. TypeNameHandling is not reported in a file that sets a SerializationBinder."
+              },
+              "help": {
+                "text": "Use System.Text.Json or DataContractSerializer with known types, or Json.NET with TypeNameHandling.None. If type names are needed, set an ISerializationBinder that allows only your own types.",
+                "markdown": "**Why:** BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter and ObjectStateFormatter create whatever .NET types the payload names; Microsoft states BinaryFormatter cannot be made safe and removed it in .NET 9. Json.NET with TypeNameHandling other than None, and JavaScriptSerializer with a SimpleTypeResolver, do the same for JSON. A payload from an attacker can run code through gadget types. TypeNameHandling is not reported in a file that sets a SerializationBinder.\n\n**Fix:** Use System.Text.Json or DataContractSerializer with known types, or Json.NET with TypeNameHandling.None. If type names are needed, set an ISerializationBinder that allows only your own types."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-502"
+                ]
+              }
+            },
+            {
+              "id": "cs.path.traversal",
+              "name": "CsPathTraversal",
+              "shortDescription": {
+                "text": "File path built from request data, C#"
+              },
+              "fullDescription": {
+                "text": "File.ReadAllText, File.OpenRead, File.WriteAllBytes, File.Delete, the Directory methods, new FileStream(), new StreamReader(), PhysicalFile() and ExtractToFile() use the path they are given; Path.Combine keeps a rooted second argument and does not remove '..'. A request value, or the FullName of an archive entry (zip slip), can reach files outside the intended directory."
+              },
+              "help": {
+                "text": "Use Path.GetFileName for a file name, or combine with a fixed root, call Path.GetFullPath, and check the result starts with the root (plus a directory separator) before opening it.",
+                "markdown": "**Why:** File.ReadAllText, File.OpenRead, File.WriteAllBytes, File.Delete, the Directory methods, new FileStream(), new StreamReader(), PhysicalFile() and ExtractToFile() use the path they are given; Path.Combine keeps a rooted second argument and does not remove '..'. A request value, or the FullName of an archive entry (zip slip), can reach files outside the intended directory.\n\n**Fix:** Use Path.GetFileName for a file name, or combine with a fixed root, call Path.GetFullPath, and check the result starts with the root (plus a directory separator) before opening it."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ]
+              }
+            },
+            {
+              "id": "rb.sql.injection",
+              "name": "RbSqlInjection",
+              "shortDescription": {
+                "text": "SQL text built from request data (or built from a value that is not a literal), Ruby on Rails"
+              },
+              "fullDescription": {
+                "text": "Active Record's find_by_sql, where, order, pluck, select, joins, group, having, from, exists?, delete_all, update_all and the connection's execute, exec_query and select_* put a string argument into the SQL as is. params, cookies or request data interpolated into it ('#{params[:id]}') or concatenated can close a string and change the query; order(params[:sort]) is a classic case. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is interpolated or concatenated from a value that is not a literal (a parameter, a call result, an instance variable or a local variable; not a constant or a table, column or sort-key name). Hash conditions (where(name: value)) and placeholders (where('name = ?', value)) are not reported."
+              },
+              "help": {
+                "text": "Pass values separately: where(name: value), where('name = ?', value), where('name = :name', name: value), or sanitize_sql_array. For order and column names, map the request value to an allowlist of columns and directions.",
+                "markdown": "**Why:** Active Record's find_by_sql, where, order, pluck, select, joins, group, having, from, exists?, delete_all, update_all and the connection's execute, exec_query and select_* put a string argument into the SQL as is. params, cookies or request data interpolated into it ('#{params[:id]}') or concatenated can close a string and change the query; order(params[:sort]) is a classic case. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is interpolated or concatenated from a value that is not a literal (a parameter, a call result, an instance variable or a local variable; not a constant or a table, column or sort-key name). Hash conditions (where(name: value)) and placeholders (where('name = ?', value)) are not reported.\n\n**Fix:** Pass values separately: where(name: value), where('name = ?', value), where('name = :name', name: value), or sanitize_sql_array. For order and column names, map the request value to an allowlist of columns and directions."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-89"
+                ]
+              }
+            },
+            {
+              "id": "rb.xss.html_safe",
+              "name": "RbXssHtmlSafe",
+              "shortDescription": {
+                "text": "html_safe, raw or <%== %> of a value that is not a literal, Ruby on Rails"
+              },
+              "fullDescription": {
+                "text": "Rails escapes every value printed in a view unless it is marked safe. html_safe, raw() and ERB's <%== %> mark it safe, so markup in it runs as script (cross-site scripting). The finding is high when the value comes from params, cookies or request (with a trace in Ruby files), and low with low confidence when it is only not a literal."
+              },
+              "help": {
+                "text": "Print the value with <%= %> and let Rails escape it. For user-supplied HTML that must stay HTML, use sanitize(value) with an allowlist of tags; build markup with content_tag and tag helpers, which escape their contents.",
+                "markdown": "**Why:** Rails escapes every value printed in a view unless it is marked safe. html_safe, raw() and ERB's <%== %> mark it safe, so markup in it runs as script (cross-site scripting). The finding is high when the value comes from params, cookies or request (with a trace in Ruby files), and low with low confidence when it is only not a literal.\n\n**Fix:** Print the value with <%= %> and let Rails escape it. For user-supplied HTML that must stay HTML, use sanitize(value) with an allowlist of tags; build markup with content_tag and tag helpers, which escape their contents."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-79"
+                ]
+              }
+            },
+            {
+              "id": "rb.reflection.constantize",
+              "name": "RbReflectionConstantize",
+              "shortDescription": {
+                "text": "constantize or const_get of request data, Ruby on Rails"
+              },
+              "fullDescription": {
+                "text": "constantize, safe_constantize and Object.const_get turn a string into whatever class or module it names. If the request chooses the name, the code instantiates or calls methods on classes the developer never meant to expose, which can lead to code execution or data exposure (unsafe reflection)."
+              },
+              "help": {
+                "text": "Map the request value to a class through an explicit allowlist, for example { 'user' => User, 'admin' => Admin }.fetch(params[:type]).",
+                "markdown": "**Why:** constantize, safe_constantize and Object.const_get turn a string into whatever class or module it names. If the request chooses the name, the code instantiates or calls methods on classes the developer never meant to expose, which can lead to code execution or data exposure (unsafe reflection).\n\n**Fix:** Map the request value to a class through an explicit allowlist, for example { 'user' => User, 'admin' => Admin }.fetch(params[:type])."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-470"
+                ]
+              }
+            },
+            {
+              "id": "rb.reflection.send",
+              "name": "RbReflectionSend",
+              "shortDescription": {
+                "text": "send, public_send or try with a method name from request data, Ruby"
+              },
+              "fullDescription": {
+                "text": "send, __send__, public_send and try call the method they are given by name. If the request chooses the name, it can call any method of the object, including private ones with send (for example destroy, update or system through Kernel)."
+              },
+              "help": {
+                "text": "Check the name against an allowlist of permitted methods first (ALLOWED.include?(name)), or dispatch through a case statement or a hash of lambdas.",
+                "markdown": "**Why:** send, __send__, public_send and try call the method they are given by name. If the request chooses the name, it can call any method of the object, including private ones with send (for example destroy, update or system through Kernel).\n\n**Fix:** Check the name against an allowlist of permitted methods first (ALLOWED.include?(name)), or dispatch through a case statement or a hash of lambdas."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-470"
+                ]
+              }
+            },
+            {
+              "id": "rb.exec.command",
+              "name": "RbExecCommand",
+              "shortDescription": {
+                "text": "Shell command built from request data, Ruby"
+              },
+              "fullDescription": {
+                "text": "system, exec, spawn, IO.popen, Open3.capture2/capture3/popen3 with one string, backticks and %x() pass the command to a shell. Request data interpolated into it can add ';', '&&' or '$(...)' and run other commands."
+              },
+              "help": {
+                "text": "Pass the program and each argument separately (system('convert', path, out)), which runs without a shell, and check request values against an allowlist; Shellwords.escape when a shell string is unavoidable.",
+                "markdown": "**Why:** system, exec, spawn, IO.popen, Open3.capture2/capture3/popen3 with one string, backticks and %x() pass the command to a shell. Request data interpolated into it can add ';', '&&' or '$(...)' and run other commands.\n\n**Fix:** Pass the program and each argument separately (system('convert', path, out)), which runs without a shell, and check request values against an allowlist; Shellwords.escape when a shell string is unavoidable."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "rb.path.traversal",
+              "name": "RbPathTraversal",
+              "shortDescription": {
+                "text": "File path built from request data, Ruby"
+              },
+              "fullDescription": {
+                "text": "File.read, File.open, File.write, IO.read, Dir.glob, the FileUtils methods, send_file and render file: use the path they are given. A request value with '../' or an absolute path in it reaches files outside the intended directory; File.join does not stop that."
+              },
+              "help": {
+                "text": "Use File.basename for a file name, or expand the path against a fixed root (File.expand_path(name, root)) and check it starts with the root plus a separator before use; send files by a looked-up record rather than a request path.",
+                "markdown": "**Why:** File.read, File.open, File.write, IO.read, Dir.glob, the FileUtils methods, send_file and render file: use the path they are given. A request value with '../' or an absolute path in it reaches files outside the intended directory; File.join does not stop that.\n\n**Fix:** Use File.basename for a file name, or expand the path against a fixed root (File.expand_path(name, root)) and check it starts with the root plus a separator before use; send files by a looked-up record rather than a request path."
+              },
+              "helpUri": "https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md#rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "precision": "medium",
+                "tags": [
+                  "security",
+                  "CWE-22"
+                ]
+              }
             }
           ]
         }

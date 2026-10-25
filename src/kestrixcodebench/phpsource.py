@@ -1,13 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 # SPDX-License-Identifier: Apache-2.0
-"""A working database of the PHP (Phase 2) or the C, C++, Rust and Swift (Phase 5) files of CVEfixes fix commits.
+"""A working database of the PHP (Phase 2), the Go, Java, Kotlin, C# and Ruby (Phase 4) or the C, C++, Rust and Swift
+(Phase 5) files of CVEfixes fix commits.
 
 ``kestrixvul``'s working database keeps only Python, JavaScript and TypeScript file changes (the languages of that
-project), so the PHP benchmark streams the same pinned CVEfixes v1.0.8 archive (CC BY 4.0) once more and keeps the
-files labelled ``PHP`` (and nothing else of the file changes); Phase 5 keeps ``C``, ``C++``, ``Rust`` and ``Swift`` and any
-file whose path ends in ``.rs`` or ``.swift``. The tables, the loader and the statement reader are
-``kestrixvul.dump``'s; only the language filter differs. The output has the layout ``read_cvefixes`` reads, so
-``build --only-language php`` uses it unchanged. The database is data on the cluster, never committed.
+project), so the PHP and the Phase 4 benchmarks stream the same pinned CVEfixes v1.0.8 archive (CC BY 4.0) once more and
+keep the files with one of the wanted language labels (and nothing else of the file changes). CVEfixes has no Kotlin or
+ERB label, so Phase 4 also keeps files of any label whose path ends in ``.kt``, ``.kts`` or ``.erb``; Phase 5 keeps ``C``,
+``C++``, ``Rust`` and ``Swift`` and any file ending in ``.rs`` or ``.swift``. The tables, the
+loader and the statement reader are ``kestrixvul.dump``'s; only the language filter differs. The output has the layout
+``read_cvefixes`` reads, so ``build --only-language php`` (or ``p4``, ``p5``) uses it unchanged. The database is data on
+the cluster, never committed.
 """
 
 from __future__ import annotations
@@ -18,10 +21,13 @@ from pathlib import Path
 from kestrixvul.dump import WANTED, Getter, Loader, open_cvefixes, sqlite_rows
 
 PHP_LABELS = frozenset({"PHP"})
+P4_LABELS = frozenset({"Go", "Java", "C#", "Ruby"})
+P4_SUFFIXES = (".kt", ".kts", ".erb")
 P5_LABELS = frozenset({"C", "C++", "Rust", "Swift"})
 P5_SUFFIXES = (".rs", ".swift")
 LABEL_SETS: dict[str, tuple[frozenset[str], tuple[str, ...]]] = {
     "php": (PHP_LABELS, ()),
+    "p4": (P4_LABELS, P4_SUFFIXES),
     "p5": (P5_LABELS, P5_SUFFIXES),
 }
 
@@ -74,7 +80,7 @@ class PhpLoader(Loader):
 
 def load_php(zip_path: Path, out: Path, label_set: str = "php") -> dict[str, int]:
     """Stream the CVEfixes archive into a fresh working database at ``out`` with only the files of ``label_set``
-    (``php`` or ``p5``); return the row counts."""
+    (``php``, ``p4`` or ``p5``); return the row counts."""
     tmp = out.with_name(out.name + ".tmp")
     tmp.unlink(missing_ok=True)
     out.parent.mkdir(parents=True, exist_ok=True)

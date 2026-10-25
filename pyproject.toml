@@ -100,6 +100,7 @@ ignore = ["PLR0911", "PLR0912", "PLR0913", "PLR2004", "S101", "E501", "B008", "P
 "packages/*/tests/**" = ["S", "PLR0917"]
 "packages/*/plugin-repo/tests/**" = ["S", "PLR0917"]
 "scripts/**" = ["PLR0915", "PLR0917"]
+"scripts/build_claude_fix_playbook.py" = ["PLR0915", "PLR0917", "S608"]  # example source text with SQL in it, never run
 ".claude/hooks/**" = ["S603", "PLW1510"]  # the hook's own test runs the hook script with a fixed argument list
 "src/kestrix/*/cli.py" = ["PLR0917"]  # Typer maps each CLI option to a parameter
 # C6 research training/evaluation: seeded experiment RNG (not security), long training loops, metric helpers.
@@ -149,8 +150,11 @@ modules = [
     "kestrix_scan.pytest_plugin",
     "kestrix_scan.python_rules",
     "kestrix_scan.registry",
+    "kestrix_scan.ruby_tokens",
     "kestrix_scan.sarif",
     "kestrix_scan.secrets",
+    "kestrix_scan.server_index",
+    "kestrix_scan.server_rules",
     "kestrix_scan.shell_rules",
     "kestrix_scan.skill",
     "kestrix_scan.sql_rules",

@@ -1,0 +1,24 @@
+{
+  "all_rules_per_kloc": 0.0978,
+  "files_scanned": {
+    ".cs": 2251
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".cs": 368.2
+  },
+  "label": "jellyfin_jellyfin",
+  "roots": [
+    "jellyfin_jellyfin"
+  ],
+  "rules": {
+    "cs.path.traversal": {
+      "by_extension": {
+        ".cs": 36
+      },
+      "findings": 36,
+      "per_kloc": 0.0978
+    }
+  },
+  "schema_version": 1
+}

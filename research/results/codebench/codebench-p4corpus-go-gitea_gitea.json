@@ -1,0 +1,33 @@
+{
+  "all_rules_per_kloc": 0.0609,
+  "files_scanned": {
+    ".go": 3167
+  },
+  "files_skipped": {
+    ".go:duplicate": 1
+  },
+  "kloc": {
+    ".go": 509.2
+  },
+  "label": "go-gitea_gitea",
+  "roots": [
+    "go-gitea_gitea"
+  ],
+  "rules": {
+    "go.sql.injection": {
+      "by_extension": {
+        ".go": 29
+      },
+      "findings": 29,
+      "per_kloc": 0.0569
+    },
+    "go.tls.insecure_skip_verify": {
+      "by_extension": {
+        ".go": 2
+      },
+      "findings": 2,
+      "per_kloc": 0.0039
+    }
+  },
+  "schema_version": 1
+}

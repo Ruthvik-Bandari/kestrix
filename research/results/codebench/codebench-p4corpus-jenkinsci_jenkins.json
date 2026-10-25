@@ -1,0 +1,47 @@
+{
+  "all_rules_per_kloc": 0.2488,
+  "files_scanned": {
+    ".java": 1953,
+    ".rb": 1
+  },
+  "files_skipped": {},
+  "kloc": {
+    ".java": 341.1,
+    ".rb": 0.6
+  },
+  "label": "jenkinsci_jenkins",
+  "roots": [
+    "jenkinsci_jenkins"
+  ],
+  "rules": {
+    "java.deserialize.unsafe": {
+      "by_extension": {
+        ".java": 80
+      },
+      "findings": 80,
+      "per_kloc": 0.2342
+    },
+    "java.path.traversal": {
+      "by_extension": {
+        ".java": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0029
+    },
+    "java.ssrf.request": {
+      "by_extension": {
+        ".java": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0029
+    },
+    "java.xxe.parser": {
+      "by_extension": {
+        ".java": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0088
+    }
+  },
+  "schema_version": 1
+}

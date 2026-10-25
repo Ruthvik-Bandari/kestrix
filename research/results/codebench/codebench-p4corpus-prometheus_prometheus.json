@@ -1,0 +1,26 @@
+{
+  "all_rules_per_kloc": 0.0124,
+  "files_scanned": {
+    ".go": 746
+  },
+  "files_skipped": {
+    ".go:duplicate": 1
+  },
+  "kloc": {
+    ".go": 403.8
+  },
+  "label": "prometheus_prometheus",
+  "roots": [
+    "prometheus_prometheus"
+  ],
+  "rules": {
+    "go.tls.insecure_skip_verify": {
+      "by_extension": {
+        ".go": 5
+      },
+      "findings": 5,
+      "per_kloc": 0.0124
+    }
+  },
+  "schema_version": 1
+}

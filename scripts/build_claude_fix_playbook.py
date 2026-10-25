@@ -293,6 +293,209 @@ WEB_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
     ),
 }
 
+GO_HEAD = "package main\n\nfunc handler(w http.ResponseWriter, r *http.Request) {\n"
+JAVA_HEAD = (
+    "class Files {\n    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {\n"
+)
+JAVA_TAIL = "    }\n}\n"
+CS_HEAD = "public class FilesController : Controller {\n    [HttpGet]\n    public IActionResult Get(string name) {\n"
+CS_TAIL = "        return Ok();\n    }\n}\n"
+RB_HEAD = "class UsersController < ApplicationController\n  def show\n"
+RB_TAIL = "  end\nend\n"
+
+# rule id -> (file name, code fence language, before, after) for the Go, Java and Kotlin, C# and Ruby rules (Phase 4).
+SERVER_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
+    "go.exec.command": (
+        "convert.go",
+        "go",
+        GO_HEAD + '\texec.Command("sh", "-c", "convert "+r.FormValue("file")+" out.png").Run()\n}\n',
+        GO_HEAD
+        + '\tname := filepath.Base(r.FormValue("file"))\n\texec.Command("convert", "--", name, "out.png").Run()\n}\n',
+    ),
+    "go.sql.injection": (
+        "users.go",
+        "go",
+        GO_HEAD + '\tdb.Query("SELECT * FROM users WHERE name = \'" + r.FormValue("name") + "\'")\n}\n',
+        GO_HEAD + '\tdb.Query("SELECT * FROM users WHERE name = $1", r.FormValue("name"))\n}\n',
+    ),
+    "go.xss.unescaped": (
+        "profile.go",
+        "go",
+        GO_HEAD + '\tdata := map[string]any{"Bio": template.HTML(r.FormValue("bio"))}\n\ttmpl.Execute(w, data)\n}\n',
+        GO_HEAD + '\tdata := map[string]any{"Bio": r.FormValue("bio")}\n\ttmpl.Execute(w, data)\n}\n',
+    ),
+    "go.tls.insecure_skip_verify": (
+        "client.go",
+        "go",
+        "package main\n\nfunc client() *http.Client {\n\tcfg := &tls.Config{InsecureSkipVerify: true}\n"
+        "\treturn &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}\n}\n",
+        "package main\n\nfunc client(pool *x509.CertPool) *http.Client {\n\tcfg := &tls.Config{RootCAs: pool}\n"
+        "\treturn &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}\n}\n",
+    ),
+    "java.sql.injection": (
+        "UserDao.java",
+        "java",
+        JAVA_HEAD
+        + '        String sql = "SELECT * FROM users WHERE name = \'" + request.getParameter("name") + "\'";\n'
+        "        connection.createStatement().executeQuery(sql);\n" + JAVA_TAIL,
+        JAVA_HEAD
+        + '        PreparedStatement ps = connection.prepareStatement("SELECT * FROM users WHERE name = ?");\n'
+        '        ps.setString(1, request.getParameter("name"));\n        ps.executeQuery();\n' + JAVA_TAIL,
+    ),
+    "java.exec.command": (
+        "Ping.java",
+        "java",
+        JAVA_HEAD + '        Runtime.getRuntime().exec("ping -c 1 " + request.getParameter("host"));\n' + JAVA_TAIL,
+        JAVA_HEAD + '        String host = HOSTS.get(request.getParameter("host"));\n'
+        '        new ProcessBuilder("ping", "-c", "1", "--", host).start();\n' + JAVA_TAIL,
+    ),
+    "java.deserialize.unsafe": (
+        "Session.java",
+        "java",
+        JAVA_HEAD + "        Object o = new ObjectInputStream(request.getInputStream()).readObject();\n" + JAVA_TAIL,
+        JAVA_HEAD
+        + "        Session s = new ObjectMapper().readValue(request.getInputStream(), Session.class);\n"
+        + JAVA_TAIL,
+    ),
+    "java.xxe.parser": (
+        "Import.java",
+        "java",
+        JAVA_HEAD + "        DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();\n"
+        "        Document doc = f.newDocumentBuilder().parse(request.getInputStream());\n" + JAVA_TAIL,
+        JAVA_HEAD + "        DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();\n"
+        '        f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);\n'
+        "        Document doc = f.newDocumentBuilder().parse(request.getInputStream());\n" + JAVA_TAIL,
+    ),
+    "java.path.traversal": (
+        "Download.java",
+        "java",
+        JAVA_HEAD + '        File file = new File("/srv/files", request.getParameter("name"));\n' + JAVA_TAIL,
+        JAVA_HEAD + '        Path base = Paths.get("/srv/files");\n'
+        '        Path file = base.resolve(FilenameUtils.getName(request.getParameter("name"))).normalize();\n'
+        + JAVA_TAIL,
+    ),
+    "java.ssrf.request": (
+        "Preview.java",
+        "java",
+        JAVA_HEAD + '        URL url = new URL(request.getParameter("url"));\n        url.openStream();\n' + JAVA_TAIL,
+        JAVA_HEAD
+        + '        URL url = new URL(FEEDS.get(request.getParameter("feed")));\n        url.openStream();\n'
+        + JAVA_TAIL,
+    ),
+    "java.xss.response": (
+        "Hello.java",
+        "java",
+        JAVA_HEAD
+        + '        response.getWriter().println("<p>Hello " + request.getParameter("name") + "</p>");\n'
+        + JAVA_TAIL,
+        JAVA_HEAD
+        + '        response.getWriter().println("<p>Hello " + Encode.forHtml(request.getParameter("name")) + "</p>");\n'
+        + JAVA_TAIL,
+    ),
+    "cs.sql.injection": (
+        "UsersController.cs",
+        "csharp",
+        CS_HEAD
+        + '        var cmd = new SqlCommand("SELECT * FROM Users WHERE Name = \'" + name + "\'", conn);\n'
+        + CS_TAIL,
+        CS_HEAD + '        var cmd = new SqlCommand("SELECT * FROM Users WHERE Name = @name", conn);\n'
+        '        cmd.Parameters.AddWithValue("@name", name);\n' + CS_TAIL,
+    ),
+    "cs.exec.process": (
+        "ToolsController.cs",
+        "csharp",
+        CS_HEAD + '        Process.Start("cmd.exe", "/c ping " + name);\n' + CS_TAIL,
+        CS_HEAD + '        var psi = new ProcessStartInfo("ping");\n        psi.ArgumentList.Add(Hosts[name]);\n'
+        "        Process.Start(psi);\n" + CS_TAIL,
+    ),
+    "cs.deserialize.unsafe": (
+        "Cache.cs",
+        "csharp",
+        "class Cache {\n    object Load(Stream s) {\n        return new BinaryFormatter().Deserialize(s);\n    }\n}\n",
+        "class Cache {\n    Item Load(Stream s) {\n        return JsonSerializer.Deserialize<Item>(s);\n    }\n}\n",
+    ),
+    "cs.path.traversal": (
+        "FilesController.cs",
+        "csharp",
+        CS_HEAD + '        var text = System.IO.File.ReadAllText(Path.Combine("/srv/files", name));\n' + CS_TAIL,
+        CS_HEAD
+        + '        var text = System.IO.File.ReadAllText(Path.Combine("/srv/files", Path.GetFileName(name)));\n'
+        + CS_TAIL,
+    ),
+    "rb.sql.injection": (
+        "users_controller.rb",
+        "ruby",
+        RB_HEAD + "    @users = User.where(\"name = '#{params[:name]}'\")\n" + RB_TAIL,
+        RB_HEAD + "    @users = User.where(name: params[:name])\n" + RB_TAIL,
+    ),
+    "rb.xss.html_safe": (
+        "users_controller.rb",
+        "ruby",
+        RB_HEAD + "    @bio = params[:bio].html_safe\n" + RB_TAIL,
+        RB_HEAD + "    @bio = sanitize(params[:bio])\n" + RB_TAIL,
+    ),
+    "rb.reflection.constantize": (
+        "reports_controller.rb",
+        "ruby",
+        RB_HEAD + "    report = params[:type].constantize.new\n" + RB_TAIL,
+        RB_HEAD + "    report = REPORTS.fetch(params[:type]).new\n" + RB_TAIL,
+    ),
+    "rb.reflection.send": (
+        "users_controller.rb",
+        "ruby",
+        RB_HEAD + "    value = @user.send(params[:field])\n" + RB_TAIL,
+        RB_HEAD + "    field = FIELDS.fetch(params[:field])\n    value = @user.public_send(field)\n" + RB_TAIL,
+    ),
+    "rb.exec.command": (
+        "images_controller.rb",
+        "ruby",
+        RB_HEAD + '    system("convert #{params[:file]} out.png")\n' + RB_TAIL,
+        RB_HEAD + "    system('convert', '--', File.basename(params[:file]), 'out.png')\n" + RB_TAIL,
+    ),
+    "rb.path.traversal": (
+        "files_controller.rb",
+        "ruby",
+        RB_HEAD + "    send_file File.join(Rails.root, 'files', params[:name])\n" + RB_TAIL,
+        RB_HEAD + "    send_file File.join(Rails.root, 'files', File.basename(params[:name]))\n" + RB_TAIL,
+    ),
+}
+
+SERVER_LANGUAGES = ("go", "java", "csharp", "ruby")
+SERVER_SECTIONS = (
+    (
+        "go",
+        "## Go rules",
+        "These rules read `.go` files. Request data is a value of an `*http.Request` parameter (`FormValue`, `URL`, "
+        "`Header`, `Body` ...), a gin, echo, fiber, chi or Gitea-style context (`Query`, `Param`, `PostForm` ...) or "
+        "`mux.Vars`; it is followed inside one function. Suppress a confirmed false positive with "
+        "`// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.",
+    ),
+    (
+        "java",
+        "## Java and Kotlin rules",
+        "These rules read `.java`, `.kt` and `.kts` files. Request data is a servlet, Stapler or Spring request "
+        "parameter (`getParameter`, `getHeader`, `getInputStream` ...), a parameter annotated `@RequestParam`, "
+        "`@PathVariable`, `@RequestBody`, `@QueryParam` or `@QueryParameter`, or Ktor's `call.parameters`; it is "
+        "followed inside one method. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` "
+        "on the line or the line above.",
+    ),
+    (
+        "csharp",
+        "## C# rules",
+        "These rules read `.cs` files. Request data is `Request.Query`, `Request.Form`, `Request.Headers` and the "
+        "other request members, a `[FromQuery]`/`[FromForm]`/`[FromRoute]`/`[FromBody]` parameter, or a string "
+        "parameter of an ASP.NET controller action; it is followed inside one method. Suppress a confirmed false "
+        "positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.",
+    ),
+    (
+        "ruby",
+        "## Ruby and Rails rules (Ruby files and ERB templates)",
+        "These rules read `.rb` files and `.erb` templates. Request data is `params`, `cookies` or `request`; it is "
+        "followed inside one method. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` "
+        "on the line or the line above, and `<%# kestrix: ignore[<rule-id>] <reason> %>` in a template.",
+    ),
+)
+
 # rule id -> (file name, code fence language, before, after) for the PHP, Blade and SQL-file rules, scanned as the named file.
 PHP_EXAMPLES: dict[str, tuple[str, str, str, str]] = {
     "php.exec.command": (
@@ -757,7 +960,7 @@ def _js_section(rule: Rule) -> str:
 
 
 def _web_section(rule: Rule) -> str:
-    name, language, before, after = (WEB_EXAMPLES | PHP_EXAMPLES | SYSTEMS_EXAMPLES)[rule.id]
+    name, language, before, after = (WEB_EXAMPLES | PHP_EXAMPLES | SERVER_EXAMPLES | SYSTEMS_EXAMPLES)[rule.id]
     return "\n".join(
         [
             f"### `{rule.id}`: {rule.title}",
@@ -851,6 +1054,12 @@ def render() -> str:
     if set(PHP_EXAMPLES) != php_sql:
         missing, extra = sorted(php_sql - set(PHP_EXAMPLES)), sorted(set(PHP_EXAMPLES) - php_sql)
         raise SystemExit(f"php and sql examples out of sync with the registry: missing {missing}, unknown {extra}")
+    server = {rule.id for rule in RULES.values() if rule.language in SERVER_LANGUAGES}
+    if set(SERVER_EXAMPLES) != server:
+        missing, extra = sorted(server - set(SERVER_EXAMPLES)), sorted(set(SERVER_EXAMPLES) - server)
+        raise SystemExit(
+            f"go, java, csharp and ruby examples out of sync with the registry: missing {missing}, unknown {extra}"
+        )
     for language, examples in (
         ("python", set(EXAMPLES)),
         ("config", set(CONFIG_EXAMPLES)),
@@ -937,6 +1146,9 @@ def render() -> str:
         "`-- kestrix: ignore[<rule-id>] <reason>` on the line above the statement.\n",
     ]
     parts += [_web_section(rule) for rule in RULES.values() if rule.language == "sql"]
+    for language, heading, intro in SERVER_SECTIONS:
+        parts += [heading + "\n", intro + "\n"]
+        parts += [_web_section(rule) for rule in RULES.values() if rule.language == language]
     parts += [
         "## C and C++, Rust and Swift rules\n",
         "These rules read `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx` files, `.rs` files, `.swift` files "

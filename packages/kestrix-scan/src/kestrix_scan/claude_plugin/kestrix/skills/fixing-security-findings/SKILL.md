@@ -2873,6 +2873,641 @@ After:
 CREATE FUNCTION reset_pw(uid int) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$ UPDATE users SET pw = NULL WHERE id = uid $$;
 ```
 
+## Go rules
+
+These rules read `.go` files. Request data is a value of an `*http.Request` parameter (`FormValue`, `URL`, `Header`, `Body` ...), a gin, echo, fiber, chi or Gitea-style context (`Query`, `Param`, `PostForm` ...) or `mux.Vars`; it is followed inside one function. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.
+
+### `go.exec.command`: exec.Command with a program or arguments from request data
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** exec.Command runs the program it names with the arguments it is given. If a request value chooses the program, or reaches the script of 'sh -c', an attacker runs commands of their choosing; as an ordinary argument it can still add options such as '--output=/etc/...' (argument injection). The finding appears when a value of an *http.Request (FormValue, URL, Header, Body ...), a gin, echo, fiber, chi or Gitea-style context, or mux.Vars reaches exec.Command, exec.CommandContext, syscall.Exec or os.StartProcess inside one function (with a trace). A value that went through strconv.Atoi or filepath.Base is not reported.
+
+**Fix:** Run a fixed program with fixed options and pass request values only as separate arguments after '--', checked against an allowlist. Never pass a request value to 'sh -c'; when a shell is unavoidable, map the value to a fixed string.
+
+Before (`convert.go`):
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	exec.Command("sh", "-c", "convert "+r.FormValue("file")+" out.png").Run()
+}
+```
+
+After:
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	name := filepath.Base(r.FormValue("file"))
+	exec.Command("convert", "--", name, "out.png").Run()
+}
+```
+
+### `go.sql.injection`: SQL text built from request data (or built from a value that is not a literal)
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** database/sql's Query, QueryRow, Exec and Prepare (and their Context forms), sqlx's Queryx, MustExec and NamedExec, and GORM's Raw, Exec, Where, Order, Group, Having and Joins run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one function (with a trace) and medium with low confidence when the text is built with + or fmt.Sprintf from a value that is not a literal: a parameter, a call result, a member, or a variable assigned in the function (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key.
+
+**Fix:** Use placeholders and pass the values as arguments: db.Query("SELECT * FROM users WHERE id = $1", id) (? for MySQL and SQLite), or GORM's db.Where("name = ?", name). Names of tables and columns cannot be bound, so check them against an allowlist.
+
+Before (`users.go`):
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	db.Query("SELECT * FROM users WHERE name = '" + r.FormValue("name") + "'")
+}
+```
+
+After:
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	db.Query("SELECT * FROM users WHERE name = $1", r.FormValue("name"))
+}
+```
+
+### `go.xss.unescaped`: Request data marked as safe HTML, JavaScript or URL (template.HTML and its relatives)
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** html/template escapes every value except those of the types template.HTML, template.JS, template.URL, template.HTMLAttr, template.CSS, template.JSStr and template.Srcset, which it trusts as already safe. Converting request data to one of them puts it into the page as markup or script (cross-site scripting). The finding appears when request data reaches the conversion inside one function (with a trace).
+
+**Fix:** Pass plain strings to html/template and let it escape them; keep template.HTML for markup your own code built from constants, or sanitize user HTML first (for example with bluemonday).
+
+Before (`profile.go`):
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	data := map[string]any{"Bio": template.HTML(r.FormValue("bio"))}
+	tmpl.Execute(w, data)
+}
+```
+
+After:
+
+```go
+package main
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	data := map[string]any{"Bio": r.FormValue("bio")}
+	tmpl.Execute(w, data)
+}
+```
+
+### `go.tls.insecure_skip_verify`: TLS certificate verification turned off (InsecureSkipVerify: true)
+
+CWE-295 · default severity high · confidence high
+
+**Why:** With InsecureSkipVerify set to true, crypto/tls accepts any certificate the server presents and any host name in it. Anyone who can intercept the connection (on the same network, a hostile proxy, a DNS spoof) can read and change the traffic, including credentials and tokens.
+
+**Fix:** Remove InsecureSkipVerify. For a private or self-signed certificate, add its CA to a CertPool and set RootCAs; for a custom check, keep verification on and add VerifyPeerCertificate or VerifyConnection.
+
+Before (`client.go`):
+
+```go
+package main
+
+func client() *http.Client {
+	cfg := &tls.Config{InsecureSkipVerify: true}
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}
+}
+```
+
+After:
+
+```go
+package main
+
+func client(pool *x509.CertPool) *http.Client {
+	cfg := &tls.Config{RootCAs: pool}
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}
+}
+```
+
+## Java and Kotlin rules
+
+These rules read `.java`, `.kt` and `.kts` files. Request data is a servlet, Stapler or Spring request parameter (`getParameter`, `getHeader`, `getInputStream` ...), a parameter annotated `@RequestParam`, `@PathVariable`, `@RequestBody`, `@QueryParam` or `@QueryParameter`, or Ktor's `call.parameters`; it is followed inside one method. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.
+
+### `java.sql.injection`: SQL text built from request data (or built from a value that is not a literal), Java and Kotlin
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** JDBC's Statement.executeQuery, execute, executeUpdate and addBatch, Connection.prepareStatement and prepareCall (with text built before the call), JPA and Hibernate createQuery and createNativeQuery, Spring's JdbcTemplate query, queryForObject, queryForList and update, and Android's rawQuery and execSQL run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is built with +, a StringBuilder, String.format or a Kotlin template from a value that is not a literal: a parameter, a call result, or a variable assigned in the method (followed to its value when the query is a lone name), but not a constant or a name that reads as a table, column or sort key.
+
+**Fix:** Use a PreparedStatement with ? placeholders and setString/setInt, JPA parameters (:name with setParameter), or JdbcTemplate's query(sql, args). Names of tables and columns cannot be bound, so check them against an allowlist.
+
+Before (`UserDao.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String sql = "SELECT * FROM users WHERE name = '" + request.getParameter("name") + "'";
+        connection.createStatement().executeQuery(sql);
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        PreparedStatement ps = connection.prepareStatement("SELECT * FROM users WHERE name = ?");
+        ps.setString(1, request.getParameter("name"));
+        ps.executeQuery();
+    }
+}
+```
+
+### `java.exec.command`: Runtime.exec or ProcessBuilder with request data, Java and Kotlin
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** Runtime.getRuntime().exec() and new ProcessBuilder() start the program they are given. A request value that chooses the program, or reaches the script of 'sh -c' or 'cmd /c', runs commands of the attacker's choosing; Runtime.exec(String) also splits one string on spaces, so a value in it can add arguments. The finding appears when request data (a servlet or Stapler request, a @RequestParam, @PathVariable or @QueryParameter value, Ktor's call.parameters ...) reaches the call inside one method (with a trace).
+
+**Fix:** Use ProcessBuilder with a fixed program and a list of arguments, check request values against an allowlist, and pass them after '--'. Never build a shell command string from request data.
+
+Before (`Ping.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Runtime.getRuntime().exec("ping -c 1 " + request.getParameter("host"));
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String host = HOSTS.get(request.getParameter("host"));
+        new ProcessBuilder("ping", "-c", "1", "--", host).start();
+    }
+}
+```
+
+### `java.deserialize.unsafe`: Deserialization that lets the data choose the class (ObjectInputStream, XMLDecoder, XStream, Jackson default typing, SnakeYAML), Java and Kotlin
+
+CWE-502 · default severity high · confidence medium
+
+**Why:** new ObjectInputStream() and new XMLDecoder() rebuild objects of whatever classes the stream names, and so do XStream.fromXML() without type permissions, Jackson with enableDefaultTyping/activateDefaultTyping or @JsonTypeInfo(use = Id.CLASS or MINIMAL_CLASS), and SnakeYAML's new Yaml() without a SafeConstructor (before 2.0). Bytes from an attacker can then run code through gadget classes on the class path. ObjectInputStream is not reported in a file that overrides resolveClass or sets an ObjectInputFilter, XStream not where allowTypes/addPermission is called, SnakeYAML not where a SafeConstructor or LoaderOptions appears.
+
+**Fix:** Exchange data as JSON or another data-only format mapped to fixed classes. If Java serialization is unavoidable, set an ObjectInputFilter (jdk.serialFilter or ObjectInputStream.setObjectInputFilter) that allows only the expected classes; give XStream an allowlist of types; use Jackson without default typing or with a PolymorphicTypeValidator that allows named base types; construct SnakeYAML with a SafeConstructor.
+
+Before (`Session.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Object o = new ObjectInputStream(request.getInputStream()).readObject();
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Session s = new ObjectMapper().readValue(request.getInputStream(), Session.class);
+    }
+}
+```
+
+### `java.xxe.parser`: XML parser created without disabling DOCTYPEs or external entities, Java and Kotlin
+
+CWE-611 · default severity high · confidence medium
+
+**Why:** DocumentBuilderFactory, SAXParserFactory, XMLInputFactory, TransformerFactory, SchemaFactory, XMLReaderFactory and dom4j's SAXReader or JDOM's SAXBuilder resolve DOCTYPE declarations and external entities by default. Parsing XML from outside can then read local files, reach internal URLs or exhaust memory (XML external entities). The finding appears where such a parser is created in a file that sets none of the protections: disallow-doctype-decl, the external-entity features, XMLConstants.FEATURE_SECURE_PROCESSING or ACCESS_EXTERNAL_DTD, IS_SUPPORTING_EXTERNAL_ENTITIES/SUPPORT_DTD false, or an entity resolver.
+
+**Fix:** Turn DOCTYPEs off on the factory before using it: factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true). Where DOCTYPEs are needed, turn off external-general-entities, external-parameter-entities and load-external-dtd, and set XMLConstants.ACCESS_EXTERNAL_DTD and ACCESS_EXTERNAL_SCHEMA to "". For StAX, set XMLInputFactory.SUPPORT_DTD and IS_SUPPORTING_EXTERNAL_ENTITIES to false.
+
+Before (`Import.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+        Document doc = f.newDocumentBuilder().parse(request.getInputStream());
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+        f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        Document doc = f.newDocumentBuilder().parse(request.getInputStream());
+    }
+}
+```
+
+### `java.path.traversal`: File path built from request data, Java and Kotlin
+
+CWE-22 · default severity high · confidence medium
+
+**Why:** new File(), new FileInputStream(), new FileOutputStream(), new FileReader(), Paths.get(), Path.of() and the Files methods use the path they are given. A request value (or the name of an archive entry, zip slip) with '../' or an absolute path in it reaches files outside the intended directory.
+
+**Fix:** Resolve the value against a fixed base directory, normalize it, and check the result still starts with the base: Path p = base.resolve(name).normalize(); if (!p.startsWith(base)) reject. For a file name, keep only Paths.get(name).getFileName() or FilenameUtils.getName().
+
+Before (`Download.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        File file = new File("/srv/files", request.getParameter("name"));
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Path base = Paths.get("/srv/files");
+        Path file = base.resolve(FilenameUtils.getName(request.getParameter("name"))).normalize();
+    }
+}
+```
+
+### `java.ssrf.request`: Outbound request to a URL from request data, Java and Kotlin
+
+CWE-918 · default severity high · confidence medium
+
+**Why:** new URL(), URI.create(), Apache HttpClient's new HttpGet()/HttpPost(), Spring's RestTemplate getForObject/postForObject/exchange, OkHttp's Request.Builder().url() and Jsoup.connect() point at whatever URL they are given. If the request chooses it, the server can be made to reach internal services or cloud metadata endpoints (server-side request forgery). Form-validation endpoints that test a user-supplied URL are a common case.
+
+**Fix:** Allow only known schemes and hosts (compare the parsed URI's host with an allowlist), or map a request value to a fixed URL. When any host must be allowed, resolve it and refuse private, loopback and link-local addresses, and turn off automatic redirects. Check the permission of the user before a validation endpoint connects anywhere.
+
+Before (`Preview.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        URL url = new URL(request.getParameter("url"));
+        url.openStream();
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        URL url = new URL(FEEDS.get(request.getParameter("feed")));
+        url.openStream();
+    }
+}
+```
+
+### `java.xss.response`: Request data written into the response unescaped, Java and Kotlin
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** response.getWriter().write/print/println, getOutputStream().print and a JSP-style out.print write their argument into the page as is, and Ktor's call.respondText with an HTML content type does the same. A request value in it becomes markup the browser runs as script (reflected cross-site scripting).
+
+**Fix:** Render through a template engine that escapes (Thymeleaf, JSP with <c:out>, Jelly with escape-by-default), or escape for the context with the OWASP Java Encoder (Encode.forHtml) or Spring's HtmlUtils.htmlEscape, and send plain text as text/plain.
+
+Before (`Hello.java`):
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        response.getWriter().println("<p>Hello " + request.getParameter("name") + "</p>");
+    }
+}
+```
+
+After:
+
+```java
+class Files {
+    void handle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        response.getWriter().println("<p>Hello " + Encode.forHtml(request.getParameter("name")) + "</p>");
+    }
+}
+```
+
+## C# rules
+
+These rules read `.cs` files. Request data is `Request.Query`, `Request.Form`, `Request.Headers` and the other request members, a `[FromQuery]`/`[FromForm]`/`[FromRoute]`/`[FromBody]` parameter, or a string parameter of an ASP.NET controller action; it is followed inside one method. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above.
+
+### `cs.sql.injection`: SQL text built from request data (or built from a value that is not a literal), C#
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** new SqlCommand(), SqlDataAdapter and the other ADO.NET commands (OleDb, Odbc, MySQL, Npgsql, SQLite, Oracle), CommandText, Entity Framework's ExecuteSqlRaw, FromSqlRaw and ExecuteSqlCommand, and Dapper's Query and Execute run the SQL text they are given. A request value placed in that text can close a string and change the query. The finding is high when request data (Request.Query, Request.Form, a [FromQuery]/[FromForm]/[FromRoute]/[FromBody] parameter or a string parameter of a controller action) reaches the call inside one method (with a trace), and medium with low confidence when the text is built with +, string.Format or an interpolated string from a value that is not a literal (a parameter, a call result or a local variable; not a constant or a table, column or sort-key name).
+
+**Fix:** Use parameters: new SqlCommand("SELECT * FROM Users WHERE Id = @id", conn) with cmd.Parameters.AddWithValue("@id", id), Dapper's anonymous parameter object, or Entity Framework's FromSql/FromSqlInterpolated and ExecuteSql, which turn interpolated values into parameters. Never pass an interpolated string to the *Raw methods.
+
+Before (`UsersController.cs`):
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        var cmd = new SqlCommand("SELECT * FROM Users WHERE Name = '" + name + "'", conn);
+        return Ok();
+    }
+}
+```
+
+After:
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        var cmd = new SqlCommand("SELECT * FROM Users WHERE Name = @name", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        return Ok();
+    }
+}
+```
+
+### `cs.exec.process`: Process.Start or ProcessStartInfo with request data, C#
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** Process.Start(), new ProcessStartInfo() and its FileName and Arguments properties start the program they are given with an argument string that the program splits itself. A request value that chooses the program, reaches 'cmd.exe /c' or 'sh -c', or adds to the argument string can run other commands or add options.
+
+**Fix:** Start a fixed program and add request values to ProcessStartInfo.ArgumentList (one item per argument), after checking them against an allowlist; keep UseShellExecute false. Never build a 'cmd /c' or 'sh -c' string from request data.
+
+Before (`ToolsController.cs`):
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        Process.Start("cmd.exe", "/c ping " + name);
+        return Ok();
+    }
+}
+```
+
+After:
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        var psi = new ProcessStartInfo("ping");
+        psi.ArgumentList.Add(Hosts[name]);
+        Process.Start(psi);
+        return Ok();
+    }
+}
+```
+
+### `cs.deserialize.unsafe`: Deserializer that lets the data choose the type (BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter, ObjectStateFormatter, Json.NET TypeNameHandling), C#
+
+CWE-502 · default severity high · confidence medium
+
+**Why:** BinaryFormatter, SoapFormatter, NetDataContractSerializer, LosFormatter and ObjectStateFormatter create whatever .NET types the payload names; Microsoft states BinaryFormatter cannot be made safe and removed it in .NET 9. Json.NET with TypeNameHandling other than None, and JavaScriptSerializer with a SimpleTypeResolver, do the same for JSON. A payload from an attacker can run code through gadget types. TypeNameHandling is not reported in a file that sets a SerializationBinder.
+
+**Fix:** Use System.Text.Json or DataContractSerializer with known types, or Json.NET with TypeNameHandling.None. If type names are needed, set an ISerializationBinder that allows only your own types.
+
+Before (`Cache.cs`):
+
+```csharp
+class Cache {
+    object Load(Stream s) {
+        return new BinaryFormatter().Deserialize(s);
+    }
+}
+```
+
+After:
+
+```csharp
+class Cache {
+    Item Load(Stream s) {
+        return JsonSerializer.Deserialize<Item>(s);
+    }
+}
+```
+
+### `cs.path.traversal`: File path built from request data, C#
+
+CWE-22 · default severity high · confidence medium
+
+**Why:** File.ReadAllText, File.OpenRead, File.WriteAllBytes, File.Delete, the Directory methods, new FileStream(), new StreamReader(), PhysicalFile() and ExtractToFile() use the path they are given; Path.Combine keeps a rooted second argument and does not remove '..'. A request value, or the FullName of an archive entry (zip slip), can reach files outside the intended directory.
+
+**Fix:** Use Path.GetFileName for a file name, or combine with a fixed root, call Path.GetFullPath, and check the result starts with the root (plus a directory separator) before opening it.
+
+Before (`FilesController.cs`):
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        var text = System.IO.File.ReadAllText(Path.Combine("/srv/files", name));
+        return Ok();
+    }
+}
+```
+
+After:
+
+```csharp
+public class FilesController : Controller {
+    [HttpGet]
+    public IActionResult Get(string name) {
+        var text = System.IO.File.ReadAllText(Path.Combine("/srv/files", Path.GetFileName(name)));
+        return Ok();
+    }
+}
+```
+
+## Ruby and Rails rules (Ruby files and ERB templates)
+
+These rules read `.rb` files and `.erb` templates. Request data is `params`, `cookies` or `request`; it is followed inside one method. Suppress a confirmed false positive with `# kestrix: ignore[<rule-id>] <reason>` on the line or the line above, and `<%# kestrix: ignore[<rule-id>] <reason> %>` in a template.
+
+### `rb.sql.injection`: SQL text built from request data (or built from a value that is not a literal), Ruby on Rails
+
+CWE-89 · default severity high · confidence medium
+
+**Why:** Active Record's find_by_sql, where, order, pluck, select, joins, group, having, from, exists?, delete_all, update_all and the connection's execute, exec_query and select_* put a string argument into the SQL as is. params, cookies or request data interpolated into it ('#{params[:id]}') or concatenated can close a string and change the query; order(params[:sort]) is a classic case. The finding is high when request data reaches the call inside one method (with a trace) and medium with low confidence when the text is interpolated or concatenated from a value that is not a literal (a parameter, a call result, an instance variable or a local variable; not a constant or a table, column or sort-key name). Hash conditions (where(name: value)) and placeholders (where('name = ?', value)) are not reported.
+
+**Fix:** Pass values separately: where(name: value), where('name = ?', value), where('name = :name', name: value), or sanitize_sql_array. For order and column names, map the request value to an allowlist of columns and directions.
+
+Before (`users_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    @users = User.where("name = '#{params[:name]}'")
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    @users = User.where(name: params[:name])
+  end
+end
+```
+
+### `rb.xss.html_safe`: html_safe, raw or <%== %> of a value that is not a literal, Ruby on Rails
+
+CWE-79 · default severity high · confidence medium
+
+**Why:** Rails escapes every value printed in a view unless it is marked safe. html_safe, raw() and ERB's <%== %> mark it safe, so markup in it runs as script (cross-site scripting). The finding is high when the value comes from params, cookies or request (with a trace in Ruby files), and low with low confidence when it is only not a literal.
+
+**Fix:** Print the value with <%= %> and let Rails escape it. For user-supplied HTML that must stay HTML, use sanitize(value) with an allowlist of tags; build markup with content_tag and tag helpers, which escape their contents.
+
+Before (`users_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    @bio = params[:bio].html_safe
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    @bio = sanitize(params[:bio])
+  end
+end
+```
+
+### `rb.reflection.constantize`: constantize or const_get of request data, Ruby on Rails
+
+CWE-470 · default severity high · confidence medium
+
+**Why:** constantize, safe_constantize and Object.const_get turn a string into whatever class or module it names. If the request chooses the name, the code instantiates or calls methods on classes the developer never meant to expose, which can lead to code execution or data exposure (unsafe reflection).
+
+**Fix:** Map the request value to a class through an explicit allowlist, for example { 'user' => User, 'admin' => Admin }.fetch(params[:type]).
+
+Before (`reports_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    report = params[:type].constantize.new
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    report = REPORTS.fetch(params[:type]).new
+  end
+end
+```
+
+### `rb.reflection.send`: send, public_send or try with a method name from request data, Ruby
+
+CWE-470 · default severity high · confidence medium
+
+**Why:** send, __send__, public_send and try call the method they are given by name. If the request chooses the name, it can call any method of the object, including private ones with send (for example destroy, update or system through Kernel).
+
+**Fix:** Check the name against an allowlist of permitted methods first (ALLOWED.include?(name)), or dispatch through a case statement or a hash of lambdas.
+
+Before (`users_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    value = @user.send(params[:field])
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    field = FIELDS.fetch(params[:field])
+    value = @user.public_send(field)
+  end
+end
+```
+
+### `rb.exec.command`: Shell command built from request data, Ruby
+
+CWE-78 · default severity high · confidence medium
+
+**Why:** system, exec, spawn, IO.popen, Open3.capture2/capture3/popen3 with one string, backticks and %x() pass the command to a shell. Request data interpolated into it can add ';', '&&' or '$(...)' and run other commands.
+
+**Fix:** Pass the program and each argument separately (system('convert', path, out)), which runs without a shell, and check request values against an allowlist; Shellwords.escape when a shell string is unavoidable.
+
+Before (`images_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    system("convert #{params[:file]} out.png")
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    system('convert', '--', File.basename(params[:file]), 'out.png')
+  end
+end
+```
+
+### `rb.path.traversal`: File path built from request data, Ruby
+
+CWE-22 · default severity high · confidence medium
+
+**Why:** File.read, File.open, File.write, IO.read, Dir.glob, the FileUtils methods, send_file and render file: use the path they are given. A request value with '../' or an absolute path in it reaches files outside the intended directory; File.join does not stop that.
+
+**Fix:** Use File.basename for a file name, or expand the path against a fixed root (File.expand_path(name, root)) and check it starts with the root plus a separator before use; send files by a looked-up record rather than a request path.
+
+Before (`files_controller.rb`):
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    send_file File.join(Rails.root, 'files', params[:name])
+  end
+end
+```
+
+After:
+
+```ruby
+class UsersController < ApplicationController
+  def show
+    send_file File.join(Rails.root, 'files', File.basename(params[:name]))
+  end
+end
+```
+
 ## C and C++, Rust and Swift rules
 
 These rules read `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` and `.hxx` files, `.rs` files, `.swift` files and `.plist` property lists. They flag only lexically obvious patterns: memory-safety bugs need a compiler and a real analyser, and no finding does not mean the code is memory safe. Suppress a confirmed false positive with `// kestrix: ignore[<rule-id>] <reason>` on the line or the line above (`<!-- ... -->` in a property list).

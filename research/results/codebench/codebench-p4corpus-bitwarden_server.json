@@ -1,0 +1,40 @@
+{
+  "all_rules_per_kloc": 0.0033,
+  "files_scanned": {
+    ".cs": 6023
+  },
+  "files_skipped": {
+    ".cs:duplicate": 7
+  },
+  "kloc": {
+    ".cs": 2110.6
+  },
+  "label": "bitwarden_server",
+  "roots": [
+    "bitwarden_server"
+  ],
+  "rules": {
+    "cs.exec.process": {
+      "by_extension": {
+        ".cs": 1
+      },
+      "findings": 1,
+      "per_kloc": 0.0005
+    },
+    "cs.path.traversal": {
+      "by_extension": {
+        ".cs": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0014
+    },
+    "cs.sql.injection": {
+      "by_extension": {
+        ".cs": 3
+      },
+      "findings": 3,
+      "per_kloc": 0.0014
+    }
+  },
+  "schema_version": 1
+}

@@ -240,7 +240,7 @@ def test_readme_rule_counts_match_the_registry() -> None:
     total = sum(counts.values())
     readme = _text("README.md")
     stated = re.search(
-        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) web-file, (\d+) PHP, (\d+) SQL-file, (\d+) infrastructure, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
+        r"(\d+) rules in all, (\d+) Python, (\d+) JS/TS, (\d+) web-file, (\d+) PHP, (\d+) SQL-file, (\d+) Go, (\d+) Java/Kotlin, (\d+) C#, (\d+) Ruby, (\d+) infrastructure, (\d+) secret, (\d+) dependency, (\d+) agent-config rules",
         readme,
     )
     assert stated, "README.md must state the rule count per family"
@@ -251,6 +251,10 @@ def test_readme_rule_counts_match_the_registry() -> None:
         counts["web"],
         counts["php"],
         counts["sql"],
+        counts["go"],
+        counts["java"],
+        counts["cs"],
+        counts["rb"],
         counts["iac"],
         counts["secret"],
         counts["dep"],
@@ -274,7 +278,7 @@ def test_other_docs_state_the_same_rule_counts() -> None:
         assert {int(a or b) for a, b in found} == {counts[family]}, family
     doc = (REPO / "docs/claude-plugin.md").read_text(encoding="utf-8")
     assert (
-        f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['web']} web-file, {counts['php']} PHP, {counts['sql']} SQL-file, {counts['iac']} infrastructure, {counts['secret']} secret,"
+        f"{total} rules in all: {counts['py']} Python, {counts['js']} JS/TS, {counts['web']} web-file, {counts['php']} PHP, {counts['sql']} SQL-file, {counts['go']} Go, {counts['java']} Java/Kotlin, {counts['cs']} C#, {counts['rb']} Ruby, {counts['iac']} infrastructure, {counts['secret']} secret,"
         in doc
     )
     assert f"{counts['dep']} dependency, {counts['config']} agent-config rules" in doc
