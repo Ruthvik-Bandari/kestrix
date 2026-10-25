@@ -1,0 +1,45 @@
+{
+  "name": "p4-v1",
+  "written_before_the_held_out_run": true,
+  "date": "2026-10-24",
+  "scanner": {
+    "package": "kestrix-scan 0.1.0 (unreleased)",
+    "code_tree": "69d9390+aa6ca8f0 (git 69d9390 plus a hash of the synced files; dev run q4)",
+    "rules": {"go": 4, "java_and_kotlin": 7, "csharp": 4, "ruby_and_erb": 6},
+    "frozen": "no scanner change after this file; tuned on dev only"
+  },
+  "comparison_tools": [
+    {"name": "gosec", "version": "2.30.0", "licence": "Apache-2.0", "languages": ["go"], "mode": "one file at a time in a module of its own, offline, Go 1.27.3 toolchain"},
+    {"name": "opengrep with opengrep-rules", "version": "opengrep 1.32.0, opengrep-rules f1d2b562b414", "licence": "engine LGPL-2.1; rules LGPL-2.1 with the Commons Clause (fork of the LGPL semgrep-rules)", "languages": ["go", "java", "kotlin", "csharp", "ruby"], "mode": "every rule of the go, java, kotlin, csharp and ruby folders, one run per shard, offline"}
+  ],
+  "data": {
+    "source": "CVEfixes v1.0.8 (CC BY 4.0), Go, Java, Kotlin, C#, Ruby and ERB file changes of fix commits, filters of the code benchmark",
+    "split": "project-disjoint, seeded hash kestrixcodebench-v1, 30% of groups to test",
+    "split_manifest_sha256": "1d7ffce49653da59cc007d1e27765385c69887f92c99698ef3e02cb722b94f5b",
+    "test_pairs": 1278,
+    "test_pairs_in_scope": 409,
+    "test_projects": 223,
+    "test_in_scope_by_language": {"csharp": 41, "erb": 16, "go": 89, "java": 156, "kotlin": 0, "ruby": 107},
+    "dev_pairs": 3097,
+    "dev_pairs_in_scope": 1407,
+    "dev_projects": 530,
+    "unchanged_files": 0
+  },
+  "dev_numbers_for_reference": {
+    "kestrix_detection_percent": {"go": 2.18, "java_and_kotlin": 12.86, "csharp": 0.58, "ruby": 17.95, "ruby_and_erb": 18.66, "all": 10.73},
+    "kestrix_detection_ci95_all": [5.01, 17.87],
+    "kestrix_alerts_per_kloc_after": {"go": 0.26, "java_and_kotlin": 0.33, "csharp": 0.08, "ruby": 1.81, "all": 0.45},
+    "kestrix_alerts_per_kloc_after_ci95_all": [0.23, 0.74],
+    "gosec_detection_percent_go": 6.55,
+    "opengrep_detection_percent": {"go": 2.18, "java_and_kotlin": 9.74, "csharp": 0.0, "ruby": 6.41, "all": 7.32},
+    "opengrep_alerts_per_kloc_after_all": 1.01
+  },
+  "claims_to_check": [
+    "Kestrix detection on all Phase 4 test pairs is at or above opengrep's, with the paired bootstrap interval reported.",
+    "Kestrix alerts per KLOC on fixed (after) files over all Phase 4 test pairs stay within the dev interval [0.23, 0.74] and below opengrep's.",
+    "Go: gosec is expected to detect more than Kestrix (as on dev, through its untainted file-path and command checks); reported as measured.",
+    "Per-language numbers are reported with their intervals; C# and Kotlin have too few in-scope pairs to support a claim.",
+    "Reported as measured whatever the outcome; no rule or threshold changes follow this run."
+  ],
+  "metrics": "detection (family match within 3 lines of a changed line), fix-aware, fix-weighted, alerts per KLOC on after-files; 95% percentile bootstrap, 1000 resamples of whole repositories"
+}
