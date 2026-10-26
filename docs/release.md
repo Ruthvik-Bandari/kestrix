@@ -6,10 +6,10 @@ on `main`; [`.github/workflows/release.yml`](../.github/workflows/release.yml) t
 1. checks that the tag equals the `version` in `pyproject.toml` and `packages/kestrix-scan/pyproject.toml`;
 2. builds the dashboard and both packages (`uv build --all-packages`);
 3. records a build provenance attestation for every file in `dist/` (`actions/attest-build-provenance`);
-4. publishes `kestrix-scan`, then `kestrix`, to PyPI with trusted publishing, from the `pypi` environment.
+4. publishes `kestrix-scan`, then `kestrix`, to PyPI with trusted publishing, from the `pypi-scan` and `pypi` environments.
 
 No PyPI API token exists anywhere: PyPI accepts the upload because the GitHub OIDC token says it comes from this
-repository, this workflow file and the `pypi` environment.
+repository, this workflow file and that project's environment (`pypi-scan` or `pypi`).
 
 ## One-time setup (owner)
 
@@ -22,14 +22,17 @@ publisher, which creates the project on its first upload.
 
    | PyPI project name | Owner | Repository name | Workflow name | Environment name |
    | --- | --- | --- | --- | --- |
-   | `kestrix-scan` | `Ruthvik-Bandari` | `kestrix` | `release.yml` | `pypi` |
+   | `kestrix-scan` | `Ruthvik-Bandari` | `kestrix` | `release.yml` | `pypi-scan` |
    | `kestrix` | `Ruthvik-Bandari` | `kestrix` | `release.yml` | `pypi` |
 
+   The environments must differ: PyPI refuses two pending publishers with the same settings, and a publish
+   job's token only works for the publisher that matches its environment.
    A pending publisher does not reserve the name: until the first upload, someone else can register it.
    Tag the first release soon after adding them.
-3. In GitHub, create the environment: **Settings → Environments → New environment**, named `pypi`. Recommended:
+3. In GitHub, create both environments: **Settings → Environments → New environment**, named `pypi-scan` and
+   `pypi`. Recommended for each:
    add yourself as a required reviewer, and under **Deployment branches and tags** allow only tags matching
-   `v*`. The publish job then waits for your approval after the build and attestation succeed.
+   `v*`. Each publish job then waits for your approval after the build and attestation succeed.
 4. Optional, also recommended: under **Settings → Rules → Rulesets**, protect `v*` tags so only you can
    create them.
 
@@ -56,7 +59,7 @@ project; nothing else needs to change for later releases.
    git push origin v0.1.0
    ```
 
-5. Approve the `pypi` deployment in the workflow run. Check both project pages and the attestations under
+5. Approve the `pypi-scan` deployment, then the `pypi` one, in the workflow run. Check both project pages and the attestations under
    the repository's **Actions → Attestations**.
 
 ## Verifying a release

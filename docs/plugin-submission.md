@@ -171,7 +171,7 @@ the PyPI project's source links return 404 to others.
 
 1. **Publish `kestrix-scan` to PyPI first.** The plugin does nothing without the binary, and the README, the
    missing-scanner message and the `kestrix-security` skill all point to PyPI. Follow [release.md](release.md): add
-   the pending trusted publishers, create the `pypi` environment, then tag `v0.1.0` on `main` of the main
+   the pending trusted publishers, create the `pypi-scan` and `pypi` environments, then tag `v0.1.0` on `main` of the main
    repository. Trusted publishing works from a private repository, but GitHub artifact attestations
    (`actions/attest-build-provenance` in `release.yml`) on a private repository need GitHub Enterprise Cloud; if
    that step fails, make the main repository public first or drop the attestation step for this release. Confirm with `pipx run --spec
