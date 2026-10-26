@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useId } from "react";
 
-/** The Kestrix shield with an iridescent rim and letter mark. Decorative. */
+/** The Kestrix shield with an iridescent rim and a K. Decorative. */
 export function BrandMark({ size = 28 }: { size?: number }) {
   const id = useId();
   return (
@@ -21,7 +21,7 @@ export function BrandMark({ size = 28 }: { size?: number }) {
         stroke={`url(#${id}-rim)`}
         strokeWidth="2"
       />
-      <path d="M16 8.5 10 24h2.9l1.2-3.4h3.8l1.2 3.4H22L16 8.5Zm-1.1 9.6L16 14.7l1.1 3.4h-2.2Z" fill={`url(#${id}-rim)`} />
+      <path d="M11.5 9H14v6.2L19 9h3.1l-5.5 6.4 5.8 8.6h-3.1l-4.4-6.6-.9 1.1V24h-2.5Z" fill={`url(#${id}-rim)`} />
     </svg>
   );
 }
