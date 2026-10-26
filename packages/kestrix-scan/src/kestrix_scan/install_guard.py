@@ -192,7 +192,8 @@ _GEM_VALUE_OPTIONS = frozenset(
      "--build-root", "--file", "-g", "--without", "--http-proxy", "--user-install"}
 )  # fmt: skip
 _DOTNET_VALUE_OPTIONS = frozenset({"-f", "--framework", "-s", "--source", "--package-directory", "-pd"})
-_COMPOSER_NAME = re.compile(r"[A-Za-z0-9](?:[_.-]?[A-Za-z0-9]+)*/[A-Za-z0-9](?:[_.-]?[A-Za-z0-9]+)*")
+# One separator between runs: an optional separator made this backtrack exponentially (CodeQL py/redos).
+_COMPOSER_NAME = re.compile(r"[A-Za-z0-9]+(?:[_.-][A-Za-z0-9]+)*/[A-Za-z0-9]+(?:[_.-][A-Za-z0-9]+)*")
 _GO_MODULE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._~-]*\.[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~+-]+)*")
 _CRATE = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 _GEM_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")

@@ -185,6 +185,11 @@ def test_parse_added_install_commands(command: str, expected: list[tuple[str, st
     assert parse_command(command) == [Requested(*item) for item in expected]
 
 
+def test_a_long_almost_composer_name_parses_in_linear_time() -> None:
+    # The old pattern backtracked exponentially here (CodeQL py/redos): 40 characters took hours.
+    assert parse_command("composer require " + "0" * 5000 + "!") == []
+
+
 def _plugin_script() -> Any:
     import importlib.util
 
