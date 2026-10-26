@@ -203,7 +203,7 @@ jobs:
           /tmp/scan/bin/python -m pip install --dry-run --ignore-installed --report /tmp/scan-report.json dist/kestrix_scan-*.whl
           python -c "import json; names = [i['metadata']['name'] for i in json.load(open('/tmp/scan-report.json'))['install']]; assert names == ['kestrix-scan'], names"
           /tmp/scan/bin/python -m pip install --no-index dist/kestrix_scan-*.whl
-          test "$(/tmp/scan/bin/python -m pip list --format freeze | grep -v '^pip==')" = "kestrix-scan==0.1.0"
+          test "$(/tmp/scan/bin/python -m pip list --format freeze | grep -v '^pip==')" = "kestrix-scan==$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/kestrix-scan/pyproject.toml)"
           /tmp/scan/bin/kestrix-scan --version
           /tmp/scan/bin/python -m kestrix_scan rules > /dev/null
           printf 'import subprocess\nsubprocess.run(cmd, shell=True)\n' > /tmp/vulnerable.py
