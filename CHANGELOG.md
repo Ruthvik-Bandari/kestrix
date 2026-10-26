@@ -4,6 +4,26 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-26
+
+### Fixed
+
+- **`kestrix-scan` install guard: exponential backtracking in the Composer package-name pattern.** A `composer require`
+  of about 40 digits followed by an invalid character hung the Claude Code `PreToolUse` hook for hours. The new pattern
+  accepts the same names in linear time (found by CodeQL, `py/redos`).
+
+### Changed
+
+- Install instructions in the docs, the dashboard, `llms.txt` and the Claude Code plugin's missing-scanner hint now use
+  PyPI (`pip install kestrix-scan`, `pip install kestrix`) instead of installing from the repository.
+- The Claude Code plugin is version 0.1.1.
+
+## [0.1.0] - 2026-10-26
+
+First release on PyPI, of both `kestrix` and `kestrix-scan`. It contains everything listed from here down to the
+pre-release milestone below.
+
+
 ### Added
 
 - **`kestrix-scan` language phase 5: C and C++, Rust and Swift** (13 rules, 146 in all), lexically obvious patterns only
@@ -256,7 +276,9 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   - writes aggregate-only QC reports.
 - Slurm and transfer-node scripts for the Explorer cluster (`hpc/`), the HPC runbook (`docs/hpc.md`), and the data source license record, data and model guardrails policy, and compliance checklist (`docs/data/`).
 
-## [0.1.0] - 2026-10-14
+## Pre-release milestone - 2026-10-14
+
+Not published; recorded for history.
 
 First release of Kestrix as one installable package, `kestrix`, with the `kestrix` CLI and a local dashboard. See [ADR 0001](docs/adr/0001-platform-direction.md) for the platform decision.
 
@@ -298,5 +320,6 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
   - dashboard lint, test and build;
   - a wheel smoke test.
 
-[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ruthvik-Bandari/kestrix/releases/tag/v0.1.0

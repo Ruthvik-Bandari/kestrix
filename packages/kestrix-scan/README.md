@@ -152,7 +152,7 @@ it again is safe: each step reports what is already in place.
 ```yaml
 repos:
   - repo: https://github.com/Ruthvik-Bandari/kestrix
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: kestrix-scan
 ```
@@ -169,7 +169,7 @@ vulnerability published tomorrow in a locked dependency appears without a commit
 its job has only `contents: read` and `security-events: write`. The steps that matter:
 
 ```yaml
-- run: pip install kestrix-scan==0.1.0
+- run: pip install kestrix-scan==0.1.1
 - run: kestrix-scan db update        # downloads the OSV data of your lockfiles' ecosystems; needs network access
 - run: kestrix-scan --format sarif --output kestrix.sarif || true
 - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0

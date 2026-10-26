@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "kestrix-scan"
-version = "0.1.0"
+version = "0.1.1"
 description = "Kestrix code scanner: local, zero-dependency security checks for 13 languages (Python, JavaScript, TypeScript, PHP, Go, Java, Kotlin, C#, Ruby, C, C++, Rust, Swift), web, SQL, CI and infrastructure files, hard-coded secrets and dependency lockfiles (offline OSV), with SARIF, pre-commit, pytest and a Claude Code plugin."
 readme = "README.md"
 license = "Apache-2.0"

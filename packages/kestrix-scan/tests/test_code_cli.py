@@ -38,7 +38,7 @@ def test_help_and_version() -> None:
     assert scan_help.exit_code == 0
     for flag in ("--format", "--output", "--fail-on", "--baseline", "--write-baseline", "--diff", "--hook"):
         assert flag in scan_help.stdout
-    assert run("--version").stdout == run("version").stdout == "0.1.0 (Kestrix by Ruthvik Bandari)\n"
+    assert run("--version").stdout == run("version").stdout == "0.1.1 (Kestrix by Ruthvik Bandari)\n"
 
 
 def test_rules_lists_every_rule() -> None:

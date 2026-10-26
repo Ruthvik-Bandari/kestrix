@@ -5,6 +5,17 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+## 0.1.1 (2026-10-26)
+
+- **Fixed:** the install guard's Composer package-name pattern backtracked exponentially, so a crafted
+  `composer require` hung the `PreToolUse` hook. The new pattern accepts the same names in linear time.
+- The Claude Code plugin (0.1.1) tells you to install `kestrix-scan` from PyPI when the scanner is missing.
+
+## 0.1.0 (2026-10-26)
+
+First release on PyPI. It contains everything listed from here down to the package split below.
+
+
 - **Phase 5 of the language roadmap: C and C++, Rust and Swift, narrow on purpose (13 rules, 146 in all; measured with a held-out run).**
   - New files read: `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`, `.rs`, `.swift` and `.plist` (`c_tokens.py` now also lexes C and C++,
     Rust and Swift; `systems_rules.py`). `.build`, `Pods`, `Carthage` and `DerivedData` directories are skipped. The Claude plugin hooks scan the new
@@ -286,9 +297,9 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 - Lockfiles up to 64 MiB are scanned (other files keep the 1 MiB limit); a lockfile over 1 MiB gets only the
   dependency check.
 
-## 0.1.0
+## Package split (unpublished)
 
-First release as its own package (ADR 0006). The scanner, its rules and the Claude Code plugin come from
+The scanner became its own package (ADR 0006). The scanner, its rules and the Claude Code plugin come from
 `kestrix.code` and `kestrix.integrations` in Kestrix 0.1.0; their behaviour and output are unchanged.
 
 - **Scanner:** Python AST rules (`py.*`) and secret rules (`secret.*`), inline suppressions with a required

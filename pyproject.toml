@@ -1,6 +1,6 @@
 [project]
 name = "kestrix"
-version = "0.1.0"
+version = "0.1.1"
 description = "Kestrix: a local-first security workbench for code scanning, email threat analysis, detection repair, file forensics, web exposure checks and Bitcoin quantum-risk scanning."
 readme = "README.md"
 license = "Apache-2.0"
@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
     # The code scanner and the Claude Code plugin (ADR 0006); versioned together with kestrix below 1.0.
-    "kestrix-scan==0.1.0",
+    "kestrix-scan==0.1.1",
     "fastapi>=0.115",
     "uvicorn>=0.32",
     "httpx>=0.28",

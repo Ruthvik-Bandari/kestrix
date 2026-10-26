@@ -245,7 +245,7 @@ rules.disable = ["py.crypto.weak_hash"]`,
         "GitHub Action",
         p("`kestrix-scan init --ci github` writes `.github/workflows/kestrix.yml`. Its actions are pinned to commit SHAs and its job has only `contents: read` and `security-events: write`. The key steps:"),
         code(
-          `- run: pip install kestrix-scan==0.1.0
+          `- run: pip install kestrix-scan==0.1.1
 - run: kestrix-scan db update        # downloads the OSV data, so this job needs network access
 - run: kestrix-scan --format sarif --output kestrix.sarif || true
 - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
@@ -254,14 +254,13 @@ rules.disable = ["py.crypto.weak_hash"]`,
           ".github/workflows/kestrix.yml (excerpt)",
         ),
         p("Findings appear under Security → Code scanning. To fail the build instead, drop `|| true`."),
-        note("The generated workflow installs `kestrix-scan` from PyPI, so it only works after the PyPI release. Until then, replace that step with the repository install, which needs uv on the runner.", "caution"),
       ),
       section(
         "pre-commit",
         code(
           `repos:
   - repo: https://github.com/Ruthvik-Bandari/kestrix
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: kestrix-scan`,
           ".pre-commit-config.yaml",

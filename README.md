@@ -361,7 +361,7 @@ claude plugin marketplace add ~/.claude/kestrix-plugin
 claude plugin install kestrix@kestrix-local
 ```
 
-Once this repository is public: `/plugin marketplace add Ruthvik-Bandari/kestrix`, then
+Or, without the local copy, in Claude Code: `/plugin marketplace add Ruthvik-Bandari/kestrix-claude-plugin`, then
 `/plugin install kestrix@kestrix`.
 
 The plugin also includes:

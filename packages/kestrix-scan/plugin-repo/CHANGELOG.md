@@ -3,7 +3,12 @@
 All notable changes to the Kestrix plugin for Claude Code. The plugin's version is the `version` in
 `.claude-plugin/plugin.json` and matches the `kestrix-scan` release it was built from.
 
-## Unreleased
+## 0.1.1
+
+- When `kestrix-scan` is missing, the hint now says to install it from PyPI (`pip`, `pipx` or `uv tool`).
+- Built from `kestrix-scan` 0.1.1, which fixes exponential backtracking in the install guard's Composer name pattern.
+
+## 0.1.0
 
 - A scan that could not run (`kestrix-scan` missing, timed out or crashed) is shown to you once per session for each
   cause, and Claude is told the file was not security-checked, instead of the hooks staying silent.
@@ -12,8 +17,6 @@ All notable changes to the Kestrix plugin for Claude Code. The plugin's version 
 - `secure-code-review` has a new description with concrete trigger phrases.
 - README: a before / finding / after example, Coverage, an exact rule count, a first privacy paragraph, "Does it
   help?"; the A/B effectiveness eval in `evals/ab/` (not yet run).
-
-## 0.1.0
 
 First public release.
 
