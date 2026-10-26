@@ -89,7 +89,7 @@ The format comes from the first bytes of the content, never from the name. Recog
 
 ### Photo metadata
 
-EXIF reading needs the optional Pillow extra: `pip install "kestrix[exif]"`. It runs only for JPEG, PNG, TIFF and WebP content, and Pillow is restricted to those four formats ([`exif.py`](../../src/kestrix/forensics/exif.py)).
+EXIF reading needs the optional Pillow extra, `pip install "kestrix[exif]"`, and Python 3.11 or newer: the extra requires Pillow 13, which fixes header-parsing vulnerabilities and has no Python 3.10 build, so on 3.10 it installs nothing and `exif_status` is `pillow_not_installed`. It runs only for JPEG, PNG, TIFF and WebP content, and Pillow is restricted to those four formats ([`exif.py`](../../src/kestrix/forensics/exif.py)).
 
 - Pixel data is never decoded. PNG metadata comes only from the header pass.
 - Images declaring more than 200,000,000 pixels (twice Pillow's limit, which is set to 100,000,000) are not opened.

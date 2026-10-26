@@ -51,7 +51,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ai = ["anthropic>=0.75"]
-exif = ["pillow>=11"]
+exif = ["pillow>=13; python_version >= '3.11'"]  # Pillow 13 fixes header-parsing CVEs and needs Python 3.11+; 3.10 gets no EXIF rather than a vulnerable Pillow
 hosted = [
     "cryptography>=50,<51",
     "pyjwt>=2.10,<3",
