@@ -88,7 +88,7 @@ kestrix-scan = { workspace = true }
 dev = ["pytest>=9", "pytest-cov>=6", "ruff>=0.14", "mypy>=1.18", "types-pyyaml", "tomli>=2"]
 # Cluster-only research inference (B2/M1); never part of the published wheel.
 # torch 2.6 wheels target CUDA 12.4: they run on the cluster driver (545, CUDA 12.3) and still support V100 (sm_70).
-gpu = ["torch>=2.6,<2.7", "transformers>=4.46,<5", "accelerate>=1.0", "peft>=0.13"]
+gpu = ["torch>=2.6,<2.7", "transformers>=4.46,<6", "accelerate>=1.0", "peft>=0.13"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/kestrix-scan/tests"]
