@@ -124,13 +124,11 @@ describe("LandingPage in local mode", () => {
     expect(within(section).getByRole("link", { name: /privacy notice/i }).getAttribute("href")).toBe(PRIVACY_PATH);
   });
 
-  it("does not present an unpublished PyPI package as installable", () => {
+  it("installs from PyPI: the wheel ships the dashboard, so no clone or build", () => {
     renderLanding();
-    expect(screen.queryByText("pip install kestrix")).toBeNull();
-    expect(screen.getByText(/PyPI release pending/i)).toBeTruthy();
-    // A git install has no built dashboard, so the landing shows the from-source build that does.
-    expect(screen.getByText(/npm --prefix frontend run build/)).toBeTruthy();
-    expect(screen.getByText(new RegExp(`git clone ${REPO_URL.replace(/[.]/g, "\\.")}`))).toBeTruthy();
+    expect(screen.getByText(/pip install kestrix\s+kestrix dashboard/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copy install commands" })).toBeTruthy();
+    expect(screen.queryByText(/PyPI release pending|git clone|npm --prefix/i)).toBeNull();
   });
 
   it("keeps the attribution, docs, repository and license links in the footer, once", () => {

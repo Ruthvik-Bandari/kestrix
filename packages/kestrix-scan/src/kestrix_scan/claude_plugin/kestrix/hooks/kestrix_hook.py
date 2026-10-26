@@ -148,7 +148,7 @@ STOP_SCAN_TIMEOUT_S = 25.0  # inside the 30 s Stop hook timeout
 SESSION_TTL_S = 14 * 24 * 3600
 CONFIG_FILE = ".kestrix.json"
 # Words only, no command line: the hooks never install anything, and the plugin README has the commands.
-INSTALL_HINT = "install the kestrix-scan package (not on PyPI yet: install it from the Kestrix repository with uv tool; see the Kestrix plugin README)"
+INSTALL_HINT = "install the kestrix-scan package from PyPI with pip, pipx or uv tool (see the Kestrix plugin README)"
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
 
 

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import type { ToolPage } from "../../app/tools";
-import { REPO_URL } from "../../lib/site";
 import { list, p, steps, type DocSection } from "../docs/blocks";
 
 /*
@@ -25,29 +24,11 @@ export interface GuideStep {
   command?: string;
 }
 
-/*
- * Install commands. Neither package is on PyPI yet (docs/release.md), so every command here installs
- * from the repository; the guides say so and mention pip only as what works after the release.
- */
-const SOURCE = `git+${REPO_URL}`;
-export const INSTALL_KESTRIX = `uv tool install "${SOURCE}"`;
-export const INSTALL_SCAN = `uv tool install "${SOURCE}#subdirectory=packages/kestrix-scan"`;
-export const INSTALL_EXIF = `uv tool install "kestrix[exif] @ ${SOURCE}"`;
-export const INSTALL_AI = `uv tool install "kestrix[ai] @ ${SOURCE}"`;
-
-/**
- * The repository does not commit the built dashboard, so a git install gives every CLI command but an
- * empty dashboard. Until the PyPI wheel ships the bundle, the dashboard needs this from-source build.
- */
-export const INSTALL_DASHBOARD = [
-  `git clone ${REPO_URL} && cd kestrix`,
-  "npm --prefix frontend ci && npm --prefix frontend run build",
-  "uv tool install .",
-  "kestrix dashboard",
-].join("\n");
-
-/** Shown above every install command until the first PyPI release. */
-export const PYPI_PENDING = "PyPI release pending, so install from the repository with uv. pip install works only after that release.";
+/** Install commands, from PyPI. `pipx install` and `uv tool install` take the same package names. */
+export const INSTALL_KESTRIX = "pip install kestrix";
+export const INSTALL_SCAN = "pip install kestrix-scan";
+export const INSTALL_EXIF = 'pip install "kestrix[exif]"';
+export const INSTALL_AI = 'pip install "kestrix[ai]"';
 
 export interface LocalGuide {
   requirements: string[];

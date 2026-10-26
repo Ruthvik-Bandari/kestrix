@@ -41,8 +41,7 @@ export const guidePages: DocPage[] = [
     sections: [
       section(
         "Before you start",
-        list("You have Python 3.10 or newer and `uv` installed.", "You work in an empty scratch directory. Nothing here uses real data, and nothing leaves your computer."),
-        note("PyPI release pending, so you install from the repository.", "caution"),
+        list("You have Python 3.10 or newer with `pip`.", "You work in an empty scratch directory. Nothing here uses real data, and nothing leaves your computer."),
       ),
       section("Install", code(INSTALL_KESTRIX), code("kestrix version")),
       section(
@@ -93,7 +92,7 @@ export const guidePages: DocPage[] = [
             ["Does Kestrix send my file or email anywhere?", "No, unless you use the hosted service, where it is analyzed on the server and never stored. The only features that open a connection on your computer are the website check, the Bitcoin lookup and guardian, and `kestrix-scan db update`."],
             ["Which tools work on the hosted service?", "The email check, the website check and file and link forensics. Detection repair, Bitcoin and the code tools run on your computer."],
             ["Can I scan any website?", "Only sites you own or are authorized to assess."],
-            ["Is there a pip package?", "Not yet. Install from the repository with uv."],
+            ["Is there a pip package?", "Yes. `pip install kestrix-scan` for the code scanner and Claude Code plugin, `pip install kestrix` for everything."],
             ["How accurate is it?", "Each tool's limits and accuracy page gives the measured numbers, with their caveats, and says where nothing has been measured."],
           ],
         ),

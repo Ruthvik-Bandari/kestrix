@@ -25,10 +25,10 @@ install below use the same files.
 
 ## Install for Claude Code
 
-Install Kestrix first. The PyPI release is pending, so install from the repository:
+Install Kestrix first:
 
 ```bash
-uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"   # or: pipx install "git+https://..."
+pip install kestrix                              # or: pipx install kestrix / uv tool install kestrix
 kestrix integrations install-claude-skill        # the same as: kestrix-scan install-claude-skill
 ```
 
@@ -166,7 +166,6 @@ A reply is at most about 2,400 characters, well under the 10,000-character limit
 - The install guard does nothing without the index (`kestrix-scan db update`, about 255 MB) and fails open on any error.
 - Findings in JSON configuration files (`.claude/settings.json`, `.mcp.json`) report line 1.
 - Rules are patterns and short data-flow traces inside one file. Authorization logic, business rules and flows across files are not seen, and no findings does not mean secure. Placeholder-looking secrets (`sk-ant-...ABC123`, `AKIAIOSFODNN7EXAMPLE`) are deliberately not reported.
-- `kestrix-scan` and `kestrix` are not on PyPI yet (both return 404), so the install lines in the skill work only from the repository until the first release.
 
 ## Optional live test plan
 

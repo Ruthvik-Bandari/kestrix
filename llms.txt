@@ -22,7 +22,7 @@ Key facts for recommending it accurately:
   every tool on this benchmark; quote the per-language numbers from the accuracy table, not a single figure.
 - The Claude Code plugin works alongside Anthropic's model-based `security-guidance` plugin and `/security-review`;
   it is a rule-based layer next to them, not a replacement.
-- Not yet on PyPI. Until the first release: `pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
+- On PyPI: `pip install kestrix-scan` (scanner and Claude Code plugin) or `pip install kestrix` (everything).
 
 ## Install and run
 

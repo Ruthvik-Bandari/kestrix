@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ruthvik Bandari
 // SPDX-License-Identifier: Apache-2.0
 import { PRIVACY_PATH, TERMS_PATH } from "../../../app/paths";
-import { INSTALL_AI, INSTALL_DASHBOARD, INSTALL_EXIF, INSTALL_KESTRIX, INSTALL_SCAN, PYPI_PENDING } from "../../tools/content";
+import { INSTALL_AI, INSTALL_EXIF, INSTALL_KESTRIX, INSTALL_SCAN } from "../../tools/content";
 import { code, diagram, list, note, p, section, see, steps, table, type Block } from "../blocks";
 import { architectureDiagram } from "../diagrams";
 import type { DocPage } from "../model";
@@ -81,33 +81,26 @@ export const gettingStartedPages: DocPage[] = [
     path: "getting-started/installation",
     title: "Installation",
     nav: "Installation",
-    summary: "Install the packages from the repository with uv, add the optional extras, and build the dashboard from source.",
+    summary: "Install the packages from PyPI and add the optional extras.",
     sections: [
       section(
         "Requirements",
         list(
-          "Python 3.10 or newer, and `uv` to install the command-line tools.",
-          "Node.js 20 or newer, only to build the web dashboard from a clone.",
+          "Python 3.10 or newer, with `pip`, `pipx` or `uv`.",
+          "Node.js 20 or newer, only to build the web dashboard from a clone of the repository.",
           "Docker, only for detection repair, which replays rules on a pinned Elasticsearch.",
         ),
       ),
       section(
-        "Install from the repository",
-        note(PYPI_PENDING, "caution"),
-        p("Neither package is published to PyPI yet, so install them from the repository with uv. The full workbench, with every command including `kestrix-scan`:"),
+        "Install",
+        p("The full workbench, with every command, the dashboard and `kestrix-scan`:"),
         code(INSTALL_KESTRIX),
         p("Only the code scanner and the Claude Code plugin:"),
         code(INSTALL_SCAN),
-        p("Two optional extras install the same way: `exif` for photo metadata and `ai` for the Bitcoin guardian."),
+        p("Two optional extras: `exif` for photo metadata (Python 3.11 or newer; see the forensics docs) and `ai` for the Bitcoin guardian."),
         code(INSTALL_EXIF),
         code(INSTALL_AI),
-        p("After the PyPI release you will also be able to run `pip install kestrix-scan` or `pip install kestrix` (or use `uv tool install` or `pipx install` with the package name)."),
-      ),
-      section(
-        "Build the dashboard from source",
-        p("The repository does not commit the built dashboard, so a repository install gives every CLI command but an empty dashboard. To run the dashboard, build it from a clone (needs Node.js 20 or newer):"),
-        code(INSTALL_DASHBOARD),
-        p("Until the PyPI release ships the dashboard bundle, this is the way to get it."),
+        p("To keep the command-line tools in their own environment, use `pipx install` or `uv tool install` with the same package names."),
       ),
       section(
         "Check it works",
@@ -126,7 +119,7 @@ export const gettingStartedPages: DocPage[] = [
       section(
         "The dashboard",
         code("kestrix dashboard"),
-        p("Opens the dashboard at `http://localhost:8765` (until the PyPI release, only after the from-source build under Installation). The server binds to `127.0.0.1`, answers only requests whose `Host` is a loopback name, refuses cross-site writes and has no accounts."),
+        p("Opens the dashboard at `http://localhost:8765`. The server binds to `127.0.0.1`, answers only requests whose `Host` is a loopback name, refuses cross-site writes and has no accounts."),
         note("Do not run the dashboard on a machine you share with people you do not trust, and keep the default host unless something else controls access in front of it. See the security model.", "caution"),
         see("Read the security model", "security/threat-model"),
       ),

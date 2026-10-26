@@ -36,7 +36,7 @@ export const securityPages: DocPage[] = [
             ["0.1.x", "Yes"],
           ],
         ),
-        p("Fixes go into the latest 0.1 release. Kestrix is not yet published to PyPI, so until then the latest commit on the main branch is what is supported."),
+        p("Fixes go into the latest 0.1 release on PyPI."),
       ),
       section(
         "What is in scope",
@@ -174,19 +174,17 @@ export const securityPages: DocPage[] = [
       ),
       section(
         "Releases",
-        note("Pending. Neither package has been published to PyPI, so no release exists to verify yet. Install from the repository until then.", "caution"),
-        p("The release workflow is written and runs on a `v*` tag. When a release exists it works like this:"),
+        p("Releases are built by the release workflow on a `v*` tag:"),
         steps(
           "The workflow checks that the tag equals the version in both packages' `pyproject.toml`.",
           "It builds the dashboard and both packages.",
           "It records a build provenance attestation for every file it builds, using GitHub's attest-build-provenance action.",
-          "It publishes `kestrix-scan`, then `kestrix`, to PyPI with trusted publishing, so no PyPI API token exists anywhere. The publish waits for the owner's approval.",
+          "It publishes `kestrix-scan`, then `kestrix`, to PyPI with trusted publishing, so no PyPI API token exists anywhere. Each publish waits for the owner's approval.",
         ),
-        p("Once a release is published, anyone can check that a wheel was built by this repository's release workflow:"),
+        p("Anyone can check that a wheel was built by this repository's release workflow:"),
         code(
           `pip download --no-deps kestrix-scan==0.1.0 -d /tmp/k
 gh attestation verify /tmp/k/kestrix_scan-0.1.0-py3-none-any.whl --repo Ruthvik-Bandari/kestrix`,
-          "Works only after the first release",
         ),
         p("The workflow's third-party actions are pinned to commit SHAs."),
       ),

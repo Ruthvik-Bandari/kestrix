@@ -13,7 +13,9 @@ import { isHosted } from "../../lib/mode";
 import { scrollBehavior } from "../../lib/motion";
 import { useMe } from "../../lib/queries";
 import { useTitle } from "../../lib/useTitle";
-import { INSTALL_DASHBOARD } from "../tools/content";
+import { INSTALL_KESTRIX } from "../tools/content";
+
+const INSTALL_DASHBOARD = `${INSTALL_KESTRIX}\nkestrix dashboard`;
 import { availability, deeperTools, everydayTools, steps, trust, type LandingTool } from "./content";
 import { ReportCard, severitySummary } from "./parts";
 import { emailSample } from "./samples";
@@ -387,7 +389,7 @@ function Trust() {
               ))}
             </ul>
             <div className="mt-5 rounded-lg border border-line bg-inset p-4">
-              <p className="text-[0.875rem] font-medium text-ink">PyPI release pending. Build and run it from the repository:</p>
+              <p className="text-[0.875rem] font-medium text-ink">Install it from PyPI and start the dashboard:</p>
               <div className="mt-2 flex items-start gap-2 font-mono text-[0.8125rem] text-ink">
                 <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all">
                   <code>{INSTALL_DASHBOARD}</code>

@@ -78,16 +78,16 @@ The repository already carries what search engines, PyPI, GitHub and AI assistan
 the plugin's `description` and `keywords`, the dashboard's description and Open Graph tags, and the issue and pull
 request templates in `.github/`. These steps need the owner:
 
-- [ ] Make `Ruthvik-Bandari/kestrix` public (and `kestrix-claude-plugin`, after `kestrix-scan` is on PyPI; see
+- [x] Make `Ruthvik-Bandari/kestrix` public (and `kestrix-claude-plugin`, after `kestrix-scan` is on PyPI; see
       [plugin-submission.md](plugin-submission.md)).
-- [ ] Publish `kestrix-scan` and `kestrix` to PyPI ([Cutting a release](#cutting-a-release)), then remove the
+- [x] Publish `kestrix-scan` and `kestrix` to PyPI ([Cutting a release](#cutting-a-release)), then remove the
       "Until the first PyPI release" lines from both READMEs and `llms.txt`.
 - [ ] Submit the plugin to the Claude Code plugin directory ([plugin-submission.md](plugin-submission.md), owner steps).
-- [ ] Set the repository description and topics (**About** on the repository page), for example `security`, `sast`,
+- [x] Set the repository description and topics (**About** on the repository page), for example `security`, `sast`,
       `static-analysis`, `secret-scanning`, `sarif`, `pre-commit`, `claude-code`.
 - [ ] Set the GitHub social preview image (**Settings → General → Social preview**, 1280×640 PNG).
-- [ ] Enable Discussions (**Settings → General → Features**).
-- [ ] Create the `scanner-rule` label, which the scanner-rule issue template applies (GitHub ignores a missing one).
-- [ ] Open and label 5 good-first issues from [CONTRIBUTING.md](../CONTRIBUTING.md#good-first-contributions).
+- [x] Enable Discussions (**Settings → General → Features**).
+- [x] Create the `scanner-rule` label, which the scanner-rule issue template applies (GitHub ignores a missing one).
+- [x] Open and label 5 good-first issues from [CONTRIBUTING.md](../CONTRIBUTING.md#good-first-contributions).
 - [ ] Post one announcement each: Show HN, Reddit r/netsec, r/Python. State the measured numbers with their
       method link ([CVE-fix benchmark](benchmarks/cvefixes.md)) and the limits.

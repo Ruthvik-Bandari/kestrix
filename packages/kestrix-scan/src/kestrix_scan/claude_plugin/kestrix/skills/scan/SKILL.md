@@ -17,7 +17,7 @@ kestrix-scan $ARGUMENTS --format json --fail-on none
 Exit code 2 is a usage or input error: show the `Rejected (...)` line and stop. If `kestrix-scan` is not on
 PATH but the Kestrix workbench is, `kestrix code scan` takes the same arguments. If neither is
 installed, tell the user to run
-`uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"` and stop.
+`pip install kestrix-scan` (or `pipx install kestrix-scan` / `uv tool install kestrix-scan`) and stop.
 
 Summarize:
 

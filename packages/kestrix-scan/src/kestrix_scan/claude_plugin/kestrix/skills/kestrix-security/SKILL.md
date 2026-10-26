@@ -40,8 +40,6 @@ pipx install kestrix
 uv tool install "kestrix[exif]"
 ```
 
-If the package is not on PyPI yet, `uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix"` installs it from the repository.
-
 Detection repair also needs the pinned Elasticsearch in Docker. Start it once, wait about 30 seconds,
 then confirm it is ready (exit 0 means ready, 3 means not reachable):
 

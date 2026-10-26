@@ -4,7 +4,7 @@ import { useId, type ReactNode } from "react";
 import type { ToolPage } from "../../app/tools";
 import { Icon, type IconName } from "../../components/Icon";
 import { cx } from "../../components/ui";
-import { PYPI_PENDING, toolContent } from "./content";
+import { toolContent } from "./content";
 import { examples } from "./examples";
 import { Command, ExampleOutput, Inline } from "./parts";
 
@@ -63,7 +63,6 @@ export function ToolGuide({ tool, compact = false }: { tool: ToolPage; compact?:
       </Section>
 
       <Section title="Install" compact={compact} icon="package">
-        <p className="mb-2 text-[0.8125rem] text-ink-3">{PYPI_PENDING}</p>
         <div className="space-y-2">
           {guide.install.map((item) => (
             <div key={item.command}>

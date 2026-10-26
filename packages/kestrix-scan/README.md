@@ -28,9 +28,6 @@ Part of [Kestrix](https://github.com/Ruthvik-Bandari/kestrix) by Ruthvik Bandari
 
 ## Quick start
 
-Before the first PyPI release, install it from GitHub:
-`pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
-
 ```text
 $ kestrix-scan app.py
 app.py

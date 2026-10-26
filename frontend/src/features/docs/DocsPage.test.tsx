@@ -293,11 +293,12 @@ describe("links and content", () => {
     }
   });
 
-  it("does not present pip install of an unpublished package as available", () => {
-    for (const { block } of allBlocks()) if (block.kind === "code") expect(block.code).not.toMatch(/^pip install /m);
+  it("installs from PyPI, with no pre-release repository installs left", () => {
+    for (const { block } of allBlocks()) if (block.kind === "code") expect(block.code).not.toMatch(/git\+https|uv tool install "git/);
     renderDocs("/docs/getting-started/installation");
-    expect(screen.getByText(/PyPI release pending/)).toBeTruthy();
-    expect(screen.getByText(/After the PyPI release you will also be able to run/)).toBeTruthy();
+    expect(screen.getByText("pip install kestrix")).toBeTruthy();
+    expect(screen.getByText("pip install kestrix-scan")).toBeTruthy();
+    expect(screen.queryByText(/PyPI release pending/)).toBeNull();
   });
 
   it("holds no secrets or private keys, and uses reserved example domains in its email and link examples", () => {

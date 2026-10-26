@@ -44,8 +44,6 @@ and newer:
 pip install kestrix-scan              # or: uv tool install kestrix-scan / pipx install kestrix-scan
 ```
 
-Until the first PyPI release, install it from the repository with
-`uv tool install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
 The full workbench (`pip install kestrix`) includes `kestrix-scan`; when only an older `kestrix` without it is
 on PATH, the hooks fall back to `kestrix code scan`.
 

@@ -27,8 +27,6 @@ kestrix-scan db update                       # download the OSV data once (the o
 ```
 
 Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](packages/kestrix-scan/README.md).
-Until the first PyPI release, install it with
-`pip install "git+https://github.com/Ruthvik-Bandari/kestrix#subdirectory=packages/kestrix-scan"`.
 
 ### The full workbench: `kestrix`
 
