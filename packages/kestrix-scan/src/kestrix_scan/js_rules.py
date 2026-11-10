@@ -34,7 +34,7 @@ from .js_index import (
     best,
     is_punct,
 )
-from .js_tokens import JSX_ATTR, NAME, STR, TPL, TPL_HEAD, tokenize
+from .js_tokens import JSX, JSX_ATTR, NAME, REGEX, STR, TPL, TPL_HEAD, tokenize
 from .models import Confidence, Severity, SkipReason, TraceStep, clip_snippet
 from .python_rules import _SQL
 from .registry import Hit
@@ -159,6 +159,9 @@ _HEADER_SETTERS = frozenset({"setHeader", "header", "set", "append"})
 _ACAO = "access-control-allow-origin"
 _ACAC = "access-control-allow-credentials"
 _HTML_SANITIZERS = frozenset({"sanitize", "sanitizeHtml", "escapeHtml", "escapeHTML", "escape", "encode"})
+# <script> types the browser treats as data and never runs; with every < escaped, JSON in one cannot close the tag.
+_JSON_SCRIPT_TYPES = frozenset({"application/ld+json", "application/json"})
+_GLOBAL_LT = re.compile(r"/(?:<|\\x3c|\\u003c)/[a-z]*g[a-z]*", re.IGNORECASE)
 
 _INNER_HTML_BINDING = re.compile(r"\[(?:inner|outer)HTML\]\s*=\s*[\"']\s*[^\"'\s]", re.IGNORECASE)
 ANGULAR_INNER_HTML_MESSAGE = (
@@ -827,12 +830,69 @@ class _Checker:
             return
         entries = ix.object_entries(*span)
         if entries is not None:
-            if "__html" in entries:
+            if "__html" in entries and not (self._escaped_json(*entries["__html"]) and self._json_script(k)):
                 self._xss(k, entries["__html"], "dangerouslySetInnerHTML")
             return
         origins = ix.taint(*span)
         if best(origins, HTML, _LLM | _REMOTE) is not None:
             self._xss(k, span, "dangerouslySetInnerHTML")
+
+    def _json_script(self, attr: int) -> bool:
+        """True when the JSX attribute at ``attr`` sits on ``<script type="application/ld+json">`` (or application/json).
+
+        The browser never runs such a data block, so the only way out is a ``</script>`` in the text.
+        """
+        toks = self.toks
+        k = attr - 1
+        while k >= 0 and toks[k].kind != JSX:
+            if is_punct(toks[k], "}"):
+                k = self.ix.parent[k]  # jump over an attribute's {expression}
+            elif toks[k].kind not in (JSX_ATTR, STR) and not is_punct(toks[k], "="):
+                return False
+            k -= 1
+        if k < 0 or toks[k].value != "script":
+            return False
+        end = attr
+        for j in range(k + 1, end):
+            if toks[j].kind == JSX_ATTR and toks[j].value == "type" and j + 2 < end and is_punct(toks[j + 1], "="):
+                value = toks[j + 2]
+                if is_punct(value, "{") and j + 4 < end and is_punct(toks[j + 4], "}"):
+                    value = toks[j + 3]
+                return value.kind == STR and value.value.strip().lower() in _JSON_SCRIPT_TYPES
+        return False
+
+    def _escaped_json(self, lo: int, hi: int) -> bool:
+        """``JSON.stringify(x)`` followed by literal ``.replace``/``.replaceAll`` calls, one of which escapes every ``<``."""
+        ix = self.ix
+        toks = self.toks
+        if not (
+            hi - lo >= 4
+            and toks[lo].value == "JSON"
+            and is_punct(toks[lo + 1], ".")
+            and toks[lo + 2].value == "stringify"
+            and is_punct(toks[lo + 3], "(")
+        ):
+            return False
+        k = ix.close_of(lo + 3) + 1
+        escaped = False
+        while k < hi:
+            if not (k + 2 < hi and is_punct(toks[k], ".") and is_punct(toks[k + 2], "(")):
+                return False
+            method, open_ = toks[k + 1].value, k + 2
+            close = ix.close_of(open_)
+            args = ix.split(open_ + 1, close)
+            if method not in ("replace", "replaceAll") or len(args) != 2 or any(b - a != 1 for a, b in args):
+                return False
+            pattern, repl = toks[args[0][0]], toks[args[1][0]]
+            if repl.kind != STR or "<" in repl.value:  # a later replace must not put a < back
+                return False
+            every_lt = (pattern.kind == REGEX and _GLOBAL_LT.fullmatch(pattern.value) is not None) or (
+                method == "replaceAll" and pattern.kind == STR and pattern.value == "<"
+            )
+            if every_lt and repl.value.lower() == "\\u003c":
+                escaped = True
+            k = close + 1
+        return escaped
 
     # ----- insecure randomness
 

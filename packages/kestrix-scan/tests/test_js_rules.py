@@ -595,3 +595,45 @@ def test_one_finding_per_rule_per_line() -> None:
 def test_findings_point_at_the_sink() -> None:
     hit = only("function f(x) {\n  return   eval(x)\n}", "js.exec.eval")
     assert (hit.line, hit.column, hit.snippet) == (2, 12, "return   eval(x)")
+
+
+def _ld(type_attr: str, value: str, tag: str = "script") -> str:
+    return f"export const L = () => <{tag} {type_attr} dangerouslySetInnerHTML={{{{ __html: {value} }}}} />;"
+
+
+_ESCAPED = 'JSON.stringify(data).replace(/</g, "\\\\u003c")'
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        _ld('type="application/ld+json"', _ESCAPED),
+        _ld('type="application/json" id="d"', _ESCAPED),
+        _ld('type={"application/ld+json"}', _ESCAPED),
+        _ld('type="application/ld+json"', "JSON.stringify(data).replaceAll('<', '\\\\u003C')"),
+        _ld('type="application/ld+json"', "JSON.stringify(data).replace(/>/g, '\\\\u003e').replace(/</g, '\\\\u003c')"),
+        _ld('key="ld" type="application/ld+json" nonce={nonce}', _ESCAPED),
+    ],
+)
+def test_escaped_json_in_a_json_script_is_not_xss(source: str) -> None:
+    # The Next.js JSON-LD pattern: a data block the browser never runs, with every < escaped so it cannot close the tag.
+    assert ids(source, "a.tsx") == set()
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        _ld('type="application/ld+json"', "JSON.stringify(data)"),  # unescaped: "</script>" in data closes the tag
+        _ld('type="application/ld+json"', 'JSON.stringify(data).replace(/</, "\\\\u003c")'),  # first < only
+        _ld('type="application/ld+json"', 'JSON.stringify(data).replace(/</g, "&lt;")'),  # not a JSON escape
+        _ld('type="application/ld+json"', 'JSON.stringify(data).replace(/</g, "\\u003c")'),  # JS "\u003c" is < again
+        _ld('type="application/ld+json"', _ESCAPED + '.replace(/\\\\u003c/g, "<")'),  # the escape undone
+        _ld('type="application/ld+json"', 'JSON.stringify(data).replace(/</g, "\\\\u003c") + extra'),
+        _ld('type="text/javascript"', _ESCAPED),  # a script that runs
+        _ld("", _ESCAPED),  # no type: the browser runs it as JavaScript
+        _ld("type={kind}", _ESCAPED),  # type not known
+        _ld('type="application/ld+json"', _ESCAPED, tag="div"),  # HTML element: the value is parsed as markup
+    ],
+)
+def test_json_ld_exemption_is_narrow(source: str) -> None:
+    assert ids(source, "a.tsx") == {"js.dom.xss_sink"}
