@@ -5,6 +5,12 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+## 0.1.2 (2026-11-10)
+
+- **Fixed:** `js.dom.xss_sink` no longer reports `dangerouslySetInnerHTML` on a `<script type="application/ld+json">`
+  (or `application/json`) whose value is `JSON.stringify(...)` with every `<` replaced by `\u003c`, the pattern Next.js
+  documents for structured data. Unescaped or partly escaped JSON, other script types and other elements still report.
+
 ## 0.1.1 (2026-10-26)
 
 - **Fixed:** the install guard's Composer package-name pattern backtracked exponentially, so a crafted

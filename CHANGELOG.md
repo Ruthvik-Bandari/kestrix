@@ -4,13 +4,16 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-10
+
 ### Fixed
 
 - **`kestrix-scan` `js.dom.xss_sink`: no finding on escaped JSON-LD.** `dangerouslySetInnerHTML` on
   `<script type="application/ld+json">` (or `application/json`) whose value is `JSON.stringify(...)` with every `<`
-  replaced by `<` (a global regex or `replaceAll`) is the pattern Next.js documents for structured data: the
+  replaced by `\u003c` (a global regex or `replaceAll`) is the pattern Next.js documents for structured data: the
   browser never runs the block, and the text cannot close the tag. It reported medium before. Unescaped JSON, a
   non-global replace, `&lt;`, extra concatenation, a script without a data type and any other element still report.
+- The Claude Code plugin is version 0.1.2.
 
 ## [0.1.1] - 2026-10-26
 
@@ -328,6 +331,7 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
   - dashboard lint, test and build;
   - a wheel smoke test.
 
-[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ruthvik-Bandari/kestrix/releases/tag/v0.1.0

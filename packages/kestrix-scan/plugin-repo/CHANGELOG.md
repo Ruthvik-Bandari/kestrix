@@ -3,6 +3,10 @@
 All notable changes to the Kestrix plugin for Claude Code. The plugin's version is the `version` in
 `.claude-plugin/plugin.json` and matches the `kestrix-scan` release it was built from.
 
+## 0.1.2
+
+- Built from `kestrix-scan` 0.1.2, which stops reporting escaped JSON-LD in `dangerouslySetInnerHTML` as XSS.
+
 ## 0.1.1
 
 - When `kestrix-scan` is missing, the hint now says to install it from PyPI (`pip`, `pipx` or `uv tool`).
