@@ -331,4 +331,4 @@ that the code is secure. The measured rates are in [Languages and measured accur
 [benchmark scorecard](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/benchmarks/benchmarkpython.md)
 measures category coverage on synthetic code (OWASP BenchmarkPython v0.1 and the project's own labelled cases)
 against Bandit and the security-guidance regex layer, including the categories where Kestrix loses. Rule ids are stable; renaming one is a breaking
-change recorded in the [CHANGELOG](CHANGELOG.md).
+change recorded in the [CHANGELOG](https://github.com/Ruthvik-Bandari/kestrix/blob/main/packages/kestrix-scan/CHANGELOG.md).

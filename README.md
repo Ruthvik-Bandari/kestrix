@@ -26,7 +26,7 @@ kestrix-scan init --ci github --pre-commit   # [tool.kestrix] config, SARIF uplo
 kestrix-scan db update                       # download the OSV data once (the only network step); lockfiles are then checked offline
 ```
 
-Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](packages/kestrix-scan/README.md).
+Its page, with configuration, CI, pytest and the plugin: [packages/kestrix-scan/README.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/packages/kestrix-scan/README.md).
 
 ### The full workbench: `kestrix`
 
@@ -156,7 +156,7 @@ candidate b0-noise-2: screened
 
 Run it on your own data with `kestrix detect run --rule r.yml --mapping m.yml --dev dev.jsonl
 --validation val.jsonl`. The fixture format, the mapping format and the semantics are documented in
-[docs/modules/detect.md](docs/modules/detect.md). The 11 bundled cases are synthetic unit-level
+[docs/modules/detect.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/detect.md). The 11 bundled cases are synthetic unit-level
 demonstrations: one healthy control, two mapping drifts, two noise cases, two missing-telemetry cases,
 three logic faults and one unsupported rule. They are not a benchmark result.
 
@@ -202,7 +202,7 @@ forms, logs in, follows links to other sites, fuzzes or scans ports. It covers:
 - **Information leaks:** version strings in server headers.
 - **Cookies:** `Secure`, `HttpOnly` and `SameSite` on every cookie.
 
-The result is an A–F grade from a documented rubric ([grade.py](src/kestrix/webcheck/grade.py)).
+The result is an A–F grade from a documented rubric ([grade.py](https://github.com/Ruthvik-Bandari/kestrix/blob/main/src/kestrix/webcheck/grade.py)).
 
 Private, loopback and cloud-metadata addresses are refused unless you pass `--allow-private` for a lab
 host you own.
@@ -235,7 +235,7 @@ domains, and read the verdict and findings. The file goes only to the local Kest
 
 The verdict is `clean`, `suspicious`, `malicious` or `insufficient_evidence`, with every finding explained.
 HTML is never rendered, links are never visited and attachments are never opened. The score is a heuristic,
-not a probability. On a one-time test of 10,897 public messages never used for tuning it flagged 61.2% of phishing, 50.0% of spam and 1.2% of normal mail; that normal mail is old, and on recent public mailing-list mail the false-alarm rate was 0.49% on tuning data. Details: [docs/modules/mail.md](docs/modules/mail.md).
+not a probability. On a one-time test of 10,897 public messages never used for tuning it flagged 61.2% of phishing, 50.0% of spam and 1.2% of normal mail; that normal mail is old, and on recent public mailing-list mail the false-alarm rate was 0.49% on tuning data. Details: [docs/modules/mail.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/mail.md).
 
 ## Code security scanning
 
@@ -299,7 +299,7 @@ Settings live in `[tool.kestrix]` in `pyproject.toml` (or `.kestrix.toml`): `fai
 `kestrix-scan init` writes them, a pre-commit entry and a GitHub workflow that uploads SARIF;
 `pytest --kestrix` adds a scan to a test run. From Python: `kestrix_scan.scan(["src"])` (`kestrix.code` still
 works). The rules are pattern analysis and miss things. Details:
-[docs/modules/code.md](docs/modules/code.md).
+[docs/modules/code.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/modules/code.md).
 
 ## Bitcoin quantum risk
 
@@ -343,7 +343,7 @@ kestrix-scan package-claude-skill --out kestrix-security.zip   # to upload in Cl
 
 The skill keeps everything on your machine, never opens links or runs files, treats email and file content
 as untrusted data, and checks only websites you own. Details and example prompts:
-[docs/claude-skill.md](docs/claude-skill.md). In Claude Code, the plugin below includes this skill and is
+[docs/claude-skill.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/claude-skill.md). In Claude Code, the plugin below includes this skill and is
 the recommended way to install it.
 
 ## Claude Code plugin
@@ -373,7 +373,7 @@ The plugin also includes:
 
 Everything runs locally, and the hooks fail open. When neither `kestrix-scan` nor `kestrix` is installed, the plugin shows one
 hint per session and never blocks an edit. Findings never include secret values. Details:
-[docs/claude-plugin.md](docs/claude-plugin.md).
+[docs/claude-plugin.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/claude-plugin.md).
 
 ## Security and privacy model
 
@@ -392,13 +392,13 @@ hint per session and never blocks an edit. Findings never include secret values.
 - **Honest results.** Engine errors are reported as errors, never as "no match". Heuristic scores are
   labeled as heuristics. A passed validation suite establishes behavior only on the scenarios it tested.
 
-Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+Report vulnerabilities as described in [SECURITY.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/SECURITY.md).
 
 ### Hosted mode (preview)
 
 Kestrix can also run as a public website with Google or GitHub sign-in (`kestrix serve-hosted`), serving the
 website check, forensics and the email check. It is opt-in and not yet ready for launch. Setup and its security
-properties are in [docs/hosted.md](docs/hosted.md).
+properties are in [docs/hosted.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/hosted.md).
 
 ## Architecture
 
@@ -471,8 +471,8 @@ flowchart LR
 | Browser → hosted server | Your upload or URL, over HTTPS with sign-in, CSRF and rate limits. Uploads are processed in a worker and never stored; the report is kept 30 days, encrypted. |
 | Claude Code → kestrix-scan | The files Claude edits, scanned locally; only new findings go back to Claude as context. |
 
-The design decisions are recorded in [docs/adr](docs/adr). The research plan behind detection repair is in
-[docs/history/cyberguard-engineering-plan.md](docs/history/cyberguard-engineering-plan.md).
+The design decisions are recorded in [docs/adr](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/adr). The research plan behind detection repair is in
+[docs/history/cyberguard-engineering-plan.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/history/cyberguard-engineering-plan.md).
 
 ## Development
 
@@ -489,9 +489,9 @@ npm run build                           # writes the bundle into src/kestrix/ser
 ```
 
 The repository is a uv workspace: the `kestrix` workbench at the root and `kestrix-scan` in
-`packages/kestrix-scan/`. Releases are described in [docs/release.md](docs/release.md). See
-[CONTRIBUTING.md](CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
-this project is in [.claude/workflow.md](.claude/workflow.md).
+`packages/kestrix-scan/`. Releases are described in [docs/release.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/release.md). See
+[CONTRIBUTING.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/CONTRIBUTING.md) for conventions. The Claude Code development workflow used on
+this project is in [.claude/workflow.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/.claude/workflow.md).
 
 ## Roadmap
 
@@ -509,12 +509,12 @@ pinned public sources (SigmaHQ, OTRF Security-Datasets, Atomic Red Team), record
 manifests, and writes aggregate QC reports. The other research packages sit next to it; cluster jobs are in
 `research/hpc/` and published aggregates in `research/results/`. Related docs:
 
-- [research/results/sources.md](research/results/sources.md): the license record.
-- [research/results/policy.md](research/results/policy.md): the data and model guardrails.
-- [research/results/compliance.md](research/results/compliance.md): the approvals checklist.
-- [docs/research/hpc.md](docs/research/hpc.md): cluster jobs and choosing GPUs by task.
-- [docs/research/detect-runbook.md](docs/research/detect-runbook.md): the research pipeline end to end (benchmark → B0/B1/B2 → M1 → locked comparison).
-- [research/results/dataset-card.md](research/results/dataset-card.md) and [docs/model-card.md](docs/model-card.md): the benchmark and the M1 adapter, with results and limitations.
+- [research/results/sources.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/research/results/sources.md): the license record.
+- [research/results/policy.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/research/results/policy.md): the data and model guardrails.
+- [research/results/compliance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/research/results/compliance.md): the approvals checklist.
+- [docs/research/hpc.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/research/hpc.md): cluster jobs and choosing GPUs by task.
+- [docs/research/detect-runbook.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/research/detect-runbook.md): the research pipeline end to end (benchmark → B0/B1/B2 → M1 → locked comparison).
+- [research/results/dataset-card.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/research/results/dataset-card.md) and [docs/model-card.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/model-card.md): the benchmark and the M1 adapter, with results and limitations.
 
 ## Credits and license
 
@@ -523,4 +523,4 @@ manifests, and writes aggregate QC reports. The other research packages sit next
 - **Bitcoin module:** adapted from [BitShield](https://github.com/Ruthvik-Bandari/MIT-BTC-Hackathon-Team_ACE), built by Team ACE at the MIT Bitcoin Expo 2026 hackathon.
 - **Built on:** [pySigma](https://github.com/SigmaHQ/pySigma) and the pySigma Elasticsearch backend.
 
-Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) and [docs/provenance.md](docs/provenance.md) for authorship evidence.
+Licensed under the [Apache License 2.0](https://github.com/Ruthvik-Bandari/kestrix/blob/main/LICENSE). See [NOTICE](https://github.com/Ruthvik-Bandari/kestrix/blob/main/NOTICE) and [docs/provenance.md](https://github.com/Ruthvik-Bandari/kestrix/blob/main/docs/provenance.md) for authorship evidence.
