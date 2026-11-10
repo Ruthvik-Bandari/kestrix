@@ -82,13 +82,29 @@ members = ["packages/kestrix-scan"]
 
 [tool.uv.sources]
 kestrix-scan = { workspace = true }
+torch = [{ index = "pytorch-cu126", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [dependency-groups]
 # tomli: kestrix-scan's Python 3.10 TOML reader, installed everywhere so mypy can check that branch.
 dev = ["pytest>=9", "pytest-cov>=6", "ruff>=0.14", "mypy>=1.18", "types-pyyaml", "tomli>=2"]
 # Cluster-only research inference (B2/M1); never part of the published wheel.
-# torch 2.6 wheels target CUDA 12.4: they run on the cluster driver (545, CUDA 12.3) and still support V100 (sm_70).
-gpu = ["torch>=2.6,<2.7", "transformers>=4.46,<5", "accelerate>=1.0", "peft>=0.13"]
+# torch comes from the CUDA 12.6 index on Linux: those wheels run on the cluster driver (545, CUDA 12.3, through
+# CUDA minor-version compatibility) and still support V100 (sm_70). The default PyPI wheels from torch 2.10 on
+# target CUDA 13, which needs a newer driver and drops V100. The cluster runs Python 3.13, and transformers 5 and
+# filelock 4.2 need 3.11, so the group is not installed on 3.10.
+gpu = [
+    "torch>=2.13,<2.14; python_version >= '3.11'",
+    "transformers>=5.10.1,<6; python_version >= '3.11'",
+    "accelerate>=1.0; python_version >= '3.11'",
+    "peft>=0.18; python_version >= '3.11'",
+    # Not used directly: a floor for torch's and huggingface-hub's lock library, for its security fixes.
+    "filelock>=4.2.1; python_version >= '3.11'",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "packages/kestrix-scan/tests"]

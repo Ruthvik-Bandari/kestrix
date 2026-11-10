@@ -517,7 +517,7 @@ def load_teacher(snapshot: Path, cfg: TeacherConfig | None) -> tuple[Any, Any]:
         snapshot,
         local_files_only=True,
         trust_remote_code=False,
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         device_map="auto",
         attn_implementation="sdpa",
     )
