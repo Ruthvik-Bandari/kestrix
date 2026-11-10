@@ -66,7 +66,7 @@ def _model(snapshot: Path, cfg: TrainConfig) -> tuple[Any, Any, bool]:
         snapshot,
         local_files_only=True,
         trust_remote_code=False,
-        torch_dtype=torch.bfloat16 if bf16 else torch.float16,
+        dtype=torch.bfloat16 if bf16 else torch.float16,
         device_map="auto",
     )
     model.gradient_checkpointing_enable()

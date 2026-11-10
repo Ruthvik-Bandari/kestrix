@@ -4,6 +4,20 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Security
+
+- The cluster-only `gpu` dependency group moves to torch 2.13 and transformers 5.22, fixing the open Dependabot
+  alerts on both (among them remote code execution through untrusted checkpoints and model initialization), and
+  filelock to 4.2.4 (the group now sets a `>=4.2.1` floor). torch comes from the CUDA 12.6 wheel index on Linux,
+  because the default PyPI wheels target CUDA 13, which the cluster driver (545) cannot run and which drops V100 support. The group now needs Python 3.11
+  or newer (the cluster runs 3.13). `research/hpc/common/smoke_gpu_stack.sbatch` checks the stack on a V100. Neither
+  published package depends on this group.
+
+### Changed
+
+- Research code loads models with `dtype=` instead of the deprecated `torch_dtype=`, and the vulnerability audit
+  asks `apply_chat_template` for a tensor (`return_dict=False`), which transformers 5 no longer returns by default.
+
 ## [0.1.3] - 2026-11-10
 
 ### Fixed
