@@ -26,7 +26,7 @@ def load(snapshot: Path, adapter: Path | None = None) -> Model:
     tokenizer = AutoTokenizer.from_pretrained(snapshot, local_files_only=True, trust_remote_code=False)
     dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
     model: Any = AutoModelForCausalLM.from_pretrained(
-        snapshot, local_files_only=True, trust_remote_code=False, torch_dtype=dtype, device_map="auto"
+        snapshot, local_files_only=True, trust_remote_code=False, dtype=dtype, device_map="auto"
     )
     if adapter is not None:
         from peft import PeftModel
