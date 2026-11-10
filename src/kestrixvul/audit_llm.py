@@ -164,7 +164,7 @@ def load_generator(path: Path, context_tokens: int) -> Loaded:  # pragma: no cov
 
     tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True)
     model = AutoModelForCausalLM.from_pretrained(
-        path, local_files_only=True, torch_dtype=torch.bfloat16, device_map="cuda", trust_remote_code=False
+        path, local_files_only=True, dtype=torch.bfloat16, device_map="cuda", trust_remote_code=False
     )
     model.eval()
     held = {"model": model}
@@ -173,7 +173,9 @@ def load_generator(path: Path, context_tokens: int) -> Loaded:  # pragma: no cov
     def generate(prompt: str) -> str:
         model = held["model"]
         messages = [{"role": "user", "content": prompt}]
-        ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+        ids = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt", return_dict=False
+        )
         if ids.shape[-1] > context_tokens - MAX_NEW_TOKENS:  # cut by characters was not enough: keep the head
             ids = ids[:, : context_tokens - MAX_NEW_TOKENS]
         with torch.no_grad():

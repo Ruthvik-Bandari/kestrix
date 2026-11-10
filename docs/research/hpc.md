@@ -14,7 +14,8 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | Job | Partition | Resources | Purpose |
 | --- | --- | --- | --- |
 | `research/hpc/common/smoke_gpu.sbatch` | `gpu-short` | 1 GPU, 5 min | Record GPU, driver, CUDA and Python |
-| `research/hpc/common/setup_env.sh [gpu]` | login node | n/a | Build the locked environment (`uv sync --frozen`) once per pull; `gpu` adds torch 2.6 (CUDA 12.4) and transformers for B2 and M1 |
+| `research/hpc/common/setup_env.sh [gpu]` | login node | n/a | Build the locked environment (`uv sync --frozen`) once per pull; `gpu` adds torch 2.13 (CUDA 12.6 wheels, which keep V100 support on driver 545) and transformers 5 for B2 and M1 |
+| `research/hpc/common/smoke_gpu_stack.sbatch` | `gpu-short`, V100-SXM2 | 2 CPU, 8 GB, 15 min | After a torch or transformers bump: CUDA, fp16 matmul, the transformers 5 chat template and generation on a V100, offline; needs `setup_env.sh gpu` |
 | `research/hpc/detect/acquire.sh` | transfer node | n/a | Fetch pinned sources and write manifests (standard library only) |
 | `research/hpc/detect/qc.sbatch` | `short` | 2 CPU, 8 GB, 1 h | Offline: verify manifests, write aggregate QC reports |
 | `research/hpc/detect/fetch_engine.sh` | transfer node | n/a | Download Elasticsearch 8.19.3 (Linux tarball, SHA-512 pinned in the script) to scratch |
