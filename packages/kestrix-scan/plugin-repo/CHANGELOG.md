@@ -3,6 +3,11 @@
 All notable changes to the Kestrix plugin for Claude Code. The plugin's version is the `version` in
 `.claude-plugin/plugin.json` and matches the `kestrix-scan` release it was built from.
 
+## 0.1.3
+
+- Built from `kestrix-scan` 0.1.3, which stops reporting a variable holding `DOMPurify.sanitize(...)` output as XSS
+  and makes the text report shorter.
+
 ## 0.1.2
 
 - Built from `kestrix-scan` 0.1.2, which stops reporting escaped JSON-LD in `dangerouslySetInnerHTML` as XSS.

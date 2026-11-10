@@ -38,9 +38,9 @@ def test_help_and_version() -> None:
     assert scan_help.exit_code == 0
     for flag in ("--format", "--output", "--fail-on", "--baseline", "--write-baseline", "--diff", "--hook"):
         assert flag in scan_help.stdout
-    assert run("--version").stdout == "0.1.2 (Kestrix by Ruthvik Bandari)\n"
+    assert run("--version").stdout == "0.1.3 (Kestrix by Ruthvik Bandari)\n"
     first, where = run("version").stdout.splitlines()
-    assert first == "0.1.2 (Kestrix by Ruthvik Bandari)"
+    assert first == "0.1.3 (Kestrix by Ruthvik Bandari)"
     assert where.startswith("installed at ") and "kestrix_scan" in where  # tells two same-version copies apart
 
 

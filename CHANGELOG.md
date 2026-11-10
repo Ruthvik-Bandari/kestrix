@@ -4,6 +4,8 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-10
+
 ### Fixed
 
 - **`kestrix-scan` `js.dom.xss_sink`: no finding on a variable that holds sanitized HTML.** `const clean =
@@ -21,6 +23,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 - `web.url.dynamic_scheme` documents why JSX is not checked (React 19 neutralizes `javascript:` URLs in `href`, `src`,
   `action` and `formAction`).
 - README links are absolute GitHub URLs, so they work on the PyPI project pages.
+- The Claude Code plugin is version 0.1.3.
 
 ## [0.1.2] - 2026-11-10
 
@@ -349,7 +352,8 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
   - dashboard lint, test and build;
   - a wheel smoke test.
 
-[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ruthvik-Bandari/kestrix/releases/tag/v0.1.0

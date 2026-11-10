@@ -5,6 +5,8 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+## 0.1.3 (2026-11-10)
+
 - **Fixed:** `js.dom.xss_sink` no longer reports a variable whose every assignment before the sink is a sanitizer
   call (`const clean = DOMPurify.sanitize(html); el.innerHTML = clean`).
 - The text report counts skipped files in one line; `--verbose` lists them. A note says when medium or high findings
