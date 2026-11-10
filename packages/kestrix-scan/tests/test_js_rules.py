@@ -79,6 +79,11 @@ POSITIVE = [
     ("js.dom.xss_sink", "function f(v) { document.querySelector('#o')?.insertAdjacentHTML('beforeend', v) }"),
     ("js.dom.xss_sink", "function f(v) { document.write(v) }"),
     ("js.dom.xss_sink", "function f(v) { document.writeln('<p>' + v) }"),
+    # a sanitized variable that is later reassigned or built on still reports
+    ("js.dom.xss_sink", "function f(el, h) { let c = DOMPurify.sanitize(h); c = h; el.innerHTML = c }"),
+    ("js.dom.xss_sink", "function f(el, h) { let c = DOMPurify.sanitize(h); if (x) c = h; el.innerHTML = c }"),
+    ("js.dom.xss_sink", "function f(el, h) { const c = DOMPurify.sanitize(h) + h; el.innerHTML = c }"),
+    ("js.dom.xss_sink", "function f(el, h, c) { el.innerHTML = c }"),
     ("js.dom.xss_sink.jquery", "function f(d) { $('#out').html(d.name) }"),
     ("js.dom.xss_sink.jquery", "function f(d) { jQuery('.x').first().html(d) }"),
     ("js.dom.xss_sink.jquery", "function f($el, d) { $el.html(d) }"),
@@ -246,6 +251,17 @@ NEGATIVE = [
     ("js.dom.xss_sink", "function f(el, v) { el.textContent = v; el.innerText = v }"),
     ("js.dom.xss_sink", "import DOMPurify from 'dompurify';\nfunction f(v) { el.innerHTML = DOMPurify.sanitize(v) }"),
     ("js.dom.xss_sink", "function f(v) { el.innerHTML = escapeHtml(v) }"),
+    # a variable that only ever holds sanitized HTML (field report 2026-11-10: the rule's own fix text)
+    ("js.dom.xss_sink", "function f(el, h) { const clean = DOMPurify.sanitize(h); el.innerHTML = clean }"),
+    (
+        "js.dom.xss_sink",
+        "function f(el, h) { let c = sanitizeHtml(h); if (x) c = DOMPurify.sanitize(h); el.innerHTML = c }",
+    ),
+    (
+        "js.dom.xss_sink",
+        "export const A = ({ h }) => { const clean = DOMPurify.sanitize(h); "
+        "return <div dangerouslySetInnerHTML={{ __html: clean }} /> };",
+    ),
     ("js.dom.xss_sink", "if (el.innerHTML == v) {} const same = el.innerHTML === v"),
     ("js.dom.xss_sink", "export const A = () => <div dangerouslySetInnerHTML={{ __html: '<b>x</b>' }} />;"),
     ("js.dom.xss_sink", "function f(v) { res.html(v); template.html(v) }"),

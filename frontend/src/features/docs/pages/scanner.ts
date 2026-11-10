@@ -128,7 +128,7 @@ export const scannerPages: DocPage[] = [
           [
             [
               "`kestrix-scan [scan] [PATH ...]`",
-              "`--format text|json|sarif`, `--output FILE`, `--fail-on low|medium|high|critical|none` (default `high`), `--baseline FILE`, `--write-baseline FILE`, `--diff BASE`, `--hook`, `--config FILE`, `--no-config`",
+              "`--format text|json|sarif`, `--output FILE`, `--fail-on low|medium|high|critical|none` (default `high`), `--baseline FILE`, `--write-baseline FILE`, `--diff BASE`, `--hook`, `--config FILE`, `--no-config`, `--verbose`",
               "0 no findings at or above `--fail-on`; 1 findings at or above it; 2 usage or input error",
             ],
             ["`kestrix-scan init`", "`--ci github`, `--pre-commit`, `--claude-plugin`, `--force`, `--dir DIR`", "0 done; 2 refused"],

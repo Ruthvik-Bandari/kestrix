@@ -48,6 +48,7 @@ Rule-based pattern analysis on this machine. Rules miss things and can be wrong;
 | `--diff REF` | Only report findings on lines changed since a git ref (untracked files count as new). |
 | `--baseline FILE` / `--write-baseline FILE` | Leave out known findings / record the current ones, to adopt the scanner gradually. |
 | `--config FILE` / `--no-config` | Use one settings file / ignore settings files. |
+| `--verbose` | List every skipped file in the text report (by default they are counted in one line). |
 | `--hook` | Claude Code hook mode: read the hook JSON on stdin; always exit 0. |
 
 **Exit codes:** 0 nothing at or above `--fail-on`, 1 findings at or above it, 2 usage or input error.

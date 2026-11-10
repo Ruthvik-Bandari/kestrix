@@ -39,7 +39,7 @@ The scanner reads files as bytes and decodes them as UTF-8 (invalid bytes replac
 
 | Command | Options | Exit codes |
 | --- | --- | --- |
-| `kestrix-scan [scan] [PATH ...]` (or `kestrix code scan [PATH ...]`) | `--format text\|json\|sarif`, `--output FILE`, `--fail-on low\|medium\|high\|critical\|none` (default `high`, or `[tool.kestrix]` `fail-on`), `--baseline FILE`, `--write-baseline FILE`, `--diff BASE`, `--hook`, `--config FILE`, `--no-config` | 0 no findings at or above `--fail-on`; 1 findings at or above it; 2 usage or input error |
+| `kestrix-scan [scan] [PATH ...]` (or `kestrix code scan [PATH ...]`) | `--format text\|json\|sarif`, `--output FILE`, `--fail-on low\|medium\|high\|critical\|none` (default `high`, or `[tool.kestrix]` `fail-on`), `--baseline FILE`, `--write-baseline FILE`, `--diff BASE`, `--hook`, `--config FILE`, `--no-config`, `--verbose` | 0 no findings at or above `--fail-on`; 1 findings at or above it; 2 usage or input error |
 | `kestrix-scan init` | `--ci github`, `--pre-commit`, `--claude-plugin`, `--force`, `--dir DIR` | 0 done; 2 refused |
 | `kestrix-scan rules` | | 0 |
 | `kestrix-scan db update` (network) | `--ecosystem PyPI npm` (default: both) | 0 done; 2 download or index error |
@@ -68,6 +68,8 @@ Text output groups findings by file. Severities are colored only when stdout is 
 - `--diff BASE` keeps only findings on lines added or changed since the git ref `BASE`, comparing the working tree (staged or not) with `git diff --unified=0`. Untracked files that are not ignored count as wholly new. Refs that start with `-` are refused.
 - `--hook` is the Claude Code mode described [below](#claude-code-hook). It ignores the other options.
 - `--config FILE` reads settings from that `.kestrix.toml` or `pyproject.toml` instead of searching for one; `--no-config` ignores settings files.
+- The text report counts skipped files (binary, too large, minified) in one line; `--verbose` lists each one. When medium or high findings are below the `--fail-on` level, a note says how many and which level would fail on them.
+- `kestrix-scan version` also prints where that copy is installed, and for a git or editable install which commit or checkout, so two copies with the same version on one machine can be told apart.
 
 ## Configuration
 
@@ -352,7 +354,7 @@ The `js.*` rules ([`js_rules.py`](../../packages/kestrix-scan/src/kestrix_scan/j
 | Sink class | Sanitizers |
 | --- | --- |
 | Path | `path.basename`; a name built with `path.resolve`/`normalize`/`fs.realpath` and then checked with `name.startsWith(...)` before the sink; `rel = path.relative(base, name)` checked with `rel.startsWith(...)`; `res.sendFile(name, { root })` |
-| HTML | `DOMPurify.sanitize` and any call named `sanitize`, `sanitizeHtml`, `escapeHtml`, `escape` or `encode`; `encodeURIComponent` |
+| HTML | `DOMPurify.sanitize` and any call named `sanitize`, `sanitizeHtml`, `escapeHtml`, `escape` or `encode`; `encodeURIComponent`. A variable counts as sanitized when every assignment of it before the sink is one of these calls (`const clean = DOMPurify.sanitize(html); el.innerHTML = clean`) |
 | URL and redirect | a literal start that fixes the scheme and host (`` `https://api.example.com/${x}` ``); for redirects also one that starts with `/` and a path character |
 | Object keys | a file that names `__proto__`, `constructor` or `prototype` in a string; `.has(key)`, `.includes(key)` or `.hasOwnProperty(key)` earlier in the function; a target made with `Object.create(null)` or a `Map` |
 

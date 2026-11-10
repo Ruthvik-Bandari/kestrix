@@ -15,7 +15,6 @@ settings.env
       fix: Revoke the token in GitHub settings, then read a new one from the environment or your CI secrets.
 
 note: app.py:11 kestrix.suppression.missing_reason: This kestrix: ignore[...] comment has no reason, so it suppresses nothing. Add why the finding is safe.
-skipped: blob.bin (binary)
-skipped: lib/broken.py (syntax_error)
+skipped 2 file(s): 1 binary, 1 syntax_error (--verbose lists them).
 4 finding(s): 1 critical, 2 high, 1 medium, 0 low in 3 file(s); 1 suppressed, 0 in baseline, 2 skipped; fail-on medium.
 Rule-based pattern analysis on this machine. Rules miss things and can be wrong; no detection rate is claimed. No findings means no rule fired, not that the code is secure.

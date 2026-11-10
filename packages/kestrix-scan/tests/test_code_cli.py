@@ -38,7 +38,32 @@ def test_help_and_version() -> None:
     assert scan_help.exit_code == 0
     for flag in ("--format", "--output", "--fail-on", "--baseline", "--write-baseline", "--diff", "--hook"):
         assert flag in scan_help.stdout
-    assert run("--version").stdout == run("version").stdout == "0.1.2 (Kestrix by Ruthvik Bandari)\n"
+    assert run("--version").stdout == "0.1.2 (Kestrix by Ruthvik Bandari)\n"
+    first, where = run("version").stdout.splitlines()
+    assert first == "0.1.2 (Kestrix by Ruthvik Bandari)"
+    assert where.startswith("installed at ") and "kestrix_scan" in where  # tells two same-version copies apart
+
+
+def test_skipped_files_are_summarised_unless_verbose(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "ok.py").write_text("print('hi')\n")
+    for name in ("a.png", "b.png"):
+        (tmp_path / name).write_bytes(b"\x89PNG\x00\x00" * 50)
+    monkeypatch.chdir(tmp_path)
+    quiet = invoke().stdout
+    assert "skipped: " not in quiet
+    assert "skipped 2 file(s): 2 binary (--verbose lists them)." in quiet
+    verbose = invoke("--verbose").stdout
+    assert "skipped: a.png (binary)" in verbose and "skipped: b.png (binary)" in verbose
+
+
+def test_medium_findings_under_a_high_gate_get_a_note(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "m.ts").write_text("export function f(el, v) { el.innerHTML = v }\n")
+    monkeypatch.chdir(tmp_path)
+    passing = invoke()
+    assert passing.exit_code == 0
+    assert "note: 1 finding(s) are below fail-on high" in passing.stdout and "--fail-on medium" in passing.stdout
+    failing = invoke("--fail-on", "medium")
+    assert failing.exit_code == 1 and "below fail-on" not in failing.stdout
 
 
 def test_rules_lists_every_rule() -> None:

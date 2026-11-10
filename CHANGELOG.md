@@ -4,6 +4,24 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Fixed
+
+- **`kestrix-scan` `js.dom.xss_sink`: no finding on a variable that holds sanitized HTML.** `const clean =
+  DOMPurify.sanitize(html); el.innerHTML = clean` reported medium, although it is what the rule's own fix text
+  recommends. A variable now counts as sanitized when every assignment of it before the sink is a sanitizer call; a
+  later reassignment to raw input, or concatenation, still reports.
+
+### Changed
+
+- **`kestrix-scan` text report:** skipped files are counted in one line (`skipped 229 file(s): 180 binary, …`) instead
+  of one line each, which buried findings in a full-repository scan; `--verbose` lists them. When medium or high
+  findings are below `--fail-on`, a note says how many and which level would fail on them.
+- **`kestrix-scan version`** also prints where that copy is installed, and for a git or editable install which commit
+  or checkout. `--version` is unchanged.
+- `web.url.dynamic_scheme` documents why JSX is not checked (React 19 neutralizes `javascript:` URLs in `href`, `src`,
+  `action` and `formAction`).
+- README links are absolute GitHub URLs, so they work on the PyPI project pages.
+
 ## [0.1.2] - 2026-11-10
 
 ### Fixed

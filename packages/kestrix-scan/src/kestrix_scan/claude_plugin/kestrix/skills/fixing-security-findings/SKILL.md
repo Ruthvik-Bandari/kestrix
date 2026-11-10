@@ -1657,7 +1657,7 @@ After:
 
 CWE-79 · default severity medium · confidence low
 
-**Why:** A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported.
+**Why:** A Vue :href / v-bind:href or a Svelte href={...} on an a, area, iframe, frame, embed, form or object element runs a javascript: URL when the value is one, and neither framework rewrites it. The finding is low when the value cannot be traced and medium when the expression reads the route or URL ($route.query, $page.url, searchParams). Values that start with a literal path, #, https://, mailto: or tel: are not reported. JSX is not checked: React 19 replaces a javascript: URL in href, src, action and formAction with one that throws, and React 16.9 to 18 warn in development but still run it.
 
 **Fix:** Accept only http(s) and relative URLs: parse the value with new URL(value, location.origin) and check url.protocol is 'http:' or 'https:' before binding it, or build the link from a fixed origin and an encoded path.
 

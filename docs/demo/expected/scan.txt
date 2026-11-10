@@ -20,5 +20,6 @@ static/notes.js
       trace: 3 location (source) → 3 reaches .innerHTML =
       fix: Set text instead of HTML (textContent, or JSX children, which React escapes). If you must render HTML, sanitize it first with DOMPurify.sanitize and keep the sanitized value separate.
 
+note: 1 finding(s) are below fail-on high and do not change the exit code; --fail-on medium makes them fail the scan.
 5 finding(s): 1 critical, 3 high, 1 medium, 0 low in 4 file(s); 0 suppressed, 0 in baseline, 0 skipped; fail-on high.
 Rule-based pattern analysis on this machine. Rules miss things and can be wrong; no detection rate is claimed. No findings means no rule fired, not that the code is secure.

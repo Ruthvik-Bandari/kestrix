@@ -13,11 +13,12 @@ subcommand, write ``kestrix-scan scan init``.
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import shlex
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
@@ -30,7 +31,7 @@ from .analyze import exit_code as scan_exit_code
 from .config import FAIL_ON_CHOICES, Config, discover, load_file
 from .errors import Rejected
 from .hook import MAX_STDIN_BYTES, hook_response
-from .models import NOTICE, Finding, ScanReport
+from .models import NOTICE, SEVERITY_RANK, Finding, ScanReport
 from .registry import RULES
 from .sarif import to_sarif
 
@@ -92,6 +93,7 @@ def _scan_parser(prog: str) -> argparse.ArgumentParser:
         help="Read settings from this .kestrix.toml or pyproject.toml instead of searching upwards from the scan root.",
     )
     parser.add_argument("--no-config", action="store_true", help="Ignore [tool.kestrix] and .kestrix.toml.")
+    parser.add_argument("--verbose", action="store_true", help="List every skipped file in the text report.")
     return parser
 
 
@@ -127,7 +129,9 @@ def run_scan(argv: Sequence[str], prog: str = f"{PROG} scan") -> int:
     except Rejected as exc:
         _err(f"Rejected ({exc.reason.value}): {exc.detail}")
         return 2
-    rendered = render(report, args.output_format, color=args.output is None and sys.stdout.isatty())
+    rendered = render(
+        report, args.output_format, color=args.output is None and sys.stdout.isatty(), verbose=args.verbose
+    )
     if args.output is not None:
         try:
             args.output.write_text(rendered + "\n", encoding="utf-8")
@@ -152,15 +156,15 @@ def _run_hook(prog: str) -> None:
         _out(response)
 
 
-def render(report: ScanReport, output_format: str, *, color: bool) -> str:
+def render(report: ScanReport, output_format: str, *, color: bool, verbose: bool = False) -> str:
     if output_format == "json":
         return report.to_json()
     if output_format == "sarif":
         return json.dumps(to_sarif(report), indent=2)
-    return render_text(report, color=color)
+    return render_text(report, color=color, verbose=verbose)
 
 
-def render_text(report: ScanReport, *, color: bool = False) -> str:
+def render_text(report: ScanReport, *, color: bool = False, verbose: bool = False) -> str:
     by_file: dict[str, list[Finding]] = defaultdict(list)
     for finding in report.findings:
         by_file[finding.path].append(finding)
@@ -178,8 +182,13 @@ def render_text(report: ScanReport, *, color: bool = False) -> str:
         lines.append("")
     for note in report.notes:
         lines.append(f"note: {note.path}:{note.line} {note.id}: {note.message}")
-    for skipped in report.files_skipped:
-        lines.append(f"skipped: {skipped.path} ({skipped.reason})")
+    if verbose:
+        for skipped in report.files_skipped:
+            lines.append(f"skipped: {skipped.path} ({skipped.reason})")
+    elif report.files_skipped:
+        reasons = Counter(skipped.reason for skipped in report.files_skipped)
+        detail = ", ".join(f"{n} {reason}" for reason, n in sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0])))
+        lines.append(f"skipped {len(report.files_skipped)} file(s): {detail} (--verbose lists them).")
     if report.truncated:
         lines.append("note: the file limit was reached; remaining files were not scanned.")
     counts = report.counts
@@ -190,7 +199,20 @@ def render_text(report: ScanReport, *, color: bool = False) -> str:
     )
     if not report.findings:
         lines.append("No findings.")
+    below = [] if report.fail_on == "none" else _below(report.findings, report.fail_on)
+    if below:
+        lowest = min(below, key=lambda f: SEVERITY_RANK[f.severity]).severity
+        lines.append(
+            f"note: {len(below)} finding(s) are below fail-on {report.fail_on} and do not change the exit code; "
+            f"--fail-on {lowest} makes them fail the scan."
+        )
     return "\n".join([*lines, summary, NOTICE])
+
+
+def _below(findings: Sequence[Finding], fail_on: str) -> list[Finding]:
+    """Medium-or-worse findings that ``fail_on`` lets pass; low findings are informational and not counted."""
+    floor = SEVERITY_RANK["medium"]
+    return [f for f in findings if floor <= SEVERITY_RANK[f.severity] < SEVERITY_RANK[fail_on]]
 
 
 # ----- Claude skill and plugin installers (exit codes: 0 done, 2 refused)
@@ -435,9 +457,33 @@ def list_rules(argv: Sequence[str], prog: str) -> int:
 
 
 def show_version(argv: Sequence[str], prog: str) -> int:
-    argparse.ArgumentParser(prog=prog, description="Print the installed version and author.").parse_args(list(argv))
+    argparse.ArgumentParser(
+        prog=prog, description="Print the installed version and author, and where this copy is installed."
+    ).parse_args(list(argv))
     _out(f"{__version__} ({ATTRIBUTION})")
+    _out(f"installed at {Path(__file__).resolve().parent}{_install_source()}")
     return 0
+
+
+def _install_source() -> str:
+    """`` (git <commit>)`` or `` (editable)`` from the installer's direct_url.json (PEP 610); '' for an index install.
+
+    Two copies with the same version (one from PyPI, one from a checkout) then print different lines.
+    """
+    try:
+        raw = importlib.metadata.distribution("kestrix-scan").read_text("direct_url.json")
+        info = json.loads(raw) if raw else {}
+    except (importlib.metadata.PackageNotFoundError, ValueError):
+        return ""
+    if not isinstance(info, dict):
+        return ""
+    vcs = info.get("vcs_info")
+    if isinstance(vcs, dict) and isinstance(vcs.get("commit_id"), str):
+        return f" (git {vcs['commit_id'][:12]})"
+    directory = info.get("dir_info")
+    if isinstance(directory, dict) and directory.get("editable"):
+        return " (editable)"
+    return " (local directory)" if isinstance(directory, dict) else ""
 
 
 Command = Callable[[Sequence[str], str], int]

@@ -350,9 +350,15 @@ class _Checker:
             return "built" if "built" in kinds else "literal" if "literal" in kinds else None
         return None
 
-    def _sanitized_html(self, lo: int, hi: int) -> bool:
+    def _sanitized_html(self, lo: int, hi: int, depth: int = 0) -> bool:
+        """``DOMPurify.sanitize(x)``, ``escapeHtml(x)``, or a name whose every visible binding is one of those."""
         if self.toks[lo].kind != NAME:
             return False
+        if hi == lo + 1 and depth < 4:
+            found = self.ix.lookup(self.toks[lo].value, lo)
+            return bool(found) and all(
+                b.kind == "value" and b.lo < b.hi and self._sanitized_html(b.lo, b.hi, depth + 1) for b in found or ()
+            )
         chain = self.ix.chain_after(lo)
         segs = chain.segs
         return (
