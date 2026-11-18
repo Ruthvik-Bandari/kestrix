@@ -904,6 +904,21 @@ _RULES = (
         ),
     ),
     Rule(
+        "js.next.server_action_no_auth",
+        "CWE-862",
+        "medium",
+        "low",
+        "Next.js server action that writes data with no auth check",
+        "An async function exported from a 'use server' file, or one whose body starts with 'use server', is a server action: Next.js serves it as a POST endpoint that anyone can call with any arguments, even if no page shows the form to them. The rule reports a database write (Prisma, Drizzle, Supabase, Mongoose and similar: create, update, delete, insert, upsert) with no call before it whose name reads as an auth check (auth, getSession, currentUser, getUser, verify..., a permission check). Only writes in the action's own body are seen, not writes inside a helper it calls. Middleware, a check inside another function, or a wrapper such as authAction(async () => ...) is not seen either; wrapped actions are not reported.",
+        "Check the session at the top of the action and refuse when it is missing or lacks permission: const session = await auth(); if (!session) throw new Error('Unauthorized'). Then check that the user may change this record, for example by including the user id in the where clause.",
+        "javascript",
+        sources=(
+            "https://nextjs.org/docs/app/guides/authentication#authorization",
+            "https://nextjs.org/docs/app/guides/data-security",
+            "https://nextjs.org/blog/security-nextjs-server-components-actions",
+        ),
+    ),
+    Rule(
         "js.proto.pollution",
         "CWE-1321",
         "medium",

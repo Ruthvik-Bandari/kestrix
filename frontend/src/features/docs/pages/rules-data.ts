@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Generated from `kestrix-scan rules` (146 rules): rule id, severity, CWE, what it finds.
+ * Generated from `kestrix-scan rules` (147 rules): rule id, severity, CWE, what it finds.
  * Regenerate with the output of that command when a rule is added or changed; do not edit by hand.
  */
 export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: string][] = [
@@ -66,6 +66,7 @@ export const RULE_ROWS: [id: string, severity: string, cwe: string, finds: strin
   ["js.path.traversal", "medium", "CWE-22", "File path built from Express request data"],
   ["js.ssrf.request", "medium", "CWE-918", "HTTP request to a URL taken from Express request data"],
   ["js.redirect.open", "medium", "CWE-601", "Redirect to a location taken from request data"],
+  ["js.next.server_action_no_auth", "medium", "CWE-862", "Next.js server action that writes data with no auth check"],
   ["js.proto.pollution", "medium", "CWE-1321", "Object keys from request data written without a __proto__ guard"],
   ["js.cors.wildcard_credentials", "medium", "CWE-942", "CORS allows any origin together with credentials"],
   ["js.llm.output_to_sink", "high", "CWE-94", "LLM output used as code, a shell command or HTML"],

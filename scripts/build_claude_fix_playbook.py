@@ -203,6 +203,10 @@ JS_EXAMPLES: dict[str, tuple[str, str]] = {
         "app.get('/after-login', (req, res) => {\n  res.redirect(req.query.next);\n});\n",
         "const PAGES = { dashboard: '/dashboard', settings: '/settings' };\n\napp.get('/after-login', (req, res) => {\n  res.redirect(PAGES[req.query.next] ?? '/dashboard');\n});\n",
     ),
+    "js.next.server_action_no_auth": (
+        "'use server'\n\nimport { db } from '@/lib/db';\n\nexport async function deletePost(id) {\n  await db.post.delete({ where: { id } });\n}\n",
+        "'use server'\n\nimport { db } from '@/lib/db';\nimport { auth } from '@/auth';\n\nexport async function deletePost(id) {\n  const session = await auth();\n  if (!session?.user) throw new Error('Unauthorized');\n  await db.post.delete({ where: { id, authorId: session.user.id } });\n}\n",
+    ),
     "js.proto.pollution": (
         "app.post('/settings', (req, res) => {\n  for (const key in req.body) {\n    settings[key] = req.body[key];\n  }\n});\n",
         "const ALLOWED = new Set(['theme', 'language']);\n\napp.post('/settings', (req, res) => {\n  for (const key in req.body) {\n    if (ALLOWED.has(key)) settings[key] = req.body[key];\n  }\n});\n",

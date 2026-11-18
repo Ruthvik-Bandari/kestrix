@@ -193,6 +193,7 @@ Every rule was written for Kestrix from public CWE guidance; none is copied from
 | `js.path.traversal` | JavaScript, TypeScript | CWE-22 | medium | medium | File path built from Express request data |
 | `js.ssrf.request` | JavaScript, TypeScript | CWE-918 | medium | medium | HTTP request to a URL taken from Express request data |
 | `js.redirect.open` | JavaScript, TypeScript | CWE-601 | medium | medium | Redirect to a location taken from request data |
+| `js.next.server_action_no_auth` | JavaScript, TypeScript | CWE-862 | medium | low | Next.js server action that writes data with no auth check |
 | `js.proto.pollution` | JavaScript, TypeScript | CWE-1321 | medium | medium | Object keys from request data written without a __proto__ guard |
 | `js.cors.wildcard_credentials` | JavaScript, TypeScript | CWE-942 | medium | high | CORS allows any origin together with credentials |
 | `js.llm.output_to_sink` | JavaScript, TypeScript | CWE-94 | high | medium | LLM output used as code, a shell command or HTML |

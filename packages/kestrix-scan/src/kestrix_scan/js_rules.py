@@ -196,6 +196,46 @@ _NEXT_IMPORT = re.compile(r"""(?:\bfrom|\brequire\(|\bimport\()\s*['"]next(?:/[\
 _NEXT_PATH = re.compile(r"(?:^|/)pages/api/|(?:^|/)app/(?:.*/)?(?:route|page|layout)\.[cm]?[jt]sx?$")
 _NEXT_CONFIG = re.compile(r"(?:^|/)next\.config\.[cm]?[jt]s$")
 
+# Server actions: methods that write to a database or an ORM model (Prisma, Drizzle, Supabase, Mongoose, Sequelize,
+# TypeORM, Knex), receivers whose delete/set/update is not a database write, and names that read as an auth check.
+_WRITE_METHODS = frozenset(
+    {
+        "bulkWrite",
+        "create",
+        "createMany",
+        "delete",
+        "deleteMany",
+        "deleteOne",
+        "destroy",
+        "findByIdAndDelete",
+        "findByIdAndUpdate",
+        "findOneAndDelete",
+        "findOneAndUpdate",
+        "insert",
+        "insertMany",
+        "insertOne",
+        "remove",
+        "replaceOne",
+        "truncate",
+        "update",
+        "updateMany",
+        "updateOne",
+        "upsert",
+    }
+)
+_NOT_DB = frozenset(
+    {
+        "Map", "Object", "Reflect", "Set", "URLSearchParams", "arr", "array", "attributes", "cache", "classList",
+        "cookieStore", "cookies", "dataset", "document", "el", "element", "formData", "fs", "headers", "items", "list",
+        "localStorage", "map", "params", "path", "searchParams", "sessionStorage", "set", "style", "url",
+    }
+)  # fmt: skip
+_AUTH_NAME = re.compile(
+    r"auth|session|currentuser|getuser|getclaims|verify|permission|authori[sz]e|requireuser|requireadmin|isadmin"
+    r"|protect|guard|clerk|kinde",
+    re.IGNORECASE,
+)
+
 
 def check_js(text: str, rel: str) -> list[Hit] | SkipReason:
     """Rule hits for one JavaScript or TypeScript file, or the reason it was not analyzed."""
@@ -278,6 +318,8 @@ class _Checker:
         self._cors_headers()
         if _NEXT_CONFIG.search(self.rel):
             self._next_config()
+        if "use server" in self.ix.strings:
+            self._server_actions()
         unique: dict[tuple[str, int], Hit] = {}
         for item in self.hits:
             unique.setdefault((item.rule_id, item.line), item)
@@ -546,6 +588,78 @@ class _Checker:
             f"{what} The value comes from {origin.label} (line {origin.trace[0].line}).",
             confidence=CONFIDENCE[origin.kind],
             trace=self._trace(origin, at, f"{method}()"),
+        )
+
+    def _server_actions(self) -> None:
+        """``js.next.server_action_no_auth``: a server action that writes to a database with no auth call before it."""
+        toks = self.toks
+        file_level = toks[0].kind == STR and toks[0].value == "use server" if toks else False
+        exported = self._exported_names() if file_level else set()
+        for scope in self.ix.scopes[1:]:
+            head = self.ix._function_head(scope.open)
+            if head is None:
+                continue
+            directive = scope.open + 1 < self.ix.n and toks[scope.open + 1].kind == STR
+            directive = directive and toks[scope.open + 1].value == "use server"
+            if not directive and not (
+                file_level and scope.parent == 0 and self._exported_async(head[0], scope.name, exported)
+            ):
+                continue
+            calls = [c for c in self.ix.calls if scope.open < c.open < scope.close]
+            write = next((c for c in calls if self._db_write(c.callee)), None)
+            if write is None or any(
+                c.open < write.callee.start and any(_AUTH_NAME.search(seg.value) for seg in c.callee.segs)
+                for c in calls
+            ):
+                continue
+            name = f"{scope.name}()" if scope.name else "this server action"
+            callee = ".".join(seg.value or "()" for seg in write.callee.segs).replace(".()", "()")
+            self.hit(
+                "js.next.server_action_no_auth",
+                write.callee.segs[-1].index,
+                f"Server action {name} calls {callee}() with no auth check before it. Next.js serves every server "
+                "action as a POST endpoint that anyone can call with any arguments, whichever page renders the form.",
+            )
+
+    def _exported_async(self, start: int, name: str, exported: set[str]) -> bool:
+        """``export async function f``, ``export default async function``, ``export const f = async () =>``, or an
+        async function whose name an ``export { ... }`` lists."""
+        toks = self.toks
+        k = start - 1
+        if toks[start].value == "function" and k >= 0 and toks[k].value == "async":
+            k -= 1
+        elif toks[start].value != "async":
+            return False
+        else:
+            k = start - 1
+            if k >= 2 and is_punct(toks[k], "=") and toks[k - 1].kind == NAME and toks[k - 2].value in ("const", "let"):
+                k -= 3
+        if k >= 0 and toks[k].value == "default":
+            k -= 1
+        return (k >= 0 and toks[k].value == "export") or name in exported
+
+    def _exported_names(self) -> set[str]:
+        toks = self.toks
+        names: set[str] = set()
+        for k in range(self.ix.n - 1):
+            if toks[k].value == "export" and is_punct(toks[k + 1], "{") and self.ix.scope_of[k] == 0:
+                close = self.ix.close_of(k + 1)
+                names.update(
+                    toks[j].value for j in range(k + 2, close) if toks[j].kind == NAME and toks[j - 1].value != "as"
+                )
+        return names
+
+    def _db_write(self, callee: Chain) -> bool:
+        segs = callee.segs
+        if len(segs) < 2 or segs[-1].kind != "name" or segs[-1].value not in _WRITE_METHODS:
+            return False
+        receivers = [seg.value for seg in segs[:-1] if seg.kind == "name"]
+        if not receivers or any(value in _NOT_DB for value in receivers):
+            return False
+        # const c = await cookies(); c.delete(...): follow the receiver to its value
+        found = self.ix.lookup(segs[0].value, segs[0].index) if segs[0].kind == "name" else None
+        return not any(
+            self.toks[k].kind == NAME and self.toks[k].value in _NOT_DB for b in found or () for k in range(b.lo, b.hi)
         )
 
     def _next_config(self) -> None:

@@ -470,6 +470,14 @@ Each Kestrix code rule was written for Kestrix from its CWE entry and the langua
 - Documentation: <https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html>
 - Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
 
+## `js.next.server_action_no_auth`
+
+- CWE: [CWE-862](https://cwe.mitre.org/data/definitions/862.html)
+- Documentation: <https://nextjs.org/docs/app/guides/authentication#authorization>
+- Documentation: <https://nextjs.org/docs/app/guides/data-security>
+- Documentation: <https://nextjs.org/blog/security-nextjs-server-components-actions>
+- Written from the CWE entry and the cited documentation; no third-party rule text or code was used.
+
 ## `js.proto.pollution`
 
 - CWE: [CWE-1321](https://cwe.mitre.org/data/definitions/1321.html)

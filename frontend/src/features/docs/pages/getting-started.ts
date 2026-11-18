@@ -43,7 +43,7 @@ export const gettingStartedPages: DocPage[] = [
         table(
           ["What you get", "`kestrix-scan`", "`kestrix`"],
           [
-            ["Code scanner: 146 rules for 13 languages, web, SQL, CI and infrastructure files, and secrets", "Yes", "Yes (`kestrix code scan` is the same scanner)"],
+            ["Code scanner: 147 rules for 13 languages, web, SQL, CI and infrastructure files, and secrets", "Yes", "Yes (`kestrix code scan` is the same scanner)"],
             ["Dependency checks against a local OSV copy, 9 lockfile ecosystems", "Yes", "Yes"],
             ["pre-commit hook, `pytest --kestrix`, SARIF for GitHub code scanning", "Yes", "Yes"],
             ["Claude Code plugin: scan-on-edit hooks, install guard, `/kestrix:*` commands, code-review skills", "Yes", "Yes"],

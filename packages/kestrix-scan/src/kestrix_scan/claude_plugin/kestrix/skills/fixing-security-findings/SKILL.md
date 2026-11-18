@@ -1486,6 +1486,41 @@ app.get('/after-login', (req, res) => {
 });
 ```
 
+### `js.next.server_action_no_auth`: Next.js server action that writes data with no auth check
+
+CWE-862 · default severity medium · confidence low
+
+**Why:** An async function exported from a 'use server' file, or one whose body starts with 'use server', is a server action: Next.js serves it as a POST endpoint that anyone can call with any arguments, even if no page shows the form to them. The rule reports a database write (Prisma, Drizzle, Supabase, Mongoose and similar: create, update, delete, insert, upsert) with no call before it whose name reads as an auth check (auth, getSession, currentUser, getUser, verify..., a permission check). Only writes in the action's own body are seen, not writes inside a helper it calls. Middleware, a check inside another function, or a wrapper such as authAction(async () => ...) is not seen either; wrapped actions are not reported.
+
+**Fix:** Check the session at the top of the action and refuse when it is missing or lacks permission: const session = await auth(); if (!session) throw new Error('Unauthorized'). Then check that the user may change this record, for example by including the user id in the where clause.
+
+Before:
+
+```javascript
+'use server'
+
+import { db } from '@/lib/db';
+
+export async function deletePost(id) {
+  await db.post.delete({ where: { id } });
+}
+```
+
+After:
+
+```javascript
+'use server'
+
+import { db } from '@/lib/db';
+import { auth } from '@/auth';
+
+export async function deletePost(id) {
+  const session = await auth();
+  if (!session?.user) throw new Error('Unauthorized');
+  await db.post.delete({ where: { id, authorId: session.user.id } });
+}
+```
+
 ### `js.proto.pollution`: Object keys from request data written without a __proto__ guard
 
 CWE-1321 · default severity medium · confidence medium

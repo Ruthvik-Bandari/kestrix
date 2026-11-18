@@ -13,6 +13,13 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   or newer (the cluster runs 3.13). `research/hpc/common/smoke_gpu_stack.sbatch` checks the stack on a V100. Neither
   published package depends on this group.
 
+### Added
+
+- **`kestrix-scan` `js.next.server_action_no_auth`** (CWE-862, medium, low confidence): a Next.js server action (an async
+  function exported from a `'use server'` file, or one whose body starts with `'use server'`) that writes to a database
+  (Prisma, Drizzle, Supabase, Mongoose and similar) with no auth-looking call before the write. Server actions are
+  public POST endpoints. Wrapped actions, and writes or checks inside helper functions, are not seen. 147 rules.
+
 ### Changed
 
 - Research code loads models with `dtype=` instead of the deprecated `torch_dtype=`, and the vulnerability audit

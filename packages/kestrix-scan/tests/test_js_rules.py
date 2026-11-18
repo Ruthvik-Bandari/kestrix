@@ -214,6 +214,32 @@ POSITIVE = [
         "export function GET() {\n  return new Response('x', { headers: {\n"
         "    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Credentials': 'true' } })\n}",
     ),
+    # js.next.server_action_no_auth: a 'use server' file, an arrow, an inline action, an export list, auth too late
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function deletePost(id) {\n  await db.post.delete({ where: { id } });\n}",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport const removeUser = async (id) => { await supabase.from('users').delete().eq('id', id) }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "export default function Page() {\n  async function save(formData) {\n    'use server'\n"
+        "    await prisma.note.create({ data: { text: formData.get('t') } })\n  }\n  return null\n}",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nasync function wipe() { await db.delete(users) }\nexport { wipe }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function d(id) { await db.post.delete({ where: { id } }); await auth() }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function rename(id, name) { await User.findByIdAndUpdate(id, { name }) }",
+    ),
 ]
 
 NEGATIVE = [
@@ -383,6 +409,39 @@ NEGATIVE = [
         "app.use((req, res, next) => {\n  res.setHeader('Access-Control-Allow-Origin', 'https://a.example');\n"
         "  res.setHeader('Access-Control-Allow-Credentials', 'true');\n  next()\n})",
     ),
+    # js.next.server_action_no_auth: an auth call first, a wrapper, reads only, cookies, not an action, not async
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function deletePost(id) {\n  const session = await auth()\n"
+        "  if (!session) throw new Error('Unauthorized')\n  await db.post.delete({ where: { id } })\n}",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function upd(id) {\n  const { data } = await supabase.auth.getUser()\n"
+        "  await supabase.from('p').update({ a: 1 }).eq('id', id)\n}",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function f(id) { await requireAdmin(); await db.post.delete({ where: { id } }) }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport const deletePost = authAction(async (id) => { await db.post.delete({ where: { id } }) })",
+    ),
+    ("js.next.server_action_no_auth", "'use server'\nexport async function list() { return db.post.findMany() }"),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function logout() { const c = await cookies(); c.delete('s'); (await cookies()).delete('x') }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "'use server'\nexport async function f(formData) { formData.delete('x'); new Map().delete('k') }",
+    ),
+    (
+        "js.next.server_action_no_auth",
+        "export async function deletePost(id) { await db.post.delete({ where: { id } }) }",
+    ),
+    ("js.next.server_action_no_auth", "'use server'\nexport function f(id) { db.post.delete({ where: { id } }) }"),
 ]
 
 
@@ -394,6 +453,16 @@ def test_positive(rule_id: str, source: str) -> None:
 @pytest.mark.parametrize(("rule_id", "source"), NEGATIVE, ids=[f"{r}-{i}" for i, (r, _) in enumerate(NEGATIVE)])
 def test_negative(rule_id: str, source: str) -> None:
     assert rule_id not in ids(source, "app.tsx" if ": string" in source else "app.jsx")
+
+
+def test_server_action_finding_names_the_action_and_the_write() -> None:
+    hit = only(
+        "'use server'\nexport async function deletePost(id) {\n  await db.post.delete({ where: { id } })\n}",
+        "js.next.server_action_no_auth",
+        "app/actions.ts",
+    )
+    assert (hit.line, hit.severity, hit.confidence) == (3, None, None)
+    assert hit.message.startswith("Server action deletePost() calls db.post.delete() with no auth check before it.")
 
 
 def test_every_js_rule_has_positive_and_negative_cases() -> None:

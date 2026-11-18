@@ -5,6 +5,9 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- **New rule:** `js.next.server_action_no_auth` reports a Next.js server action that writes to a database with no auth
+  check before the write (147 rules).
+
 ## 0.1.3 (2026-11-10)
 
 - **Fixed:** `js.dom.xss_sink` no longer reports a variable whose every assignment before the sink is a sanitizer
