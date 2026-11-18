@@ -15,6 +15,7 @@ Every job charges the Slurm account `aai6610.202610` (`#SBATCH --account`).
 | --- | --- | --- | --- |
 | `research/hpc/common/smoke_gpu.sbatch` | `gpu-short` | 1 GPU, 5 min | Record GPU, driver, CUDA and Python |
 | `research/hpc/common/setup_env.sh [gpu]` | login node | n/a | Build the locked environment (`uv sync --frozen`) once per pull; `gpu` adds torch 2.13 (CUDA 12.6 wheels, which keep V100 support on driver 545) and transformers 5 for B2 and M1 |
+| `research/hpc/common/install_gpu_env.sbatch` | `short` | 4 CPU, 8 GB, 4 h | Finishes `setup_env.sh gpu` offline from uv's cache when the login node stops the install before it ends (torch and its CUDA libraries are slow to write to scratch) |
 | `research/hpc/common/smoke_gpu_stack.sbatch` | `gpu-short`, V100-SXM2 | 2 CPU, 8 GB, 15 min | After a torch or transformers bump: CUDA, fp16 matmul, the transformers 5 chat template and generation on a V100, offline; needs `setup_env.sh gpu` |
 | `research/hpc/detect/acquire.sh` | transfer node | n/a | Fetch pinned sources and write manifests (standard library only) |
 | `research/hpc/detect/qc.sbatch` | `short` | 2 CPU, 8 GB, 1 h | Offline: verify manifests, write aggregate QC reports |
@@ -80,7 +81,7 @@ H200 nodes; the smoke job ran on a Tesla V100-SXM2-32GB, driver 545.23.08, with 
 ## Constraints
 
 - No work on login nodes. Jobs only, via Slurm.
-- The home quota cannot hold torch and its CUDA libraries. The GPU environment (`venv-gpu`) and uv's cache live on scratch (`research/hpc/common/gpu_env.sh`); re-run `bash research/hpc/common/setup_env.sh gpu` after a scratch purge.
+- The home quota cannot hold torch and its CUDA libraries. The GPU environment (`venv-gpu`) and uv's cache live on scratch (`research/hpc/common/gpu_env.sh`); re-run `bash research/hpc/common/setup_env.sh gpu` after a scratch purge. A fresh GPU install took about four hours in Nov 2026 (3.5 h of downloads onto scratch); if the login node stops it, the cache keeps what was downloaded and `sbatch research/hpc/common/install_gpu_env.sbatch` finishes it.
 - `/scratch` is purged on the first Tuesday of each month, and the cluster is unavailable during
   that maintenance. Sources are re-fetchable from pins; anything that must survive goes to `/work`.
 - Batch scripts start with `#!/bin/bash -l` so `module` is available.
