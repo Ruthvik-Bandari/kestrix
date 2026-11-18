@@ -184,7 +184,7 @@ ssh explorer 'cd ~/kestrix-codebench && sbatch research/hpc/codebench/codebench_
 - **Duplicates:** exact before-and-after duplicates are merged and repositories sharing a before-file are grouped, but near-duplicates (backports with edits) remain.
 - **Python 2 and unparsable files** count as no finding for Kestrix and Bandit (145 before-files, 2.5% of Python pairs; ESLint could not parse 27 JavaScript or TypeScript before-files).
 - **Tool defaults only:** no tuning of Bandit or ESLint. A project that configures them would see fewer alerts.
-- **Dev numbers after round 1 are tuned numbers.** The changes were chosen from dev error analysis. Only the locked test is blind, and it has not been run.
+- **Dev numbers after round 1 are tuned numbers.** The changes were chosen from dev error analysis. Only the locked test is blind (it was run once; see the end of the page).
 - **Semgrep is missing** (see Tools).
 - The earlier [BenchmarkPython scorecard](benchmarkpython.md) measures synthetic cases; the two benchmarks answer different questions and their numbers are not comparable.
 
