@@ -72,6 +72,24 @@ def test_vulnerable_and_malicious_dependencies(project: Path) -> None:
     assert "flask>=2" in report.notes[0].message
 
 
+def test_a_transitive_package_names_the_direct_dependency_that_pulls_it_in(project: Path) -> None:
+    lock = {
+        "lockfileVersion": 3,
+        "packages": {
+            "": {"name": "web", "dependencies": {"ui-kit": "^2"}},
+            "node_modules/ui-kit": {"version": "2.1.0", "dependencies": {"left-pad": "^1"}},
+            "node_modules/left-pad": {"version": "1.3.0"},
+        },
+    }
+    (project / "package-lock.json").write_text(json.dumps(lock, indent=2))
+    left_pad = _by_rule(project)[("package-lock.json", "dep.vulnerable")]
+    assert left_pad.message.endswith(" Pulled in by ui-kit@2.1.0.")  # type: ignore[attr-defined]
+    assert left_pad.fix == (  # type: ignore[attr-defined]
+        "Upgrade left-pad to 1.3.1 or later and update the lockfile. It is not a direct dependency: upgrade "
+        "ui-kit@2.1.0 to a release that allows left-pad 1.3.1, or pin it with your package manager's overrides."
+    )
+
+
 def test_fixed_versions_are_not_reported(project: Path) -> None:
     (project / "requirements.txt").write_text("demo-pkg==2.1.1\npopular-lib==3.3.3\n")
     found = _by_rule(project)

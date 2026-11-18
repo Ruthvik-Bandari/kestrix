@@ -51,6 +51,9 @@ class Dependency:
     name: str  # as written in the file
     version: str
     line: int  # 1-based line in the lockfile
+    parents: tuple[
+        str, ...
+    ] = ()  # for a transitive npm package: the direct dependencies (name@version) that pull it in
 
 
 @dataclass
@@ -196,6 +199,62 @@ def parse_pipfile_lock(text: str) -> Parsed:
     return parsed
 
 
+_NPM_DEP_FIELDS = ("dependencies", "optionalDependencies", "peerDependencies")
+
+
+def direct_parents(edges: dict[str, list[str]], direct: dict[str, str]) -> dict[str, tuple[str, ...]]:
+    """For each package key, the direct dependencies whose tree reaches it.
+
+    ``edges`` maps a package key to the keys it depends on; ``direct`` maps ``name@version`` of each direct dependency
+    to its key. A direct dependency gets no parents for itself.
+    """
+    reached: dict[str, set[str]] = {}
+    starts = set(direct.values())
+    for label, start in direct.items():
+        seen = {start}
+        stack = [start]
+        while stack:
+            for child in edges.get(stack.pop(), ()):
+                if child not in seen:
+                    seen.add(child)
+                    stack.append(child)
+        for key in seen - starts:
+            reached.setdefault(key, set()).add(label)
+    return {key: tuple(sorted(labels)) for key, labels in reached.items()}
+
+
+def _dep_names(entry: dict[str, Any], fields: tuple[str, ...] = _NPM_DEP_FIELDS) -> list[str]:
+    return [name for f in fields if isinstance(entry.get(f), dict) for name in entry[f]]
+
+
+def _package_lock_parents(packages: dict[str, Any]) -> dict[str, tuple[str, ...]]:
+    """Node resolution over ``packages``: a dependency of ``a/node_modules/b`` is the nearest ``node_modules/<name>``."""
+
+    def resolve(name: str, start: str) -> str | None:
+        base = start
+        while True:
+            key = f"{base}/node_modules/{name}" if base else f"node_modules/{name}"
+            if key in packages:
+                return key
+            if not base:
+                return None
+            base = base.rsplit("/node_modules/", 1)[0] if "/node_modules/" in base else ""
+
+    edges: dict[str, list[str]] = {}
+    for key, entry in packages.items():
+        if isinstance(entry, dict):
+            edges[key] = [k for n in _dep_names(entry) if (k := resolve(n, key)) is not None]
+    roots = [key for key, entry in packages.items() if "node_modules/" not in key and isinstance(entry, dict)]
+    direct: dict[str, str] = {}
+    for root in roots:
+        for name in _dep_names(packages[root], ("dependencies", "devDependencies", "optionalDependencies")):
+            found = resolve(name, root)
+            version = packages[found].get("version") if found is not None else None
+            if found is not None and isinstance(version, str):
+                direct[f"{name}@{version}"] = found
+    return direct_parents(edges, direct)
+
+
 def parse_package_lock(text: str) -> Parsed:
     parsed = Parsed()
     data = _load_json(text, parsed)
@@ -206,6 +265,7 @@ def parse_package_lock(text: str) -> Parsed:
         parsed.unsupported = "lockfileVersion 1 is not supported; run npm install with npm 7 or newer to upgrade it"
         return parsed
     find = _line_finder(text)
+    parents = _package_lock_parents(packages)
     for key, entry in packages.items():
         if not key or not isinstance(entry, dict) or entry.get("link") is True:
             continue
@@ -213,7 +273,8 @@ def parse_package_lock(text: str) -> Parsed:
         version = entry.get("version")
         if "node_modules/" not in key or not isinstance(version, str) or not isinstance(name, str):
             continue
-        parsed.dependencies.append(Dependency("npm", name, version, max(find(json.dumps(key) + ":"), 1)))
+        line = max(find(json.dumps(key) + ":"), 1)
+        parsed.dependencies.append(Dependency("npm", name, version, line, parents.get(key, ())))
     return parsed
 
 

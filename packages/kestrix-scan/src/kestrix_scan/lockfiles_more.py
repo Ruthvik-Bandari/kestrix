@@ -27,7 +27,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from .lockfiles import Dependency, Parsed, _line_finder, _load_json, _toml_packages
+from .lockfiles import Dependency, Parsed, _dep_names, _line_finder, _load_json, _toml_packages, direct_parents
 from .versions import semver_key
 
 
@@ -286,11 +286,62 @@ def parse_pubspec_lock(text: str) -> Parsed:
 
 # ----- bun.lock
 
-_BUN_ENTRY = re.compile(r"""^ {4}"[^"]+":\s*\[\s*"(?P<name>(?:@[^/@"]+/)?[^@"]+)@(?P<version>[^"]+)\"""")
+_BUN_ENTRY = re.compile(r"""^ {4}"(?P<key>[^"]+)":\s*\[\s*"(?P<name>(?:@[^/@"]+/)?[^@"]+)@(?P<version>[^"]+)\"""")
+_TRAILING_COMMA = re.compile(r",(\s*[}\]])")
+
+
+def _bun_parts(key: str) -> list[str]:
+    """``a/@scope/b/c`` -> ``['a', '@scope/b', 'c']``: the package names along a bun.lock key."""
+    parts: list[str] = []
+    for piece in key.split("/"):
+        if parts and parts[-1].startswith("@") and "/" not in parts[-1]:
+            parts[-1] += "/" + piece
+        else:
+            parts.append(piece)
+    return parts
+
+
+def _bun_parents(text: str) -> dict[str, tuple[str, ...]]:
+    """bun.lock nests a package under its parent's key (``parent/name``) when it is not the hoisted one."""
+    try:
+        data = json.loads(_TRAILING_COMMA.sub(r"\1", text))
+    except ValueError:
+        return {}
+    packages = data.get("packages") if isinstance(data, dict) else None
+    workspaces = data.get("workspaces") if isinstance(data, dict) else None
+    if not isinstance(packages, dict) or not isinstance(workspaces, dict):
+        return {}
+
+    def resolve(name: str, start: list[str]) -> str | None:
+        for i in range(len(start), -1, -1):
+            key = "/".join([*start[:i], name])
+            if key in packages:
+                return key
+        return None
+
+    def meta(entry: Any) -> dict[str, Any]:
+        found = next((item for item in entry if isinstance(item, dict)), None) if isinstance(entry, list) else None
+        return found or {}
+
+    edges = {
+        key: [k for n in _dep_names(meta(entry)) if (k := resolve(n, _bun_parts(key))) is not None]
+        for key, entry in packages.items()
+    }
+    direct: dict[str, str] = {}
+    for workspace in workspaces.values():
+        if not isinstance(workspace, dict):
+            continue
+        for name in _dep_names(workspace, ("dependencies", "devDependencies", "optionalDependencies")):
+            entry = packages.get(name)
+            ident = entry[0] if isinstance(entry, list) and entry and isinstance(entry[0], str) else ""
+            if ident.startswith(f"{name}@"):
+                direct[ident] = name
+    return direct_parents(edges, direct)
 
 
 def parse_bun_lock(text: str) -> Parsed:
     parsed = Parsed()
+    parents = _bun_parents(text)
     in_packages = False
     for number, raw in enumerate(text.splitlines(), start=1):
         if raw.startswith('  "packages"'):
@@ -300,7 +351,8 @@ def parse_bun_lock(text: str) -> Parsed:
             in_packages = False
         match = _BUN_ENTRY.match(raw) if in_packages else None
         if match is not None and match.group("version")[:1].isdigit():  # not workspace:, github:, file:, npm: aliases
-            parsed.dependencies.append(Dependency("npm", match.group("name"), match.group("version"), number))
+            name, version = match.group("name"), match.group("version")
+            parsed.dependencies.append(Dependency("npm", name, version, number, parents.get(match.group("key"), ())))
     return parsed
 
 

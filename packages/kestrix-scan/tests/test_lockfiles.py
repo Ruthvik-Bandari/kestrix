@@ -17,6 +17,7 @@ from kestrix_scan.lockfiles import (
     parse_yarn_lock,
     parser_for,
 )
+from kestrix_scan.lockfiles_more import parse_bun_lock
 
 
 def _triples(deps: list[Dependency]) -> list[tuple[str, str, int]]:
@@ -309,3 +310,55 @@ def test_parser_for(rel: str, found: bool) -> None:
 def test_normalize() -> None:
     assert normalize("PyPI", "Demo_Pkg.Extra") == "demo-pkg-extra"
     assert normalize("npm", "@Scope/Pkg") == "@Scope/Pkg"
+
+
+def test_package_lock_names_the_direct_dependencies_that_pull_a_package_in() -> None:
+    packages = {
+        "": {"name": "demo", "dependencies": {"app-kit": "^1"}, "devDependencies": {"lint": "^2", "lodash": "^4"}},
+        "node_modules/app-kit": {"version": "1.2.0", "dependencies": {"lodash": "^4", "glob": "^7"}},
+        "node_modules/lint": {"version": "2.0.0", "dependencies": {"glob": "^9"}},
+        "node_modules/lint/node_modules/glob": {"version": "9.0.0", "dependencies": {"minimatch": "^9"}},
+        "node_modules/glob": {"version": "7.2.0", "dependencies": {"minimatch": "^3"}},
+        "node_modules/minimatch": {"version": "3.1.2"},
+        "node_modules/lint/node_modules/minimatch": {"version": "9.0.0"},
+        "node_modules/lodash": {"version": "4.17.20"},
+    }
+    parsed = parse_package_lock(json.dumps({"lockfileVersion": 3, "packages": packages}, indent=2))
+    parents = {(d.name, d.version): d.parents for d in parsed.dependencies}
+    assert parents[("glob", "7.2.0")] == ("app-kit@1.2.0",)
+    assert parents[("minimatch", "3.1.2")] == ("app-kit@1.2.0",)
+    assert parents[("glob", "9.0.0")] == parents[("minimatch", "9.0.0")] == ("lint@2.0.0",)
+    assert parents[("app-kit", "1.2.0")] == parents[("lodash", "4.17.20")] == ()  # direct dependencies
+
+
+def test_bun_lock_names_the_direct_dependencies_that_pull_a_package_in() -> None:
+    text = """{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "site",
+      "dependencies": { "next": "16.4.6" },
+      "devDependencies": { "@lint/config": "1.0.0" },
+    },
+  },
+  "packages": {
+    "next": ["next@16.4.6", "", { "dependencies": { "postcss": "8.4.31" } }, "sha512-a"],
+    "postcss": ["postcss@8.5.0", "", { "dependencies": { "nanoid": "^3" } }, "sha512-b"],
+    "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3" } }, "sha512-c"],
+    "nanoid": ["nanoid@3.3.6", "", {}, "sha512-d"],
+    "@lint/config": ["@lint/config@1.0.0", "", { "dependencies": { "@x/glob": "^1" } }, "sha512-e"],
+    "@lint/config/@x/glob": ["@x/glob@1.0.0", "", { "dependencies": { "braces": "^3" } }, "sha512-f"],
+    "braces": ["braces@3.0.2", "", {}, "sha512-g"],
+  }
+}
+"""
+    parents = {(d.name, d.version): d.parents for d in parse_bun_lock(text).dependencies}
+    assert parents[("postcss", "8.4.31")] == parents[("nanoid", "3.3.6")] == ("next@16.4.6",)
+    assert parents[("postcss", "8.5.0")] == ()  # hoisted but nothing installed needs it
+    assert parents[("@x/glob", "1.0.0")] == parents[("braces", "3.0.2")] == ("@lint/config@1.0.0",)
+    assert parents[("next", "16.4.6")] == ()
+
+
+def test_unreadable_bun_lock_json_still_lists_packages() -> None:
+    text = '{\n  "packages": {\n    "a": ["a@1.0.0", "", {}, "x"],\n  }\n  oops\n'
+    assert [(d.name, d.parents) for d in parse_bun_lock(text).dependencies] == [("a", ())]

@@ -5,6 +5,8 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- `dep.vulnerable` names the direct dependency that pulls in a transitive package (`package-lock.json`, `bun.lock`).
+
 - **New rule:** `js.next.server_action_no_auth` reports a Next.js server action that writes to a database with no auth
   check before the write (147 rules).
 

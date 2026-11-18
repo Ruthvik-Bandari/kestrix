@@ -15,6 +15,8 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **`kestrix-scan` dependency findings name the direct dependency behind a transitive package** in `package-lock.json`
+  and `bun.lock` ("Pulled in by next@16.4.6"), and the fix says to upgrade it or pin the package with overrides.
 - **`kestrix-scan` `js.next.server_action_no_auth`** (CWE-862, medium, low confidence): a Next.js server action (an async
   function exported from a `'use server'` file, or one whose body starts with `'use server'`) that writes to a database
   (Prisma, Drizzle, Supabase, Mongoose and similar) with no auth-looking call before the write. Server actions are

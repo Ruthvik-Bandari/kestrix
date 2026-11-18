@@ -233,6 +233,14 @@ def _finding(dep: Dependency, advisories: list[osvdb.Advisory], rel: str, *, pos
         fix = f"Upgrade {dep.name} to {target} or later and update the lockfile."
         fixed_text = f"fixed in {', '.join(known)}"
     summary = advisories[0].summary.rstrip(".")
+    pulled = ""
+    if dep.parents:
+        shown_parents = ", ".join(dep.parents[:3]) + (
+            f" and {len(dep.parents) - 3} more" if len(dep.parents) > 3 else ""
+        )
+        pulled = f" Pulled in by {shown_parents}."
+        if target is not None:
+            fix += f" It is not a direct dependency: upgrade {shown_parents} to a release that allows {dep.name} {target}, or pin it with your package manager's overrides."
     return Finding(
         rule_id=rule.id,
         cwe=cwe,
@@ -242,7 +250,7 @@ def _finding(dep: Dependency, advisories: list[osvdb.Advisory], rel: str, *, pos
         line=dep.line,
         column=1,
         end_line=dep.line,
-        message=f"{package} ({dep.ecosystem}) has {len(groups)} known vulnerability(ies): {shown}. {summary}; {fixed_text}.",
+        message=f"{package} ({dep.ecosystem}) has {len(groups)} known vulnerability(ies): {shown}. {summary}; {fixed_text}.{pulled}",
         why=rule.why,
         fix=fix,
         snippet=snippet,
