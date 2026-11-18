@@ -208,7 +208,7 @@ Or from the repository's marketplace: `/plugin marketplace add Ruthvik-Bandari/k
   `/kestrix:scan`, `/kestrix:fix` and `/kestrix:review` (a review of the current git diff).
 - **Install guard:** before a `pip`, `uv`, `npm`, `pnpm`, `yarn`, `bun`, `composer require`, `go get`, `cargo add`, `gem install` or `dotnet add package` install runs, the plugin checks the packages
   against the local OSV index. A known malicious package is denied; a known-vulnerable pinned version gets a
-  warning naming the fixed version. No index means no check; an old index adds a line saying the result may be stale. Turn it off with `KESTRIX_INSTALL_GUARD=0` or
+  warning naming the fixed version. No index means no check (the first install says so once); an old index adds a line saying the result may be stale. Turn it off with `KESTRIX_INSTALL_GUARD=0` or
   `claude.install-guard = false`.
 - **Opt-in Stop gate:** with `KESTRIX_BLOCK_ON_STOP=1`, Claude cannot finish while new high or critical
   findings remain in files it changed (at most three times per session).

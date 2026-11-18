@@ -5,6 +5,8 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+- The install guard says once, without an index, that it is inactive and how to turn it on.
+
 - `dep.vulnerable` names the direct dependency that pulls in a transitive package (`package-lock.json`, `bun.lock`).
 
 - **New rule:** `js.next.server_action_no_auth` reports a Next.js server action that writes to a database with no auth

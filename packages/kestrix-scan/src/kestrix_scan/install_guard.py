@@ -23,7 +23,9 @@ Decisions, from the local OSV index only (see ``osvdb``):
   asks Claude to confirm the name with the user. It works without an index (the advisory check is then skipped and
   the note says so), covers PyPI, npm, crates.io and Packagist, and is never a deny. ``[tool.kestrix] install-allow``
   lists names (``*`` globs allowed) that are never flagged;
-- anything else, no index, ``KESTRIX_INSTALL_GUARD=0`` or ``[tool.kestrix] claude.install-guard = false``
+- the first install seen without an index gets a one-time non-blocking note that the guard is inactive and that
+  ``kestrix-scan db update`` turns it on (a marker file in the index directory keeps it to once);
+- anything else, no index after that, ``KESTRIX_INSTALL_GUARD=0`` or ``[tool.kestrix] claude.install-guard = false``
   gets no output. Errors are the caller's to swallow: the hook fails open.
 """
 
@@ -416,6 +418,27 @@ def _settings(cwd: str | None) -> Config:
         return Config()
 
 
+INACTIVE_MARKER = "install-guard-inactive-noted"
+
+
+def _inactive_notice(requested: list[Requested]) -> str | None:
+    """Once per index directory: say the guard checked nothing because there is no index."""
+    if not requested:
+        return None
+    marker = osvdb.cache_dir() / INACTIVE_MARKER
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch(exist_ok=False)
+    except OSError:  # already noted, or the directory is not writable: stay quiet rather than repeat
+        return None
+    context = (
+        "Kestrix install guard is inactive: there is no local OSV index, so these packages were not checked for "
+        "malware or known vulnerabilities. Tell the user once that `kestrix-scan db update` builds the index and "
+        "turns the guard on. This note is shown only once."
+    )
+    return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": context}})
+
+
 def guard_response(payload: dict[str, Any]) -> str | None:
     """The PreToolUse hook output for a Bash payload, or None to let the command run unremarked."""
     tool_input = payload.get("tool_input")
@@ -436,7 +459,7 @@ def guard_response(payload: dict[str, Any]) -> str | None:
         checked=covered,
     )
     if result is None and not typos:
-        return None
+        return _inactive_notice(requested)
     notes = [line for line in (freshness_line(settings.db_max_age_days),) if line] if result is not None else []
     unchecked = result.unchecked if result is not None else []
     if unchecked:

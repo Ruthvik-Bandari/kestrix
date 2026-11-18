@@ -15,6 +15,9 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ### Added
 
+- **Claude Code install guard:** without an OSV index, the first install it sees gets a one-time, non-blocking note
+  that the guard is inactive and `kestrix-scan db update` turns it on. Before, it stayed silent, so a missing index
+  went unnoticed.
 - **`kestrix-scan` dependency findings name the direct dependency behind a transitive package** in `package-lock.json`
   and `bun.lock` ("Pulled in by next@16.4.6"), and the fix says to upgrade it or pin the package with overrides.
 - **`kestrix-scan` `js.next.server_action_no_auth`** (CWE-862, medium, low confidence): a Next.js server action (an async

@@ -123,6 +123,22 @@ def test_fails_open_without_an_index() -> None:
     assert _decide("npm i @evil/stealer") is None
 
 
+def test_without_an_index_the_first_install_says_once_that_the_guard_is_inactive(isolated_osv_index: Path) -> None:
+    (isolated_osv_index / "install-guard-inactive-noted").unlink()
+    first = _decide("npm i left-pad")
+    assert first is not None and "permissionDecision" not in first
+    assert first["additionalContext"].startswith("Kestrix install guard is inactive: there is no local OSV index")
+    assert "`kestrix-scan db update`" in first["additionalContext"]
+    assert _decide("npm i left-pad") is None
+    assert _decide("ls -la") is None
+
+
+def test_the_inactive_note_is_not_shown_for_other_commands(isolated_osv_index: Path) -> None:
+    (isolated_osv_index / "install-guard-inactive-noted").unlink()
+    assert _decide("ls -la") is None
+    assert not (isolated_osv_index / "install-guard-inactive-noted").exists()
+
+
 def test_env_opt_out(index: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("KESTRIX_INSTALL_GUARD", "0")
     assert _decide("npm i @evil/stealer") is None
@@ -194,6 +210,9 @@ def test_plugin_hook_denies_a_malicious_install(tmp_path: Path, index: Path, iso
 def test_plugin_hook_warns_and_fails_open(tmp_path: Path, index: Path, isolated_osv_index: Path) -> None:
     warned = _hook(tmp_path, _payload("pip install demo-pkg==2.0.0"), isolated_osv_index)
     assert "additionalContext" in json.loads(warned.stdout)["hookSpecificOutput"]
+    first = _hook(tmp_path, _payload("npm install @evil/stealer"), tmp_path / "no-index")  # the one-time note
+    assert first.returncode == 0
+    assert set(json.loads(first.stdout)["hookSpecificOutput"]) == {"hookEventName", "additionalContext"}
     for result in (
         _hook(tmp_path, _payload("npm install @evil/stealer"), tmp_path / "no-index"),
         _hook(tmp_path, _payload("npm install @evil/stealer"), isolated_osv_index, KESTRIX_INSTALL_GUARD="0"),

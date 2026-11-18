@@ -41,10 +41,16 @@ def repo(tmp_path: Path, git: Callable[..., str]) -> Path:
 
 @pytest.fixture(autouse=True)
 def isolated_osv_index(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Every test sees an empty vulnerability-index directory, never the developer's real cache."""
+    """Every test sees an empty vulnerability-index directory, never the developer's real cache.
+
+    The directory holds the marker of the install guard's one-time "no index" note, as for a user who has seen it,
+    so tests of other behaviour see the guard stay quiet; tests of the note remove the marker.
+    """
     from kestrix_scan import deps
+    from kestrix_scan.install_guard import INACTIVE_MARKER
 
     directory = tmp_path_factory.mktemp("osv-index")
+    (directory / INACTIVE_MARKER).touch()
     monkeypatch.setenv("KESTRIX_SCAN_DB", str(directory))
     monkeypatch.setattr(deps, "_INDEX", deps._Index())
     return directory

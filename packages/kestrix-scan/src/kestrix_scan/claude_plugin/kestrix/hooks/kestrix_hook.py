@@ -9,8 +9,8 @@ with the hook JSON on stdin.
   ``uv``, ``npm``, ``pnpm``, ``yarn``, ``bun``, ``composer``, ``go``, ``cargo``, ``gem`` or ``dotnet``), passes the payload to ``kestrix-scan scan --hook``, which checks
   the named packages against the local OSV index, and relays its reply: a ``deny`` for a known
   malicious package, or a non-blocking warning for a known-vulnerable pinned version or for a likely
-  typosquat (a near-miss of a popular package with no advisory; the scanner needs no index for that). No index, a
-  missing scanner, ``KESTRIX_INSTALL_GUARD=0`` or any error means no output, so the command runs.
+  typosquat (a near-miss of a popular package with no advisory; the scanner needs no index for that). Without an
+  index the scanner says once that the guard is inactive and stays quiet after that. A missing scanner, ``KESTRIX_INSTALL_GUARD=0`` or any error means no output, so the command runs.
   It first records the time the command starts, for ``bash-post``.
 - ``bash-post`` (PostToolUse and PostToolUseFailure on Bash) lists the files the command changed with
   ``git status --porcelain`` filtered by modification time against the ``bash-pre`` mark, keeps at most 20
