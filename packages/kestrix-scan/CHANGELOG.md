@@ -5,6 +5,8 @@ interface: renaming a rule or a report key is a breaking change and is recorded 
 
 ## Unreleased
 
+## 0.1.4 (2026-11-19)
+
 - The install guard says once, without an index, that it is inactive and how to turn it on.
 
 - `dep.vulnerable` names the direct dependency that pulls in a transitive package (`package-lock.json`, `bun.lock`).

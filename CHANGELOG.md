@@ -4,6 +4,8 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-19
+
 ### Security
 
 - The cluster-only `gpu` dependency group moves to torch 2.13 and transformers 5.22, fixing the open Dependabot
@@ -12,6 +14,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
   because the default PyPI wheels target CUDA 13, which the cluster driver (545) cannot run and which drops V100 support. The group now needs Python 3.11
   or newer (the cluster runs 3.13). `research/hpc/common/smoke_gpu_stack.sbatch` checks the stack on a V100. Neither
   published package depends on this group.
+- `opentelemetry-api` 1.45.2 in `uv.lock` (CVE-2026-126360), a runtime dependency of the hosted server.
 
 ### Added
 
@@ -29,6 +32,7 @@ All notable changes to Kestrix are recorded here. The format follows [Keep a Cha
 
 - Research code loads models with `dtype=` instead of the deprecated `torch_dtype=`, and the vulnerability audit
   asks `apply_chat_template` for a tensor (`return_dict=False`), which transformers 5 no longer returns by default.
+- The Claude Code plugin is version 0.1.4.
 
 ## [0.1.3] - 2026-11-10
 
@@ -378,7 +382,8 @@ First release of Kestrix as one installable package, `kestrix`, with the `kestri
   - dashboard lint, test and build;
   - a wheel smoke test.
 
-[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ruthvik-Bandari/kestrix/compare/v0.1.0...v0.1.1

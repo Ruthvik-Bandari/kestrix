@@ -3,6 +3,12 @@
 All notable changes to the Kestrix plugin for Claude Code. The plugin's version is the `version` in
 `.claude-plugin/plugin.json` and matches the `kestrix-scan` release it was built from.
 
+## 0.1.4
+
+- Built from `kestrix-scan` 0.1.4: a new rule for Next.js server actions that write data with no auth check
+  (147 rules), dependency findings that name the direct dependency behind a transitive package, and a one-time
+  install-guard note when there is no OSV index.
+
 ## 0.1.3
 
 - Built from `kestrix-scan` 0.1.3, which stops reporting a variable holding `DOMPurify.sanitize(...)` output as XSS
